@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "Pusat Bantuan",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "Cipta",
       "NAME": {
         "LABEL": "Nama",
-        "PLACEHOLDER": "Panduan Pengguna | Chatwoot",
+        "PLACEHOLDER": "Panduan Pengguna | Adaki",
         "MESSAGE": "Pilih nama untuk portal anda.",
         "ERROR": "Nama diperlukan"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "Konfigurasi DNS",
-            "DESCRIPTION": "Log masuk ke akaun anda dengan penyedia DNS anda, dan tambah rekod CNAME untuk subdomain yang menunjuk ke chatwoot.help",
+            "DESCRIPTION": "Log masuk ke akaun anda dengan penyedia DNS anda, dan tambah rekod CNAME untuk subdomain yang menunjuk ke Adaki.help",
             "COPY": "Berjaya menyalin CNAME",
             "SEND_INSTRUCTIONS": {
               "HEADER": "Hantar arahan",

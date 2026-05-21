@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed, onUnmounted, ref, nextTick, watch } from 'vue';
 import { useTimeoutPoll } from '@vueuse/core';
 import { useMapGetter, useStore } from 'dashboard/composables/store';

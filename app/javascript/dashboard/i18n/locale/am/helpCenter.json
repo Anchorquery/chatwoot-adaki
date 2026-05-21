@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "የእርዳታ ማዕከል",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "ፍጠር",
       "NAME": {
         "LABEL": "ስም",
-        "PLACEHOLDER": "የተጠቃሚ መመሪያ | Chatwoot",
+        "PLACEHOLDER": "የተጠቃሚ መመሪያ | Adaki",
         "MESSAGE": "ለፖርታልዎ ስም ይምረጡ።.",
         "ERROR": "ስም ያስፈልጋል"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "የDNS ቅንብር",
-            "DESCRIPTION": "ከDNS አቅራቢዎ ጋር ያለዎትን መለያ ይግቡ፣ እና ለsubdomain ወደ chatwoot.help የሚያመራ የCNAME መዝገብ ያክሉ",
+            "DESCRIPTION": "ከDNS አቅራቢዎ ጋር ያለዎትን መለያ ይግቡ፣ እና ለsubdomain ወደ Adaki.help የሚያመራ የCNAME መዝገብ ያክሉ",
             "COPY": "CNAME በተሳካ ሁኔታ ተቀይሯል",
             "SEND_INSTRUCTIONS": {
               "HEADER": "መመሪያዎችን ላክ",

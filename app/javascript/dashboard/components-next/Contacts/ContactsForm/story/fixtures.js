@@ -1,4 +1,4 @@
-export const contactData = {
+﻿export const contactData = {
   id: 370,
   name: 'John Doe',
   email: 'johndoe@chatwoot.com',
@@ -7,7 +7,7 @@ export const contactData = {
     city: 'Kerala',
     country: 'India',
     description: 'Curious about the web.',
-    companyName: 'Chatwoot',
+    companyName: 'Adaki',
     countryCode: 'IN',
     socialProfiles: {
       github: 'johndoe',

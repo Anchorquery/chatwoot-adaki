@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "Help Center",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "Opprett",
       "NAME": {
         "LABEL": "Navn",
-        "PLACEHOLDER": "User Guide | Chatwoot",
+        "PLACEHOLDER": "User Guide | Adaki",
         "MESSAGE": "Choose an name for your portal.",
         "ERROR": "Name is required"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "DNS configuration",
-            "DESCRIPTION": "Log in to the account you have with your DNS provider, and add a CNAME record for subdomain pointing to chatwoot.help",
+            "DESCRIPTION": "Log in to the account you have with your DNS provider, and add a CNAME record for subdomain pointing to Adaki.help",
             "COPY": "Successfully copied CNAME",
             "SEND_INSTRUCTIONS": {
               "HEADER": "Send instructions",

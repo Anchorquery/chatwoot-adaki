@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { useVuelidate } from '@vuelidate/core';
 import { useI18n } from 'vue-i18n';
@@ -98,7 +98,7 @@ const timezoneOptions = computed(() => {
   }
 });
 
-// Best-effort match browser language to enabled Chatwoot locales.
+// Best-effort match browser language to enabled Adaki locales.
 // Tries exact match first (e.g. 'pt_BR'), then base language (e.g. 'pt'),
 // falls back to account locale or 'en'.
 const detectBestLocale = () => {

@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
 import { onMounted } from 'vue';
 
@@ -9,7 +9,7 @@ const toggleSupportWidgetVisibility = () => {
 };
 
 const setupListenerForWidgetEvent = () => {
-  window.addEventListener('chatwoot:on-message', () => {
+  window.addEventListener('Adaki:on-message', () => {
     toggleSupportWidgetVisibility();
   });
 };

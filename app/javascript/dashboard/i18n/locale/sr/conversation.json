@@ -1,4 +1,4 @@
-{
+﻿{
   "CONVERSATION": {
     "SELECT_A_CONVERSATION": "Izaberite razgovor sa leve strane",
     "CSAT_REPLY_MESSAGE": "Molim vas ocenite ovaj razgovor",
@@ -265,7 +265,7 @@
     "SENT_BY": "Poslao:",
     "BOT": "Bot",
     "NATIVE_APP": "Native app",
-    "NATIVE_APP_ADVISORY": "This message was sent from the native app. Reply from Chatwoot to maintain the message window.",
+    "NATIVE_APP_ADVISORY": "This message was sent from the native app. Reply from Adaki to maintain the message window.",
     "SEND_FAILED": "Nije bilo moguće poslati poruku! Pokušajte ponovo",
     "TRY_AGAIN": "pokušaj ponovo",
     "ASSIGNMENT": {

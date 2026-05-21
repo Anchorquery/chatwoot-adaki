@@ -1,4 +1,4 @@
-{
+﻿{
   "INBOX_MGMT": {
     "HEADER": "ഇൻ‌ബോക്സുകൾ",
     "DESCRIPTION": "ഒരു ചാനൽ നിങ്ങളുടെ ഉപഭോക്താവ് നിങ്ങളുമായി ആശയവിനിമയം നടത്താൻ തിരഞ്ഞെടുക്കുന്ന ആശയവിനിമയ മാർഗമാണ്. ഒരു ഇൻബോക്സ് ഒരു പ്രത്യേക ചാനലിനുള്ള ഇടപെടലുകൾ നിങ്ങൾ നിയന്ത്രിക്കുന്ന സ്ഥലം ആണ്. ഇത് ഇമെയിൽ, ലൈവ് ചാറ്റ്, സോഷ്യൽ മീഡിയ തുടങ്ങിയ വിവിധ ഉറവിടങ്ങളിൽ നിന്നുള്ള ആശയവിനിമയങ്ങൾ ഉൾക്കൊള്ളാം.",
@@ -449,7 +449,7 @@
       },
       "AUTH": {
         "TITLE": "ഒരു ചാനൽ തിരഞ്ഞെടുക്കുക",
-        "DESC": "Chatwoot supports live-chat widgets, Facebook Messenger, Twitter profiles, WhatsApp, Emails, etc., as channels. If you want to build a custom channel, you can create it using the API channel. To get started, choose one of the channels below.",
+        "DESC": "Adaki supports live-chat widgets, Facebook Messenger, Twitter profiles, WhatsApp, Emails, etc., as channels. If you want to build a custom channel, you can create it using the API channel. To get started, choose one of the channels below.",
         "TITLE_NEXT": "സജ്ജീകരണം പൂർത്തിയാക്കുക",
         "TITLE_FINISH": "വോയ്ലാ!",
         "CHANNEL": {
@@ -1135,7 +1135,7 @@
         "USER_MESSAGE": "ഹായ്",
         "AGENT_MESSAGE": "ഹലോ"
       },
-      "BRANDING_TEXT": "പ്രായോജകർ Chatwoot",
+      "BRANDING_TEXT": "പ്രായോജകർ Adaki",
       "SCRIPT_SETTINGS": "\n      window.chatwootSettings = {options};"
     },
     "EMAIL_PROVIDERS": {

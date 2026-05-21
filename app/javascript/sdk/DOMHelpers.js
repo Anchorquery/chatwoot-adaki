@@ -1,4 +1,4 @@
-import { SDK_CSS } from './sdk.js';
+﻿import { SDK_CSS } from './sdk.js';
 import { IFrameHelper } from './IFrameHelper';
 
 export const loadCSS = () => {
@@ -10,7 +10,7 @@ export const loadCSS = () => {
 };
 
 // This is a method specific to Turbo
-// The body replacing strategy removes Chatwoot styles
+// The body replacing strategy removes Adaki styles
 // as well as the widget, this help us get it back
 export const restoreElement = (id, newBody) => {
   const element = document.getElementById(id);

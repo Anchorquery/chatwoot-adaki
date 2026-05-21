@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 // components
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';

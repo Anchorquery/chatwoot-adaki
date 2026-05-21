@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { computed } from 'vue';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useRouter } from 'vue-router';

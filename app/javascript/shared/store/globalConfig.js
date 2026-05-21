@@ -1,4 +1,4 @@
-import { parseBoolean } from '@chatwoot/utils';
+﻿import { parseBoolean } from '@chatwoot/utils';
 import { resolveMaximumFileUploadSize } from 'shared/helpers/FileHelper';
 
 const {
@@ -56,8 +56,8 @@ const state = {
 export const getters = {
   get: $state => $state,
   isOnChatwootCloud: $state => $state.deploymentEnv === 'cloud',
-  isACustomBrandedInstance: $state => $state.installationName !== 'Chatwoot',
-  isAChatwootInstance: $state => $state.installationName === 'Chatwoot',
+  isACustomBrandedInstance: $state => $state.installationName !== 'Adaki',
+  isAChatwootInstance: $state => $state.installationName === 'Adaki',
 };
 
 export const actions = {};

@@ -1,19 +1,19 @@
-<script setup>
+﻿<script setup>
 import PortalSwitcher from './PortalSwitcher.vue';
 
 const portals = [
   {
     id: 1,
-    name: 'Chatwoot Help Center',
+    name: 'Adaki Help Center',
     articles: 67,
-    domain: 'chatwoot.help',
+    domain: 'Adaki.help',
     slug: 'help-center',
   },
   {
     id: 2,
-    name: 'Chatwoot Handbook',
+    name: 'Adaki Handbook',
     articles: 42,
-    domain: 'chatwoot.help',
+    domain: 'Adaki.help',
     slug: 'handbook',
   },
   {

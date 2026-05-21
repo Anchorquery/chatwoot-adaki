@@ -1,0 +1,139 @@
+<% content_for(:title) do %>
+  Branding Settings
+<% end %>
+
+<header class="flex px-8 py-4 items-center border-b border-n-weak" role="banner">
+  <div class="border border-n-weak mr-4 p-2 rounded-full">
+    <svg width="24" height="24"><use xlink:href="#icon-paint-brush-line" /></svg>
+  </div>
+  <div class="flex flex-col h-14 justify-center">
+    <h1 class="text-base font-medium leading-6 text-n-slate-12" id="page-title">
+      <%= content_for(:title) %>
+    </h1>
+    <p class="text-sm font-normal leading-5 text-slate-500 m-0">Customize the name, logos and URLs used across this installation.</p>
+  </div>
+</header>
+
+<section class="main-content__body px-8 py-6">
+  <% if flash[:notice].present? %>
+    <div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded mb-6">
+      <%= flash[:notice] %>
+    </div>
+  <% end %>
+  <% if flash[:alert].present? %>
+    <div class="bg-red-100 border border-red-400 text-red-800 px-4 py-3 rounded mb-6">
+      <%= flash[:alert] %>
+    </div>
+  <% end %>
+
+  <%= form_with url: super_admin_branding_path, method: :patch, local: true do |form| %>
+
+    <!-- Identity -->
+    <div class="mb-8 p-6 border border-n-weak rounded-lg shadow-sm">
+      <h2 class="text-base font-medium text-n-slate-12 mb-1">Brand Identity</h2>
+      <p class="text-sm text-slate-500 mb-6">The name shown in the dashboard, page titles, emails and widget.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_INSTALLATION_NAME">Installation Name</label>
+          <%= form.text_field "branding[INSTALLATION_NAME]", value: @branding['INSTALLATION_NAME'], placeholder: 'Adaki', class: 'w-full border border-slate-200 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-blue-200' %>
+          <p class="text-xs text-slate-400 mt-1">Used in the dashboard sidebar, browser tab titles and update banners.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_BRAND_NAME">Brand Name</label>
+          <%= form.text_field "branding[BRAND_NAME]", value: @branding['BRAND_NAME'], placeholder: 'Adaki', class: 'w-full border border-slate-200 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-blue-200' %>
+          <p class="text-xs text-slate-400 mt-1">Used in outbound emails and the chat widget "Powered by" footer.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logos -->
+    <div class="mb-8 p-6 border border-n-weak rounded-lg shadow-sm">
+      <h2 class="text-base font-medium text-n-slate-12 mb-1">Logos</h2>
+      <p class="text-sm text-slate-500 mb-6">Provide URLs to your logo assets. Use SVG or PNG. Drop files into <code>public/brand-assets/</code> or any reachable URL.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_LOGO">Logo (Light)</label>
+          <% if @branding['LOGO'].present? %>
+            <div class="mb-2 p-3 bg-slate-50 border border-slate-200 rounded flex items-center justify-center h-16">
+              <img src="<%= @branding['LOGO'] %>" alt="Logo preview" class="max-h-12 max-w-full" />
+            </div>
+          <% end %>
+          <%= form.text_field "branding[LOGO]", value: @branding['LOGO'], placeholder: '/brand-assets/logo.svg', class: 'w-full border border-slate-200 rounded-md p-2 text-sm' %>
+          <p class="text-xs text-slate-400 mt-1">Shown on dashboard and login page (light mode).</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_LOGO_DARK">Logo (Dark)</label>
+          <% if @branding['LOGO_DARK'].present? %>
+            <div class="mb-2 p-3 bg-slate-800 border border-slate-700 rounded flex items-center justify-center h-16">
+              <img src="<%= @branding['LOGO_DARK'] %>" alt="Logo dark preview" class="max-h-12 max-w-full" />
+            </div>
+          <% end %>
+          <%= form.text_field "branding[LOGO_DARK]", value: @branding['LOGO_DARK'], placeholder: '/brand-assets/logo_dark.svg', class: 'w-full border border-slate-200 rounded-md p-2 text-sm' %>
+          <p class="text-xs text-slate-400 mt-1">Shown when dashboard is in dark mode.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_LOGO_THUMBNAIL">Favicon / Thumbnail</label>
+          <% if @branding['LOGO_THUMBNAIL'].present? %>
+            <div class="mb-2 p-3 bg-slate-50 border border-slate-200 rounded flex items-center justify-center h-16">
+              <img src="<%= @branding['LOGO_THUMBNAIL'] %>" alt="Favicon preview" class="max-h-12 max-w-12" />
+            </div>
+          <% end %>
+          <%= form.text_field "branding[LOGO_THUMBNAIL]", value: @branding['LOGO_THUMBNAIL'], placeholder: '/brand-assets/logo_thumbnail.svg', class: 'w-full border border-slate-200 rounded-md p-2 text-sm' %>
+          <p class="text-xs text-slate-400 mt-1">Square 512×512 used as favicon and PWA icon.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- URLs -->
+    <div class="mb-8 p-6 border border-n-weak rounded-lg shadow-sm">
+      <h2 class="text-base font-medium text-n-slate-12 mb-1">Brand URLs</h2>
+      <p class="text-sm text-slate-500 mb-6">Links shown to end users in emails, widget footer and signup pages. Leave empty to hide.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_BRAND_URL">Brand URL</label>
+          <%= form.url_field "branding[BRAND_URL]", value: @branding['BRAND_URL'], placeholder: 'https://your-brand.com', class: 'w-full border border-slate-200 rounded-md p-2 text-sm' %>
+          <p class="text-xs text-slate-400 mt-1">"Powered by" link in outbound emails.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_WIDGET_BRAND_URL">Widget Brand URL</label>
+          <%= form.url_field "branding[WIDGET_BRAND_URL]", value: @branding['WIDGET_BRAND_URL'], placeholder: 'https://your-brand.com', class: 'w-full border border-slate-200 rounded-md p-2 text-sm' %>
+          <p class="text-xs text-slate-400 mt-1">"Powered by" link in the chat widget.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_TERMS_URL">Terms of Service URL</label>
+          <%= form.url_field "branding[TERMS_URL]", value: @branding['TERMS_URL'], placeholder: 'https://your-brand.com/terms', class: 'w-full border border-slate-200 rounded-md p-2 text-sm' %>
+          <p class="text-xs text-slate-400 mt-1">Linked from signup page.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_PRIVACY_URL">Privacy Policy URL</label>
+          <%= form.url_field "branding[PRIVACY_URL]", value: @branding['PRIVACY_URL'], placeholder: 'https://your-brand.com/privacy', class: 'w-full border border-slate-200 rounded-md p-2 text-sm' %>
+          <p class="text-xs text-slate-400 mt-1">Linked from app footer and signup.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Display -->
+    <div class="mb-8 p-6 border border-n-weak rounded-lg shadow-sm">
+      <h2 class="text-base font-medium text-n-slate-12 mb-1">Display Options</h2>
+      <p class="text-sm text-slate-500 mb-6">Toggle default metadata and update notifications.</p>
+
+      <div class="flex items-center">
+        <%= form.select "branding[DISPLAY_MANIFEST]",
+            [['Show default metadata (favicons, upgrade banners)', 'true'], ['Hide default metadata', 'false']],
+            { selected: ActiveModel::Type::Boolean.new.cast(@branding['DISPLAY_MANIFEST']).to_s },
+            class: 'border border-slate-200 rounded-md p-2 text-sm w-full md:w-1/2' %>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3">
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md focus:outline-none focus:ring focus:ring-blue-300">
+        Save Branding
+      </button>
+    </div>
+
+    <p class="text-xs text-slate-400 mt-6">Note: changes are applied immediately for new sessions. Reload your dashboard tab to see them.</p>
+  <% end %>
+</section>

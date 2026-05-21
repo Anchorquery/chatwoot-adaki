@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Conversation Filter Helpers
  * ---------------------------
  * This file contains helper functions for filtering conversations in the frontend.

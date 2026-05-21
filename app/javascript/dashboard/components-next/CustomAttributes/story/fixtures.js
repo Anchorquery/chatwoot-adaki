@@ -1,4 +1,4 @@
-export default [
+﻿export default [
   {
     attributeKey: 'textContact',
     attributeDisplayName: 'Text Input',

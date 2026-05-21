@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 import LoadingState from 'dashboard/components/widgets/LoadingState.vue';
 
 export default {

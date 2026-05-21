@@ -1,4 +1,4 @@
-import types from '../mutation-types';
+﻿import types from '../mutation-types';
 import ConversationApi from '../../api/inbox/conversation';
 import { debounce } from '@chatwoot/utils';
 

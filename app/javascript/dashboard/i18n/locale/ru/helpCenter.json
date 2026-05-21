@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "Центр поддержки",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "Создать",
       "NAME": {
         "LABEL": "Имя",
-        "PLACEHOLDER": "Руководство пользователя | Chatwoot",
+        "PLACEHOLDER": "Руководство пользователя | Adaki",
         "MESSAGE": "Выберите имя для вашего портала.",
         "ERROR": "Необходимо указать имя"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "Настройка DNS",
-            "DESCRIPTION": "Войдите в учетную запись с вашим DNS провайдером и добавьте запись CNAME для поддомена, указывающего на chatwoot.help",
+            "DESCRIPTION": "Войдите в учетную запись с вашим DNS провайдером и добавьте запись CNAME для поддомена, указывающего на Adaki.help",
             "COPY": "CNAME успешно скопирован",
             "SEND_INSTRUCTIONS": {
               "HEADER": "Отправить инструкции",

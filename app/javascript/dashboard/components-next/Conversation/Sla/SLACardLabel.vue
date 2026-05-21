@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { evaluateSLAStatus } from '@chatwoot/utils';
 

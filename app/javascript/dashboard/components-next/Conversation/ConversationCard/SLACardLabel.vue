@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { evaluateSLAStatus } from '@chatwoot/utils';
 
@@ -20,7 +20,7 @@ const slaStatus = ref({
 });
 
 // TODO: Remove this once we update the helper from utils
-// https://github.com/chatwoot/utils/blob/main/src/sla.ts#L73
+// https://github.com/Adaki/utils/blob/main/src/sla.ts#L73
 const convertObjectCamelCaseToSnakeCase = object => {
   return Object.keys(object).reduce((acc, key) => {
     acc[key.replace(/([A-Z])/g, '_$1').toLowerCase()] = object[key];

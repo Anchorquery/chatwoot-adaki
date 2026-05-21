@@ -1,4 +1,4 @@
-import camelcaseKeys from 'camelcase-keys';
+﻿import camelcaseKeys from 'camelcase-keys';
 
 export default camelcaseKeys(
   [
@@ -139,8 +139,8 @@ export default camelcaseKeys(
           file_type: 'image',
           account_id: 1,
           extension: null,
-          data_url: 'https://chatwoot.dev/definitely-broken-image',
-          thumb_url: 'https://chatwoot.dev/definitely-broken-image',
+          data_url: 'https://Adaki.dev/definitely-broken-image',
+          thumb_url: 'https://Adaki.dev/definitely-broken-image',
           file_size: 376973,
           width: 1179,
           height: 2096,

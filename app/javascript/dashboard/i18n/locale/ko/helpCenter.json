@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "도움말 센터",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "만들기",
       "NAME": {
         "LABEL": "이름",
-        "PLACEHOLDER": "사용자 가이드 | Chatwoot",
+        "PLACEHOLDER": "사용자 가이드 | Adaki",
         "MESSAGE": "포털의 이름을 선택하십시오.",
         "ERROR": "이름이 필요합니다"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "DNS 설정",
-            "DESCRIPTION": "DNS 공급자 계정에 로그인하여 서브도메인에 대한 CNAME 레코드를 chatwoot.help로 가리키도록 추가하십시오",
+            "DESCRIPTION": "DNS 공급자 계정에 로그인하여 서브도메인에 대한 CNAME 레코드를 Adaki.help로 가리키도록 추가하십시오",
             "COPY": "CNAME이 성공적으로 복사되었습니다",
             "SEND_INSTRUCTIONS": {
               "HEADER": "안내 전송",

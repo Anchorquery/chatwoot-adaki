@@ -1,4 +1,4 @@
-export const filterTypes = [
+﻿export const filterTypes = [
   {
     attributeKey: 'status',
     value: 'status',

@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDetectKeyboardLayout } from 'dashboard/composables/useDetectKeyboardLayout';
@@ -23,7 +23,7 @@ const title = computed(
 // This is used to display the shift key in the modal
 // If the current layout is QWERTZ and the keySet contains a key that needs a shift key
 // If layout is QWERTZ then we add the Shift+keysToModify to fix an known issue
-// https://github.com/chatwoot/chatwoot/issues/9492
+// https://github.com/Adaki/Adaki/issues/9492
 const needsShiftKey = computed(
   () => keySet =>
     currentLayout.value === LAYOUT_QWERTZ &&

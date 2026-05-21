@@ -1,4 +1,4 @@
-<script>
+﻿<script>
 import { mapActions, mapGetters } from 'vuex';
 import { getContrastingTextColor } from '@chatwoot/utils';
 import CustomButton from 'shared/components/Button.vue';

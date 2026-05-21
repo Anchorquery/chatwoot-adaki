@@ -1,4 +1,4 @@
-{
+﻿{
   "SURVEY": {
     "DESCRIPTION": "Dear customer 👋, please take a few moments to share feedback about the conversation you had with {inboxName}.",
     "RATING": {
@@ -15,5 +15,5 @@
       "ERROR_MESSAGE": "Masalah untuk hubungi Woot Server, Sila cuba sebentar lagi"
     }
   },
-  "POWERED_BY": "Powered by Chatwoot"
+  "POWERED_BY": "Powered by Adaki"
 }

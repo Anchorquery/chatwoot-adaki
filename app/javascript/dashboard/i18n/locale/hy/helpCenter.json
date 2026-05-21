@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "Օգնության կենտրոն",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "Ստեղծել",
       "NAME": {
         "LABEL": "Անուն",
-        "PLACEHOLDER": "Օգտագործողի ուղեցույց | Chatwoot",
+        "PLACEHOLDER": "Օգտագործողի ուղեցույց | Adaki",
         "MESSAGE": "Ընտրեք անուն ձեր պորտալի համար։",
         "ERROR": "Անունը պարտադիր է"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "DNS կարգավորումներ",
-            "DESCRIPTION": "Մուտք գործեք ձեր DNS մատակարարի հաշիվ և ավելացրեք CNAME գրառում ենթադոմենի համար, որը ցույց է տալիս chatwoot.help",
+            "DESCRIPTION": "Մուտք գործեք ձեր DNS մատակարարի հաշիվ և ավելացրեք CNAME գրառում ենթադոմենի համար, որը ցույց է տալիս Adaki.help",
             "COPY": "CNAME-ը հաջողությամբ պատճենվեց",
             "SEND_INSTRUCTIONS": {
               "HEADER": "Ուղարկել հրահանգներ",

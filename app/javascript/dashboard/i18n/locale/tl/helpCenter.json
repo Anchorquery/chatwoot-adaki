@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "Sentro ng Tulong",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "Gumawa",
       "NAME": {
         "LABEL": "Pangalan",
-        "PLACEHOLDER": "Gabay ng Gumagamit | Chatwoot",
+        "PLACEHOLDER": "Gabay ng Gumagamit | Adaki",
         "MESSAGE": "Pumili ng pangalan para sa iyong portal.",
         "ERROR": "Kinakailangan ang pangalan"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "DNS na pagsasaayos",
-            "DESCRIPTION": "Mag-login sa iyong account sa DNS provider, at magdagdag ng CNAME record para sa subdomain na ituturo sa chatwoot.help",
+            "DESCRIPTION": "Mag-login sa iyong account sa DNS provider, at magdagdag ng CNAME record para sa subdomain na ituturo sa Adaki.help",
             "COPY": "Matagumpay na nakopya ang CNAME",
             "SEND_INSTRUCTIONS": {
               "HEADER": "Ipadala ang mga tagubilin",

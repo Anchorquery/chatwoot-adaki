@@ -1,4 +1,4 @@
-import { WOOT_PREFIX } from './constants';
+﻿import { WOOT_PREFIX } from './constants';
 
 export const isEmptyObject = obj => {
   if (!obj) return true;

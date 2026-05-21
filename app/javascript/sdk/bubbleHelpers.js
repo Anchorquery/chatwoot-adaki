@@ -1,4 +1,4 @@
-import { addClasses, removeClasses, toggleClass } from './DOMHelpers';
+﻿import { addClasses, removeClasses, toggleClass } from './DOMHelpers';
 import { IFrameHelper } from './IFrameHelper';
 import { isExpandedView } from './settingsHelper';
 import {

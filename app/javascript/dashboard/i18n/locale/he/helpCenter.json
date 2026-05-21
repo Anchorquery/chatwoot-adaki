@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "מרכז עזרה",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "צור",
       "NAME": {
         "LABEL": "שם",
-        "PLACEHOLDER": "מדריך למשתמש | Chatwoot",
+        "PLACEHOLDER": "מדריך למשתמש | Adaki",
         "MESSAGE": "בחר שם לפורטל שלך.",
         "ERROR": "שם שדה חובה"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "הגדרת DNS",
-            "DESCRIPTION": "היכנס לחשבון שלך אצל ספק ה-DNS שלך, והוסף רשומת CNAME עבור תת-הדומיין המצביע על chatwoot.help",
+            "DESCRIPTION": "היכנס לחשבון שלך אצל ספק ה-DNS שלך, והוסף רשומת CNAME עבור תת-הדומיין המצביע על Adaki.help",
             "COPY": "CNAME הועתק בהצלחה",
             "SEND_INSTRUCTIONS": {
               "HEADER": "שלח הוראות",

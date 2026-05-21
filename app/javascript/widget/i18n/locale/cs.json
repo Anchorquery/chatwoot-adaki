@@ -1,4 +1,4 @@
-{
+﻿{
   "COMPONENTS": {
     "FILE_BUBBLE": {
       "DOWNLOAD": "Stáhnout",
@@ -57,7 +57,7 @@
   "BUBBLE": {
     "LABEL": "Napiště nám"
   },
-  "POWERED_BY": "Powered by Chatwoot",
+  "POWERED_BY": "Powered by Adaki",
   "EMAIL_PLACEHOLDER": "Prosím, zadejte svůj e-mail",
   "CHAT_PLACEHOLDER": "Zde začněte psát",
   "TODAY": "Dnes",

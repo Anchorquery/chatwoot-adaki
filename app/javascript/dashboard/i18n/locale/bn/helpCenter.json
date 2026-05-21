@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "সহায়তা কেন্দ্র",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "তৈরি করুন",
       "NAME": {
         "LABEL": "নাম",
-        "PLACEHOLDER": "ব্যবহারকারী গাইড | Chatwoot",
+        "PLACEHOLDER": "ব্যবহারকারী গাইড | Adaki",
         "MESSAGE": "আপনার পোর্টালের জন্য একটি নাম নির্বাচন করুন.",
         "ERROR": "নাম আবশ্যক"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "DNS কনফিগারেশন",
-            "DESCRIPTION": "আপনার DNS প্রদানকারীর অ্যাকাউন্টে লগইন করুন এবং সাবডোমেইনের জন্য একটি CNAME রেকর্ড যোগ করুন যা chatwoot.help এর দিকে নির্দেশ করে",
+            "DESCRIPTION": "আপনার DNS প্রদানকারীর অ্যাকাউন্টে লগইন করুন এবং সাবডোমেইনের জন্য একটি CNAME রেকর্ড যোগ করুন যা Adaki.help এর দিকে নির্দেশ করে",
             "COPY": "সফলভাবে CNAME কপি হয়েছে",
             "SEND_INSTRUCTIONS": {
               "HEADER": "নির্দেশনা পাঠান",

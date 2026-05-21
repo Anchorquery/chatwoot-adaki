@@ -1,10 +1,10 @@
-export const contacts = [
+﻿export const contacts = [
   {
     additionalAttributes: {
       city: 'kerala',
       country: 'India',
       description: 'Curious about the web. ',
-      companyName: 'Chatwoot',
+      companyName: 'Adaki',
       countryCode: '',
       socialProfiles: {
         github: 'abozler',

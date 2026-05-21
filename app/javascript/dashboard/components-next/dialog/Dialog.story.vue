@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref } from 'vue';
 import Dialog from './Dialog.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -52,7 +52,7 @@ const onConfirm = dialog => {};
           <Input
             id="portal-name"
             type="text"
-            placeholder="User Guide | Chatwoot"
+            placeholder="User Guide | Adaki"
             label="Name"
             message="This will be the name of your public facing portal"
           />

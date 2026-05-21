@@ -1,4 +1,4 @@
-import { isApple } from './platform';
+﻿import { isApple } from './platform';
 
 export const isEnter = e => {
   return e.key === 'Enter';
@@ -32,7 +32,7 @@ export const hasPressedEnterAndNotCmdOrShift = e => {
 export const hasPressedCommandAndEnter = e => hasPressedMod(e) && isEnter(e);
 
 // If layout is QWERTZ then we add the Shift+keysToModify to fix an known issue
-// https://github.com/chatwoot/chatwoot/issues/9492
+// https://github.com/Adaki/Adaki/issues/9492
 export const keysToModifyInQWERTZ = new Set(['Alt+KeyP', 'Alt+KeyL']);
 
 export const LAYOUT_QWERTY = 'QWERTY';

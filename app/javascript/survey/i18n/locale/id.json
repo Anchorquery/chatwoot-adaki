@@ -1,4 +1,4 @@
-{
+﻿{
   "SURVEY": {
     "DESCRIPTION": "Pelanggan yang terhormat 👋, harap luangkan waktu sejenak untuk memberikan umpan balik tentang percakapan yang Anda lakukan {inboxName}.",
     "RATING": {
@@ -15,5 +15,5 @@
       "ERROR_MESSAGE": "Tidak dapat terhubung ke Server Woot, Silahkan coba lagi nanti"
     }
   },
-  "POWERED_BY": "Powered by Chatwoot"
+  "POWERED_BY": "Powered by Adaki"
 }

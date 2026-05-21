@@ -1,4 +1,4 @@
-import { createApp } from 'vue';
+﻿import { createApp } from 'vue';
 import VueDOMPurifyHTML from 'vue-dompurify-html';
 import { domPurifyConfig } from '../shared/helpers/HTMLSanitizer';
 import { directive as onClickaway } from 'vue3-click-away';

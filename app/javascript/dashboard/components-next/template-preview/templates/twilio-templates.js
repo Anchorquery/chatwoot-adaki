@@ -1,4 +1,4 @@
-export const twilioTemplates = [
+﻿export const twilioTemplates = [
   {
     body: 'Introducing our latest release  the {{1}}! Available now for just {{2}}. Be among the first to own this style. Limited stock available!',
     types: {
@@ -129,18 +129,18 @@ export const twilioTemplates = [
     template_type: 'quick_reply',
   },
   {
-    body: 'What type of Chatwoot installation are you using? Select "Chatwoot Cloud" if you are using app.chatwoot.com, otherwise select "Self-hosted Chatwoot".',
+    body: 'What type of Adaki installation are you using? Select "Adaki Cloud" if you are using app.chatwoot.com, otherwise select "Self-hosted Adaki".',
     types: {
       'twilio/quick-reply': {
-        body: 'What type of Chatwoot installation are you using? Select "Chatwoot Cloud" if you are using app.chatwoot.com, otherwise select "Self-hosted Chatwoot".',
+        body: 'What type of Adaki installation are you using? Select "Adaki Cloud" if you are using app.chatwoot.com, otherwise select "Self-hosted Adaki".',
         actions: [
           {
-            id: 'Chatwoot Cloud_payload',
-            title: 'Chatwoot Cloud',
+            id: 'Adaki Cloud_payload',
+            title: 'Adaki Cloud',
           },
           {
             id: 'Self-hosted Chatwoot_payload',
-            title: 'Self-hosted Chatwoot',
+            title: 'Self-hosted Adaki',
           },
         ],
       },

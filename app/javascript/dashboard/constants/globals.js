@@ -1,4 +1,4 @@
-export default {
+﻿export default {
   GRAVATAR_URL: 'https://www.gravatar.com/avatar/',
   ASSIGNEE_TYPE: {
     ME: 'me',

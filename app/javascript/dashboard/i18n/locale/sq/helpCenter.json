@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "Qendra e Ndihmës",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "Krijo",
       "NAME": {
         "LABEL": "Emri",
-        "PLACEHOLDER": "Udhëzuesi i Përdoruesit | Chatwoot",
+        "PLACEHOLDER": "Udhëzuesi i Përdoruesit | Adaki",
         "MESSAGE": "Zgjidh një emër për portalin tënd.",
         "ERROR": "Emri është i nevojshëm"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "Konfigurimi i DNS",
-            "DESCRIPTION": "Log in to the account you have with your DNS provider, and add a CNAME record for subdomain pointing to chatwoot.help",
+            "DESCRIPTION": "Log in to the account you have with your DNS provider, and add a CNAME record for subdomain pointing to Adaki.help",
             "COPY": "CNAME u kopjua me sukses",
             "SEND_INSTRUCTIONS": {
               "HEADER": "Dërgo udhëzimet",

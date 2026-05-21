@@ -1,4 +1,4 @@
-{
+﻿{
   "COMPONENTS": {
     "FILE_BUBBLE": {
       "DOWNLOAD": "ดาวโหลด",
@@ -57,7 +57,7 @@
   "BUBBLE": {
     "LABEL": "คุยกับเรา"
   },
-  "POWERED_BY": "Powered by Chatwoot",
+  "POWERED_BY": "Powered by Adaki",
   "EMAIL_PLACEHOLDER": "กรุณากรอกอีเมล์ของคุณ",
   "CHAT_PLACEHOLDER": "พิมพ์ข้อความ",
   "TODAY": "วันนี้",

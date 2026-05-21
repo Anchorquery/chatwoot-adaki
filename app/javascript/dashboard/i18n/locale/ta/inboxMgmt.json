@@ -1,4 +1,4 @@
-{
+﻿{
   "INBOX_MGMT": {
     "HEADER": "இன்பாக்ஸ்கள்",
     "DESCRIPTION": "ஒரு சேனல் என்பது உங்கள் வாடிக்கையாளர் தொடர்பு கொள்ள தேர்ந்தெடுக்கும் தொடர்பு முறை. ஒரு இன்பாக்ஸ் என்பது குறிப்பிட்ட சேனலுக்கான தொடர்புகளை நீங்கள் நிர்வகிக்கும் இடம். இது மின்னஞ்சல், நேரடி உரையாடல் மற்றும் சமூக ஊடகம் போன்ற பல்வேறு மூலங்களிலிருந்து வரும் தொடர்புகளை உள்ளடக்கலாம்.",
@@ -449,7 +449,7 @@
       },
       "AUTH": {
         "TITLE": "ஒரு சேனல் தேர்ந்தெடுக்கவும்",
-        "DESC": "Chatwoot supports live-chat widgets, Facebook Messenger, Twitter profiles, WhatsApp, Emails, etc., as channels. If you want to build a custom channel, you can create it using the API channel. To get started, choose one of the channels below.",
+        "DESC": "Adaki supports live-chat widgets, Facebook Messenger, Twitter profiles, WhatsApp, Emails, etc., as channels. If you want to build a custom channel, you can create it using the API channel. To get started, choose one of the channels below.",
         "TITLE_NEXT": "Complete the setup",
         "TITLE_FINISH": "Voilà!",
         "CHANNEL": {

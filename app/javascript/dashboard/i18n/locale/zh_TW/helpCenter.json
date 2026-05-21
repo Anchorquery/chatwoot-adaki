@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "幫助中心",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "建立",
       "NAME": {
         "LABEL": "名稱",
-        "PLACEHOLDER": "使用者指南 | Chatwoot",
+        "PLACEHOLDER": "使用者指南 | Adaki",
         "MESSAGE": "為您的入口選擇一個名稱。",
         "ERROR": "名稱為必填"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "DNS 設定",
-            "DESCRIPTION": "登入您的 DNS 供應商帳戶，新增一筆指向 chatwoot.help 的子網域 CNAME 記錄",
+            "DESCRIPTION": "登入您的 DNS 供應商帳戶，新增一筆指向 Adaki.help 的子網域 CNAME 記錄",
             "COPY": "已成功複製 CNAME",
             "SEND_INSTRUCTIONS": {
               "HEADER": "傳送設定說明",

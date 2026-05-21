@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import OverviewReportFilters from './OverviewReportFilters.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { formatTime } from '@chatwoot/utils';

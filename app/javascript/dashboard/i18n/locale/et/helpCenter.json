@@ -1,4 +1,4 @@
-{
+﻿{
   "HELP_CENTER": {
     "TITLE": "Abi keskus",
     "NEW_PAGE": {
@@ -763,7 +763,7 @@
       "CONFIRM_BUTTON_LABEL": "Loo",
       "NAME": {
         "LABEL": "Nimi",
-        "PLACEHOLDER": "User Guide | Chatwoot",
+        "PLACEHOLDER": "User Guide | Adaki",
         "MESSAGE": "Vali oma portaalile nimi.",
         "ERROR": "Nimi on kohustuslik"
       },
@@ -843,7 +843,7 @@
           },
           "DNS_CONFIGURATION_DIALOG": {
             "HEADER": "DNS configuration",
-            "DESCRIPTION": "Logi sisse oma DNS-teenusepakkuja kontole ja lisa alamdomeeni jaoks CNAME kirje, mis osutab chatwoot.help",
+            "DESCRIPTION": "Logi sisse oma DNS-teenusepakkuja kontole ja lisa alamdomeeni jaoks CNAME kirje, mis osutab Adaki.help",
             "COPY": "CNAME edukalt kopeeritud",
             "SEND_INSTRUCTIONS": {
               "HEADER": "Saada juhised",
