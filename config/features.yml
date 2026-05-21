@@ -135,8 +135,8 @@
   enabled: false
 - name: captain_integration
   display_name: Captain
-  enabled: false
-  premium: true
+  enabled: true
+  premium: false
 - name: custom_roles
   display_name: Custom Roles
   enabled: false
@@ -176,8 +176,8 @@
   enabled: false
 - name: captain_integration_v2
   display_name: Captain V2
-  enabled: false
-  premium: true
+  enabled: true
+  premium: false
 - name: whatsapp_embedded_signup
   display_name: WhatsApp Embedded Signup
   enabled: false
@@ -194,8 +194,8 @@
   enabled: true
 - name: captain_document_auto_sync
   display_name: Captain Document Auto Sync
-  enabled: false
-  premium: true
+  enabled: true
+  premium: false
 - name: advanced_search
   display_name: Advanced Search
   enabled: false
