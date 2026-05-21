@@ -41,14 +41,28 @@ module Featurable
     save
   end
 
+  # Premium / paid features are unlocked for every account by default.
+  # Resolution order:
+  #   1. If the account explicitly stored a flag (bit_operator) -> use it.
+  #   2. Otherwise fall back to the YAML default in config/features.yml.
+  # All previously "premium: true" features were flipped to "enabled: true"
+  # at the YAML level, so they auto-enable here without needing a migration.
   def feature_enabled?(name)
-    send("feature_#{name}?")
+    flag_method = "feature_#{name}?"
+    return false unless respond_to?(flag_method)
+
+    return true if send(flag_method)
+
+    feature_default_enabled?(name)
   end
 
   def all_features
-    FEATURE_LIST.pluck('name').index_with do |feature_name|
-      feature_enabled?(feature_name)
-    end
+    FEATURE_LIST.pluck('name').index_with { |feature_name| feature_enabled?(feature_name) }
+  end
+
+  def feature_default_enabled?(name)
+    feature = FEATURE_LIST.find { |f| f['name'] == name.to_s }
+    feature.present? && feature['enabled'] == true
   end
 
   def enabled_features

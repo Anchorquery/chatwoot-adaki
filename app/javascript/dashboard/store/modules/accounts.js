@@ -48,8 +48,12 @@ export const getters = {
     return diffDays <= TRIAL_PERIOD_DAYS;
   },
   isFeatureEnabledonAccount: $state => (id, featureName) => {
+    // All premium gating disabled: every feature available by default.
+    // Original logic preserved as fallback if the feature is explicitly disabled
+    // via the account features map (set false).
     const { features = {} } = findRecordById($state, id);
-    return features[featureName] || false;
+    if (features[featureName] === false) return false;
+    return true;
   },
 };
 
