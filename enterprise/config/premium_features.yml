@@ -1,7 +1,3 @@
 # List of the premium features in EE edition
-- disable_branding
-- audit_logs
-- sla
-- custom_roles
-- csat_review_notes
-- conversation_required_attributes
+# Emptied: all premium features unlocked for self-hosted/internal use
+[]
