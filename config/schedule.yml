@@ -74,3 +74,15 @@ remove_orphan_conversations_job:
   cron: '0 */12 * * *'
   class: 'Internal::RemoveOrphanConversationsJob'
   queue: housekeeping
+
+# Adaki: WhatsApp tier monitor every 15 min
+adaki_whatsapp_tier_monitor_job:
+  cron: '*/15 * * * *'
+  class: 'Adaki::WhatsappTierMonitorJob'
+  queue: low
+
+# Adaki: media integrity sweep daily 0300 UTC
+adaki_media_integrity_sweep_job:
+  cron: '0 3 * * *'
+  class: 'Adaki::MediaIntegritySweepJob'
+  queue: low

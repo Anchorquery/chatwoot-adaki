@@ -124,7 +124,34 @@ Rails.application.routes.draw do
               resources :inbox_limits, only: [:create, :update, :destroy]
             end
           end
-          resources :campaigns, only: [:index, :create, :show, :update, :destroy]
+          resources :campaigns, only: [:index, :create, :show, :update, :destroy] do
+            scope module: :campaigns do
+              resources :approvals, only: [:index, :create] do
+                collection do
+                  post :approve
+                  post :reject
+                end
+              end
+            end
+          end
+
+          namespace :adaki do
+            resources :absences, only: [:index, :create, :show, :update, :destroy]
+            resources :whatsapp_channels, only: [:index] do
+              member do
+                post :refresh_tier
+                post :unlock_tier
+              end
+              collection do
+                get 'tier_snapshots/:channel_id', to: 'whatsapp_channels#snapshots'
+              end
+            end
+            resources :audit_log_entries, only: [:index] do
+              collection do
+                get :verify
+              end
+            end
+          end
           resources :dashboard_apps, only: [:index, :show, :create, :update, :destroy]
           namespace :channels do
             resource :twilio_channel, only: [:create]

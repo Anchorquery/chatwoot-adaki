@@ -29,6 +29,9 @@ master.key
 
 # Ignore env files
 .env
+.env.coolify
+.env.production
+.env.local
 
 public/uploads
 public/packs*
