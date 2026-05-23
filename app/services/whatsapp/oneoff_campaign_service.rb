@@ -109,3 +109,5 @@ class Whatsapp::OneoffCampaignService
     nil
   end
 end
+
+Whatsapp::OneoffCampaignService.prepend_mod_with('Whatsapp::OneoffCampaignService')
