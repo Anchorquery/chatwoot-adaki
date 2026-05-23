@@ -748,6 +748,30 @@ const menuItems = computed(() => {
           icon: 'i-lucide-credit-card',
           to: accountScopedRoute('billing_settings_index'),
         },
+        {
+          name: 'Adaki Absences',
+          label: 'Ausencias',
+          icon: 'i-lucide-user-minus',
+          to: accountScopedRoute('adaki_absences_list'),
+        },
+        {
+          name: 'Adaki Tier',
+          label: 'Tier WhatsApp',
+          icon: 'i-lucide-gauge',
+          to: accountScopedRoute('adaki_tier_list'),
+        },
+        {
+          name: 'Adaki Approvals',
+          label: 'Aprobaciones',
+          icon: 'i-lucide-check-circle',
+          to: accountScopedRoute('adaki_approvals_list'),
+        },
+        {
+          name: 'Adaki Audit',
+          label: 'Audit log',
+          icon: 'i-lucide-file-lock',
+          to: accountScopedRoute('adaki_audit_list'),
+        },
       ],
     },
   ];

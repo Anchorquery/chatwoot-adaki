@@ -2,11 +2,11 @@ class Api::V1::Accounts::Adaki::AuditLogEntriesController < Api::V1::Accounts::B
   before_action :check_admin_authorization?
 
   def index
-    entries = Adaki::AuditLogEntry.for_account(Current.account).order(recorded_at: :desc)
+    entries = Adaki::AuditLogEntry.for_account(Current.account).includes(:user).order(recorded_at: :desc)
     entries = entries.where(action: params[:action_filter]) if params[:action_filter].present?
     entries = entries.where(auditable_type: params[:auditable_type]) if params[:auditable_type].present?
     entries = entries.where(auditable_id: params[:auditable_id]) if params[:auditable_id].present?
-    render json: entries.limit(500)
+    render json: entries.limit(500).map { |e| serialize_entry(e) }
   end
 
   def verify
@@ -14,5 +14,22 @@ class Api::V1::Accounts::Adaki::AuditLogEntriesController < Api::V1::Accounts::B
     render json: { valid: true }
   rescue StandardError => e
     render json: { valid: false, error: e.message }, status: :unprocessable_entity
+  end
+
+  private
+
+  def serialize_entry(entry)
+    {
+      id: entry.id,
+      recorded_at: entry.recorded_at,
+      user_id: entry.user_id,
+      user_email: entry.user&.email,
+      action: entry.action,
+      auditable_type: entry.auditable_type,
+      auditable_id: entry.auditable_id,
+      payload: entry.payload,
+      hash_chain: entry.hash_chain,
+      previous_hash: entry.previous_hash
+    }
   end
 end

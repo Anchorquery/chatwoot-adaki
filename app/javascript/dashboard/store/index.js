@@ -62,6 +62,7 @@ import captainCustomTools from './captain/customTools';
 import adakiAbsences from './modules/adaki/absences';
 import adakiTier from './modules/adaki/tier';
 import adakiAudit from './modules/adaki/audit';
+import adakiApprovals from './modules/adaki/approvals';
 
 const plugins = [];
 
@@ -129,6 +130,7 @@ export default createStore({
     adakiAbsences,
     adakiTier,
     adakiAudit,
+    adakiApprovals,
   },
   plugins,
 });
