@@ -20,15 +20,23 @@ done
 
 echo "Database ready to accept connections."
 
-#install missing gems for local dev as we are using base image compiled for production
-bundle install
+# Install missing gems only in non-production (production image is pre-built).
+if [ "$RAILS_ENV" != "production" ]; then
+  bundle install
+  BUNDLE="bundle check"
+  until $BUNDLE
+  do
+    sleep 2;
+  done
+fi
 
-BUNDLE="bundle check"
-
-until $BUNDLE
-do
-  sleep 2;
-done
+# Run migrations + seed on every start. db:chatwoot_prepare is idempotent:
+# loads schema + seeds on first boot, migrates on subsequent boots.
+# Only the "rails" web container should do this. Sidekiq sets SKIP_DB_PREPARE=true.
+if [ "$SKIP_DB_PREPARE" != "true" ]; then
+  echo "Running db:chatwoot_prepare..."
+  bundle exec rails db:chatwoot_prepare
+fi
 
 # Execute the main process of the container
 exec "$@"

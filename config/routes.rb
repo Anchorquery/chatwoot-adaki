@@ -151,6 +151,10 @@ Rails.application.routes.draw do
                 get :verify
               end
             end
+            resource :captain_settings, only: [:show, :update], controller: 'captain_settings'
+            resource :gdpr, only: [], controller: 'gdpr' do
+              post :pseudonymize_contact
+            end
           end
           resources :dashboard_apps, only: [:index, :show, :create, :update, :destroy]
           namespace :channels do

@@ -25,7 +25,6 @@ export default {
     return {
       actionFilter: '',
       auditableTypeFilter: '',
-      verifying: false,
     };
   },
   computed: {
@@ -35,7 +34,14 @@ export default {
       uiFlags: 'adakiAudit/getUIFlags',
     }),
     headers() {
-      return ['Cuándo', 'Usuario', 'Acción', 'Objeto', 'Payload', 'Hash'];
+      return [
+        this.$t('ADAKI.AUDIT.TABLE.WHEN'),
+        this.$t('ADAKI.AUDIT.TABLE.USER'),
+        this.$t('ADAKI.AUDIT.TABLE.ACTION'),
+        this.$t('ADAKI.AUDIT.TABLE.OBJECT'),
+        this.$t('ADAKI.AUDIT.TABLE.PAYLOAD'),
+        this.$t('ADAKI.AUDIT.TABLE.HASH'),
+      ];
     },
     filtered() {
       return this.records.filter(r => {
@@ -61,30 +67,28 @@ export default {
       return h ? `${h.slice(0, 12)}…` : '';
     },
     async verify() {
-      this.verifying = true;
       const result = await this.$store.dispatch('adakiAudit/verify');
       if (result?.valid) {
-        useAlert('Cadena íntegra ✓');
+        useAlert(this.$t('ADAKI.AUDIT.VERIFY_OK'));
       } else {
-        useAlert(`Integridad rota: ${result?.error || 'desconocido'}`);
+        useAlert(`${this.$t('ADAKI.AUDIT.VERIFY_FAIL')}: ${result?.error || ''}`);
       }
-      this.verifying = false;
     },
   },
 };
 </script>
 
 <template>
-  <SettingsLayout :is-loading="uiFlags.isFetching" loading-message="Cargando audit log">
+  <SettingsLayout :is-loading="uiFlags.isFetching" :loading-message="$t('ADAKI.AUDIT.HEADER')">
     <template #header>
       <BaseSettingsHeader
-        title="Audit log institucional"
-        description="Registro append-only con hash chain SHA256. Inmutable por diseño (GDPR + admin pública)."
+        :title="$t('ADAKI.AUDIT.HEADER')"
+        :description="$t('ADAKI.AUDIT.DESCRIPTION')"
         :show-back-button="false"
       >
         <template #actions>
           <NextButton
-            :label="verifying ? 'Verificando…' : 'Verificar cadena'"
+            :label="uiFlags.isVerifying ? $t('ADAKI.AUDIT.VERIFYING') : $t('ADAKI.AUDIT.VERIFY')"
             sm
             :is-loading="uiFlags.isVerifying"
             @click="verify"
@@ -93,24 +97,28 @@ export default {
       </BaseSettingsHeader>
     </template>
     <template #body>
-      <div v-if="verifyResult" class="mb-4 p-3 rounded border" :class="verifyResult.valid ? 'border-n-teal-7 bg-n-teal-2' : 'border-n-ruby-7 bg-n-ruby-2'">
-        <strong>{{ verifyResult.valid ? '✓ Cadena íntegra' : '✗ Cadena rota' }}</strong>
+      <div
+        v-if="verifyResult"
+        class="mb-4 p-3 rounded border"
+        :class="verifyResult.valid ? 'border-n-teal-7 bg-n-teal-2' : 'border-n-ruby-7 bg-n-ruby-2'"
+      >
+        <strong>{{ verifyResult.valid ? $t('ADAKI.AUDIT.VERIFY_OK') : $t('ADAKI.AUDIT.VERIFY_FAIL') }}</strong>
         <div v-if="!verifyResult.valid" class="text-body-main mt-1">{{ verifyResult.error }}</div>
       </div>
 
       <div class="flex gap-3 mb-4">
-        <input v-model="actionFilter" placeholder="Filtrar por acción" class="form-input flex-1" />
+        <input
+          v-model="actionFilter"
+          :placeholder="$t('ADAKI.AUDIT.FILTER_ACTION')"
+          class="form-input flex-1"
+        />
         <select v-model="auditableTypeFilter" class="form-input">
-          <option value="">Todos los tipos</option>
+          <option value="">{{ $t('ADAKI.AUDIT.FILTER_TYPE_ALL') }}</option>
           <option v-for="t in auditableTypes" :key="t" :value="t">{{ t }}</option>
         </select>
       </div>
 
-      <BaseTable
-        :headers="headers"
-        :items="filtered"
-        no-data-message="Sin entradas de audit"
-      >
+      <BaseTable :headers="headers" :items="filtered" :no-data-message="$t('ADAKI.AUDIT.EMPTY')">
         <template #row="{ items }">
           <BaseTableRow v-for="e in items" :key="e.id" :item="e">
             <template #default>

@@ -86,3 +86,10 @@ adaki_media_integrity_sweep_job:
   cron: '0 3 * * *'
   class: 'Adaki::MediaIntegritySweepJob'
   queue: low
+
+# Adaki: audit chain verification weekly Sunday 0400 UTC
+# Logs failures via warn-level Rails logger. Manual review on alert.
+adaki_audit_chain_verify_job:
+  cron: '0 4 * * 0'
+  class: 'Adaki::AuditChainVerifyJob'
+  queue: low

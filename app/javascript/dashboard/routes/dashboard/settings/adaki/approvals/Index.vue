@@ -39,7 +39,13 @@ export default {
       return this.campaigns.filter(c => c.requires_approval && c.approval_status === 'pending');
     },
     headers() {
-      return ['Campaña', 'Inbox', 'Solicitante', 'Estado', 'Acciones'];
+      return [
+        this.$t('ADAKI.APPROVALS.TABLE.CAMPAIGN'),
+        this.$t('ADAKI.APPROVALS.TABLE.INBOX'),
+        this.$t('ADAKI.APPROVALS.TABLE.REQUESTER'),
+        this.$t('ADAKI.APPROVALS.TABLE.STATUS'),
+        this.$t('ADAKI.APPROVALS.TABLE.ACTIONS'),
+      ];
     },
   },
   mounted() {
@@ -62,10 +68,14 @@ export default {
           campaignId: this.selected.display_id || this.selected.id,
           note: this.note,
         });
-        useAlert(this.actionType === 'approve' ? 'Campaña aprobada' : 'Campaña rechazada');
+        useAlert(
+          this.actionType === 'approve'
+            ? this.$t('ADAKI.APPROVALS.ALERTS.APPROVED')
+            : this.$t('ADAKI.APPROVALS.ALERTS.REJECTED')
+        );
         await this.$store.dispatch('campaigns/get');
       } catch (e) {
-        useAlert(e.message || 'Error');
+        useAlert(e.message || this.$t('ADAKI.APPROVALS.ALERTS.ERROR'));
       } finally {
         this.showActionModal = false;
       }
@@ -78,17 +88,13 @@ export default {
   <SettingsLayout :is-loading="false" loading-message="">
     <template #header>
       <BaseSettingsHeader
-        title="Aprobaciones de campañas"
-        description="Doble validación de campañas. Aprobador debe ser distinto al solicitante."
+        :title="$t('ADAKI.APPROVALS.HEADER')"
+        :description="$t('ADAKI.APPROVALS.DESCRIPTION')"
         :show-back-button="false"
       />
     </template>
     <template #body>
-      <BaseTable
-        :headers="headers"
-        :items="pendingCampaigns"
-        no-data-message="Sin campañas pendientes de aprobación"
-      >
+      <BaseTable :headers="headers" :items="pendingCampaigns" :no-data-message="$t('ADAKI.APPROVALS.EMPTY')">
         <template #row="{ items }">
           <BaseTableRow v-for="c in items" :key="c.id" :item="c">
             <template #default>
@@ -100,8 +106,8 @@ export default {
               </BaseTableCell>
               <BaseTableCell align="end">
                 <div class="flex justify-end gap-1">
-                  <NextButton label="Aprobar" sm @click="open(c, 'approve')" />
-                  <NextButton label="Rechazar" sm ruby @click="open(c, 'reject')" />
+                  <NextButton :label="$t('ADAKI.APPROVALS.APPROVE')" sm @click="open(c, 'approve')" />
+                  <NextButton :label="$t('ADAKI.APPROVALS.REJECT')" sm ruby @click="open(c, 'reject')" />
                 </div>
               </BaseTableCell>
             </template>
@@ -112,17 +118,17 @@ export default {
       <woot-modal v-model:show="showActionModal" :on-close="() => (showActionModal = false)">
         <div class="p-6 w-[420px]">
           <h2 class="text-heading-2 mb-3">
-            {{ actionType === 'approve' ? 'Aprobar' : 'Rechazar' }} campaña
+            {{ actionType === 'approve' ? $t('ADAKI.APPROVALS.MODAL.TITLE_APPROVE') : $t('ADAKI.APPROVALS.MODAL.TITLE_REJECT') }}
           </h2>
           <p class="text-body-main mb-3">{{ selected?.title }}</p>
           <label class="flex flex-col gap-1 mb-3">
-            <span class="text-body-main">Nota (audit log)</span>
+            <span class="text-body-main">{{ $t('ADAKI.APPROVALS.MODAL.NOTE_LABEL') }}</span>
             <textarea v-model="note" rows="3" class="form-input" />
           </label>
           <div class="flex justify-end gap-2">
-            <NextButton label="Cancelar" slate sm @click="showActionModal = false" />
+            <NextButton :label="$t('ADAKI.APPROVALS.MODAL.CANCEL')" slate sm @click="showActionModal = false" />
             <NextButton
-              :label="actionType === 'approve' ? 'Aprobar' : 'Rechazar'"
+              :label="actionType === 'approve' ? $t('ADAKI.APPROVALS.APPROVE') : $t('ADAKI.APPROVALS.REJECT')"
               sm
               :ruby="actionType === 'reject'"
               :is-loading="uiFlags.isApproving || uiFlags.isRejecting"

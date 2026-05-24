@@ -38,7 +38,15 @@ export default {
       agents: 'agents/getAgents',
     }),
     headers() {
-      return ['Usuario', 'Cobertura', 'Inicio', 'Fin', 'Estado', 'Motivo', 'Acciones'];
+      return [
+        this.$t('ADAKI.ABSENCES.TABLE.USER'),
+        this.$t('ADAKI.ABSENCES.TABLE.COVERAGE'),
+        this.$t('ADAKI.ABSENCES.TABLE.START'),
+        this.$t('ADAKI.ABSENCES.TABLE.END'),
+        this.$t('ADAKI.ABSENCES.TABLE.STATUS'),
+        this.$t('ADAKI.ABSENCES.TABLE.REASON'),
+        this.$t('ADAKI.ABSENCES.TABLE.ACTIONS'),
+      ];
     },
   },
   mounted() {
@@ -75,8 +83,8 @@ export default {
     confirmDelete() {
       this.$store
         .dispatch('adakiAbsences/delete', this.selected.id)
-        .then(() => useAlert('Ausencia cancelada'))
-        .catch(e => useAlert(e.message || 'Error'))
+        .then(() => useAlert(this.$t('ADAKI.ABSENCES.ALERTS.CANCELLED')))
+        .catch(e => useAlert(e.message || this.$t('ADAKI.ABSENCES.ALERTS.ERROR')))
         .finally(() => {
           this.showDeletePopup = false;
           this.selected = null;
@@ -87,15 +95,15 @@ export default {
 </script>
 
 <template>
-  <SettingsLayout :is-loading="uiFlags.isFetching" loading-message="Cargando ausencias">
+  <SettingsLayout :is-loading="uiFlags.isFetching" :loading-message="$t('ADAKI.ABSENCES.LOADING')">
     <template #header>
       <BaseSettingsHeader
-        title="Ausencias y coberturas"
-        description="Gestiona periodos de ausencia y asignación automática de cobertura."
+        :title="$t('ADAKI.ABSENCES.HEADER')"
+        :description="$t('ADAKI.ABSENCES.DESCRIPTION')"
         :show-back-button="false"
       >
         <template #actions>
-          <NextButton label="Nueva ausencia" size="sm" @click="openAdd" />
+          <NextButton :label="$t('ADAKI.ABSENCES.ADD_ACTION')" size="sm" @click="openAdd" />
         </template>
       </BaseSettingsHeader>
     </template>
@@ -103,7 +111,7 @@ export default {
       <BaseTable
         :headers="headers"
         :items="records"
-        no-data-message="Sin ausencias registradas"
+        :no-data-message="$t('ADAKI.ABSENCES.EMPTY')"
       >
         <template #row="{ items }">
           <BaseTableRow v-for="a in items" :key="a.id" :item="a">
@@ -141,10 +149,10 @@ export default {
         v-model:show="showDeletePopup"
         :on-close="() => (showDeletePopup = false)"
         :on-confirm="confirmDelete"
-        title="Cancelar ausencia"
-        message="¿Cancelar esta ausencia?"
-        confirm-text="Sí, cancelar"
-        reject-text="No"
+        :title="$t('ADAKI.ABSENCES.DELETE.TITLE')"
+        :message="$t('ADAKI.ABSENCES.DELETE.MESSAGE')"
+        :confirm-text="$t('ADAKI.ABSENCES.DELETE.CONFIRM')"
+        :reject-text="$t('ADAKI.ABSENCES.DELETE.REJECT')"
       />
     </template>
   </SettingsLayout>

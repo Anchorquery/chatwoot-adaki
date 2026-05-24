@@ -1,0 +1,157 @@
+{
+  "ADAKI": {
+    "ABSENCES": {
+      "HEADER": "Absences and coverage",
+      "DESCRIPTION": "Manage absence periods and automatic coverage assignment.",
+      "ADD_ACTION": "New absence",
+      "LOADING": "Loading absences",
+      "EMPTY": "No absences registered",
+      "TABLE": {
+        "USER": "Agent",
+        "COVERAGE": "Coverage",
+        "START": "Start",
+        "END": "End",
+        "STATUS": "Status",
+        "REASON": "Reason",
+        "ACTIONS": "Actions"
+      },
+      "FORM": {
+        "TITLE_NEW": "New absence",
+        "TITLE_EDIT": "Edit absence",
+        "USER_LABEL": "Absent agent",
+        "USER_PLACEHOLDER": "Select agent",
+        "COVERAGE_LABEL": "Coverage (optional)",
+        "COVERAGE_NONE": "No coverage assigned",
+        "START_LABEL": "Start",
+        "END_LABEL": "End",
+        "STATUS_LABEL": "Status",
+        "REASON_LABEL": "Reason",
+        "REASON_PLACEHOLDER": "Vacation, sick leave, etc.",
+        "CANCEL": "Cancel",
+        "CREATE": "Create",
+        "SAVE": "Save"
+      },
+      "ALERTS": {
+        "CREATED": "Absence created",
+        "UPDATED": "Absence updated",
+        "CANCELLED": "Absence cancelled",
+        "ERROR": "Error saving absence"
+      },
+      "DELETE": {
+        "TITLE": "Cancel absence",
+        "MESSAGE": "Cancel this absence?",
+        "CONFIRM": "Yes, cancel",
+        "REJECT": "No"
+      }
+    },
+    "TIER": {
+      "HEADER": "WhatsApp tier and warming",
+      "DESCRIPTION": "Per-channel sending limits status reported by Meta. Auto-lock at 95% and RED quality.",
+      "LOADING": "Loading channels",
+      "EMPTY": "No WhatsApp Cloud channels configured",
+      "TABLE": {
+        "PHONE": "Number",
+        "PROVIDER": "Provider",
+        "TIER": "Tier",
+        "QUALITY": "Quality",
+        "DAILY_LIMIT": "Daily limit",
+        "LAST_READ": "Last read",
+        "STATE": "State",
+        "ACTIONS": "Actions"
+      },
+      "STATE_LOCKED": "LOCKED",
+      "STATE_OK": "OK",
+      "REFRESH": "Refresh",
+      "UNLOCK": "Unlock",
+      "UNLOCK_MODAL": {
+        "TITLE": "Unlock channel",
+        "CHANNEL": "Channel",
+        "REASON": "Reason for original lock",
+        "JUSTIFICATION_LABEL": "Justification (stored in audit log)",
+        "CANCEL": "Cancel",
+        "CONFIRM": "Unlock"
+      },
+      "ALERTS": {
+        "TIER_REFRESHED": "Tier refreshed",
+        "UNLOCKED": "Channel unlocked",
+        "ERROR": "Error"
+      }
+    },
+    "AUDIT": {
+      "HEADER": "Institutional audit log",
+      "DESCRIPTION": "Append-only record with SHA256 hash chain. Immutable by design (GDPR + public administration).",
+      "VERIFY": "Verify chain",
+      "VERIFYING": "Verifying…",
+      "VERIFY_OK": "Chain intact ✓",
+      "VERIFY_FAIL": "Integrity broken",
+      "FILTER_ACTION": "Filter by action",
+      "FILTER_TYPE_ALL": "All types",
+      "TABLE": {
+        "WHEN": "When",
+        "USER": "User",
+        "ACTION": "Action",
+        "OBJECT": "Object",
+        "PAYLOAD": "Payload",
+        "HASH": "Hash"
+      },
+      "EMPTY": "No audit entries"
+    },
+    "APPROVALS": {
+      "STATUS": {
+        "PENDING": "Pending approval",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "UNKNOWN": "Unknown"
+      },
+      "HEADER": "Campaign approvals",
+      "DESCRIPTION": "Double validation for campaigns. Approver must be different from requester.",
+      "EMPTY": "No campaigns pending approval",
+      "TABLE": {
+        "CAMPAIGN": "Campaign",
+        "INBOX": "Inbox",
+        "REQUESTER": "Requester",
+        "STATUS": "Status",
+        "ACTIONS": "Actions"
+      },
+      "APPROVE": "Approve",
+      "REJECT": "Reject",
+      "MODAL": {
+        "TITLE_APPROVE": "Approve campaign",
+        "TITLE_REJECT": "Reject campaign",
+        "NOTE_LABEL": "Note (audit log)",
+        "CANCEL": "Cancel"
+      },
+      "ALERTS": {
+        "APPROVED": "Campaign approved",
+        "REJECTED": "Campaign rejected",
+        "ERROR": "Error"
+      }
+    },
+    "CAPTAIN": {
+      "HEADER": "Captain limits and usage",
+      "DESCRIPTION": "Set monthly cap on Captain LLM invocations per municipality. Every call is recorded in the audit log.",
+      "LOADING": "Loading Captain settings",
+      "LIMIT_TITLE": "Monthly limit",
+      "LIMIT_HINT": "Leave empty for unlimited.",
+      "LIMIT_LABEL": "Max invocations per month",
+      "LIMIT_UNLIMITED": "Unlimited",
+      "SAVE": "Save",
+      "USAGE_TITLE": "Current period usage",
+      "USAGE_PERIOD": "Period",
+      "USAGE_REQUESTS": "Requests",
+      "USAGE_INPUT_TOKENS": "Input tokens",
+      "USAGE_OUTPUT_TOKENS": "Output tokens",
+      "ALERTS": {
+        "SAVED": "Settings saved",
+        "ERROR": "Error saving"
+      }
+    },
+    "SIDEBAR": {
+      "ABSENCES": "Absences",
+      "TIER": "WhatsApp tier",
+      "APPROVALS": "Approvals",
+      "AUDIT": "Audit log",
+      "CAPTAIN": "Captain limits"
+    }
+  }
+}

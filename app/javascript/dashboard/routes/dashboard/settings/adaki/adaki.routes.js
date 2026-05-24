@@ -4,6 +4,7 @@ import AbsencesIndex from './absences/Index.vue';
 import TierIndex from './tier/Index.vue';
 import AuditIndex from './audit/Index.vue';
 import ApprovalsIndex from './approvals/Index.vue';
+import CaptainIndex from './captain/Index.vue';
 
 const meta = {
   permissions: ['administrator'],
@@ -44,6 +45,12 @@ export default {
           name: 'adaki_approvals_list',
           meta,
           component: ApprovalsIndex,
+        },
+        {
+          path: 'captain',
+          name: 'adaki_captain_settings',
+          meta,
+          component: CaptainIndex,
         },
       ],
     },
