@@ -54,11 +54,11 @@ services:
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
     healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/api']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api > /dev/null 2>&1 || exit 1']
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 180s
+      retries: 10
+      start_period: 600s
     labels:
       - coolify.managed=true
       - coolify.type=service
