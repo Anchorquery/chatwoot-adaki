@@ -76,6 +76,12 @@ RUN pnpm i
 
 COPY . /app
 
+# Ensure all entrypoint scripts and binstubs are executable regardless of
+# the host's git index permissions (Windows clones often lose +x bit).
+RUN chmod +x /app/docker/entrypoints/*.sh \
+  /app/docker/entrypoints/helpers/*.rb \
+  /app/bin/* || true
+
 # creating a log directory so that image wont fail when RAILS_LOG_TO_STDOUT is false
 # https://github.com/chatwoot/chatwoot/issues/701
 RUN mkdir -p /app/log
