@@ -38,6 +38,10 @@ x-base: &base
     - POSTGRES_DATABASE=chatwoot
     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+    # Coolify magic env: when a domain is configured in the UI, this
+    # expands to the FQDN and Coolify auto-generates Traefik labels
+    # routing the FQDN -> rails service port 3000.
+    - SERVICE_FQDN_RAILS_3000
   volumes:
     - storage_data:/app/storage
     - backup_data:/var/backups/adaki
@@ -51,7 +55,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
+    expose:
       - '3000'
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
@@ -59,8 +63,6 @@ services:
     # Avoids first-boot db:chatwoot_prepare exceeding healthcheck timeout.
     labels:
       - coolify.managed=true
-      - coolify.type=service
-      # Coolify auto-detects port 3000 for proxy
 
   sidekiq:
     <<: *base
