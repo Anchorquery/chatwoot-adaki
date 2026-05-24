@@ -65,8 +65,11 @@ jobs:
             EXECJS_RUNTIME=Disabled
 
       - name: Trigger Coolify deploy
-        if: ${{ secrets.COOLIFY_WEBHOOK_URL != '' }}
+        env:
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        if: env.COOLIFY_WEBHOOK_URL != ''
         run: |
           curl -fsSL -X POST \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            "${{ secrets.COOLIFY_WEBHOOK_URL }}"
+            -H "Authorization: Bearer ${COOLIFY_TOKEN}" \
+            "${COOLIFY_WEBHOOK_URL}"

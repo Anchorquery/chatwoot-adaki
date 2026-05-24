@@ -8,6 +8,12 @@
 #   - Set env vars via Coolify UI (see .env.coolify.example)
 #   - Map domain to "rails" service, port 3000
 #
+# Migration strategy:
+#   The "rails" container runs `rails db:chatwoot_prepare` on each boot
+#   (idempotent: schema-load + seed on first run, migrate on subsequent).
+#   "sidekiq" sets SKIP_DB_PREPARE=true and waits for rails healthcheck
+#   to avoid concurrent migration runs.
+#
 # Required env vars (set in Coolify UI):
 #   GHCR_IMAGE, SECRET_KEY_BASE, FRONTEND_URL, POSTGRES_PASSWORD,
 #   REDIS_PASSWORD, MAILER_SENDER_EMAIL, SMTP_*,
@@ -31,6 +37,7 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
     volumes:
       - storage_data:/app/storage
+      - backup_data:/var/backups/adaki
     restart: unless-stopped
 
   rails:
@@ -49,7 +56,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 90s
+      start_period: 180s
     labels:
       - coolify.managed=true
       - coolify.type=service
@@ -62,6 +69,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rails:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - RAILS_ENV=production
+      - INSTALLATION_ENV=docker
+      - RAILS_LOG_TO_STDOUT=true
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_DATABASE=chatwoot
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+      - SKIP_DB_PREPARE=true
+    entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
     healthcheck:
       test: ['CMD-SHELL', "ps -ef | grep '[s]idekiq' | grep -v grep || exit 1"]
@@ -99,7 +119,30 @@ services:
       timeout: 5s
       retries: 10
 
+  # Nightly Postgres backup (runs `bin/adaki-backup.sh` via sidekiq image).
+  # Coolify will not restart this on success — designed to be triggered by cron.
+  # For automated daily runs, add a Coolify Scheduled Task pointing at:
+  #   docker exec <sidekiq-container> bin/adaki-backup.sh
+  # Or enable the profile to keep this service standing by.
+  backup:
+    <<: *base
+    profiles: ['backup']
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ['/bin/sh', '-c']
+    command: ['while true; do sleep 86400; bin/adaki-backup.sh; done']
+    environment:
+      - RAILS_ENV=production
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_DATABASE=chatwoot
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/chatwoot
+      - BACKUP_DIR=/var/backups/adaki
+      - RETENTION_DAYS=30
+
 volumes:
   storage_data:
   postgres_data:
   redis_data:
+  backup_data:

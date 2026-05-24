@@ -80,10 +80,11 @@ POST   /api/v1/accounts/:id/campaigns/:campaign_id/approvals/reject
 
 | Fase | Cubre |
 |---|---|
-| Fase 1 MVP | AuditLogger (GDPR día 1), MediaIntegrity verificador |
-| Fase 2 Escalado | Absences/Coverage, TierMonitor + lock |
-| Fase 3 Campañas | Doble validación + audit campañas |
-| Fase 4 IA | Captain (Chatwoot enterprise ya desbloqueado) |
+| Fase 1 MVP | AuditLogger (GDPR día 1), MediaIntegrity verificador, GDPR pseudonymization |
+| Fase 2 Escalado | Absences/Coverage, TierMonitor + lock, UI dashboard |
+| Fase 3 Campañas | Doble validación + audit campañas + UI aprobaciones, audience estimation completa |
+| Fase 4 IA | Captain (Chatwoot enterprise) + límites mensuales por account + audit invocaciones |
+| Fase 5 SaaS | DR plan + backup script + audit export legal |
 
 ## Avisos legales / operativos
 
@@ -99,8 +100,51 @@ POST   /api/v1/accounts/:id/campaigns/:campaign_id/approvals/reject
 - `safe_to_send?` refresca tier si `tier_checked_at` >1h. Si Meta API falla, retorna conservador (limit conocido o nil).
 - Campaign con audience por labels: `estimate_recipient_count` cuenta contactos tagged. Otros tipos audience pendientes.
 
-## Pendiente Vue/UI
+## UI dashboard Vue
 
-Backend listo. UI dashboard Vue por construir:
-- `app/javascript/dashboard/routes/dashboard/settings/adaki/` — vistas absences/tier/audit
-- `app/javascript/dashboard/store/modules/adaki/` — stores Vuex
+Settings sidebar items: Ausencias, Tier WhatsApp, Aprobaciones, Audit log.
+
+- `app/javascript/dashboard/routes/dashboard/settings/adaki/{absences,tier,audit,approvals}/Index.vue`
+- `app/javascript/dashboard/store/modules/adaki/{absences,tier,audit,approvals}.js`
+- `app/javascript/dashboard/api/adaki/{absences,whatsappChannels,auditLog,campaignApprovals}.js`
+- i18n EN+ES en `app/javascript/dashboard/i18n/locale/{en,es}/adaki.json`
+- Badge inline en CampaignCard: `AdakiApprovalBadge.vue` muestra estado approval en lista campañas
+- Página Captain limits en `settings/adaki/captain/Index.vue` para configurar `adaki_captain_monthly_limit` y ver uso periodo actual
+
+## Tests RSpec
+
+| Capa | Spec |
+|---|---|
+| Servicios | audit_logger, absence_resolver, campaign_approval_service, captain_usage_tracker, tier_monitor_service, media_integrity_service |
+| Controllers | absences, audit_log_entries, whatsapp_channels, gdpr, captain_settings |
+| Factories | adaki_absences, adaki_campaign_approvals, adaki_audit_log_entries, adaki_whatsapp_tier_snapshots, adaki_captain_usages |
+
+## Captain limits + audit
+
+- Migración `20260523000000_create_adaki_captain_usage.rb` añade `adaki_captain_usages` y `accounts.adaki_captain_monthly_limit`
+- `Adaki::CaptainUsageTracker.enforce_limit!` / `.record!` enganchados via `Captain::ChatHelperAdaki` prepend
+- Endpoints: `GET/PATCH /api/v1/accounts/:id/adaki/captain_settings`
+- Cada invocación Captain queda en audit chain (`captain.<feature>.invocation`)
+
+## GDPR pseudonymization
+
+- `POST /api/v1/accounts/:id/adaki/gdpr/pseudonymize_contact` con `contact_id, reason`
+- Contact → `ghost-<8hex>`, email/phone/identifier null, snapshot NO en audit (sin PII)
+- Audit entry `gdpr.contact.pseudonymized` referencia contact por id
+
+## Deploy Coolify
+
+Ver [docs/adaki/deploy-coolify.md](docs/adaki/deploy-coolify.md) — paso a paso completo.
+
+- `docker-compose.coolify.yaml` — rails + sidekiq + postgres pgvector + redis + perfil backup
+- `docker/entrypoints/rails.sh` — corre `db:chatwoot_prepare` (idempotente) en arranque rails
+- Sidekiq con `SKIP_DB_PREPARE=true`, depends_on rails healthy
+- `.github/workflows/build-coolify-image.yml` — build + push GHCR + webhook Coolify
+- Cron Adaki: tier monitor 15min, media sweep 03:00 UTC, audit chain verify dom 04:00 UTC
+
+## DR / Backups
+
+Ver [docs/adaki/dr.md](docs/adaki/dr.md):
+- `bin/adaki-backup.sh` — pg_dump diario + S3 upload + retention
+- `rake adaki:audit:export[ACCOUNT_ID]` — export legal JSONL + SHA256
+- `rake adaki:audit:verify_all` — verificación integridad cadena de todas las cuentas

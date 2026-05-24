@@ -34,12 +34,18 @@ module Enterprise::Whatsapp::OneoffCampaignService
   end
 
   def estimate_recipient_count
-    label_ids = campaign.audience.to_a.select { |a| a['type'] == 'Label' }.map { |a| a['id'] }
-    return 0 if label_ids.empty?
+    audience = campaign.audience.to_a
+    return campaign.account.contacts.count if audience.any? { |a| %w[All AllContacts].include?(a['type'].to_s) }
 
-    labels = campaign.account.labels.where(id: label_ids).pluck(:title)
-    return 0 if labels.empty?
+    contact_ids = audience.select { |a| %w[Contact ContactId].include?(a['type'].to_s) }.map { |a| a['id'] }
+    label_ids = audience.select { |a| a['type'].to_s == 'Label' }.map { |a| a['id'] }
 
-    campaign.account.contacts.tagged_with(labels, any: true).count
+    count = 0
+    count += campaign.account.contacts.where(id: contact_ids).count if contact_ids.any?
+    if label_ids.any?
+      labels = campaign.account.labels.where(id: label_ids).pluck(:title)
+      count += campaign.account.contacts.tagged_with(labels, any: true).count if labels.any?
+    end
+    count
   end
 end

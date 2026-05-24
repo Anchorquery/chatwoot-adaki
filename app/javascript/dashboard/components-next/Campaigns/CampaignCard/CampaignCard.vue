@@ -8,6 +8,7 @@ import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import LiveChatCampaignDetails from './LiveChatCampaignDetails.vue';
 import SMSCampaignDetails from './SMSCampaignDetails.vue';
+import AdakiApprovalBadge from './AdakiApprovalBadge.vue';
 
 const props = defineProps({
   title: {
@@ -41,6 +42,14 @@ const props = defineProps({
   scheduledAt: {
     type: Number,
     default: 0,
+  },
+  requiresApproval: {
+    type: Boolean,
+    default: false,
+  },
+  approvalStatus: {
+    type: String,
+    default: 'not_required',
   },
 });
 
@@ -96,6 +105,10 @@ const inboxIcon = computed(() => {
         >
           {{ campaignStatus }}
         </span>
+        <AdakiApprovalBadge
+          :requires-approval="requiresApproval"
+          :approval-status="approvalStatus"
+        />
       </div>
       <div
         v-dompurify-html="formatMessage(message, false, false, false)"

@@ -35,7 +35,16 @@ export default {
       uiFlags: 'adakiTier/getUIFlags',
     }),
     headers() {
-      return ['Número', 'Proveedor', 'Tier', 'Quality', 'Límite diario', 'Última lectura', 'Estado', 'Acciones'];
+      return [
+        this.$t('ADAKI.TIER.TABLE.PHONE'),
+        this.$t('ADAKI.TIER.TABLE.PROVIDER'),
+        this.$t('ADAKI.TIER.TABLE.TIER'),
+        this.$t('ADAKI.TIER.TABLE.QUALITY'),
+        this.$t('ADAKI.TIER.TABLE.DAILY_LIMIT'),
+        this.$t('ADAKI.TIER.TABLE.LAST_READ'),
+        this.$t('ADAKI.TIER.TABLE.STATE'),
+        this.$t('ADAKI.TIER.TABLE.ACTIONS'),
+      ];
     },
   },
   mounted() {
@@ -46,14 +55,14 @@ export default {
       return { GREEN: 'teal', YELLOW: 'amber', RED: 'ruby' }[q] || 'slate';
     },
     fmt(d) {
-      return d ? new Date(d).toLocaleString() : 'nunca';
+      return d ? new Date(d).toLocaleString() : '—';
     },
     refresh(channel) {
       this.loading[channel.id] = true;
       this.$store
         .dispatch('adakiTier/refreshTier', channel.id)
-        .then(() => useAlert('Tier actualizado'))
-        .catch(e => useAlert(e.message || 'Error'))
+        .then(() => useAlert(this.$t('ADAKI.TIER.ALERTS.TIER_REFRESHED')))
+        .catch(e => useAlert(e.message || this.$t('ADAKI.TIER.ALERTS.ERROR')))
         .finally(() => {
           this.loading[channel.id] = false;
         });
@@ -70,8 +79,8 @@ export default {
           channelId: this.selectedChannel.id,
           reason: this.unlockReason,
         })
-        .then(() => useAlert('Canal desbloqueado'))
-        .catch(e => useAlert(e.message || 'Error'))
+        .then(() => useAlert(this.$t('ADAKI.TIER.ALERTS.UNLOCKED')))
+        .catch(e => useAlert(e.message || this.$t('ADAKI.TIER.ALERTS.ERROR')))
         .finally(() => {
           this.loading[this.selectedChannel.id] = false;
           this.showUnlockModal = false;
@@ -83,20 +92,16 @@ export default {
 </script>
 
 <template>
-  <SettingsLayout :is-loading="uiFlags.isFetching" loading-message="Cargando canales">
+  <SettingsLayout :is-loading="uiFlags.isFetching" :loading-message="$t('ADAKI.TIER.LOADING')">
     <template #header>
       <BaseSettingsHeader
-        title="Tier WhatsApp y warming"
-        description="Estado de límites de envío por canal según Meta. Lock automático al 95% y RED quality."
+        :title="$t('ADAKI.TIER.HEADER')"
+        :description="$t('ADAKI.TIER.DESCRIPTION')"
         :show-back-button="false"
       />
     </template>
     <template #body>
-      <BaseTable
-        :headers="headers"
-        :items="channels"
-        no-data-message="Sin canales WhatsApp Cloud configurados"
-      >
+      <BaseTable :headers="headers" :items="channels" :no-data-message="$t('ADAKI.TIER.EMPTY')">
         <template #row="{ items }">
           <BaseTableRow v-for="c in items" :key="c.id" :item="c">
             <template #default>
@@ -116,7 +121,7 @@ export default {
               <BaseTableCell>{{ fmt(c.tier_checked_at) }}</BaseTableCell>
               <BaseTableCell>
                 <WootLabel
-                  :label="c.tier_locked ? 'BLOQUEADO' : 'OK'"
+                  :label="c.tier_locked ? $t('ADAKI.TIER.STATE_LOCKED') : $t('ADAKI.TIER.STATE_OK')"
                   :color="c.tier_locked ? 'ruby' : 'teal'"
                   compact
                 />
@@ -124,7 +129,7 @@ export default {
               <BaseTableCell align="end">
                 <div class="flex justify-end gap-1">
                   <NextButton
-                    label="Refrescar"
+                    :label="$t('ADAKI.TIER.REFRESH')"
                     sm
                     slate
                     :is-loading="loading[c.id]"
@@ -132,7 +137,7 @@ export default {
                   />
                   <NextButton
                     v-if="c.tier_locked"
-                    label="Desbloquear"
+                    :label="$t('ADAKI.TIER.UNLOCK')"
                     sm
                     ruby
                     @click="openUnlock(c)"
@@ -146,18 +151,18 @@ export default {
 
       <woot-modal v-model:show="showUnlockModal" :on-close="() => (showUnlockModal = false)">
         <div class="p-6 w-[420px]">
-          <h2 class="text-heading-2 mb-2">Desbloquear canal</h2>
+          <h2 class="text-heading-2 mb-2">{{ $t('ADAKI.TIER.UNLOCK_MODAL.TITLE') }}</h2>
           <p class="text-body-main mb-3">
-            Canal {{ selectedChannel?.phone_number }}. Motivo del bloqueo:
-            <strong>{{ selectedChannel?.tier_lock_reason }}</strong>
+            {{ $t('ADAKI.TIER.UNLOCK_MODAL.CHANNEL') }} {{ selectedChannel?.phone_number }}.
+            {{ $t('ADAKI.TIER.UNLOCK_MODAL.REASON') }}: <strong>{{ selectedChannel?.tier_lock_reason }}</strong>
           </p>
           <label class="flex flex-col gap-1 mb-3">
-            <span class="text-body-main">Justificación (queda en audit log)</span>
+            <span class="text-body-main">{{ $t('ADAKI.TIER.UNLOCK_MODAL.JUSTIFICATION_LABEL') }}</span>
             <textarea v-model="unlockReason" rows="3" class="form-input" required />
           </label>
           <div class="flex justify-end gap-2">
-            <NextButton label="Cancelar" slate sm @click="showUnlockModal = false" />
-            <NextButton label="Desbloquear" ruby sm @click="confirmUnlock" />
+            <NextButton :label="$t('ADAKI.TIER.UNLOCK_MODAL.CANCEL')" slate sm @click="showUnlockModal = false" />
+            <NextButton :label="$t('ADAKI.TIER.UNLOCK_MODAL.CONFIRM')" ruby sm @click="confirmUnlock" />
           </div>
         </div>
       </woot-modal>
