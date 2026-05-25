@@ -5,6 +5,25 @@ class MessageTemplates::HookExecutionService
     return if conversation.last_incoming_message.blank?
     return if message.auto_reply_email?
 
+    if conversation.group?
+      return unless conversation.bot_mentioned?(message.content)
+
+      # Protection against spam: Rate limit per user in the group (max 3 every 5 minutes)
+      user_id = message.sender_id
+      redis_key = "rate_limit:group_chat:#{conversation.id}:user:#{user_id}"
+
+      request_count = ::Redis::Alfred.incr(redis_key)
+      if request_count == 1
+        ::Redis::Alfred.expire(redis_key, 5.minutes.to_i)
+      elsif request_count > 3
+        if request_count == 4
+          # Send a single cooldown warning message
+          send_cooldown_warning_message
+        end
+        return
+      end
+    end
+
     trigger_templates
   end
 
@@ -57,6 +76,15 @@ class MessageTemplates::HookExecutionService
 
   def contact_has_email?
     contact.email
+  end
+
+  def send_cooldown_warning_message
+    conversation.messages.create!(
+      message_type: :outgoing,
+      account_id: conversation.account_id,
+      inbox_id: conversation.inbox_id,
+      content: "⚠️ Por favor, evita el spam. Has excedido el límite de consultas grupales (máx 3 cada 5 min)."
+    )
   end
 end
 MessageTemplates::HookExecutionService.prepend_mod_with('MessageTemplates::HookExecutionService')

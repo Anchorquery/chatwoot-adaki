@@ -15,19 +15,12 @@ class Api::OneoffCampaignService
     raise "Invalid campaign #{campaign.id}" unless campaign.inbox.inbox_type == 'API' && campaign.one_off?
   end
 
-  def validate_campaign_configuration!
-    return if inbox.channel.webhook_url.present?
-
-    raise 'API inbox must have a webhook URL'
-  end
-
   def validate_campaign_status!
     raise 'Completed Campaign' if campaign.completed?
   end
 
   def validate_campaign!
     validate_campaign_type!
-    validate_campaign_configuration!
     validate_campaign_status!
   end
 

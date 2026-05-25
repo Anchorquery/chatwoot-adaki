@@ -206,6 +206,48 @@ class Conversation < ApplicationRecord
     inbox.inbox_type == 'Twitter' && additional_attributes['type'] == 'tweet'
   end
 
+  def group?
+    # WhatsApp groups via Evolution API or custom integrations (ends with or contains g.us)
+    return true if contact_inbox&.source_id&.include?('g.us')
+
+    # Telegram groups or other channels that explicitly mark group chats in additional_attributes
+    return true if additional_attributes&.dig('chat_type')&.to_s&.include?('group')
+    return true if additional_attributes&.dig('type')&.to_s&.include?('group')
+
+    # If there is a group_id or is_group flag in additional_attributes
+    return true if additional_attributes&.dig('group_id').present?
+    return true if ActiveModel::Type::Boolean.new.cast(additional_attributes&.dig('is_group'))
+
+    false
+  end
+
+  def bot_mentioned?(message_content)
+    return false if message_content.blank?
+
+    # 1. Check if the message starts with a command or common prefix
+    return true if message_content.strip.start_with?('!bot', '/ask', '/bot')
+
+    # 2. Check if the message mentions the Captain Assistant's name
+    if inbox.respond_to?(:captain_assistant) && inbox.captain_assistant.present?
+      assistant_name = inbox.captain_assistant.name
+      if assistant_name.present?
+        regex = Regexp.new(Regexp.escape(assistant_name), Regexp::IGNORECASE)
+        return true if message_content.match?(regex)
+      end
+    end
+
+    # 3. Check if the message mentions the AgentBot's name
+    if inbox.agent_bot.present?
+      bot_name = inbox.agent_bot.name
+      if bot_name.present?
+        regex = Regexp.new(Regexp.escape(bot_name), Regexp::IGNORECASE)
+        return true if message_content.match?(regex)
+      end
+    end
+
+    false
+  end
+
   def recent_messages
     messages.chat.last(5)
   end
