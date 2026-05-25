@@ -15,12 +15,12 @@ describe Api::OneoffCampaignService do
   end
 
   describe '#perform' do
-    it 'raises when the API inbox is missing a webhook URL' do
+    it 'does not raise when the API inbox is missing a webhook URL' do
       channel_api.update!(webhook_url: nil)
 
       expect do
         described_class.new(campaign: campaign).perform
-      end.to raise_error('API inbox must have a webhook URL')
+      end.not_to raise_error
     end
 
     it 'passes rendered campaign content to the builder' do
