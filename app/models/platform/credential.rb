@@ -31,7 +31,7 @@ class Platform::Credential < ApplicationRecord
 
   encrypts :encrypted_payload if Chatwoot.encryption_configured?
 
-  enum status: { active: 0, invalid: 1, expired: 2, revoked: 3 }
+  enum status: { active: 0, invalid: 1, expired: 2, revoked: 3 }, _prefix: :status
   enum auth_type: {
     api_key: 'api_key',
     bearer: 'bearer',
