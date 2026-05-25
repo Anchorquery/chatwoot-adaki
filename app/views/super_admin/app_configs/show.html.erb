@@ -15,6 +15,9 @@
 </style>
 
 <section class="main-content__body">
+  <% if @config == 'captain' %>
+    <%= render 'captain_config' %>
+  <% else %>
   <%= form_with url: super_admin_app_config_url(config: @config) , method: :post do |form| %>
     <% @allowed_configs.each do |key| %>
       <div class="flex mb-8">
@@ -73,6 +76,7 @@
     <div class="form-actions">
       <%= form.submit "Submit" %>
     </div>
+  <% end %>
   <% end %>
 </section>
 

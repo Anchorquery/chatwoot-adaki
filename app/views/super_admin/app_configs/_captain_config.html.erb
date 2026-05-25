@@ -1,0 +1,467 @@
+<%
+  providers = [
+    {
+      id: 'openai',
+      name: 'OpenAI',
+      icon: '🟢',
+      fields: [
+        { key: 'CAPTAIN_OPEN_AI_API_KEY',   label: 'API Key',          type: 'secret',  placeholder: 'sk-...' },
+        { key: 'CAPTAIN_OPEN_AI_ENDPOINT',  label: 'API Endpoint (optional)', type: 'text', placeholder: 'https://api.openai.com/' },
+      ],
+      models: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', 'o3', 'o3-mini', 'o1', 'o1-mini']
+    },
+    {
+      id: 'gemini',
+      name: 'Google Gemini',
+      icon: '🔵',
+      fields: [
+        { key: 'CAPTAIN_GEMINI_API_KEY', label: 'API Key', type: 'secret', placeholder: 'AIza...' },
+      ],
+      models: ['gemini-2.5-pro-preview-05-06', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro', 'gemini-1.5-flash']
+    },
+    {
+      id: 'anthropic',
+      name: 'Anthropic',
+      icon: '🟠',
+      fields: [
+        { key: 'CAPTAIN_ANTHROPIC_API_KEY', label: 'API Key', type: 'secret', placeholder: 'sk-ant-...' },
+      ],
+      models: ['claude-opus-4-5', 'claude-sonnet-4-5', 'claude-3-7-sonnet-20250219', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022']
+    },
+    {
+      id: 'deepseek',
+      name: 'DeepSeek',
+      icon: '🔷',
+      fields: [
+        { key: 'CAPTAIN_DEEPSEEK_API_KEY', label: 'API Key', type: 'secret', placeholder: 'sk-...' },
+      ],
+      models: ['deepseek-chat', 'deepseek-reasoner']
+    },
+    {
+      id: 'openrouter',
+      name: 'OpenRouter',
+      icon: '🔀',
+      fields: [
+        { key: 'CAPTAIN_OPENROUTER_API_KEY', label: 'API Key', type: 'secret', placeholder: 'sk-or-...' },
+      ],
+      models: ['openrouter/auto', 'meta-llama/llama-3.3-70b-instruct', 'google/gemini-2.0-flash-001', 'anthropic/claude-3.5-sonnet', 'mistralai/mixtral-8x7b-instruct']
+    },
+    {
+      id: 'ollama',
+      name: 'Ollama (local)',
+      icon: '🦙',
+      fields: [
+        { key: 'CAPTAIN_OLLAMA_API_BASE', label: 'API Base URL', type: 'text', placeholder: 'http://ollama:11434' },
+      ],
+      models: ['llama3.2', 'llama3.1', 'llama3.1:70b', 'mistral', 'qwen2.5', 'phi4', 'gemma3']
+    },
+    {
+      id: 'bedrock',
+      name: 'AWS Bedrock',
+      icon: '☁️',
+      fields: [
+        { key: 'CAPTAIN_BEDROCK_API_KEY',    label: 'AWS Access Key',  type: 'secret', placeholder: 'AKIA...' },
+        { key: 'CAPTAIN_BEDROCK_SECRET_KEY', label: 'AWS Secret Key',  type: 'secret', placeholder: '' },
+        { key: 'CAPTAIN_BEDROCK_REGION',     label: 'AWS Region',      type: 'text',   placeholder: 'us-east-1' },
+      ],
+      models: ['anthropic.claude-3-5-sonnet-20241022-v2:0', 'anthropic.claude-3-haiku-20240307-v1:0', 'amazon.titan-text-express-v1', 'meta.llama3-70b-instruct-v1:0']
+    },
+  ]
+
+  current_model = @app_config['CAPTAIN_OPEN_AI_MODEL'].presence || 'gpt-4.1-mini'
+
+  # Detect active provider from current model
+  active_provider_id = providers.find { |p| p[:models].any? { |m| current_model.start_with?(m.split('/').first.split('-').first) rescue false } }&.dig(:id) || 'openai'
+%>
+
+<style>
+  .captain-provider-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .captain-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .captain-tab-btn:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+  }
+  .captain-tab-btn.active {
+    border-color: #6366f1;
+    background: #eef2ff;
+    color: #4338ca;
+  }
+  .captain-tab-btn .configured-dot {
+    width: 7px;
+    height: 7px;
+    background: #22c55e;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .captain-provider-section {
+    display: none;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    background: #fafafa;
+  }
+  .captain-provider-section.active {
+    display: block;
+  }
+  .captain-provider-section h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .captain-field {
+    margin-bottom: 16px;
+  }
+  .captain-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 4px;
+  }
+  .captain-field input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    background: white;
+    box-sizing: border-box;
+  }
+  .captain-field input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+  .captain-field .field-wrap {
+    position: relative;
+  }
+  .captain-field .toggle-pwd {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 2px;
+  }
+  .captain-field .toggle-pwd:hover { color: #475569; }
+  .captain-model-section {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    background: #fafafa;
+  }
+  .captain-model-section h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+  .captain-model-section p {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 16px;
+  }
+  .model-provider-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .model-filter-btn {
+    padding: 4px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    background: white;
+    font-size: 12px;
+    cursor: pointer;
+    color: #475569;
+  }
+  .model-filter-btn.active {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: white;
+  }
+  .model-select-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .model-select-wrap select {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    background: white;
+  }
+  .model-custom-input {
+    display: none;
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    background: white;
+  }
+  .model-custom-toggle {
+    font-size: 12px;
+    color: #6366f1;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: underline;
+    background: none;
+    border: none;
+  }
+  .extra-section {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    background: #fafafa;
+  }
+  .extra-section h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 16px;
+  }
+</style>
+
+<%= form_with url: super_admin_app_config_url(config: 'captain'), method: :post do |form| %>
+
+  <%# ── Provider Tabs ── %>
+  <div class="captain-provider-tabs">
+    <% providers.each do |p| %>
+      <%
+        has_key = p[:fields].any? { |f| @app_config[f[:key]].present? }
+      %>
+      <button
+        type="button"
+        class="captain-tab-btn <%= 'active' if p[:id] == active_provider_id %>"
+        data-provider="<%= p[:id] %>"
+        onclick="switchProvider('<%= p[:id] %>')"
+      >
+        <span><%= p[:icon] %> <%= p[:name] %></span>
+        <% if has_key %>
+          <span class="configured-dot" title="Configured"></span>
+        <% end %>
+      </button>
+    <% end %>
+  </div>
+
+  <%# ── Provider Sections ── %>
+  <% providers.each do |p| %>
+    <div class="captain-provider-section <%= 'active' if p[:id] == active_provider_id %>" id="section-<%= p[:id] %>">
+      <h3><%= p[:icon] %> <%= p[:name] %> Configuration</h3>
+      <% p[:fields].each do |field| %>
+        <div class="captain-field">
+          <label for="cap_<%= field[:key] %>"><%= field[:label] %></label>
+          <div class="field-wrap">
+            <% if field[:type] == 'secret' %>
+              <input
+                type="password"
+                id="cap_<%= field[:key] %>"
+                name="app_config[<%= field[:key] %>]"
+                value="<%= @app_config[field[:key]] %>"
+                placeholder="<%= field[:placeholder] %>"
+                style="padding-right: 36px;"
+              >
+              <button type="button" class="toggle-pwd" onclick="togglePwd('cap_<%= field[:key] %>', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 5C5.636 5 2 12 2 12s3.636 7 10 7 10-7 10-7-3.636-7-10-7z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            <% else %>
+              <input
+                type="text"
+                id="cap_<%= field[:key] %>"
+                name="app_config[<%= field[:key] %>]"
+                value="<%= @app_config[field[:key]] %>"
+                placeholder="<%= field[:placeholder] %>"
+              >
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# ── Model Selector ── %>
+  <div class="captain-model-section">
+    <h3>🧠 Default AI Model</h3>
+    <p>Select the model Captain AI will use for responses. Only models from configured providers will work.</p>
+
+    <div class="model-provider-filter">
+      <button type="button" class="model-filter-btn active" data-filter="all" onclick="filterModels('all', this)">All</button>
+      <% providers.each do |p| %>
+        <button type="button" class="model-filter-btn" data-filter="<%= p[:id] %>" onclick="filterModels('<%= p[:id] %>', this)">
+          <%= p[:icon] %> <%= p[:name] %>
+        </button>
+      <% end %>
+    </div>
+
+    <div class="model-select-wrap">
+      <select id="model-select" name="app_config[CAPTAIN_OPEN_AI_MODEL]" onchange="syncModelInput(this.value)">
+        <% providers.each do |p| %>
+          <optgroup label="<%= p[:name] %>" data-provider="<%= p[:id] %>">
+            <% p[:models].each do |m| %>
+              <option value="<%= m %>" <%= 'selected' if current_model == m %>><%= m %></option>
+            <% end %>
+          </optgroup>
+        <% end %>
+        <option value="__custom__" <%= 'selected' unless providers.any? { |p| p[:models].include?(current_model) } %>>Custom model...</option>
+      </select>
+      <input
+        type="text"
+        id="model-custom"
+        name="app_config[CAPTAIN_OPEN_AI_MODEL]"
+        class="model-custom-input"
+        value="<%= current_model %>"
+        placeholder="e.g. gemini-2.0-flash"
+        style="<%= 'display:flex;' unless providers.any? { |p| p[:models].include?(current_model) } %>"
+      >
+      <button type="button" class="model-custom-toggle" id="custom-toggle" onclick="toggleCustomModel()">
+        <%= providers.any? { |p| p[:models].include?(current_model) } ? 'Custom model' : 'Pick from list' %>
+      </button>
+    </div>
+  </div>
+
+  <%# ── Extra Settings ── %>
+  <div class="extra-section">
+    <h3>⚙️ Extra Settings</h3>
+    <div class="captain-field">
+      <label for="cap_embed">Embedding Model (optional)</label>
+      <input type="text" id="cap_embed" name="app_config[CAPTAIN_EMBEDDING_MODEL]"
+        value="<%= @app_config['CAPTAIN_EMBEDDING_MODEL'] %>"
+        placeholder="text-embedding-3-small">
+    </div>
+    <div class="captain-field">
+      <label for="cap_firecrawl">FireCrawl API Key (optional)</label>
+      <div class="field-wrap">
+        <input type="password" id="cap_firecrawl" name="app_config[CAPTAIN_FIRECRAWL_API_KEY]"
+          value="<%= @app_config['CAPTAIN_FIRECRAWL_API_KEY'] %>"
+          placeholder="fc-..." style="padding-right: 36px;">
+        <button type="button" class="toggle-pwd" onclick="togglePwd('cap_firecrawl', this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5C5.636 5 2 12 2 12s3.636 7 10 7 10-7 10-7-3.636-7-10-7z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <%= form.submit "Save Captain Settings", class: "button nice" %>
+  </div>
+
+<% end %>
+
+<% content_for :javascript do %>
+<script>
+const providerModels = {
+  <% providers.each do |p| %>
+  '<%= p[:id] %>': <%= p[:models].to_json %>,
+  <% end %>
+};
+
+function switchProvider(id) {
+  document.querySelectorAll('.captain-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.captain-provider-section').forEach(s => s.classList.remove('active'));
+  document.querySelector(`[data-provider="${id}"].captain-tab-btn`).classList.add('active');
+  document.getElementById(`section-${id}`).classList.add('active');
+}
+
+function filterModels(filter, btn) {
+  document.querySelectorAll('.model-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const select = document.getElementById('model-select');
+  const groups = select.querySelectorAll('optgroup');
+  groups.forEach(g => {
+    const show = filter === 'all' || g.dataset.provider === filter;
+    g.style.display = show ? '' : 'none';
+    [...g.options].forEach(o => o.disabled = !show);
+  });
+}
+
+let isCustom = false;
+
+function toggleCustomModel() {
+  const select = document.getElementById('model-select');
+  const customInput = document.getElementById('model-custom');
+  const toggle = document.getElementById('custom-toggle');
+
+  isCustom = !isCustom;
+
+  if (isCustom) {
+    select.style.display = 'none';
+    select.disabled = true;
+    customInput.style.display = 'flex';
+    customInput.disabled = false;
+    toggle.textContent = 'Pick from list';
+  } else {
+    select.style.display = '';
+    select.disabled = false;
+    customInput.style.display = 'none';
+    customInput.disabled = true;
+    toggle.textContent = 'Custom model';
+  }
+}
+
+function syncModelInput(val) {
+  if (val === '__custom__') {
+    toggleCustomModel();
+  }
+}
+
+function togglePwd(id, btn) {
+  const input = document.getElementById(id);
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+// Init: if current model is custom, show text input
+document.addEventListener('DOMContentLoaded', () => {
+  const selectVal = document.getElementById('model-select').value;
+  if (selectVal === '__custom__') {
+    const customInput = document.getElementById('model-custom');
+    const select = document.getElementById('model-select');
+    select.style.display = 'none';
+    select.disabled = true;
+    customInput.style.display = 'flex';
+    customInput.disabled = false;
+    document.getElementById('custom-toggle').textContent = 'Pick from list';
+    isCustom = true;
+  }
+});
+</script>
+<% end %>
