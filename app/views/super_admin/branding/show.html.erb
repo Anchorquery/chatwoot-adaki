@@ -36,12 +36,12 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_INSTALLATION_NAME">Installation Name</label>
-          <%= form.text_field "branding[INSTALLATION_NAME]", value: @branding['INSTALLATION_NAME'], placeholder: 'Adaki', class: 'w-full border border-slate-200 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-blue-200' %>
+          <%= form.text_field "branding[INSTALLATION_NAME]", value: @branding['INSTALLATION_NAME'], placeholder: 'Adaki WS', class: 'w-full border border-slate-200 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-blue-200' %>
           <p class="text-xs text-slate-400 mt-1">Used in the dashboard sidebar, browser tab titles and update banners.</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-n-slate-12 mb-1" for="branding_BRAND_NAME">Brand Name</label>
-          <%= form.text_field "branding[BRAND_NAME]", value: @branding['BRAND_NAME'], placeholder: 'Adaki', class: 'w-full border border-slate-200 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-blue-200' %>
+          <%= form.text_field "branding[BRAND_NAME]", value: @branding['BRAND_NAME'], placeholder: 'Adaki WS', class: 'w-full border border-slate-200 rounded-md p-2 text-sm focus:outline-none focus:ring focus:ring-blue-200' %>
           <p class="text-xs text-slate-400 mt-1">Used in outbound emails and the chat widget "Powered by" footer.</p>
         </div>
       </div>
@@ -81,7 +81,7 @@
             </div>
           <% end %>
           <%= form.text_field "branding[LOGO_THUMBNAIL]", value: @branding['LOGO_THUMBNAIL'], placeholder: '/brand-assets/logo_thumbnail.svg', class: 'w-full border border-slate-200 rounded-md p-2 text-sm' %>
-          <p class="text-xs text-slate-400 mt-1">Square 512×512 used as favicon and PWA icon.</p>
+          <p class="text-xs text-slate-400 mt-1">Square 512x512 used as favicon and PWA icon.</p>
         </div>
       </div>
     </div>

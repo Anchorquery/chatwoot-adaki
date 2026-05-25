@@ -1,6 +1,12 @@
-<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Adaki">
-  <rect x="8" y="8" width="80" height="80" rx="20" fill="#1F76FF"/>
-  <path d="M31 31H57C68.046 31 77 39.954 77 51C77 62.046 68.046 71 57 71H33.5C32.119 71 31 69.881 31 68.5V31Z" fill="white"/>
-  <path d="M42 43H58" stroke="#1F76FF" stroke-width="5" stroke-linecap="round"/>
-  <path d="M42 56H66" stroke="#1F76FF" stroke-width="5" stroke-linecap="round"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Adaki WS">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2BA7FF"/>
+      <stop offset="1" stop-color="#155DFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="32" y="32" width="448" height="448" rx="108" fill="url(#bg)"/>
+  <circle cx="404" cy="118" r="66" fill="white" fill-opacity="0.12"/>
+  <path d="M156 164C156 144.118 172.118 128 192 128H320C339.882 128 356 144.118 356 164V282C356 301.882 339.882 318 320 318H237.517L196.864 350.455C194.217 352.57 190.392 350.682 190.392 347.3V318H192C172.118 318 156 301.882 156 282V164Z" fill="white"/>
+  <text x="256" y="247" text-anchor="middle" fill="#155DFF" font-family="Arial, Helvetica, sans-serif" font-size="116" font-weight="800" letter-spacing="-6">WS</text>
 </svg>
