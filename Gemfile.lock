@@ -976,6 +976,7 @@ GEM
       sprockets (>= 3.0.0)
     squasher (0.7.2)
     ssrf_filter (1.5.0)
+    stackprof (0.2.28)
     statsd-ruby (1.5.0)
     stripe (18.0.1)
     telephone_number (1.4.20)
@@ -1197,6 +1198,7 @@ DEPENDENCIES
   spring-watcher-listen
   squasher
   ssrf_filter (~> 1.5)
+  stackprof
   stripe (~> 18.0)
   telephone_number
   test-prof
