@@ -50,11 +50,11 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   def should_process_captain_response?
-    conversation.pending? && message.incoming? && captain_autopilot_enabled?
+    conversation_captain_controllable? && message.incoming? && captain_autopilot_enabled?
   end
 
   def perform_handoff
-    return unless conversation.pending?
+    return unless conversation_captain_controllable?
 
     Rails.logger.info("Captain limit exceeded, performing handoff mid-conversation for conversation: #{conversation.id}")
     conversation.messages.create!(
@@ -76,12 +76,28 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   def captain_handling_conversation?
-    conversation.pending? && captain_autopilot_enabled?
+    conversation_captain_controllable? && captain_autopilot_enabled?
   end
 
   def captain_autopilot_enabled?
     inbox.respond_to?(:captain_assistant) &&
       inbox.captain_assistant.present? &&
       inbox.captain_assistant.autopilot_enabled?
+  end
+
+  def conversation_captain_controllable?
+    (conversation.pending? || conversation.open?) && !human_takeover?
+  end
+
+  def human_takeover?
+    conversation.assignee_id.present? || human_response_exists?
+  end
+
+  def human_response_exists?
+    conversation.messages
+                .outgoing
+                .where(private: false)
+                .where(sender_type: 'User')
+                .exists?
   end
 end

@@ -80,6 +80,16 @@ Rails.application.routes.draw do
             resources :documents, only: [:index, :show, :create, :destroy] do
               post :sync, on: :member
             end
+            namespace :platform do
+              resources :credentials, only: [:index, :show, :create, :update, :destroy] do
+                member do
+                  post :rotate
+                  post :validate
+                  post :revoke
+                  get :usages
+                end
+              end
+            end
             resource :tasks, only: [], controller: 'tasks' do
               post :rewrite
               post :summarize

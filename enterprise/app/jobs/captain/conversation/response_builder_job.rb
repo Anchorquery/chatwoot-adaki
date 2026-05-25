@@ -10,7 +10,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     @inbox = conversation.inbox
     @assistant = assistant
 
-    return unless conversation_pending?
+    return unless conversation_captain_controllable?
 
     Current.executed_by = @assistant
 
@@ -37,7 +37,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     @response = Captain::Llm::AssistantChatService.new(assistant: @assistant, conversation: @conversation).generate_response(
       message_history: message_history
     )
-    classify_v1_response_action(message_history) if conversation_pending?
+    classify_v1_response_action(message_history) if conversation_captain_controllable?
     process_response
   end
 
@@ -70,7 +70,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
       return unless conversation_pending?
 
       process_v1_handoff
-    elsif conversation_pending?
+    elsif conversation_captain_controllable?
       ActiveRecord::Base.transaction do
         create_messages
         Rails.logger.info("[CAPTAIN][ResponseBuilderJob] Incrementing response usage for #{account.id}")
@@ -214,5 +214,26 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   def conversation_pending?
     status = Conversation.uncached { Conversation.where(id: @conversation.id).pick(:status) }
     status == 'pending' || status == Conversation.statuses[:pending]
+  end
+
+  def conversation_captain_controllable?
+    status, assignee_id = Conversation.uncached { Conversation.where(id: @conversation.id).pick(:status, :assignee_id) }
+    (pending_status?(status) || open_status?(status)) && assignee_id.blank? && !human_response_exists?
+  end
+
+  def pending_status?(status)
+    status == 'pending' || status == Conversation.statuses[:pending]
+  end
+
+  def open_status?(status)
+    status == 'open' || status == Conversation.statuses[:open]
+  end
+
+  def human_response_exists?
+    @conversation.messages
+                 .outgoing
+                 .where(private: false)
+                 .where(sender_type: 'User')
+                 .exists?
   end
 end

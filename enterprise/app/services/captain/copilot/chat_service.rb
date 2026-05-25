@@ -97,6 +97,23 @@ class Captain::Copilot::ChatService < Llm::BaseAiService
     }
   end
 
+  def with_llm_credential
+    Platform::CredentialManager.with_credential_context(
+      account: @account,
+      key: credential_key,
+      provider: credential_provider,
+      purpose: 'ai_provider'
+    ) { |context, _credential| yield(context) }
+  end
+
+  def credential_key
+    Platform::CredentialManager.default_key_for(credential_provider)
+  end
+
+  def credential_provider
+    Llm::Models.models[@model]&.fetch('provider', 'openai') || 'openai'
+  end
+
   def current_viewing_history(conversation_id)
     conversation = @account.conversations.find_by(display_id: conversation_id)
     return [] unless conversation

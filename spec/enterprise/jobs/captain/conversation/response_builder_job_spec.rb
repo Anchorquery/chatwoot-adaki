@@ -45,6 +45,35 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(conversation.messages.last.content).to eq('Hey, welcome to Captain Specs')
       end
 
+      it 'generates and processes response for open conversations' do
+        conversation.update!(status: :open)
+
+        described_class.perform_now(conversation, assistant)
+
+        expect(conversation.messages.count).to eq(2)
+        expect(conversation.messages.outgoing.count).to eq(1)
+        expect(conversation.messages.last.content).to eq('Hey, welcome to Captain Specs')
+      end
+
+      it 'does not generate a response for open conversations after a human agent has replied' do
+        agent = create(:user, account: account)
+        conversation.update!(status: :open)
+        create(:message, conversation: conversation, message_type: :outgoing, account: account, sender: agent)
+
+        described_class.perform_now(conversation, assistant)
+
+        expect(conversation.messages.outgoing.where(sender_type: 'Captain::Assistant')).to be_empty
+      end
+
+      it 'does not generate a response for conversations assigned to a human agent' do
+        agent = create(:user, account: account)
+        conversation.update!(assignee: agent)
+
+        described_class.perform_now(conversation, assistant)
+
+        expect(conversation.messages.outgoing.where(sender_type: 'Captain::Assistant')).to be_empty
+      end
+
       it 'increments usage response' do
         described_class.perform_now(conversation, assistant)
         account.reload

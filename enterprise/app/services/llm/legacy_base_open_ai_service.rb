@@ -12,8 +12,14 @@ class Llm::LegacyBaseOpenAiService
   attr_reader :client, :model
 
   def initialize
+    credential = Platform::CredentialManager.fetch_optional(
+      account: nil,
+      key: Platform::CredentialManager.default_key_for('openai'),
+      provider: 'openai',
+      purpose: 'ai_provider'
+    )
     @client = OpenAI::Client.new(
-      access_token: InstallationConfig.find_by!(name: 'CAPTAIN_OPEN_AI_API_KEY').value,
+      access_token: credential&.secret(:api_key) || InstallationConfig.find_by!(name: 'CAPTAIN_OPEN_AI_API_KEY').value,
       uri_base: uri_base,
       log_errors: Rails.env.development?
     )
@@ -33,12 +39,26 @@ class Llm::LegacyBaseOpenAiService
   end
 
   def uri_base
-    endpoint = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value
+    credential = Platform::CredentialManager.fetch_optional(
+      account: nil,
+      key: Platform::CredentialManager.default_key_for('openai'),
+      provider: 'openai',
+      purpose: 'ai_provider'
+    )
+    endpoint = credential&.metadata&.dig('api_base').presence || credential&.metadata&.dig(:api_base).presence
+    endpoint ||= InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value
     endpoint.presence || 'https://api.openai.com/'
   end
 
   def setup_model
-    config_value = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value
+    credential = Platform::CredentialManager.fetch_optional(
+      account: nil,
+      key: Platform::CredentialManager.default_key_for('openai'),
+      provider: 'openai',
+      purpose: 'ai_provider'
+    )
+    config_value = credential&.metadata&.dig('model').presence || credential&.metadata&.dig(:model).presence
+    config_value ||= InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value
     @model = (config_value.presence || DEFAULT_MODEL)
   end
 end

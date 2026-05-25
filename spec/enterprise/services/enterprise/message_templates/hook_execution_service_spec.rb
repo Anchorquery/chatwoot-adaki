@@ -114,12 +114,42 @@ RSpec.describe MessageTemplates::HookExecutionService do
     end
   end
 
-  context 'when conversation is not pending' do
+  context 'when conversation is open' do
     before do
       conversation.update!(status: :open)
     end
 
-    it 'does not schedule captain response job' do
+    it 'schedules captain response job' do
+      expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant)
+
+      create(:message, conversation: conversation, message_type: :incoming, account: account)
+    end
+
+    it 'performs handoff when quota is exceeded' do
+      account.update!(
+        limits: { 'captain_responses' => 100 },
+        custom_attributes: account.custom_attributes.merge('captain_responses_usage' => 100)
+      )
+
+      create(:message, conversation: conversation, message_type: :incoming, account: account)
+
+      expect(conversation.reload.status).to eq('open')
+      expect(conversation.messages.outgoing.last.content).to eq('Transferring to another agent for further assistance.')
+    end
+
+    it 'does not schedule captain response after a human agent has replied' do
+      agent = create(:user, account: account)
+      create(:message, conversation: conversation, message_type: :outgoing, account: account, sender: agent)
+
+      expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
+
+      create(:message, conversation: conversation, message_type: :incoming, account: account)
+    end
+
+    it 'does not schedule captain response when assigned to a human agent' do
+      agent = create(:user, account: account)
+      conversation.update!(assignee: agent)
+
       expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
 
       create(:message, conversation: conversation, message_type: :incoming, account: account)
@@ -165,23 +195,20 @@ RSpec.describe MessageTemplates::HookExecutionService do
       end
     end
 
-    context 'when conversation is open (transferred to agent)' do
+    context 'when conversation is open' do
       before do
         conversation.update!(status: :open)
       end
 
-      it 'creates greeting message in conversation' do
+      it 'does not create greeting message in conversation' do
         inbox.update!(greeting_enabled: true, greeting_message: 'Hello! How can we help you?', enable_email_collect: false)
 
         expect do
           create(:message, conversation: conversation, message_type: :incoming, account: account)
-        end.to change { conversation.reload.messages.template.count }.by(1)
-
-        greeting_message = conversation.reload.messages.template.last
-        expect(greeting_message.content).to eq('Hello! How can we help you?')
+        end.not_to(change { conversation.reload.messages.template.count })
       end
 
-      it 'creates out of office message when outside business hours' do
+      it 'does not create out of office message when outside business hours' do
         inbox.update!(
           working_hours_enabled: true,
           out_of_office_message: 'We are currently closed',
@@ -194,10 +221,7 @@ RSpec.describe MessageTemplates::HookExecutionService do
 
         expect do
           create(:message, conversation: conversation, message_type: :incoming, account: account)
-        end.to change { conversation.reload.messages.template.count }.by(1)
-
-        out_of_office_message = conversation.reload.messages.template.last
-        expect(out_of_office_message.content).to eq('We are currently closed')
+        end.not_to(change { conversation.reload.messages.template.count })
       end
     end
   end

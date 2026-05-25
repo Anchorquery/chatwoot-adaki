@@ -28,7 +28,25 @@ class Api::V1::Accounts::Adaki::CaptainSettingsController < Api::V1::Accounts::B
       current_period: usage.period,
       request_count: usage.request_count,
       input_tokens: usage.input_tokens,
-      output_tokens: usage.output_tokens
+      output_tokens: usage.output_tokens,
+      providers: Llm::Models.providers,
+      models: Llm::Models.models,
+      credentials: Current.account.platform_credentials.order(created_at: :desc).map do |credential|
+        {
+          id: credential.id,
+          name: credential.name,
+          key: credential.key,
+          provider: credential.provider,
+          purpose: credential.purpose,
+          auth_type: credential.auth_type,
+          status: credential.status,
+          token_hint: credential.token_hint,
+          metadata: credential.metadata,
+          last_used_at: credential.last_used_at,
+          last_validated_at: credential.last_validated_at,
+          expires_at: credential.expires_at
+        }
+      end
     }
   end
 end

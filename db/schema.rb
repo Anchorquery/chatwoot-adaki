@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_25_000101) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1092,6 +1092,50 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "platform_credential_usages", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "platform_credential_id", null: false
+    t.string "used_by_type"
+    t.bigint "used_by_id"
+    t.string "operation", null: false
+    t.string "status", null: false
+    t.string "error_code"
+    t.jsonb "context", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.index ["account_id", "created_at"], name: "index_platform_credential_usages_on_account_id_and_created_at"
+    t.index ["account_id"], name: "index_platform_credential_usages_on_account_id"
+    t.index ["platform_credential_id", "created_at"], name: "index_platform_credential_usages_on_platform_credential_id_and_created_at"
+    t.index ["platform_credential_id"], name: "index_platform_credential_usages_on_platform_credential_id"
+    t.index ["used_by_type", "used_by_id"], name: "index_platform_credential_usages_on_used_by_type_and_used_by_id"
+  end
+
+  create_table "platform_credentials", force: :cascade do |t|
+    t.bigint "account_id"
+    t.string "owner_type"
+    t.bigint "owner_id"
+    t.string "provider", null: false
+    t.string "purpose", null: false
+    t.string "name", null: false
+    t.string "key", null: false
+    t.string "auth_type", null: false
+    t.jsonb "encrypted_payload", default: {}, null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.integer "status", default: 0, null: false
+    t.bigint "created_by_id"
+    t.bigint "updated_by_id"
+    t.datetime "last_used_at"
+    t.datetime "last_validated_at"
+    t.datetime "expires_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "key"], name: "index_platform_credentials_on_account_id_and_key", unique: true
+    t.index ["account_id", "provider", "purpose"], name: "index_platform_credentials_on_account_id_and_provider_and_purpose"
+    t.index ["account_id"], name: "index_platform_credentials_on_account_id"
+    t.index ["expires_at"], name: "index_platform_credentials_on_expires_at"
+    t.index ["owner_type", "owner_id"], name: "index_platform_credentials_on_owner_type_and_owner_id"
+    t.index ["status"], name: "index_platform_credentials_on_status"
+  end
+
   create_table "platform_banners", force: :cascade do |t|
     t.text "banner_message", null: false
     t.integer "banner_type", default: 0, null: false
@@ -1324,6 +1368,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "platform_credential_usages", "accounts"
+  add_foreign_key "platform_credential_usages", "platform_credentials"
+  add_foreign_key "platform_credentials", "accounts"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

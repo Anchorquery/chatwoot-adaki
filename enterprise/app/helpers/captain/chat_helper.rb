@@ -4,16 +4,18 @@ module Captain::ChatHelper
   include Captain::ChatGenerationRecorder
 
   def request_chat_completion
-    log_chat_completion_request
-    chat = build_chat
+    with_llm_credential do
+      log_chat_completion_request
+      chat = build_chat
 
-    add_messages_to_chat(chat)
-    with_agent_session do
-      last_content = conversation_messages.last[:content]
-      text, attachments = Captain::OpenAiMessageBuilderService.extract_text_and_attachments(last_content)
+      add_messages_to_chat(chat)
+      with_agent_session do
+        last_content = conversation_messages.last[:content]
+        text, attachments = Captain::OpenAiMessageBuilderService.extract_text_and_attachments(last_content)
 
-      response = attachments.any? ? chat.ask(text, with: attachments) : chat.ask(text)
-      build_response(response)
+        response = attachments.any? ? chat.ask(text, with: attachments) : chat.ask(text)
+        build_response(response)
+      end
     end
   rescue StandardError => e
     Rails.logger.error "#{self.class.name} Assistant: #{@assistant.id}, Error in chat completion: #{e}"
@@ -131,5 +133,9 @@ module Captain::ChatHelper
 
   def log_chat_completion_request
     Rails.logger.info("#{self.class.name} Assistant: #{@assistant.id}, requesting completion for #{@messages} with #{@tools&.length || 0} tools")
+  end
+
+  def with_llm_credential
+    yield
   end
 end

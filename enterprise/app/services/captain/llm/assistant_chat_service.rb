@@ -74,6 +74,23 @@ class Captain::Llm::AssistantChatService < Llm::BaseAiService
     @conversation&.inbox&.timezone.presence || 'UTC'
   end
 
+  def with_llm_credential
+    Platform::CredentialManager.with_credential_context(
+      account: @assistant.account,
+      key: credential_key,
+      provider: credential_provider,
+      purpose: 'ai_provider'
+    ) { |context, _credential| yield(context) }
+  end
+
+  def credential_key
+    Platform::CredentialManager.default_key_for(credential_provider)
+  end
+
+  def credential_provider
+    Llm::Models.models[@model]&.fetch('provider', 'openai') || 'openai'
+  end
+
   def persist_message(message, message_type = 'assistant')
     # No need to implement
   end

@@ -1,10 +1,20 @@
-aproviders:
+providers:
   openai:
     display_name: 'OpenAI'
   anthropic:
     display_name: 'Anthropic'
   gemini:
     display_name: 'Gemini'
+  deepseek:
+    display_name: 'DeepSeek'
+  openrouter:
+    display_name: 'OpenRouter'
+  ollama:
+    display_name: 'Ollama'
+  bedrock:
+    display_name: 'Bedrock'
+  firecrawl:
+    display_name: 'Firecrawl'
 
 models:
   gpt-4.1:

@@ -141,6 +141,74 @@
       "USAGE_REQUESTS": "Requests",
       "USAGE_INPUT_TOKENS": "Input tokens",
       "USAGE_OUTPUT_TOKENS": "Output tokens",
+      "CREDENTIALS": {
+        "HEADER": "Provider credentials",
+        "DESCRIPTION": "Store and manage per-account provider secrets for Captain and future integrations.",
+        "NEW": "New credential",
+        "EMPTY": "No credentials configured",
+        "TABLE": {
+          "NAME": "Name",
+          "PROVIDER": "Provider",
+          "MODEL": "Model",
+          "PURPOSE": "Purpose",
+          "AUTH": "Auth type",
+          "STATUS": "Status",
+          "LAST_USED": "Last used",
+          "ACTIONS": "Actions"
+        },
+        "FORM": {
+          "NEW_TITLE": "New credential",
+          "EDIT_TITLE": "Edit credential",
+          "NAME": "Name",
+          "KEY": "Key",
+          "PROVIDER": "Provider",
+          "MODEL": "Model",
+          "PURPOSE": "Purpose",
+          "AUTH_TYPE": "Auth type",
+          "API_BASE": "API base URL",
+          "SECRET": "Secret",
+          "API_KEY": "API key",
+          "TOKEN": "Token",
+          "USERNAME": "Username",
+          "PASSWORD": "Password",
+          "ACCESS_TOKEN": "Access token",
+          "REFRESH_TOKEN": "Refresh token",
+          "CLIENT_ID": "Client ID",
+          "CLIENT_SECRET": "Client secret",
+          "CUSTOM_JSON": "Custom JSON",
+          "CANCEL": "Cancel",
+          "SAVE": "Save",
+          "UPDATE": "Update",
+          "EDIT": "Edit",
+          "VALIDATE": "Validate",
+          "REVOKE": "Revoke",
+          "DELETE": "Delete"
+        },
+        "STATUS": {
+          "ACTIVE": "Active",
+          "INVALID": "Invalid",
+          "EXPIRED": "Expired",
+          "REVOKED": "Revoked"
+        },
+        "AUTH_TYPES": {
+          "API_KEY": "API key",
+          "BEARER": "Bearer token",
+          "BASIC": "Basic auth",
+          "OAUTH2": "OAuth2",
+          "CUSTOM_JSON": "Custom JSON"
+        },
+        "ALERTS": {
+          "CREATED": "Credential created",
+          "UPDATED": "Credential updated",
+          "DELETED": "Credential deleted",
+          "VALIDATED": "Credential validated",
+          "REVOKED": "Credential revoked",
+          "ERROR": "Error saving credential",
+          "INVALID_JSON": "Custom JSON is invalid",
+          "SECRET_REQUIRED": "Secret value is required",
+          "DELETE_CONFIRM": "Delete this credential?"
+        }
+      },
       "ALERTS": {
         "SAVED": "Settings saved",
         "ERROR": "Error saving"

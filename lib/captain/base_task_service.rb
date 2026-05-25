@@ -32,7 +32,9 @@ class Captain::BaseTaskService
   end
 
   def api_base
-    endpoint = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
+    credential = llm_credential
+    endpoint = credential&.metadata&.dig('api_base').presence || credential&.metadata&.dig(:api_base).presence
+    endpoint ||= InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
     endpoint = endpoint.chomp('/')
     "#{endpoint}/v1"
   end
@@ -177,7 +179,19 @@ class Captain::BaseTaskService
   end
 
   def system_llm_credential
-    { api_key: system_api_key, source: :system } if system_api_key.present?
+    credential = Platform::CredentialManager.fetch_optional(
+      account: account,
+      key: Platform::CredentialManager.default_key_for('openai'),
+      provider: 'openai',
+      purpose: 'ai_provider'
+    )
+    return nil if credential.blank?
+
+    {
+      api_key: credential.secret(:api_key),
+      source: :system,
+      metadata: credential.metadata
+    }
   end
 
   def openai_hook
@@ -185,7 +199,7 @@ class Captain::BaseTaskService
   end
 
   def system_api_key
-    @system_api_key ||= InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_API_KEY')&.value
+    @system_api_key ||= llm_credential&.secret(:api_key)
   end
 
   def exception_tracking_account

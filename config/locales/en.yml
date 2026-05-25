@@ -55,6 +55,9 @@ en:
         invalid: is not a valid email address
     validations:
       presence: must not be blank
+    platform:
+      missing_credential: No credential found for the requested provider.
+      invalid_credential: The selected credential is invalid or missing required secrets.
     webhook:
       invalid: Invalid events
     signup:
