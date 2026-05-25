@@ -316,6 +316,7 @@
     "CAPTAIN_DOCUMENTS": "Documents",
     "CAPTAIN_RESPONSES": "FAQs",
     "CAPTAIN_TOOLS": "Tools",
+    "CAPTAIN_MCP": "MCP",
     "CAPTAIN_SCENARIOS": "Scenarios",
     "CAPTAIN_PLAYGROUND": "Playground",
     "CAPTAIN_INBOXES": "Inboxes",
@@ -454,7 +455,69 @@
       "DOCUMENTS": "Documents",
       "RESPONSES": "Credits",
       "UPGRADE": "Captain is not available on the free plan, upgrade now to get access to assistants, copilot and more.",
-      "REFRESH_CREDITS": "Refresh"
+      "REFRESH_CREDITS": "Refresh",
+      "MCP": {
+        "HEADER": "MCP Servers",
+        "ADD_NEW": "Add MCP server",
+        "ALERTS": {
+          "ERROR": "There was an error loading MCP servers"
+        },
+        "EMPTY_STATE": {
+          "TITLE": "No MCP servers configured",
+          "SUBTITLE": "Connect an MCP server to expose its tools to Captain and allow the assistant to fetch live data from external systems."
+        },
+        "ACTIONS": {
+          "EDIT": "Edit",
+          "DISCOVER": "Refresh tools",
+          "TEST": "Test connection",
+          "DELETE": "Delete"
+        },
+        "STATUS": {
+          "ENABLED": "Enabled",
+          "DISABLED": "Disabled"
+        },
+        "CARD": {
+          "TOOL_COUNT": "Tools",
+          "TRANSPORT": "Transport",
+          "CREDENTIAL": "Credential",
+          "NO_CREDENTIAL": "No credential"
+        },
+        "FORM": {
+          "NEW_TITLE": "Create MCP server",
+          "EDIT_TITLE": "Edit MCP server",
+          "DESCRIPTION": "Connect an MCP server to make its tools available to Captain.",
+          "DESCRIPTION_LABEL": "Description",
+          "NAME": "Server name",
+          "ENDPOINT_URL": "Endpoint URL",
+          "TIMEOUT": "Timeout (seconds)",
+          "CREDENTIAL": "Credential",
+          "CREDENTIAL_PLACEHOLDER": "Select a credential",
+          "NO_CREDENTIAL": "No credential",
+          "ENABLED": "Enabled",
+          "CANCEL": "Cancel",
+          "CREATE": "Create",
+          "SAVE": "Save",
+          "ERRORS": {
+            "NAME": "Server name is required",
+            "ENDPOINT_URL": "Endpoint URL is required"
+          }
+        },
+        "CREATE": {
+          "SUCCESS_MESSAGE": "MCP server created successfully",
+          "ERROR_MESSAGE": "Failed to create MCP server"
+        },
+        "EDIT": {
+          "SUCCESS_MESSAGE": "MCP server updated successfully",
+          "ERROR_MESSAGE": "Failed to update MCP server"
+        },
+        "DELETE": {
+          "TITLE": "Delete MCP server",
+          "DESCRIPTION": "Are you sure you want to delete this MCP server?",
+          "CONFIRM": "Yes, delete",
+          "SUCCESS_MESSAGE": "MCP server deleted successfully",
+          "ERROR_MESSAGE": "Failed to delete MCP server"
+        }
+      }
     },
     "CHAT_WITH_US": {
       "TITLE": "Need help?",

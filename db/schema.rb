@@ -368,6 +368,30 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_000101) do
     t.index ["account_id"], name: "index_captain_custom_tools_on_account_id"
   end
 
+  create_table "captain_mcp_servers", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "platform_credential_id"
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.text "description"
+    t.string "transport_type", default: "streamable_http", null: false
+    t.text "endpoint_url"
+    t.text "command"
+    t.jsonb "command_args", default: [], null: false
+    t.boolean "enabled", default: true, null: false
+    t.integer "timeout_seconds", default: 20, null: false
+    t.jsonb "tools_cache", default: [], null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.text "last_error"
+    t.datetime "last_discovered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "enabled"], name: "index_captain_mcp_servers_on_account_id_and_enabled"
+    t.index ["account_id", "slug"], name: "index_captain_mcp_servers_on_account_id_and_slug", unique: true
+    t.index ["account_id"], name: "index_captain_mcp_servers_on_account_id"
+    t.index ["platform_credential_id"], name: "index_captain_mcp_servers_on_platform_credential_id"
+  end
+
   create_table "captain_documents", force: :cascade do |t|
     t.string "name"
     t.string "external_link", null: false
@@ -1371,6 +1395,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_000101) do
   add_foreign_key "platform_credential_usages", "accounts"
   add_foreign_key "platform_credential_usages", "platform_credentials"
   add_foreign_key "platform_credentials", "accounts"
+  add_foreign_key "captain_mcp_servers", "accounts"
+  add_foreign_key "captain_mcp_servers", "platform_credentials"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

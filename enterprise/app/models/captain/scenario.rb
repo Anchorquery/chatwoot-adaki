@@ -109,21 +109,11 @@ class Captain::Scenario < ApplicationRecord
     return [] if tools.blank?
 
     available_tools = assistant.available_agent_tools
-    tools.filter_map do |tool_id|
-      available_tools.find { |tool| tool[:id] == tool_id }
-    end
+    tools.filter_map { |tool_id| available_tools.find { |tool| tool[:id] == tool_id } }
   end
 
   def resolve_tool_instance(tool_metadata)
-    tool_id = tool_metadata[:id]
-
-    if tool_metadata[:custom]
-      custom_tool = Captain::CustomTool.find_by(slug: tool_id, account_id: account_id, enabled: true)
-      custom_tool&.tool(assistant)
-    else
-      tool_class = self.class.resolve_tool_class(tool_id)
-      tool_class&.new(assistant)
-    end
+    Captain::Tools::RegistryService.new(account: account, assistant: assistant).tool_instance(tool_metadata[:id])
   end
 
   # Validates that all tool references in the instruction are valid.

@@ -403,6 +403,15 @@ const menuItems = computed(() => {
           }),
         },
         {
+          name: 'MCP',
+          label: t('SIDEBAR.CAPTAIN_MCP'),
+          icon: 'i-lucide-plug-zap',
+          activeOn: ['captain_mcp_servers_index'],
+          to: accountScopedRoute('captain_assistants_index', {
+            navigationPath: 'captain_mcp_servers_index',
+          }),
+        },
+        {
           name: 'Settings',
           label: t('SIDEBAR.CAPTAIN_SETTINGS'),
           activeOn: [

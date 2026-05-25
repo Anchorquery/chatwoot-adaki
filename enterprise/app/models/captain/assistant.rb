@@ -56,16 +56,11 @@ class Captain::Assistant < ApplicationRecord
   end
 
   def available_agent_tools
-    tools = self.class.built_in_agent_tools.dup
-
-    custom_tools = account.captain_custom_tools.enabled.map(&:to_tool_metadata)
-    tools.concat(custom_tools)
-
-    tools
+    Captain::Tools::RegistryService.new(account: account, assistant: self).available_tool_metadata
   end
 
   def available_tool_ids
-    available_agent_tools.pluck(:id)
+    available_agent_tools.map { |tool| tool[:id] }
   end
 
   def push_event_data
@@ -97,10 +92,7 @@ class Captain::Assistant < ApplicationRecord
   end
 
   def agent_tools
-    [
-      self.class.resolve_tool_class('faq_lookup').new(self),
-      self.class.resolve_tool_class('handoff').new(self)
-    ]
+    Captain::Tools::RegistryService.new(account: account, assistant: self).assistant_tools
   end
 
   def prompt_context

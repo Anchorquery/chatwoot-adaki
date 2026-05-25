@@ -49,6 +49,9 @@ const fetchDataForRoute = async (routeName, assistantId) => {
     captain_tools_index: async () => {
       await store.dispatch('captainCustomTools/get', { page: 1 });
     },
+    captain_mcp_servers_index: async () => {
+      await store.dispatch('captainMcpServers/get');
+    },
     captain_assistants_settings_index: async () => {
       await store.dispatch('captainAssistants/show', assistantId);
     },

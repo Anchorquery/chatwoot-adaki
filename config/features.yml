@@ -242,3 +242,7 @@
   display_name: Advanced Assignment
   enabled: true
   premium: false
+- name: captain_mcp
+  display_name: Captain MCP
+  enabled: true
+  premium: false

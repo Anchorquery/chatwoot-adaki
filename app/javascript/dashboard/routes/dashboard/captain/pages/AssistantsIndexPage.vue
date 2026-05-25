@@ -59,6 +59,7 @@ const routeToLastActiveAssistant = () => {
     'captain_assistants_playground_index', // Playground page
     'captain_assistants_inboxes_index', // Inboxes page
     'captain_tools_index', // Tools page
+    'captain_mcp_servers_index', // MCP page
     'captain_assistants_settings_index', // Settings page
   ].includes(navigationPath);
 

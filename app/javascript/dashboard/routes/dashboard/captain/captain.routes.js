@@ -16,6 +16,7 @@ import DocumentsIndex from './documents/Index.vue';
 import ResponsesIndex from './responses/Index.vue';
 import ResponsesPendingIndex from './responses/Pending.vue';
 import CustomToolsIndex from './tools/Index.vue';
+import McpServersIndex from './mcp/Index.vue';
 
 const meta = {
   permissions: ['administrator', 'agent'],
@@ -26,6 +27,12 @@ const meta = {
 const metaCustomTools = {
   permissions: ['administrator', 'agent'],
   featureFlag: FEATURE_FLAGS.CAPTAIN_CUSTOM_TOOLS,
+  installationTypes: [INSTALLATION_TYPES.CLOUD, INSTALLATION_TYPES.ENTERPRISE],
+};
+
+const metaMcp = {
+  permissions: ['administrator', 'agent'],
+  featureFlag: FEATURE_FLAGS.CAPTAIN_MCP,
   installationTypes: [INSTALLATION_TYPES.CLOUD, INSTALLATION_TYPES.ENTERPRISE],
 };
 
@@ -53,6 +60,12 @@ const assistantRoutes = [
     component: CustomToolsIndex,
     name: 'captain_tools_index',
     meta: metaCustomTools,
+  },
+  {
+    path: frontendURL('accounts/:accountId/captain/:assistantId/mcp'),
+    component: McpServersIndex,
+    name: 'captain_mcp_servers_index',
+    meta: metaMcp,
   },
   {
     path: frontendURL('accounts/:accountId/captain/:assistantId/scenarios'),

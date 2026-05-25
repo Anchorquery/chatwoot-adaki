@@ -77,6 +77,10 @@ Rails.application.routes.draw do
             resources :custom_tools do
               post :test, on: :collection
             end
+            resources :mcp_servers do
+              post :test, on: :collection
+              post :discover, on: :member
+            end
             resources :documents, only: [:index, :show, :create, :destroy] do
               post :sync, on: :member
             end
