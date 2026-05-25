@@ -56,7 +56,11 @@ const state = {
 export const getters = {
   get: $state => $state,
   isOnChatwootCloud: $state => $state.deploymentEnv === 'cloud',
-  isACustomBrandedInstance: $state => $state.installationName !== 'Adaki',
+  // Self-hosted Adaki fork: always treat as custom-branded so the premium
+  // paywall (usePolicy.shouldShowPaywall) is bypassed for all features.
+  // Original upstream check compared installationName !== 'Chatwoot'; after
+  // rebrand to 'Adaki' the prior check evaluated to false and paywalls fired.
+  isACustomBrandedInstance: () => true,
   isAChatwootInstance: $state => $state.installationName === 'Adaki',
 };
 
