@@ -1,34 +1,34 @@
 {
   "ONBOARDING_NEXT": {
-    "GREETING": "Hello {name}!",
-    "SUBTITLE": "Please review the following details",
-    "YOUR_DETAILS": "Your details",
-    "COMPANY_DETAILS": "Company details",
+    "GREETING": "¡Hola {name}!",
+    "SUBTITLE": "Revisa la siguiente información",
+    "YOUR_DETAILS": "Tus datos",
+    "COMPANY_DETAILS": "Datos de la empresa",
     "FIELDS": {
-      "EMAIL": "E-mail",
-      "YOUR_ROLE": "Your Role",
+      "EMAIL": "Correo",
+      "YOUR_ROLE": "Tu cargo",
       "WEBSITE": "Sitio web",
       "LANGUAGE": "Idioma",
-      "TIMEZONE": "Timezone",
-      "COMPANY_SIZE": "Company Size",
-      "INDUSTRY": "Industry",
-      "REFERRAL_SOURCE": "Where did you find us?"
+      "TIMEZONE": "Zona horaria",
+      "COMPANY_SIZE": "Tamaño de la empresa",
+      "INDUSTRY": "Sector",
+      "REFERRAL_SOURCE": "¿Dónde nos encontraste?"
     },
     "PLACEHOLDERS": {
-      "SELECT_ROLE": "Select your role",
+      "SELECT_ROLE": "Selecciona tu cargo",
       "ENTER_WEBSITE": "www.example.com",
-      "SELECT_LANGUAGE": "Select language",
-      "SELECT_TIMEZONE": "Seleccione la zona horaria",
-      "SELECT_COMPANY_SIZE": "Select company size",
-      "SELECT_INDUSTRY": "Select industry",
-      "SELECT_REFERRAL_SOURCE": "Select source"
+      "SELECT_LANGUAGE": "Selecciona el idioma",
+      "SELECT_TIMEZONE": "Selecciona la zona horaria",
+      "SELECT_COMPANY_SIZE": "Selecciona el tamaño de la empresa",
+      "SELECT_INDUSTRY": "Selecciona el sector",
+      "SELECT_REFERRAL_SOURCE": "Selecciona la fuente"
     },
-    "EMAIL_VERIFIED": "Email verified",
-    "SETTING_UP": "Setting up your account...",
-    "CONTINUE": "Continue",
+    "EMAIL_VERIFIED": "Correo verificado",
+    "SETTING_UP": "Configurando tu cuenta...",
+    "CONTINUE": "Continuar",
     "SAVING": "Guardando...",
-    "VALIDATION_ERROR": "Please fill in all required fields",
-    "SUCCESS": "Details saved successfully",
-    "ERROR": "Could not save details. Please try again."
+    "VALIDATION_ERROR": "Completa todos los campos obligatorios",
+    "SUCCESS": "Datos guardados correctamente",
+    "ERROR": "No se pudieron guardar los datos. Inténtalo de nuevo."
   }
 }

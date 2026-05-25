@@ -97,4 +97,21 @@ export default [
     created_at: '2021-05-03T14:15:35.828Z',
     updated_at: '2021-05-03T14:15:35.828Z',
   },
+  {
+    id: 6,
+    title: 'API Broadcast',
+    description: null,
+    account_id: 1,
+    campaign_type: 'one_off',
+    message: 'Hello from API campaigns',
+    enabled: true,
+    trigger_rules: {},
+    inbox: {
+      id: 6,
+      channel_type: 'Channel::Api',
+      name: 'API Inbox',
+    },
+    created_at: '2021-05-03T16:15:35.828Z',
+    updated_at: '2021-05-03T16:15:35.828Z',
+  },
 ];

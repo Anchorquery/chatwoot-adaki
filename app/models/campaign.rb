@@ -36,6 +36,7 @@ class Campaign < ApplicationRecord
   validates :title, presence: true
   validates :message, presence: true
   validate :validate_campaign_inbox
+  validate :api_campaign_requires_webhook_url
   validate :validate_url
   validate :prevent_completed_campaign_from_update, on: :update
   validate :sender_must_belong_to_account
@@ -71,6 +72,8 @@ class Campaign < ApplicationRecord
       Sms::OneoffSmsCampaignService.new(campaign: self).perform
     when 'Whatsapp'
       Whatsapp::OneoffCampaignService.new(campaign: self).perform if account.feature_enabled?(:whatsapp_campaign)
+    when 'API'
+      Api::OneoffCampaignService.new(campaign: self).perform
     end
   end
 
@@ -81,14 +84,28 @@ class Campaign < ApplicationRecord
   def validate_campaign_inbox
     return unless inbox
 
-    errors.add :inbox, 'Unsupported Inbox type' unless ['Website', 'Twilio SMS', 'Sms', 'Whatsapp'].include? inbox.inbox_type
+    supported_inbox_types = if ongoing?
+                              ['Website']
+                            else
+                              ['Twilio SMS', 'Sms', 'Whatsapp', 'API']
+                            end
+
+    errors.add :inbox, 'Unsupported Inbox type' unless supported_inbox_types.include? inbox.inbox_type
+  end
+
+  def api_campaign_requires_webhook_url
+    return unless inbox&.api?
+    return unless one_off?
+    return if inbox.channel.webhook_url.present?
+
+    errors.add :inbox, 'API inbox must have a webhook URL'
   end
 
   # TO-DO we clean up with better validations when campaigns evolve into more inboxes
   def ensure_correct_campaign_attributes
     return if inbox.blank?
 
-    if ['Twilio SMS', 'Sms', 'Whatsapp'].include?(inbox.inbox_type)
+    if ['Twilio SMS', 'Sms', 'Whatsapp', 'API'].include?(inbox.inbox_type)
       self.campaign_type = 'one_off'
       self.scheduled_at ||= Time.now.utc
     else

@@ -1,27 +1,27 @@
 {
   "WHATSAPP_TEMPLATES": {
     "MODAL": {
-      "TITLE": "Plantillas de Whatsapp",
-      "SUBTITLE": "Seleccione la plantilla de Whatsapp que desea enviar",
-      "TEMPLATE_SELECTED_SUBTITLE": "Configure template: {templateName}"
+      "TITLE": "Plantillas de WhatsApp",
+      "SUBTITLE": "Selecciona la plantilla de WhatsApp que deseas enviar",
+      "TEMPLATE_SELECTED_SUBTITLE": "Configurar plantilla: {templateName}"
     },
     "PICKER": {
       "SEARCH_PLACEHOLDER": "Buscar plantillas",
       "NO_TEMPLATES_FOUND": "No se encontraron plantillas para",
-      "HEADER": "Header",
-      "BODY": "Body",
-      "FOOTER": "Footer",
-      "BUTTONS": "Buttons",
+      "HEADER": "Encabezado",
+      "BODY": "Cuerpo",
+      "FOOTER": "Pie",
+      "BUTTONS": "Botones",
       "CATEGORY": "Categoría",
-      "MEDIA_CONTENT": "Media Content",
-      "MEDIA_CONTENT_FALLBACK": "media content",
-      "NO_TEMPLATES_AVAILABLE": "No WhatsApp templates available. Click refresh to sync templates from WhatsApp.",
-      "REFRESH_BUTTON": "Refresh templates",
-      "REFRESH_SUCCESS": "Templates refresh initiated. It may take a couple of minutes to update.",
-      "REFRESH_ERROR": "Failed to refresh templates. Please try again.",
+      "MEDIA_CONTENT": "Contenido multimedia",
+      "MEDIA_CONTENT_FALLBACK": "contenido multimedia",
+      "NO_TEMPLATES_AVAILABLE": "No hay plantillas de WhatsApp disponibles. Haz clic en actualizar para sincronizarlas desde WhatsApp.",
+      "REFRESH_BUTTON": "Actualizar plantillas",
+      "REFRESH_SUCCESS": "Se inició la actualización de plantillas. Puede tardar un par de minutos en completarse.",
+      "REFRESH_ERROR": "No se pudieron actualizar las plantillas. Inténtalo de nuevo.",
       "LABELS": {
         "LANGUAGE": "Idioma",
-        "TEMPLATE_BODY": "Cuerpo de plantilla",
+        "TEMPLATE_BODY": "Cuerpo de la plantilla",
         "CATEGORY": "Categoría"
       }
     },
@@ -29,19 +29,19 @@
       "VARIABLES_LABEL": "Variables",
       "LANGUAGE": "Idioma",
       "CATEGORY": "Categoría",
-      "VARIABLE_PLACEHOLDER": "Introduzca el valor de {variable}",
+      "VARIABLE_PLACEHOLDER": "Introduce el valor de {variable}",
       "GO_BACK_LABEL": "Volver",
       "SEND_MESSAGE_LABEL": "Enviar mensaje",
-      "FORM_ERROR_MESSAGE": "Por favor, rellene todas las variables antes de enviar",
-      "MEDIA_HEADER_LABEL": "{type} Header",
-      "OTP_CODE": "Enter 4-8 digit OTP",
-      "EXPIRY_MINUTES": "Enter expiry minutes",
-      "BUTTON_PARAMETERS": "Button Parameters",
-      "BUTTON_LABEL": "Button {index}",
-      "COUPON_CODE": "Enter coupon code (max 15 chars)",
-      "MEDIA_URL_LABEL": "Enter {type} URL",
-      "DOCUMENT_NAME_PLACEHOLDER": "Enter document filename (e.g., Invoice_2025.pdf)",
-      "BUTTON_PARAMETER": "Enter button parameter"
+      "FORM_ERROR_MESSAGE": "Rellena todas las variables antes de enviar",
+      "MEDIA_HEADER_LABEL": "Encabezado de {type}",
+      "OTP_CODE": "Introduce el OTP de 4 a 8 dígitos",
+      "EXPIRY_MINUTES": "Introduce los minutos de caducidad",
+      "BUTTON_PARAMETERS": "Parámetros del botón",
+      "BUTTON_LABEL": "Botón {index}",
+      "COUPON_CODE": "Introduce el código del cupón (máx. 15 caracteres)",
+      "MEDIA_URL_LABEL": "Introduce la URL de {type}",
+      "DOCUMENT_NAME_PLACEHOLDER": "Introduce el nombre del archivo del documento (p. ej., Invoice_2025.pdf)",
+      "BUTTON_PARAMETER": "Introduce el parámetro del botón"
     }
   }
 }

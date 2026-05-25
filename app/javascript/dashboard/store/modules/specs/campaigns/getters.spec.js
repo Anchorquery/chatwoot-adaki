@@ -16,6 +16,7 @@ describe('#getters', () => {
       campaigns[1],
       campaigns[3],
       campaigns[4],
+      campaigns[5],
     ]);
   });
 
@@ -54,6 +55,16 @@ describe('#getters', () => {
     };
     expect(getters.getWhatsAppCampaigns(state, mockGetters)).toEqual([
       campaigns[3],
+    ]);
+  });
+
+  it('get API campaigns', () => {
+    const state = { records: campaigns };
+    const mockGetters = {
+      getCampaigns: getters.getCampaigns(state),
+    };
+    expect(getters.getAPICampaigns(state, mockGetters)).toEqual([
+      campaigns[5],
     ]);
   });
 

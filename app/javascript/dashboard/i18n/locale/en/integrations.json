@@ -497,6 +497,10 @@
           "LABEL": "Response Temperature",
           "DESCRIPTION": "Adjust how creative or restrictive the assistant's responses should be. Lower values produce more focused and deterministic responses, while higher values allow for more creative and varied outputs."
         },
+        "AUTOPILOT": {
+          "LABEL": "Autopilot",
+          "DESCRIPTION": "When enabled, this assistant will automatically reply to incoming customer messages on connected inboxes."
+        },
         "DESCRIPTION": {
           "LABEL": "Description",
           "PLACEHOLDER": "Enter assistant description",

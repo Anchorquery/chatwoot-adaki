@@ -50,7 +50,7 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   def should_process_captain_response?
-    conversation.pending? && message.incoming? && inbox.captain_assistant.present?
+    conversation.pending? && message.incoming? && captain_autopilot_enabled?
   end
 
   def perform_handoff
@@ -76,6 +76,12 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   def captain_handling_conversation?
-    conversation.pending? && inbox.respond_to?(:captain_assistant) && inbox.captain_assistant.present?
+    conversation.pending? && captain_autopilot_enabled?
+  end
+
+  def captain_autopilot_enabled?
+    inbox.respond_to?(:captain_assistant) &&
+      inbox.captain_assistant.present? &&
+      inbox.captain_assistant.autopilot_enabled?
   end
 end

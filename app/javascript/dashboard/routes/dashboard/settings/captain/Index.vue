@@ -3,7 +3,6 @@ import { computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useAlert } from 'dashboard/composables';
-import { useAccount } from 'dashboard/composables/useAccount';
 import { useCaptain } from 'dashboard/composables/useCaptain';
 import { useConfig } from 'dashboard/composables/useConfig';
 import { useCaptainConfigStore } from 'dashboard/store/captain/preferences';
@@ -18,7 +17,6 @@ import CaptainPaywall from 'next/captain/pageComponents/Paywall.vue';
 const { t } = useI18n();
 const { captainEnabled } = useCaptain();
 const { isEnterprise, enterprisePlanName } = useConfig();
-const { isOnChatwootCloud } = useAccount();
 
 const captainConfigStore = useCaptainConfigStore();
 const { uiFlags } = storeToRefs(captainConfigStore);

@@ -42,7 +42,7 @@
         "PLACEHOLDER": "Voer de naam van je website in (bv. Acme Inc)"
       },
       "FB": {
-        "HELP": "PS: Door in te loggen krijgen we alleen toegang tot berichten van uw Pagina. Chatwood heeft nooit toegang tot je privéberichten.",
+        "HELP": "PS: Door in te loggen krijgen we alleen toegang tot berichten van uw Pagina. Adaki heeft nooit toegang tot je privéberichten.",
         "CHOOSE_PAGE": "Kies pagina",
         "CHOOSE_PLACEHOLDER": "Select a page from the list",
         "INBOX_NAME": "Inbox Name",
@@ -507,11 +507,11 @@
       },
       "DETAILS": {
         "TITLE": "Details inbox",
-        "DESC": "Selecteer de Facebook-pagina die je wilt verbinden met Chatwood uit de dropdown hieronder. U kunt ook een aangepaste naam geven aan uw inbox voor een betere identificatie."
+        "DESC": "Selecteer de Facebook-pagina die je wilt verbinden met Adaki uit de dropdown hieronder. U kunt ook een aangepaste naam geven aan uw inbox voor een betere identificatie."
       },
       "FINISH": {
         "TITLE": "Geïnstalleerd het!",
-        "DESC": "U heeft de integratie van uw Facebook-pagina met Chatwood succesvol voltooid. Volgende keer dat een klant uw pagina bericht, zal het gesprek automatisch in uw inbox verschijnen.<br>We bieden u ook een widget script aan, dat u eenvoudig aan uw website kunt toevoegen. Zodra dit live is op je website klanten kunnen vanaf uw website een bericht sturen zonder de hulp van een externe tool en het gesprek verschijnt hier op Adaki.<br>Koel, toch? Wel, proberen we zeker om te zijn :)"
+        "DESC": "U heeft de integratie van uw Facebook-pagina met Adaki succesvol voltooid. Volgende keer dat een klant uw pagina bericht, zal het gesprek automatisch in uw inbox verschijnen.<br>We bieden u ook een widget script aan, dat u eenvoudig aan uw website kunt toevoegen. Zodra dit live is op je website klanten kunnen vanaf uw website een bericht sturen zonder de hulp van een externe tool en het gesprek verschijnt hier op Adaki.<br>Koel, toch? Wel, proberen we zeker om te zijn :)"
       },
       "EMAIL_PROVIDER": {
         "TITLE": "Select your email provider",

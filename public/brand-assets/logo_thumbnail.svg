@@ -1,25 +1,6 @@
-<svg
-  width="16"
-  height="16"
-  viewBox="0 0 16 16"
-  fill="none"
-  xmlns="http://www.w3.org/2000/svg"
->
-  <g clip-path="url(#woot-logo-clip-2342424e23u32098)">
-    <path
-      d="M8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16Z"
-      fill="#2781F6"
-    />
-    <path
-      d="M11.4172 11.4172H7.70831C5.66383 11.4172 4 9.75328 4 7.70828C4 5.66394 5.66383 4 7.70835 4C9.75339 4 11.4172 5.66394 11.4172 7.70828V11.4172Z"
-      fill="white"
-      stroke="white"
-      stroke-width="0.1875"
-    />
-  </g>
-  <defs>
-    <clipPath id="woot-logo-clip-2342424e23u32098">
-      <rect width="16" height="16" fill="white" />
-    </clipPath>
-  </defs>
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Adaki">
+  <rect x="8" y="8" width="80" height="80" rx="20" fill="#1F76FF"/>
+  <path d="M31 31H57C68.046 31 77 39.954 77 51C77 62.046 68.046 71 57 71H33.5C32.119 71 31 69.881 31 68.5V31Z" fill="white"/>
+  <path d="M42 43H58" stroke="#1F76FF" stroke-width="5" stroke-linecap="round"/>
+  <path d="M42 56H66" stroke="#1F76FF" stroke-width="5" stroke-linecap="round"/>
 </svg>

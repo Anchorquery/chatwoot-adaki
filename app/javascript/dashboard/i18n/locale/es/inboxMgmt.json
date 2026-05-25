@@ -4,11 +4,11 @@
     "DESCRIPTION": "Un canal es el modo de comunicación que tu cliente elige para interactuar contigo. Una bandeja de entrada es donde administras interacciones para un canal específico. Puede incluir comunicaciones de diversas fuentes como correo electrónico, chat en vivo y redes sociales.",
     "LEARN_MORE": "Aprende más sobre las entradas",
     "COUNT": "{n} inbox | {n} inboxes",
-    "SEARCH_PLACEHOLDER": "Search inboxes...",
+    "SEARCH_PLACEHOLDER": "Buscar bandejas...",
     "NO_RESULTS": "No inboxes found matching your search",
     "RECONNECTION_REQUIRED": "Tu bandeja de entrada está desconectada. No recibirás mensajes nuevos hasta que lo vuelvas a autorizar.",
     "CLICK_TO_RECONNECT": "Haga clic aquí para volver a conectar.",
-    "WHATSAPP_REGISTRATION_INCOMPLETE": "Your WhatsApp Business registration isn’t complete. Please check your display name status in Meta Business Manager before reconnecting.",
+    "WHATSAPP_REGISTRATION_INCOMPLETE": "El registro de WhatsApp Business no está completo. Comprueba el estado del nombre para mostrar en Meta Business Manager antes de volver a conectar.",
     "COMPLETE_REGISTRATION": "Complete Registration",
     "LIST": {
       "404": "No hay entradas adjuntas a esta cuenta."
@@ -92,7 +92,7 @@
           "COPY_SUCCESS": "Secret copied to clipboard",
           "TOGGLE": "Toggle secret visibility",
           "RESET_SUCCESS": "Webhook secret regenerated successfully",
-          "RESET_ERROR": "Unable to regenerate webhook secret. Please try again"
+          "RESET_ERROR": "No se pudo regenerar el secreto del webhook. Inténtalo de nuevo"
         },
         "CHANNEL_DOMAIN": {
           "LABEL": "Dominio del sitio web",
@@ -306,15 +306,15 @@
           },
           "SUBMIT_BUTTON": "Connect with WhatsApp Business",
           "AUTH_PROCESSING": "Authenticating with Meta",
-          "WAITING_FOR_BUSINESS_INFO": "Please complete business setup in the Meta window...",
+          "WAITING_FOR_BUSINESS_INFO": "Completa la configuración de la empresa en la ventana de Meta...",
           "PROCESSING": "Setting up your WhatsApp Business Account",
-          "LOADING_SDK": "Loading Facebook SDK...",
+          "LOADING_SDK": "Cargando el SDK de Facebook...",
           "CANCELLED": "WhatsApp Signup was cancelled",
           "SUCCESS_TITLE": "WhatsApp Business Account Connected!",
           "WAITING_FOR_AUTH": "Waiting for authentication...",
-          "INVALID_BUSINESS_DATA": "Invalid business data received from Facebook. Please try again.",
+          "INVALID_BUSINESS_DATA": "Se recibieron datos de empresa no válidos desde Facebook. Inténtalo de nuevo.",
           "SIGNUP_ERROR": "Signup error occurred",
-          "AUTH_NOT_COMPLETED": "Authentication not completed. Please restart the process.",
+          "AUTH_NOT_COMPLETED": "La autenticación no se completó. Reinicia el proceso.",
           "SUCCESS_FALLBACK": "WhatsApp Business Account has been successfully configured",
           "MANUAL_FALLBACK": "If your number is already connected to the WhatsApp Business Platform (API), or if you’re a tech provider onboarding your own number, please use the {link} flow",
           "MANUAL_LINK_TEXT": "manual setup flow"
@@ -328,28 +328,28 @@
         "DESC": "Integrate Twilio Voice and start supporting your customers via phone calls.",
         "PHONE_NUMBER": {
           "LABEL": "Número telefónico",
-          "PLACEHOLDER": "Enter your phone number (e.g. +1234567890)",
-          "ERROR": "Please provide a valid phone number in E.164 format (e.g. +1234567890)"
+          "PLACEHOLDER": "Introduce tu número de teléfono (p. ej., +1234567890)",
+          "ERROR": "Proporciona un número de teléfono válido en formato E.164 (p. ej., +1234567890)"
         },
         "TWILIO": {
           "ACCOUNT_SID": {
             "LABEL": "Cuenta SID",
-            "PLACEHOLDER": "Enter your Twilio Account SID",
+            "PLACEHOLDER": "Introduce tu SID de cuenta de Twilio",
             "REQUIRED": "Account SID is required"
           },
           "AUTH_TOKEN": {
             "LABEL": "Token de Auth",
-            "PLACEHOLDER": "Enter your Twilio Auth Token",
+            "PLACEHOLDER": "Introduce tu token de autenticación de Twilio",
             "REQUIRED": "Auth Token is required"
           },
           "API_KEY_SID": {
             "LABEL": "API Key SID",
-            "PLACEHOLDER": "Enter your Twilio API Key SID",
+            "PLACEHOLDER": "Introduce el SID de tu clave API de Twilio",
             "REQUIRED": "API Key SID is required"
           },
           "API_KEY_SECRET": {
             "LABEL": "Clave API secreta",
-            "PLACEHOLDER": "Enter your Twilio API Key Secret",
+            "PLACEHOLDER": "Introduce el secreto de tu clave API de Twilio",
             "REQUIRED": "API Key Secret is required"
           }
         },
@@ -359,7 +359,7 @@
           "TWILIO_STATUS_URL_TITLE": "Twilio Status Callback URL",
           "TWILIO_STATUS_URL_SUBTITLE": "Configure this URL as the Status Callback URL on your Twilio phone number."
         },
-        "SUBMIT_BUTTON": "Create Voice Channel",
+        "SUBMIT_BUTTON": "Crear canal de voz",
         "API": {
           "ERROR_MESSAGE": "We were not able to create the voice channel"
         }
@@ -455,7 +455,7 @@
         "CHANNEL": {
           "WEBSITE": {
             "TITLE": "Sitio web",
-            "DESCRIPTION": "Create a live-chat widget"
+            "DESCRIPTION": "Crear un widget de chat en vivo"
           },
           "FACEBOOK": {
             "TITLE": "Facebook",
@@ -601,7 +601,7 @@
       },
       "LOCK_TO_SINGLE_CONVERSATION": {
         "ENABLED": "Reopen same conversation",
-        "DISABLED": "Create new conversations",
+        "DISABLED": "Crear nuevas conversaciones",
         "ENABLED_DESCRIPTION": "When a contact messages again, the previous conversation will be reopened.",
         "DISABLED_DESCRIPTION": "A new conversation will be created each time after the previous one is resolved."
       },
@@ -652,7 +652,7 @@
     "WIDGET_FEATURES": "Widget features",
     "ACCOUNT_HEALTH": {
       "TITLE": "Manage your WhatsApp account",
-      "DESCRIPTION": "Review your WhatsApp account status, messaging limits, and quality. Update settings or resolve issues if needed",
+      "DESCRIPTION": "Revisa el estado de tu cuenta de WhatsApp, los límites de mensajería y la calidad. Actualiza la configuración o resuelve problemas si es necesario",
       "GO_TO_SETTINGS": "Go to Meta Business Manager",
       "NO_DATA": "Health data is not available",
       "FIELDS": {
@@ -694,7 +694,7 @@
         "STATUSES": {
           "APPROVED": "Approved",
           "PENDING_REVIEW": "Pending Review",
-          "AVAILABLE_WITHOUT_REVIEW": "Available Without Review",
+        "AVAILABLE_WITHOUT_REVIEW": "Disponible sin revisión",
           "REJECTED": "Rejected",
           "DECLINED": "Declined",
           "NON_EXISTS": "Non exists"
@@ -710,7 +710,7 @@
         "ACTION_REQUIRED": "Webhook not configured",
         "REGISTER_BUTTON": "Register Webhook",
         "REGISTER_SUCCESS": "Webhook registered successfully",
-        "REGISTER_ERROR": "Failed to register webhook. Please try again.",
+        "REGISTER_ERROR": "No se pudo registrar el webhook. Inténtalo de nuevo.",
         "CONFIGURED_SUCCESS": "Webhook configured successfully",
         "URL_MISMATCH": "Webhook URL mismatch"
       }
@@ -741,7 +741,7 @@
         "SECRET_KEY": "Secret Key",
         "VIEW_DOCS": "View documentation",
         "REQUIRE_LABEL": "Require identity validation for all conversations",
-        "REQUIRE_DESCRIPTION": "When enabled, users must provide a valid identity token to start conversations. Requests without valid tokens will be rejected."
+      "REQUIRE_DESCRIPTION": "Cuando está activado, los usuarios deben proporcionar un token de identidad válido para iniciar conversaciones. Las solicitudes sin tokens válidos serán rechazadas."
       },
       "INBOX_AGENTS": "Agentes",
       "INBOX_AGENTS_SUB_TEXT": "Añadir o quitar agentes de esta bandeja de entrada",
@@ -770,7 +770,7 @@
       "INBOX_IDENTIFIER_SUB_TEXT": "Usa el token `inbox_identifier` que se muestra aquí para autenticar tus clientes API.",
       "FORWARD_EMAIL_TITLE": "Reenviar al correo",
       "FORWARD_EMAIL_SUB_TEXT": "Empieze a reenviar su emails a la siguiente dirección de email.",
-      "FORWARD_EMAIL_NOT_CONFIGURED": "Forwarding emails to your inbox is currently disabled on this installation. To use this feature, it must be enabled by your administrator. Please get in touch with them to proceed.",
+      "FORWARD_EMAIL_NOT_CONFIGURED": "El reenvío de correos a tu bandeja está desactivado en esta instalación. Para usar esta función, tu administrador debe habilitarla. Ponte en contacto con él para continuar.",
       "ALLOW_MESSAGES_AFTER_RESOLVED": "Permitir mensajes después de la conversación resuelta",
       "ALLOW_MESSAGES_AFTER_RESOLVED_SUB_TEXT": "Permitir a los usuarios finales enviar mensajes incluso después de que la conversación sea resuelta.",
       "WHATSAPP_SECTION_SUBHEADER": "Esta clave de API se utiliza para la integración con las APIs de WhatsApp.",
@@ -788,12 +788,12 @@
       "WHATSAPP_CONNECT_DESCRIPTION": "Connect this inbox to WhatsApp Business for enhanced features and easier management.",
       "WHATSAPP_CONNECT_BUTTON": "Conectar",
       "WHATSAPP_CONNECT_SUCCESS": "Successfully connected to WhatsApp Business!",
-      "WHATSAPP_CONNECT_ERROR": "Failed to connect to WhatsApp Business. Please try again.",
+      "WHATSAPP_CONNECT_ERROR": "No se pudo conectar a WhatsApp Business. Inténtalo de nuevo.",
       "WHATSAPP_RECONFIGURE_SUCCESS": "Successfully reconfigured WhatsApp Business!",
-      "WHATSAPP_RECONFIGURE_ERROR": "Failed to reconfigure WhatsApp Business. Please try again.",
-      "WHATSAPP_APP_ID_MISSING": "WhatsApp App ID is not configured. Please contact your administrator.",
-      "WHATSAPP_CONFIG_ID_MISSING": "WhatsApp Configuration ID is not configured. Please contact your administrator.",
-      "WHATSAPP_LOGIN_CANCELLED": "WhatsApp login was cancelled. Please try again.",
+      "WHATSAPP_RECONFIGURE_ERROR": "No se pudo volver a configurar WhatsApp Business. Inténtalo de nuevo.",
+      "WHATSAPP_APP_ID_MISSING": "El ID de la aplicación de WhatsApp no está configurado. Ponte en contacto con tu administrador.",
+      "WHATSAPP_CONFIG_ID_MISSING": "El ID de configuración de WhatsApp no está configurado. Ponte en contacto con tu administrador.",
+      "WHATSAPP_LOGIN_CANCELLED": "El inicio de sesión de WhatsApp se canceló. Inténtalo de nuevo.",
       "WHATSAPP_WEBHOOK_TITLE": "Token de verificación del Webhook",
       "WHATSAPP_WEBHOOK_SUBHEADER": "Este token se utiliza para verificar la autenticidad del extremo del webhook.",
       "WHATSAPP_TEMPLATES_SYNC_TITLE": "Sync Templates",
@@ -826,7 +826,7 @@
       "CUSTOMIZE_WITH_POLICY": "Customize with assignment policy",
       "USING_POLICY": "Using custom assignment policy for this inbox",
       "CUSTOMIZE_POLICY": "Customize with assignment policy",
-      "DELETE_POLICY": "Delete policy",
+      "DELETE_POLICY": "Eliminar política",
       "POLICY_LABEL": "Assignment policy",
       "ASSIGNMENT_ORDER_LABEL": "Assignment Order",
       "ASSIGNMENT_METHOD_LABEL": "Assignment Method",
@@ -847,20 +847,20 @@
       "DEFAULT_POLICY_LINKED": "Default policy linked",
       "DEFAULT_POLICY_DESCRIPTION": "Link a custom assignment policy to customize how conversations are assigned to agents in this inbox.",
       "LINK_EXISTING_POLICY": "Link existing policy",
-      "CREATE_NEW_POLICY": "Create new policy",
+      "CREATE_NEW_POLICY": "Crear nueva política",
       "NO_POLICIES": "No assignment policies found",
       "VIEW_ALL_POLICIES": "View all policies",
       "CURRENT_BEHAVIOR": "Currently using default assignment behavior:",
       "LINK_SUCCESS": "Assignment policy linked successfully",
-      "LINK_ERROR": "Failed to link assignment policy"
+      "LINK_ERROR": "No se pudo vincular la política de asignación"
     },
     "ASSIGNMENT_POLICY": {
-      "DELETE_CONFIRM_TITLE": "Delete assignment policy?",
+      "DELETE_CONFIRM_TITLE": "¿Eliminar la política de asignación?",
       "DELETE_CONFIRM_MESSAGE": "Are you sure you want to remove this assignment policy from this inbox? The inbox will revert to default assignment rules.",
       "CANCEL": "Cancelar",
       "CONFIRM_DELETE": "Eliminar",
       "DELETE_SUCCESS": "Assignment policy removed successfully",
-      "DELETE_ERROR": "Failed to remove assignment policy"
+      "DELETE_ERROR": "No se pudo eliminar la política de asignación"
     },
     "FACEBOOK_REAUTHORIZE": {
       "TITLE": "Reautorizar",
@@ -902,11 +902,11 @@
       },
       "MESSAGE": {
         "LABEL": "Mensaje",
-        "PLACEHOLDER": "Please enter a message to show users with the form"
+        "PLACEHOLDER": "Introduce un mensaje para mostrar a los usuarios con el formulario"
       },
       "BUTTON_TEXT": {
         "LABEL": "Button text",
-        "PLACEHOLDER": "Please rate us"
+        "PLACEHOLDER": "Por favor, valóranos"
       },
       "LANGUAGE": {
         "LABEL": "Idioma",
@@ -925,26 +925,26 @@
       },
       "TEMPLATE_CREATION": {
         "SUCCESS_MESSAGE": "WhatsApp template created successfully and sent for approval",
-        "ERROR_MESSAGE": "Failed to create WhatsApp template"
+        "ERROR_MESSAGE": "No se pudo crear la plantilla de WhatsApp"
       },
       "TEMPLATE_UPDATE_DIALOG": {
-        "TITLE": "Edit survey details",
-        "DESCRIPTION": "We will delete the previous template and make a new one which will be sent again for WhatsApp approval",
-        "CONFIRM": "Create new template",
+        "TITLE": "Editar detalles de la encuesta",
+        "DESCRIPTION": "Eliminaremos la plantilla anterior y crearemos una nueva para enviarla de nuevo a aprobación de WhatsApp",
+        "CONFIRM": "Crear nueva plantilla",
         "CANCEL": "Volver"
       },
       "UTILITY_ANALYZER": {
-        "ACTION": "Check utility fit",
-        "HELPER_NOTE": "Check this message before submission to improve Utility fit. The system creates a dedicated CSAT template with buttons for reporting and submits it as Utility; Meta may still reclassify it as Marketing based on content.",
-        "RESULT_LABEL": "Meta category prediction",
-        "GUIDANCE_NOTE": "This is a guidance check, not a guarantee of Meta approval.",
-        "SUGGESTION_LABEL": "Suggested utility-safe rewrite",
-        "APPLY": "Use this rewrite",
-        "ERROR_MESSAGE": "Couldn't analyze the message. Please try again.",
+        "ACTION": "Comprobar ajuste a Utility",
+        "HELPER_NOTE": "Revisa este mensaje antes de enviarlo para mejorar su ajuste a Utility. El sistema crea una plantilla de CSAT dedicada con botones de reporte y la envía como Utility; Meta aún podría reclasificarla como Marketing según el contenido.",
+        "RESULT_LABEL": "Predicción de categoría de Meta",
+        "GUIDANCE_NOTE": "Esta comprobación es orientativa, no una garantía de aprobación por parte de Meta.",
+        "SUGGESTION_LABEL": "Sugerencia de reescritura segura para Utility",
+        "APPLY": "Usar esta reescritura",
+        "ERROR_MESSAGE": "No se pudo analizar el mensaje. Inténtalo de nuevo.",
         "CLASSIFICATION": {
-          "LIKELY_UTILITY": "Likely Utility",
-          "LIKELY_MARKETING": "Likely Marketing",
-          "UNCLEAR": "Needs clarification"
+          "LIKELY_UTILITY": "Probablemente Utility",
+          "LIKELY_MARKETING": "Probablemente Marketing",
+          "UNCLEAR": "Necesita aclaración"
         }
       },
       "SURVEY_RULE": {
@@ -961,7 +961,7 @@
       "WHATSAPP_NOTE": "Note: When you save, the system creates a dedicated CSAT template in WhatsApp (used to capture rating and feedback in reports) and submits it as Utility for approval. Meta may still classify it as Marketing based on content. After approval, surveys are sent only once per conversation as per the survey rule.",
       "API": {
         "SUCCESS_MESSAGE": "CSAT settings updated successfully",
-        "ERROR_MESSAGE": "We couldn't update CSAT settings. Please try again later."
+        "ERROR_MESSAGE": "No pudimos actualizar la configuración de CSAT. Inténtalo de nuevo más tarde."
       }
     },
     "BUSINESS_HOURS": {

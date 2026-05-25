@@ -1,7 +1,7 @@
 {
   "CAMPAIGN": {
     "LIVE_CHAT": {
-      "HEADER_TITLE": "Campañas de Live Chat",
+      "HEADER_TITLE": "Campañas de chat en vivo",
       "NEW_CAMPAIGN": "Crear campaña",
       "CARD": {
         "STATUS": {
@@ -16,11 +16,11 @@
         }
       },
       "EMPTY_STATE": {
-        "TITLE": "No hay campañas de Live Chat disponibles",
+        "TITLE": "No hay campañas de chat en vivo disponibles",
         "SUBTITLE": "Conéctate con tus clientes usando mensajes proactivos. Haz clic en 'Crear campaña' para empezar."
       },
       "CREATE": {
-        "TITLE": "Crear una campaña de Live Chat",
+        "TITLE": "Crear una campaña de chat en vivo",
         "CANCEL_BUTTON_TEXT": "Cancelar",
         "CREATE_BUTTON_TEXT": "Crear",
         "FORM": {
@@ -64,16 +64,16 @@
             "CANCEL": "Cancelar"
           },
           "API": {
-            "SUCCESS_MESSAGE": "Campaña de Live Chat creada con éxito",
+            "SUCCESS_MESSAGE": "Campaña de chat en vivo creada con éxito",
             "ERROR_MESSAGE": "Se presentó un error. Por favor intente nuevamente."
           }
         }
       },
       "EDIT": {
-        "TITLE": "Editar campaña de Live Chat",
+        "TITLE": "Editar campaña de chat en vivo",
         "FORM": {
           "API": {
-            "SUCCESS_MESSAGE": "Campaña de Live Chat actualizada correctamente",
+            "SUCCESS_MESSAGE": "Campaña de chat en vivo actualizada correctamente",
             "ERROR_MESSAGE": "Se presentó un error. Por favor intente nuevamente."
           }
         }
@@ -178,7 +178,7 @@
             "LANGUAGE": "Idioma",
             "CATEGORY": "Categoría",
             "VARIABLES_LABEL": "Variables",
-            "VARIABLE_PLACEHOLDER": "Enter value for {variable}"
+            "VARIABLE_PLACEHOLDER": "Introduce un valor para {variable}"
           },
           "AUDIENCE": {
             "LABEL": "Audiencia",

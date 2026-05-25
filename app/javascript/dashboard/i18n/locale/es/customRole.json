@@ -1,68 +1,68 @@
 {
   "CUSTOM_ROLE": {
     "HEADER": "Roles personalizados",
-    "LEARN_MORE": "Obtenga más información sobre los roles personalizados",
-    "DESCRIPTION": "Custom roles are roles that are created by the account owner or admin. These roles can be assigned to agents to define their access and permissions within the account. Custom roles can be created with specific permissions and access levels to suit the requirements of the organization.",
-    "COUNT": "{n} custom role | {n} custom roles",
-    "HEADER_BTN_TXT": "Add custom role",
-    "LOADING": "Fetching custom roles...",
-    "SEARCH_PLACEHOLDER": "Search custom roles...",
-    "NO_RESULTS": "No custom roles found matching your search",
+    "LEARN_MORE": "Más información sobre los roles personalizados",
+    "DESCRIPTION": "Los roles personalizados son roles creados por el propietario de la cuenta o un administrador. Se pueden asignar a agentes para definir su acceso y permisos dentro de la cuenta. Se pueden crear con permisos y niveles de acceso específicos para adaptarse a las necesidades de la organización.",
+    "COUNT": "{n} rol personalizado | {n} roles personalizados",
+    "HEADER_BTN_TXT": "Añadir rol personalizado",
+    "LOADING": "Obteniendo roles personalizados...",
+    "SEARCH_PLACEHOLDER": "Buscar roles personalizados...",
+    "NO_RESULTS": "No se encontraron roles personalizados que coincidan con tu búsqueda",
     "SEARCH_404": "No hay elementos que coincidan con esta consulta.",
     "PAYWALL": {
-      "TITLE": "Upgrade to create custom roles",
-      "AVAILABLE_ON": "The custom role feature is only available in the Business and Enterprise plans.",
+      "TITLE": "Actualiza tu plan para crear roles personalizados",
+      "AVAILABLE_ON": "La función de roles personalizados solo está disponible en los planes Business y Enterprise.",
       "UPGRADE_PROMPT": "Actualiza tu plan para tener acceso a funciones avanzadas como gestión de equipos, automatizaciones, atributos personalizados y más.",
       "UPGRADE_NOW": "Actualizar ahora",
-      "CANCEL_ANYTIME": "Puede cambiar o cancelar su plan en cualquier momento"
+      "CANCEL_ANYTIME": "Puedes cambiar o cancelar tu plan en cualquier momento"
     },
     "ENTERPRISE_PAYWALL": {
-      "AVAILABLE_ON": "The custom role feature is only available in the paid plans.",
-      "UPGRADE_PROMPT": "Actualice a un plan pago para acceder a funciones avanzadas como registros de auditoría, capacidad de agente y más.",
-      "ASK_ADMIN": "Por favor, comuníquese con su administrador para la actualización."
+      "AVAILABLE_ON": "La función de roles personalizados solo está disponible en los planes de pago.",
+      "UPGRADE_PROMPT": "Actualiza a un plan de pago para acceder a funciones avanzadas como registros de auditoría, capacidad de agente y más.",
+      "ASK_ADMIN": "Ponte en contacto con tu administrador para la actualización."
     },
     "LIST": {
-      "404": "There are no custom roles available in this account.",
-      "TITLE": "Manage custom roles",
-      "DESC": "Custom roles are roles that are created by the account owner or admin. These roles can be assigned to agents to define their access and permissions within the account. Custom roles can be created with specific permissions and access levels to suit the requirements of the organization.",
+      "404": "No hay roles personalizados disponibles en esta cuenta.",
+      "TITLE": "Administrar roles personalizados",
+      "DESC": "Los roles personalizados son roles creados por el propietario de la cuenta o un administrador. Se pueden asignar a agentes para definir su acceso y permisos dentro de la cuenta. Se pueden crear con permisos y niveles de acceso específicos para adaptarse a las necesidades de la organización.",
       "TABLE_HEADER": {
         "NAME": "Nombre",
         "DESCRIPTION": "Descripción",
-        "PERMISSIONS": "Permissions",
+        "PERMISSIONS": "Permisos",
         "ACTIONS": "Acciones"
       }
     },
     "PERMISSIONS": {
-      "CONVERSATION_MANAGE": "Manage all conversations",
-      "CONVERSATION_UNASSIGNED_MANAGE": "Manage unassigned conversations and those assigned to them",
-      "CONVERSATION_PARTICIPATING_MANAGE": "Manage participating conversations and those assigned to them",
+      "CONVERSATION_MANAGE": "Administrar todas las conversaciones",
+      "CONVERSATION_UNASSIGNED_MANAGE": "Administrar las conversaciones sin asignar y las asignadas a ellas",
+      "CONVERSATION_PARTICIPATING_MANAGE": "Administrar las conversaciones en las que participa y las asignadas a ellas",
       "CONTACT_MANAGE": "Administrar contactos",
       "REPORT_MANAGE": "Administrar informes",
-      "KNOWLEDGE_BASE_MANAGE": "Administrar base de conocimiento"
+      "KNOWLEDGE_BASE_MANAGE": "Administrar la base de conocimientos"
     },
     "FORM": {
       "NAME": {
         "LABEL": "Nombre",
-        "PLACEHOLDER": "Por favor, introduzca el nombre.",
-        "ERROR": "El nombre es requerido."
+        "PLACEHOLDER": "Introduce el nombre.",
+        "ERROR": "El nombre es obligatorio."
       },
       "DESCRIPTION": {
         "LABEL": "Descripción",
-        "PLACEHOLDER": "Por favor, introduzca una descripción.",
-        "ERROR": "Descripción requerida."
+        "PLACEHOLDER": "Introduce una descripción.",
+        "ERROR": "La descripción es obligatoria."
       },
       "PERMISSIONS": {
         "LABEL": "Permisos",
-        "ERROR": "Permisos requeridos."
+        "ERROR": "Los permisos son obligatorios."
       },
       "CANCEL_BUTTON_TEXT": "Cancelar",
       "API": {
-        "ERROR_MESSAGE": "No se pudo conectar al servidor Woot, por favor inténtalo de nuevo más tarde"
+        "ERROR_MESSAGE": "No se pudo conectar al servidor Woot. Inténtalo de nuevo más tarde."
       }
     },
     "ADD": {
       "TITLE": "Añadir rol personalizado",
-      "DESC": " Los roles personalizados le permiten crear roles con permisos específicos y niveles de acceso para adaptarse a los requerimientos de la organización.",
+      "DESC": "Los roles personalizados te permiten crear roles con permisos específicos y niveles de acceso para adaptarse a las necesidades de la organización.",
       "SUBMIT": "Enviar",
       "API": {
         "SUCCESS_MESSAGE": "Rol personalizado añadido con éxito."
@@ -71,7 +71,7 @@
     "EDIT": {
       "BUTTON_TEXT": "Editar",
       "TITLE": "Editar rol personalizado",
-      "DESC": " Los roles personalizados le permiten crear roles con permisos específicos y niveles de acceso para adaptarse a los requerimientos de la organización.",
+      "DESC": "Los roles personalizados te permiten crear roles con permisos específicos y niveles de acceso para adaptarse a las necesidades de la organización.",
       "SUBMIT": "Actualizar",
       "API": {
         "SUCCESS_MESSAGE": "Rol personalizado actualizado con éxito."
@@ -81,11 +81,11 @@
       "BUTTON_TEXT": "Eliminar",
       "API": {
         "SUCCESS_MESSAGE": "Rol personalizado eliminado con éxito.",
-        "ERROR_MESSAGE": "No se pudo conectar al servidor Woot, por favor inténtalo de nuevo más tarde"
+        "ERROR_MESSAGE": "No se pudo conectar al servidor Woot. Inténtalo de nuevo más tarde."
       },
       "CONFIRM": {
-        "TITLE": "Confirme eliminación",
-        "MESSAGE": "¿Está seguro de eliminar ",
+        "TITLE": "Confirmar eliminación",
+        "MESSAGE": "¿Estás seguro de eliminar ",
         "YES": "Sí, eliminar ",
         "NO": "No, mantenerlo "
       }
