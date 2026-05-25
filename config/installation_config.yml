@@ -215,6 +215,49 @@
   value:
   locked: false
   type: code
+
+# --- Multi-Provider AI Keys (Adaki) ---
+# Captain auto-detects which provider to use based on the model selected
+# (e.g. "claude-*" -> Anthropic, "gemini-*" -> Google, "llama*" -> Ollama).
+# Set any subset; missing providers are ignored.
+- name: CAPTAIN_ANTHROPIC_API_KEY
+  display_title: 'Anthropic (Claude) API Key'
+  description: 'API key for Anthropic Claude models. Enables claude-* models in Captain model selector.'
+  locked: false
+  type: secret
+- name: CAPTAIN_GEMINI_API_KEY
+  display_title: 'Google Gemini API Key'
+  description: 'API key for Google Gemini models. Enables gemini-* models in Captain model selector.'
+  locked: false
+  type: secret
+- name: CAPTAIN_DEEPSEEK_API_KEY
+  display_title: 'DeepSeek API Key'
+  description: 'API key for DeepSeek models. Enables deepseek-* models.'
+  locked: false
+  type: secret
+- name: CAPTAIN_OPENROUTER_API_KEY
+  display_title: 'OpenRouter API Key'
+  description: 'API key for OpenRouter (aggregates many providers). Enables openrouter/* models.'
+  locked: false
+  type: secret
+- name: CAPTAIN_OLLAMA_API_BASE
+  display_title: 'Ollama API Base URL (optional)'
+  description: 'Base URL of your Ollama server (e.g. http://ollama:11434/v1). Enables local llama*/mistral*/qwen* models.'
+  locked: false
+- name: CAPTAIN_BEDROCK_API_KEY
+  display_title: 'AWS Bedrock API Key (optional)'
+  description: 'AWS access key for Bedrock-hosted models.'
+  locked: false
+  type: secret
+- name: CAPTAIN_BEDROCK_SECRET_KEY
+  display_title: 'AWS Bedrock Secret Key (optional)'
+  description: 'AWS secret key for Bedrock-hosted models.'
+  locked: false
+  type: secret
+- name: CAPTAIN_BEDROCK_REGION
+  display_title: 'AWS Bedrock Region (optional)'
+  description: 'AWS region for Bedrock (e.g. us-east-1).'
+  locked: false
 # End of Captain Config
 
 # ------- Context.dev Config ------- #

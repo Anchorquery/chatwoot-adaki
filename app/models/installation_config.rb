@@ -44,6 +44,7 @@ class InstallationConfig < ApplicationRecord
   scope :editable, -> { where(locked: false) }
 
   after_commit :clear_cache
+  after_commit :reset_llm_config_if_provider, on: %i[create update]
 
   def value
     serialized_value[:value]
@@ -63,6 +64,15 @@ class InstallationConfig < ApplicationRecord
 
   def clear_cache
     GlobalConfig.clear_cache
+  end
+
+  # When any Captain provider key is changed via Super Admin, reset the
+  # memoised RubyLLM config so the next captain request rebuilds it
+  # with the new credentials (no container restart needed).
+  def reset_llm_config_if_provider
+    return unless defined?(Llm::Config) && Llm::Config::PROVIDER_KEYS.key?(name)
+
+    Llm::Config.reset!
   end
 
   def saml_sso_users_check
