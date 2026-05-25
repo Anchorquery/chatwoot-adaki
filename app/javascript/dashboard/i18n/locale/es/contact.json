@@ -273,7 +273,7 @@
       "ATTRIBUTE_WARNING": "Los datos de contacto de <strong>{primaryContactName}</strong> se copiarán en <strong>{parentContactName}</strong>."
     },
     "SEARCH": {
-      "ERROR_MESSAGE": "Something went wrong. Please try again later."
+      "ERROR_MESSAGE": "Algo salió mal. Inténtalo de nuevo más tarde."
     },
     "FORM": {
       "SUBMIT": " Combinar contactos",
@@ -568,7 +568,7 @@
         "COLLAPSE": "Contraer",
         "NO_NOTES": "No hay notas, puede agregar notas desde la página de detalles de contacto.",
         "EMPTY_STATE": "No hay notas asociadas a este contacto. Puede añadir una nota escribiendo en el recuadro superior.",
-        "CONVERSATION_EMPTY_STATE": "There are no notes yet. Use the Add note button to create one."
+        "CONVERSATION_EMPTY_STATE": "Todavía no hay notas. Usa el botón Añadir nota para crear una."
       }
     },
     "EMPTY_STATE": {
@@ -584,7 +584,7 @@
   "CONTACTS_BULK_ACTIONS": {
     "ASSIGN_LABELS": "Asignar etiquetas",
     "ASSIGN_LABELS_SUCCESS": "Etiquetas asignadas correctamente.",
-    "ASSIGN_LABELS_FAILED": "Failed to assign labels",
+    "ASSIGN_LABELS_FAILED": "No se pudieron asignar las etiquetas",
     "DESCRIPTION": "Select the labels you want to add to the selected contacts.",
     "NO_LABELS_FOUND": "No labels available yet.",
     "SELECTED_COUNT": "{count} selected",
@@ -592,13 +592,13 @@
     "SELECT_ALL": "Select all ({count})",
     "DELETE_CONTACTS": "Eliminar",
     "DELETE_SUCCESS": "Contacts deleted successfully.",
-    "DELETE_FAILED": "Failed to delete contacts.",
+    "DELETE_FAILED": "No se pudieron eliminar los contactos.",
     "DELETE_DIALOG": {
-      "TITLE": "Delete selected contacts",
-      "SINGULAR_TITLE": "Delete selected contact",
+      "TITLE": "Eliminar contactos seleccionados",
+      "SINGULAR_TITLE": "Eliminar contacto seleccionado",
       "DESCRIPTION": "This will permanently delete {count} selected contacts. This action cannot be undone.",
       "SINGULAR_DESCRIPTION": "This will permanently delete the selected contact. This action cannot be undone.",
-      "CONFIRM_MULTIPLE": "Delete contacts",
+      "CONFIRM_MULTIPLE": "Eliminar contactos",
       "CONFIRM_SINGLE": "Eliminar contacto"
     }
   },
@@ -613,7 +613,7 @@
       "NO_INBOX_ALERT": "No hay bandejas de entrada disponibles para iniciar una conversación con este contacto.",
       "CONTACT_SELECTOR": {
         "LABEL": "Para:",
-        "TAG_INPUT_PLACEHOLDER": "Enter at least 2 characters to search by name, email, or phone number",
+        "TAG_INPUT_PLACEHOLDER": "Introduce al menos 2 caracteres para buscar por nombre, correo o número de teléfono",
         "CONTACT_CREATING": "Creando contacto..."
       },
       "INBOX_SELECTOR": {
@@ -624,9 +624,9 @@
         "SUBJECT_LABEL": "Asunto :",
         "SUBJECT_PLACEHOLDER": "Introduzca el asunto de correo electrónico aquí",
         "CC_LABEL": "Cc:",
-        "CC_PLACEHOLDER": "Enter at least 2 characters to search by email",
+        "CC_PLACEHOLDER": "Introduce al menos 2 caracteres para buscar por correo electrónico",
         "BCC_LABEL": "Bcc:",
-        "BCC_PLACEHOLDER": "Enter at least 2 characters to search by email",
+        "BCC_PLACEHOLDER": "Introduce al menos 2 caracteres para buscar por correo electrónico",
         "BCC_BUTTON": "Bcc"
       },
       "MESSAGE_EDITOR": {

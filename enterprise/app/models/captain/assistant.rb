@@ -36,7 +36,8 @@ class Captain::Assistant < ApplicationRecord
   has_many :copilot_threads, dependent: :destroy_async
   has_many :scenarios, class_name: 'Captain::Scenario', dependent: :destroy_async
 
-  store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes, :product_name
+  store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes,
+                 :product_name, :autopilot_enabled
 
   validates :name, presence: true
   validates :description, presence: true
@@ -48,6 +49,10 @@ class Captain::Assistant < ApplicationRecord
 
   def available_name
     name
+  end
+
+  def autopilot_enabled?
+    ActiveModel::Type::Boolean.new.cast(config['autopilot_enabled'])
   end
 
   def available_agent_tools

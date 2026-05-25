@@ -36,11 +36,11 @@
     "API_HOURS_WINDOW": "Solo puedes responder a esta conversación dentro de {hours} horas",
     "NOT_ASSIGNED_TO_YOU": "Esta conversación no te está asignada. ¿Quieres asignarla a ti mismo?",
     "ASSIGN_TO_ME": "Asignar a mi",
-    "BOT_HANDOFF_MESSAGE": "You are responding to a conversation which is currently handled by an assistant or a bot.",
-    "BOT_HANDOFF_ACTION": "Mark open and assign to you",
-    "BOT_HANDOFF_REOPEN_ACTION": "Mark conversation open",
-    "BOT_HANDOFF_SUCCESS": "Conversation has been handed over to you",
-    "BOT_HANDOFF_ERROR": "Failed to take over the conversation. Please try again.",
+    "BOT_HANDOFF_MESSAGE": "Estás respondiendo a una conversación que actualmente gestiona un asistente o un bot.",
+    "BOT_HANDOFF_ACTION": "Marcar como abierta y asignártela",
+    "BOT_HANDOFF_REOPEN_ACTION": "Marcar conversación como abierta",
+    "BOT_HANDOFF_SUCCESS": "La conversación te ha sido transferida",
+    "BOT_HANDOFF_ERROR": "No se pudo tomar el control de la conversación. Inténtalo de nuevo.",
     "TWILIO_WHATSAPP_CAN_REPLY": "Sólo puede responder a esta conversación usando una plantilla de mensaje debido a",
     "TWILIO_WHATSAPP_24_HOURS_WINDOW": "Restricción de la ventana de mensajes de 24 horas",
     "OLD_INSTAGRAM_INBOX_REPLY_BANNER": "Esta cuenta de Instagram fue migrada a la nueva bandeja de entrada del canal Instagram. Todos los nuevos mensajes aparecerán allí. Ya no podrás enviar mensajes de esta conversación.",
@@ -61,7 +61,7 @@
     "UNSUPPORTED_MESSAGE": "Este mensaje no es compatible. Puedes ver este mensaje en la aplicación de Facebook/Instagram.",
     "UNSUPPORTED_MESSAGE_FACEBOOK": "Este mensaje no es compatible. Puedes ver este mensaje en la aplicación de Facebook Messenger.",
     "UNSUPPORTED_MESSAGE_INSTAGRAM": "Este mensaje no es compatible. Puedes ver este mensaje en la aplicación de Instagram.",
-    "UNSUPPORTED_MESSAGE_TIKTOK": "This message is unsupported. You can view this message on the TikTok app.",
+    "UNSUPPORTED_MESSAGE_TIKTOK": "Este mensaje no es compatible. Puedes verlo en la aplicación de TikTok.",
     "SUCCESS_DELETE_MESSAGE": "Mensaje eliminado correctamente",
     "FAIL_DELETE_MESSSAGE": "¡No se pudo eliminar el mensaje! Inténtalo de nuevo",
     "NO_RESPONSE": "No hay respuesta",
@@ -72,19 +72,19 @@
     "CARD": {
       "SHOW_LABELS": "Mostrar etiquetas",
       "HIDE_LABELS": "Ocultar etiquetas",
-      "LABELS_COUNT": "{count} labels"
+      "LABELS_COUNT": "{count} etiquetas"
     },
     "VOICE_CALL": {
-      "INCOMING_CALL": "Incoming call",
-      "OUTGOING_CALL": "Outgoing call",
-      "CALL_IN_PROGRESS": "Call in progress",
-      "NO_ANSWER": "No answer",
-      "MISSED_CALL": "Missed call",
-      "CALL_ENDED": "Call ended",
-      "NOT_ANSWERED_YET": "Not answered yet",
-      "THEY_ANSWERED": "They answered",
-      "YOU_ANSWERED": "You answered",
-      "AGENT_ANSWERED": "{agentName} answered",
+      "INCOMING_CALL": "Llamada entrante",
+      "OUTGOING_CALL": "Llamada saliente",
+      "CALL_IN_PROGRESS": "Llamada en curso",
+      "NO_ANSWER": "Sin respuesta",
+      "MISSED_CALL": "Llamada perdida",
+      "CALL_ENDED": "Llamada finalizada",
+      "NOT_ANSWERED_YET": "Aún sin respuesta",
+      "THEY_ANSWERED": "Respondieron",
+      "YOU_ANSWERED": "Respondiste",
+      "AGENT_ANSWERED": "{agentName} respondió",
       "JOIN_CALL": "Unirse a la llamada"
     },
     "HEADER": {
@@ -95,7 +95,7 @@
       "OPEN": "Más",
       "CLOSE": "Cerrar",
       "DETAILS": "detalles",
-      "COPY_ID_SUCCESS": "Conversation ID copied to clipboard",
+      "COPY_ID_SUCCESS": "El ID de la conversación se copió al portapapeles",
       "SNOOZED_UNTIL": "Posponer hasta",
       "SNOOZED_UNTIL_TOMORROW": "Pospuesto hasta mañana",
       "SNOOZED_UNTIL_NEXT_WEEK": "Pospuesto hasta la próxima semana",
@@ -179,8 +179,8 @@
           "FAILED": "No se pudo asignar el agente. Por favor, inténtelo de nuevo."
         },
         "LABEL_REMOVAL": {
-          "SUCCESFUL": "Removed label #{labelName} from conversation id {conversationId}",
-          "FAILED": "Couldn't remove label. Please try again."
+          "SUCCESFUL": "Se eliminó la etiqueta #{labelName} de la conversación con id {conversationId}",
+          "FAILED": "No se pudo eliminar la etiqueta. Inténtalo de nuevo."
         },
         "TEAM_ASSIGNMENT": {
           "SUCCESFUL": "Equipo asignado \"{team}\" al ID de conversación {conversationId}",
@@ -192,11 +192,11 @@
       "MESSAGE_SIGN_TOOLTIP": "Firma del mensaje",
       "ENABLE_SIGN_TOOLTIP": "Activar firma",
       "DISABLE_SIGN_TOOLTIP": "Desactivar firma",
-      "MSG_INPUT": "Shift + enter for new line. Comience con '/' para seleccionar una respuesta predefinida.",
-      "PRIVATE_MSG_INPUT": "Mayús + entrar para una nueva línea. Esto será visible sólo para los agentes",
-      "MESSAGING_RESTRICTED": "You cannot reply to this conversation",
-      "MESSAGING_RESTRICTED_WHATSAPP": "You can only reply using a template message due to 24-hour message window restriction",
-      "MESSAGING_RESTRICTED_API": "You can only reply using a template message due to message window restriction",
+      "MSG_INPUT": "Shift + Enter para una nueva línea. Comienza con '/' para seleccionar una respuesta predefinida.",
+      "PRIVATE_MSG_INPUT": "Mayús + Enter para una nueva línea. Esto solo será visible para los agentes",
+      "MESSAGING_RESTRICTED": "No puedes responder a esta conversación",
+      "MESSAGING_RESTRICTED_WHATSAPP": "Solo puedes responder con una plantilla de mensaje debido a la restricción de la ventana de mensajes de 24 horas",
+      "MESSAGING_RESTRICTED_API": "Solo puedes responder con una plantilla de mensaje debido a la restricción de la ventana de mensajes",
       "MESSAGE_SIGNATURE_NOT_CONFIGURED": "La firma del mensaje no está configurada, por favor configúrela en la configuración del perfil.",
       "COPILOT_MSG_INPUT": "Dale instrucciones adicionales a Copilot o pregúntale cualquier otra cosa... Pulsa Enter para enviar el seguimiento",
       "CLICK_HERE": "Haga clic aquí para actualizar",
@@ -242,11 +242,11 @@
         }
       },
       "QUOTED_REPLY": {
-        "ENABLE_TOOLTIP": "Include quoted email thread",
-        "DISABLE_TOOLTIP": "Don't include quoted email thread",
-        "REMOVE_PREVIEW": "Remove quoted email thread",
-        "COLLAPSE": "Collapse preview",
-        "EXPAND": "Expand preview"
+        "ENABLE_TOOLTIP": "Incluir el hilo de correo citado",
+        "DISABLE_TOOLTIP": "No incluir el hilo de correo citado",
+        "REMOVE_PREVIEW": "Eliminar el hilo de correo citado",
+        "COLLAPSE": "Contraer vista previa",
+        "EXPAND": "Expandir vista previa"
       }
     },
     "VISIBLE_TO_AGENTS": "Nota privada: solo visible para ti y tu equipo",
@@ -260,12 +260,12 @@
     "SUCCESS_DELETE_CONVERSATION": "Conversación eliminada con éxito",
     "FAIL_DELETE_CONVERSATION": "¡No se pudo eliminar la conversación! Inténtalo de nuevo",
     "FILE_SIZE_LIMIT": "El archivo supera el límite de archivos adjuntos de {MAXIMUM_SUPPORTED_FILE_UPLOAD_SIZE} MB",
-    "FILE_TYPE_NOT_SUPPORTED": "This {fileName} file type is not supported in this conversation",
+    "FILE_TYPE_NOT_SUPPORTED": "Este tipo de archivo {fileName} no es compatible en esta conversación",
     "MESSAGE_ERROR": "No se puede enviar este mensaje, por favor inténtalo de nuevo más tarde",
     "SENT_BY": "Enviado por:",
     "BOT": "Bot",
-    "NATIVE_APP": "Native app",
-    "NATIVE_APP_ADVISORY": "This message was sent from the native app. Reply from Adaki to maintain the message window.",
+    "NATIVE_APP": "Aplicación nativa",
+    "NATIVE_APP_ADVISORY": "Este mensaje se envió desde la aplicación nativa. Responde desde Adaki para mantener la ventana de mensajes.",
     "SEND_FAILED": "¡No se pudo enviar el mensaje! Inténtalo de nuevo",
     "TRY_AGAIN": "reintentar",
     "ASSIGNMENT": {
@@ -292,11 +292,11 @@
       "CONTACT": "Contacto",
       "COPILOT": "Copilot"
     },
-    "VOICE_WIDGET": {
-      "INCOMING_CALL": "Incoming call",
-      "OUTGOING_CALL": "Outgoing call",
-      "CALL_IN_PROGRESS": "Call in progress",
-      "NOT_ANSWERED_YET": "Not answered yet",
+      "VOICE_WIDGET": {
+      "INCOMING_CALL": "Llamada entrante",
+      "OUTGOING_CALL": "Llamada saliente",
+      "CALL_IN_PROGRESS": "Llamada en curso",
+      "NOT_ANSWERED_YET": "Aún no respondida",
       "HANDLED_IN_ANOTHER_TAB": "Atendido en otra pestaña",
       "REJECT_CALL": "Rechazar",
       "JOIN_CALL": "Unirse a la llamada",
@@ -310,7 +310,7 @@
     "CANCEL": "Cancelar",
     "SEND_EMAIL_SUCCESS": "La transcripción ha sido enviada",
     "SEND_EMAIL_ERROR": "Hubo un error, por favor inténtelo de nuevo",
-    "SEND_EMAIL_PAYMENT_REQUIRED": "Email transcript is not available on your current plan. Please upgrade to use this feature.",
+    "SEND_EMAIL_PAYMENT_REQUIRED": "La transcripción por correo no está disponible en tu plan actual. Actualiza tu plan para usar esta función.",
     "FORM": {
       "SEND_TO_CONTACT": "Enviar la transcripción al cliente",
       "SEND_TO_AGENT": "Enviar la transcripción al agente asignado",
@@ -372,7 +372,7 @@
     "SHARED_FILES": {
       "EMPTY": "No attachments yet",
       "DOWNLOAD": "Download file",
-      "DOWNLOAD_ERROR": "Could not download the file. Please try again.",
+      "DOWNLOAD_ERROR": "No se pudo descargar el archivo. Inténtalo de nuevo.",
       "MEDIA_HEADING": "Media",
       "FILES_HEADING": "Files",
       "VIEW_ALL": "Ver todo",
@@ -382,7 +382,7 @@
     },
     "SHOPIFY": {
       "ORDER_ID": "Order #{id}",
-      "ERROR": "Error loading orders",
+      "ERROR": "Error al cargar los pedidos",
       "NO_SHOPIFY_ORDERS": "No orders found",
       "FINANCIAL_STATUS": {
         "PENDING": "Pendientes",

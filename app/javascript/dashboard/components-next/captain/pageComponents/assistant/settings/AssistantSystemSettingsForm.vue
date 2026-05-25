@@ -8,6 +8,7 @@ import { useAccount } from 'dashboard/composables/useAccount';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Editor from 'dashboard/components-next/Editor/Editor.vue';
+import SettingsToggleSection from 'dashboard/components-next/Settings/SettingsToggleSection.vue';
 
 const props = defineProps({
   assistant: {
@@ -30,6 +31,7 @@ const initialState = {
   resolutionMessage: '',
   instructions: '',
   temperature: 1,
+  autopilotEnabled: false,
 };
 
 const state = reactive({ ...initialState });
@@ -58,6 +60,7 @@ const updateStateFromAssistant = assistant => {
   state.resolutionMessage = config.resolution_message;
   state.instructions = config.instructions;
   state.temperature = config.temperature || 1;
+  state.autopilotEnabled = config.autopilot_enabled || false;
 };
 
 const handleSystemMessagesUpdate = async () => {
@@ -81,6 +84,7 @@ const handleSystemMessagesUpdate = async () => {
       handoff_message: state.handoffMessage,
       resolution_message: state.resolutionMessage,
       temperature: state.temperature || 1,
+      autopilot_enabled: state.autopilotEnabled,
     },
   };
 
@@ -150,6 +154,12 @@ watch(
         {{ t('CAPTAIN.ASSISTANTS.FORM.TEMPERATURE.DESCRIPTION') }}
       </p>
     </div>
+
+    <SettingsToggleSection
+      v-model="state.autopilotEnabled"
+      :header="t('CAPTAIN.ASSISTANTS.FORM.AUTOPILOT.LABEL')"
+      :description="t('CAPTAIN.ASSISTANTS.FORM.AUTOPILOT.DESCRIPTION')"
+    />
 
     <div>
       <Button

@@ -142,6 +142,9 @@ export const getters = {
       item => item.channel_type === INBOX_TYPES.TWILIO
     );
   },
+  getApiInboxes($state) {
+    return $state.records.filter(item => item.channel_type === INBOX_TYPES.API);
+  },
   getSMSInboxes($state) {
     return $state.records.filter(
       item =>

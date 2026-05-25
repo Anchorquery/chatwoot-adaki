@@ -280,10 +280,10 @@
     "DOWNLOAD_INBOX_REPORTS": "Descargar reportes de bandeja de entrada",
     "FILTER_DROPDOWN_LABEL": "Seleccione una bandeja de entrada",
     "ALL_INBOXES": "All Inboxes",
-    "SEARCH_INBOX": "Search Inbox",
+    "SEARCH_INBOX": "Buscar bandeja",
     "FILTERS": {
       "INPUT_PLACEHOLDER": {
-        "INBOXES": "Search inboxes"
+        "INBOXES": "Buscar bandejas"
       }
     },
     "METRICS": {
@@ -435,9 +435,9 @@
       "NO_FILTER": "No hay filtros disponibles",
       "INPUT_PLACEHOLDER": {
         "AGENTS": "Buscar agentes",
-        "INBOXES": "Search inboxes",
+        "INBOXES": "Buscar bandejas",
         "TEAMS": "Buscar equipos",
-        "RATINGS": "Search ratings"
+        "RATINGS": "Buscar valoraciones"
       },
       "AGENTS": {
         "LABEL": "Agente"
@@ -489,7 +489,7 @@
       "CANCEL": "Cancelar",
       "SAVING": "Guardando...",
       "SAVED": "Notes saved successfully",
-      "SAVE_ERROR": "Failed to save notes",
+      "SAVE_ERROR": "No se pudieron guardar las notas",
       "UPDATED_BY": "Updated by {name} {time}",
       "UPDATED_BY_LABEL": "Updated by",
       "PAYWALL": {
@@ -559,10 +559,10 @@
       }
     },
     "TEAM_CONVERSATIONS": {
-      "ALL_TEAMS": "All Teams",
-      "HEADER": "Conversations by teams",
-      "LOADING_MESSAGE": "Loading team metrics...",
-      "NO_TEAMS": "There is no data available",
+      "ALL_TEAMS": "Todos los equipos",
+      "HEADER": "Conversaciones por equipo",
+      "LOADING_MESSAGE": "Cargando métricas del equipo...",
+      "NO_TEAMS": "No hay datos disponibles",
       "TABLE_HEADER": {
         "TEAM": "Equipo",
         "OPEN": "Abrir",
@@ -642,7 +642,7 @@
     "TEAM": "Equipo",
     "LABEL": "Etiqueta",
     "AVG_RESOLUTION_TIME": "Avg. Resolution Time",
-    "AVG_FIRST_RESPONSE_TIME": "Avg. First Response Time",
+    "AVG_FIRST_RESPONSE_TIME": "Tiempo medio de primera respuesta",
     "AVG_REPLY_TIME": "Avg. Customer Waiting Time",
     "RESOLUTION_COUNT": "Número de resoluciones",
     "CONVERSATIONS": "Núm. de conversaciones"

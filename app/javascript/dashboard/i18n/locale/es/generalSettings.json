@@ -1,81 +1,81 @@
-﻿{
+{
   "GENERAL_SETTINGS": {
     "LIMIT_MESSAGES": {
-      "CONVERSATION": "You have exceeded the conversation limit. Hacker plan allows only 500 conversations.",
-      "INBOXES": "You have exceeded the inbox limit. Hacker plan only supports website live-chat. Additional inboxes like email, WhatsApp etc. require a paid plan.",
+      "CONVERSATION": "Has superado el límite de conversaciones. El plan Hacker solo permite 500 conversaciones.",
+      "INBOXES": "Has superado el límite de bandejas. El plan Hacker solo admite chat en vivo para sitios web. Las bandejas adicionales como correo, WhatsApp, etc. requieren un plan de pago.",
       "AGENTS": "Has superado el límite de agentes. Tu plan solo permite {allowedAgents} agentes.",
-      "NON_ADMIN": "Please contact your administrator to upgrade the plan and continue using all features."
+      "NON_ADMIN": "Ponte en contacto con tu administrador para actualizar el plan y seguir usando todas las funciones."
     },
     "TITLE": "Configuración de la cuenta",
     "SUBMIT": "Actualizar ajustes",
     "BACK": "Atrás",
     "DISMISS": "Descartar",
     "UPDATE": {
-      "ERROR": "No se pudo actualizar la configuración, ¡inténtalo de nuevo!",
-      "SUCCESS": "Configuración de cuenta actualizada correctamente"
+      "ERROR": "No se pudo actualizar la configuración. Inténtalo de nuevo.",
+      "SUCCESS": "Configuración de la cuenta actualizada correctamente"
     },
     "ACCOUNT_DELETE_SECTION": {
-      "TITLE": "Delete your Account",
-      "NOTE": "Once you delete your account, all your data will be deleted.",
-      "BUTTON_TEXT": "Delete Your Account",
+      "TITLE": "Eliminar tu cuenta",
+      "NOTE": "Una vez que elimines tu cuenta, todos tus datos se borrarán.",
+      "BUTTON_TEXT": "Eliminar tu cuenta",
       "CONFIRM": {
-        "TITLE": "Delete Account",
-        "MESSAGE": "Deleting your Account is irreversible. Enter your account name below to confirm you want to permanently delete it.",
+        "TITLE": "Eliminar cuenta",
+        "MESSAGE": "Eliminar tu cuenta es irreversible. Escribe el nombre de tu cuenta abajo para confirmar que deseas eliminarla de forma permanente.",
         "BUTTON_TEXT": "Eliminar",
         "DISMISS": "Cancelar",
-        "PLACE_HOLDER": "Por favor escriba {accountName} para confirmar"
+        "PLACE_HOLDER": "Escribe {accountName} para confirmar"
       },
-      "SUCCESS": "Account marked for deletion",
-      "FAILURE": "Could not delete account, try again!",
+      "SUCCESS": "Cuenta marcada para eliminación",
+      "FAILURE": "No se pudo eliminar la cuenta. Inténtalo de nuevo.",
       "SCHEDULED_DELETION": {
-        "TITLE": "Account Scheduled for Deletion",
-        "MESSAGE_MANUAL": "This account is scheduled for deletion on {deletionDate}. This was requested by an administrator. You can cancel the deletion before this date.",
-        "MESSAGE_INACTIVITY": "Esta cuenta se eliminará el {deletionDate} debido a inactividad. Puedes cancelar la eliminación antes de esta fecha.",
-        "CLEAR_BUTTON": "Cancel Scheduled Deletion"
+        "TITLE": "Cuenta programada para eliminación",
+        "MESSAGE_MANUAL": "Esta cuenta está programada para eliminarse el {deletionDate}. Esto fue solicitado por un administrador. Puedes cancelar la eliminación antes de esa fecha.",
+        "MESSAGE_INACTIVITY": "Esta cuenta se eliminará el {deletionDate} debido a inactividad. Puedes cancelar la eliminación antes de esa fecha.",
+        "CLEAR_BUTTON": "Cancelar eliminación programada"
       }
     },
     "FORM": {
-      "ERROR": "Por favor, corrija los errores de formulario",
+      "ERROR": "Corrige los errores del formulario",
       "GENERAL_SECTION": {
         "TITLE": "Ajustes generales",
         "NOTE": ""
       },
       "ACCOUNT_ID": {
-        "TITLE": "ID de Cuenta",
+        "TITLE": "ID de cuenta",
         "NOTE": "Este ID es necesario si estás construyendo una integración basada en API"
       },
       "AUTO_RESOLVE": {
-        "TITLE": "Auto-resolve conversations",
-        "NOTE": "This configuration would allow you to automatically resolve the conversation after a certain period of inactivity.",
+        "TITLE": "Resolver conversaciones automáticamente",
+        "NOTE": "Esta configuración te permitirá resolver automáticamente una conversación después de un periodo de inactividad.",
         "DURATION": {
-          "LABEL": "Inactivity duration",
-          "HELP": "Time period of inactivity after which conversation is auto-resolved",
+          "LABEL": "Duración de inactividad",
+          "HELP": "Periodo de inactividad tras el cual la conversación se resuelve automáticamente",
           "PLACEHOLDER": "30",
-          "ERROR": "Auto resolve duration should be between 10 minutes and 999 days",
+          "ERROR": "La duración de resolución automática debe estar entre 10 minutos y 999 días",
           "API": {
-            "SUCCESS": "Auto resolve settings updated successfully",
-            "ERROR": "Failed to update auto resolve settings"
+            "SUCCESS": "Configuración de resolución automática actualizada correctamente",
+            "ERROR": "No se pudo actualizar la configuración de resolución automática"
           }
         },
         "MESSAGE": {
-          "LABEL": "Custom auto-resolution message",
-          "PLACEHOLDER": "Conversation was marked resolved by system due to 15 days of inactivity",
-          "HELP": "Message sent to the customer after conversation is auto-resolved"
+          "LABEL": "Mensaje personalizado de auto-resolución",
+          "PLACEHOLDER": "La conversación fue marcada como resuelta por el sistema debido a 15 días de inactividad",
+          "HELP": "Mensaje enviado al cliente después de que la conversación se resuelva automáticamente"
         },
         "PREFERENCES": "Preferencias",
         "LABEL": {
-          "LABEL": "Add label after auto-resolution",
-          "PLACEHOLDER": "Select a label"
+          "LABEL": "Añadir etiqueta tras la auto-resolución",
+          "PLACEHOLDER": "Selecciona una etiqueta"
         },
         "IGNORE_WAITING": {
-          "LABEL": "Skip conversations waiting for agent’s reply"
+          "LABEL": "Omitir conversaciones que están esperando respuesta del agente"
         },
-        "UPDATE_BUTTON": "Save Changes"
+        "UPDATE_BUTTON": "Guardar cambios"
       },
       "NAME": {
-        "LABEL": "Nombre de cuenta",
+        "LABEL": "Nombre de la cuenta",
         "PLACEHOLDER": "Tu nombre de cuenta",
-        "ERROR": "Por favor, introduzca un nombre de cuenta válido"
+        "ERROR": "Introduce un nombre de cuenta válido"
       },
       "LANGUAGE": {
         "LABEL": "Idioma del sitio",
@@ -84,70 +84,70 @@
       },
       "DOMAIN": {
         "LABEL": "Dominio",
-        "PLACEHOLDER": "El dominio donde recibirá los emails",
+        "PLACEHOLDER": "El dominio donde recibirás los correos",
         "ERROR": ""
       },
       "SUPPORT_EMAIL": {
-        "LABEL": "Email de soporte",
-        "PLACEHOLDER": "Email de soporte de su empresa",
+        "LABEL": "Correo de soporte",
+        "PLACEHOLDER": "Correo de soporte de tu empresa",
         "ERROR": ""
       },
       "AUTO_RESOLVE_IGNORE_WAITING": {
-        "LABEL": "Exclude unattended conversations",
-        "HELP": "When enabled, the system will skip resolving conversations that are still waiting for an agent's reply."
+        "LABEL": "Excluir conversaciones sin atender",
+        "HELP": "Cuando está habilitado, el sistema omitirá las conversaciones que todavía estén esperando la respuesta de un agente."
       },
       "AUDIO_TRANSCRIPTION": {
-        "TITLE": "Transcribe Audio Messages",
-        "NOTE": "Automatically transcribe audio messages in conversations. Generate a text transcript whenever an audio message is sent or received, and display it alongside the message.",
+        "TITLE": "Transcribir mensajes de audio",
+        "NOTE": "Transcribe automáticamente los mensajes de audio en las conversaciones. Genera una transcripción de texto cada vez que se envía o recibe un mensaje de audio y muéstrala junto al mensaje.",
         "API": {
-          "SUCCESS": "Audio transcription setting updated successfully",
-          "ERROR": "Failed to update audio transcription setting"
+          "SUCCESS": "La configuración de transcripción de audio se actualizó correctamente",
+          "ERROR": "No se pudo actualizar la configuración de transcripción de audio"
         }
       },
       "AUTO_RESOLVE_DURATION": {
-        "LABEL": "Inactivity duration for resolution",
-        "HELP": "Duration after a conversation should auto resolve if there is no activity",
+        "LABEL": "Duración de inactividad para resolución",
+        "HELP": "Duración tras la cual una conversación se resolverá automáticamente si no hay actividad",
         "PLACEHOLDER": "30",
-        "ERROR": "Auto resolve duration should be between 10 minutes and 999 days",
+        "ERROR": "La duración de resolución automática debe estar entre 10 minutos y 999 días",
         "API": {
-          "SUCCESS": "Auto resolve settings updated successfully",
-          "ERROR": "Failed to update auto resolve settings"
+          "SUCCESS": "Configuración de resolución automática actualizada correctamente",
+          "ERROR": "No se pudo actualizar la configuración de resolución automática"
         },
         "UPDATE_BUTTON": "Actualizar",
-        "MESSAGE_LABEL": "Custom resolution message",
-        "MESSAGE_PLACEHOLDER": "Conversation was marked resolved by system due to 15 days of inactivity",
-        "MESSAGE_HELP": "This message is sent to the customer when a conversation is automatically resolved by the system due to inactivity."
+        "MESSAGE_LABEL": "Mensaje de resolución personalizado",
+        "MESSAGE_PLACEHOLDER": "La conversación fue marcada como resuelta por el sistema debido a 15 días de inactividad",
+        "MESSAGE_HELP": "Este mensaje se envía al cliente cuando una conversación se resuelve automáticamente por inactividad del sistema."
       },
       "FEATURES": {
-        "INBOUND_EMAIL_ENABLED": "Continuidad de la conversación con emails está habilitada para su cuenta.",
-        "CUSTOM_EMAIL_DOMAIN_ENABLED": "Ahora puede recibir emails en su dominio personalizado."
+        "INBOUND_EMAIL_ENABLED": "La continuidad de la conversación por correo está habilitada para tu cuenta.",
+        "CUSTOM_EMAIL_DOMAIN_ENABLED": "Ahora puedes recibir correos en tu dominio personalizado."
       }
     },
-    "UPDATE_CHATWOOT": "Hay una actualización {latestChatwootVersion} para Adaki disponible. Por favor, actualiza tu instancia.",
+    "UPDATE_CHATWOOT": "Hay una actualización {latestChatwootVersion} para Adaki disponible. Actualiza tu instancia.",
     "LEARN_MORE": "Más información",
-    "PAYMENT_PENDING": "Tu pago está pendiente. Por favor actualiza tu información de pago para seguir usando Adaki",
-    "UPGRADE": "Upgrade to continue using Adaki",
-    "LIMITS_UPGRADE": "Su cuenta ha excedido los límites de uso, por favor actualice su plan para seguir usando Adaki",
+    "PAYMENT_PENDING": "Tu pago está pendiente. Actualiza tu información de pago para seguir usando Adaki.",
+    "UPGRADE": "Actualiza tu plan para seguir usando Adaki",
+    "LIMITS_UPGRADE": "Tu cuenta ha superado los límites de uso. Actualiza tu plan para seguir usando Adaki.",
     "OPEN_BILLING": "Abrir facturación"
   },
   "FORMS": {
     "MULTISELECT": {
-      "ENTER_TO_SELECT": "Pulse Enter para seleccionar",
-      "ENTER_TO_REMOVE": "Presione Enter para eliminar",
+      "ENTER_TO_SELECT": "Pulsa Enter para seleccionar",
+      "ENTER_TO_REMOVE": "Pulsa Enter para eliminar",
       "NO_OPTIONS": "La lista está vacía",
-      "SELECT_ONE": "Seleccione uno",
+      "SELECT_ONE": "Selecciona uno",
       "SELECT": "Seleccionar"
     }
   },
   "NOTIFICATIONS_PAGE": {
     "HEADER": "Notificaciones",
-    "MARK_ALL_DONE": "Marcar Todo Hecho",
+    "MARK_ALL_DONE": "Marcar todo como hecho",
     "DELETE_TITLE": "Eliminado",
     "UNREAD_NOTIFICATION": {
       "TITLE": "Notificaciones sin leer",
       "ALL_NOTIFICATIONS": "Ver todas las notificaciones",
       "LOADING_UNREAD_MESSAGE": "Cargando notificaciones no leídas...",
-      "EMPTY_MESSAGE": "No tiene notificaciones sin leer"
+      "EMPTY_MESSAGE": "No tienes notificaciones sin leer"
     },
     "LIST": {
       "LOADING_MESSAGE": "Cargando notificaciones...",
@@ -156,7 +156,7 @@
         "Nombre",
         "Número telefónico",
         "Conversaciones",
-        "Último Contactado"
+        "Último contacto"
       ]
     },
     "TYPE_LABEL": {
@@ -165,9 +165,9 @@
       "assigned_conversation_new_message": "Nuevo mensaje",
       "participating_conversation_new_message": "Nuevo mensaje",
       "conversation_mention": "Mención",
-      "sla_missed_first_response": "SLA perdido",
-      "sla_missed_next_response": "SLA perdido",
-      "sla_missed_resolution": "SLA perdido"
+      "sla_missed_first_response": "SLA incumplido",
+      "sla_missed_next_response": "SLA incumplido",
+      "sla_missed_resolution": "SLA incumplido"
     }
   },
   "NETWORK": {
@@ -181,42 +181,42 @@
     }
   },
   "COMMAND_BAR": {
-    "SEARCH_PLACEHOLDER": "Buscar o saltar a",
-    "SNOOZE_PLACEHOLDER": "Type a time e.g. tomorrow, 2 hours, next friday, jan 15...",
+    "SEARCH_PLACEHOLDER": "Buscar o ir a",
+    "SNOOZE_PLACEHOLDER": "Escribe una hora, por ejemplo: mañana, 2 horas, el próximo viernes, 15 de enero...",
     "SECTIONS": {
       "GENERAL": "General",
       "REPORTS": "Informes",
       "CONVERSATION": "Conversación",
       "BULK_ACTIONS": "Acciones masivas",
-      "CHANGE_ASSIGNEE": "Cambiar Asignado",
+      "CHANGE_ASSIGNEE": "Cambiar asignado",
       "CHANGE_PRIORITY": "Cambiar prioridad",
       "CHANGE_TEAM": "Cambiar equipo",
       "SNOOZE_CONVERSATION": "Posponer conversación",
       "ADD_LABEL": "Añadir etiqueta a la conversación",
       "REMOVE_LABEL": "Eliminar etiqueta de la conversación",
       "SETTINGS": "Ajustes",
-      "AI_ASSIST": "Asistencia AI",
+      "AI_ASSIST": "Asistencia IA",
       "APPEARANCE": "Apariencia",
       "SNOOZE_NOTIFICATION": "Posponer notificación"
     },
     "COMMANDS": {
       "GO_TO_CONVERSATION_DASHBOARD": "Ir al panel de conversaciones",
       "GO_TO_CONTACTS_DASHBOARD": "Ir al panel de contactos",
-      "GO_TO_REPORTS_OVERVIEW": "Ir al Resumen de Reportes",
-      "GO_TO_CONVERSATION_REPORTS": "Ir a Reportes de Conversación",
-      "GO_TO_AGENT_REPORTS": "Ir a Reportes de Agente",
-      "GO_TO_LABEL_REPORTS": "Ir a Reportes de Etiquetas",
-      "GO_TO_INBOX_REPORTS": "Ir a Reportes de Entrada",
-      "GO_TO_TEAM_REPORTS": "Ir a Reportes de Equipo",
-      "GO_TO_SETTINGS_AGENTS": "Ir a la configuración del agente",
-      "GO_TO_SETTINGS_TEAMS": "Ir a Configuración de Equipo",
-      "GO_TO_SETTINGS_INBOXES": "Ir a Ajustes de la Bandeja de Entrada",
-      "GO_TO_SETTINGS_LABELS": "Ir a Configuración de Etiqueta",
-      "GO_TO_SETTINGS_CANNED_RESPONSES": "Ir a Configuración de Respuesta Predefinida",
+      "GO_TO_REPORTS_OVERVIEW": "Ir al resumen de informes",
+      "GO_TO_CONVERSATION_REPORTS": "Ir a informes de conversaciones",
+      "GO_TO_AGENT_REPORTS": "Ir a informes de agentes",
+      "GO_TO_LABEL_REPORTS": "Ir a informes de etiquetas",
+      "GO_TO_INBOX_REPORTS": "Ir a informes de bandejas",
+      "GO_TO_TEAM_REPORTS": "Ir a informes de equipos",
+      "GO_TO_SETTINGS_AGENTS": "Ir a la configuración de agentes",
+      "GO_TO_SETTINGS_TEAMS": "Ir a la configuración de equipos",
+      "GO_TO_SETTINGS_INBOXES": "Ir a la configuración de bandejas",
+      "GO_TO_SETTINGS_LABELS": "Ir a la configuración de etiquetas",
+      "GO_TO_SETTINGS_CANNED_RESPONSES": "Ir a la configuración de respuestas predefinidas",
       "GO_TO_SETTINGS_APPLICATIONS": "Ir a la configuración de la aplicación",
-      "GO_TO_SETTINGS_ACCOUNT": "Ir a Configuración de Cuenta",
-      "GO_TO_SETTINGS_PROFILE": "Ir a Configuración del Perfil",
-      "GO_TO_NOTIFICATIONS": "Ir a Notificaciones",
+      "GO_TO_SETTINGS_ACCOUNT": "Ir a la configuración de la cuenta",
+      "GO_TO_SETTINGS_PROFILE": "Ir a la configuración del perfil",
+      "GO_TO_NOTIFICATIONS": "Ir a notificaciones",
       "ADD_LABELS_TO_CONVERSATION": "Añadir etiqueta a la conversación",
       "ASSIGN_AN_AGENT": "Asignar un agente",
       "AI_ASSIST": "Asistencia IA",
@@ -225,15 +225,15 @@
       "MUTE_CONVERSATION": "Silenciar conversación",
       "UNMUTE_CONVERSATION": "Quitar silencio de conversación",
       "REMOVE_LABEL_FROM_CONVERSATION": "Eliminar etiqueta de la conversación",
-      "REOPEN_CONVERSATION": "Resolver conversación",
+      "REOPEN_CONVERSATION": "Reabrir conversación",
       "RESOLVE_CONVERSATION": "Resolver conversación",
-      "SEND_TRANSCRIPT": "Enviar una transcripción por email",
+      "SEND_TRANSCRIPT": "Enviar una transcripción por correo",
       "SNOOZE_CONVERSATION": "Posponer conversación",
       "UNTIL_NEXT_REPLY": "Hasta la siguiente respuesta",
       "UNTIL_NEXT_WEEK": "Hasta la próxima semana",
       "UNTIL_TOMORROW": "Hasta mañana",
-      "UNTIL_NEXT_MONTH": "Hasta el mes próximo",
-      "AN_HOUR_FROM_NOW": "Hasta una hora a partir de ahora",
+      "UNTIL_NEXT_MONTH": "Hasta el próximo mes",
+      "AN_HOUR_FROM_NOW": "Dentro de una hora",
       "UNTIL_CUSTOM_TIME": "Personalizar...",
       "CHANGE_APPEARANCE": "Cambiar apariencia",
       "LIGHT_MODE": "Claro",
@@ -243,7 +243,7 @@
     }
   },
   "DASHBOARD_APPS": {
-    "LOADING_MESSAGE": "Cargando aplicación del tablero..."
+    "LOADING_MESSAGE": "Cargando aplicación del panel..."
   },
   "COMMON": {
     "OR": "O",
