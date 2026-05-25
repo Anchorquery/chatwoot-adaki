@@ -1153,7 +1153,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_000101) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id", "key"], name: "index_platform_credentials_on_account_id_and_key", unique: true
-    t.index ["account_id", "provider", "purpose"], name: "index_platform_credentials_on_account_id_and_provider_and_purpose"
+    t.index ["account_id", "provider", "purpose"], name: "index_platform_credentials_on_acc_id_prov_purp"
     t.index ["account_id"], name: "index_platform_credentials_on_account_id"
     t.index ["expires_at"], name: "index_platform_credentials_on_expires_at"
     t.index ["owner_type", "owner_id"], name: "index_platform_credentials_on_owner_type_and_owner_id"

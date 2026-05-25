@@ -26,7 +26,7 @@ class CreatePlatformCredentials < ActiveRecord::Migration[7.0]
     end
 
     add_index :platform_credentials, [:account_id, :key], unique: true
-    add_index :platform_credentials, [:account_id, :provider, :purpose]
+    add_index :platform_credentials, [:account_id, :provider, :purpose], name: 'index_platform_credentials_on_acc_id_prov_purp'
     add_index :platform_credentials, [:owner_type, :owner_id]
     add_index :platform_credentials, :status
     add_index :platform_credentials, :expires_at
