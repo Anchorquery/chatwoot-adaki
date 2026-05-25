@@ -22,7 +22,10 @@ module ChatwootApp
   end
 
   def self.self_hosted_enterprise?
-    enterprise? && !chatwoot_cloud? && GlobalConfig.get_value('INSTALLATION_PRICING_PLAN') == 'enterprise'
+    # Adaki self-hosted fork: always treat as enterprise self-hosted so
+    # premium gates (Captain limits, advanced reports, etc.) auto-unlock
+    # without requiring the INSTALLATION_PRICING_PLAN config value.
+    enterprise? && !chatwoot_cloud?
   end
 
   def self.custom?

@@ -81,7 +81,8 @@ module Enterprise::Account
   end
 
   def business_or_enterprise_plan?
-    plan_name = custom_attributes['plan_name']
-    %w[Business Enterprise].include?(plan_name)
+    # Adaki self-hosted fork: always treat as Enterprise plan so premium
+    # gates (advanced_assignment, captain limits, etc.) auto-enable.
+    true
   end
 end

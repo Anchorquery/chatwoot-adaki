@@ -59,36 +59,10 @@ const featureToggles = computed(() => [
   },
 ]);
 
-const shouldShowFeature = feature => {
-  // Cloud will always see these features as long as captain is enabled
-  if (isOnChatwootCloud.value && captainEnabled) {
-    return true;
-  }
-
-  if (feature.enterprise) {
-    // if the app is in enterprise mode, then we can show the feature
-    // this is not the installation plan, but when the enterprise folder is missing
-    return isEnterprise;
-  }
-
-  return true;
-};
-
-const isFeatureAccessible = feature => {
-  // Cloud will always see these features as long as captain is enabled
-  if (isOnChatwootCloud.value && captainEnabled) {
-    return true;
-  }
-
-  if (feature.enterprise) {
-    // plan is shown, but is it accessible?
-    // This ensures that the instance has purchased the enterprise license, and only then we allow
-    // access
-    return isEnterprise && enterprisePlanName === 'enterprise';
-  }
-
-  return true;
-};
+// Adaki self-hosted fork: all Captain features visible + accessible regardless
+// of cloud/enterprise/plan. Original gating logic removed.
+const shouldShowFeature = () => true;
+const isFeatureAccessible = () => true;
 
 async function handleFeatureToggle({ feature, enabled }) {
   try {
