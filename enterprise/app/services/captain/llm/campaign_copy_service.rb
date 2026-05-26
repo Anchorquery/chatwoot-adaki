@@ -72,7 +72,10 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
       #{assistant_context}
       #{emoji_instruction}
       #{style_instruction}
-      Write for human review, keep the tone consistent.
+      The message AND every variant must all reflect the same context and knowledge above.
+      Each variant should be a distinct rephrasing — different angle or emphasis, not just synonyms.
+      If source URLs appear in the knowledge, include the most relevant one naturally in message and variants when it adds value.
+      Write for human review, keep the tone consistent across all texts.
       Use Liquid variables only when relevant, such as {{contact.name}}.
       Reply in the same language as the brief.
     PROMPT
@@ -128,7 +131,12 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
   def format_document_results(results)
     return '' if results.blank?
 
-    results.map { |r| "  Q: #{r.question}\n  A: #{r.answer}" }.join("\n")
+    results.map do |r|
+      entry = "  Q: #{r.question}\n  A: #{r.answer}"
+      link = r.documentable&.external_link.to_s.presence
+      entry += "\n  Source: #{link}" if link && !link.start_with?('PDF:') && !link.end_with?('.pdf')
+      entry
+    end.join("\n")
   end
 
   def emoji_instruction
@@ -137,9 +145,12 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
 
   def style_instruction
     case style.to_s
-    when 'concise'  then 'Keep each text under 80 characters.'
-    when 'detailed' then 'Include supporting detail and a clear call to action.'
-    else                 'Use normal message length.'
+    when 'concise'
+      'Keep the message and every variant under 80 characters each. Be punchy and direct.'
+    when 'detailed'
+      'Write longer texts for message and variants. Include relevant context, supporting detail, and a clear call to action. Aim for 2-4 sentences each.'
+    else
+      'Use normal message length (1-2 sentences) for message and variants.'
     end
   end
 
