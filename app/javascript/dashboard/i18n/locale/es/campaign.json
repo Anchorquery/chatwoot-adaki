@@ -298,6 +298,13 @@
             "ASSISTANT_LABEL": "Bot Captain (opcional)",
             "ASSISTANT_PLACEHOLDER": "Seleccionar bot",
             "ASSISTANT_NONE": "Ninguno — sin contexto",
+            "CONTEXT_SOURCE_LABEL": "Contexto del bot a inyectar",
+            "CONTEXT_SOURCE_PLACEHOLDER": "Seleccionar fuente de contexto",
+            "CONTEXT_SOURCES": {
+              "none": "Ninguno — solo nombre y estilo",
+              "guidelines": "Directrices de comportamiento y guardrails",
+              "documents": "Base de conocimiento (búsqueda en documentos)"
+            },
             "STYLE_LABEL": "Extensión",
             "STYLE_PLACEHOLDER": "Seleccionar estilo",
             "USE_EMOJIS_LABEL": "Incluir emojis",

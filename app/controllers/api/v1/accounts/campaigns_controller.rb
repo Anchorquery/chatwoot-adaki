@@ -33,7 +33,9 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     end
 
     allowed_styles = %w[concise standard detailed]
+    allowed_context_sources = %w[none guidelines documents]
     style = allowed_styles.include?(params[:style]) ? params[:style] : 'standard'
+    context_source = allowed_context_sources.include?(params[:context_source]) ? params[:context_source] : 'none'
     use_emojis = ActiveModel::Type::Boolean.new.cast(params[:use_emojis])
     assistant = Current.account.captain_assistants.find_by(id: params[:assistant_id])
 
@@ -44,7 +46,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
       goal: params[:goal].presence || 'informative',
       assistant: assistant,
       use_emojis: use_emojis,
-      style: style
+      style: style,
+      context_source: context_source
     ).perform
 
     if result[:error]

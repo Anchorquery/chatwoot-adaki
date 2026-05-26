@@ -1,5 +1,12 @@
 class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
-  pattr_initialize [:account!, :prompt!, { tone: 'friendly', goal: 'informative', assistant: nil, use_emojis: false, style: 'standard' }]
+  pattr_initialize [:account!, :prompt!, {
+    tone: 'friendly',
+    goal: 'informative',
+    assistant: nil,
+    use_emojis: false,
+    style: 'standard',
+    context_source: 'none'
+  }]
 
   def perform
     response = make_api_call(model: copy_model, messages: messages)
@@ -74,16 +81,38 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
   def assistant_context
     return '' unless assistant.present?
 
-    scenario_titles = assistant.scenarios.enabled.map(&:title).join(', ')
     parts = [
-      "Assistant context:",
+      'Assistant context:',
       "- Name: #{assistant.name}",
       "- Description: #{assistant.description}",
       "- Product: #{assistant.config['product_name'].presence || 'this product'}"
     ]
+
+    scenario_titles = assistant.scenarios.enabled.map(&:title).join(', ')
     parts << "- Scenarios: #{scenario_titles}" if scenario_titles.present?
+
+    case context_source.to_s
+    when 'guidelines'
+      guidelines = Array(assistant.response_guidelines)
+      guardrails = Array(assistant.guardrails)
+      parts << "- Behavioral guidelines: #{guidelines.join('; ')}" if guidelines.any?
+      parts << "- Guardrails (must never violate): #{guardrails.join('; ')}" if guardrails.any?
+    when 'documents'
+      knowledge = search_assistant_documents
+      parts << "- Relevant product knowledge:\n#{knowledge}" if knowledge.present?
+    end
+
     parts << "Write consistent with this assistant's style and brand voice."
     parts.join("\n")
+  end
+
+  def search_assistant_documents
+    results = assistant.responses.approved.search(prompt, account_id: account.id)
+    return '' if results.blank?
+
+    results.first(5).map { |r| "  Q: #{r.question}\n  A: #{r.answer}" }.join("\n")
+  rescue StandardError
+    ''
   end
 
   def emoji_instruction

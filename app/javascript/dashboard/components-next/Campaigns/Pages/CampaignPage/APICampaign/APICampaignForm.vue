@@ -43,6 +43,7 @@ const TABS = ['CONTENT', 'VARIANTS', 'FILES', 'DELIVERY'];
 const AI_TONES = ['professional', 'friendly', 'casual', 'persuasive'];
 const AI_GOALS = ['informative', 'promotional', 'reminder', 'support'];
 const AI_STYLES = ['concise', 'standard', 'detailed'];
+const AI_CONTEXT_SOURCES = ['none', 'guidelines', 'documents'];
 
 const defaultDeliverySettings = () => ({
   batch_size: 10,
@@ -70,6 +71,7 @@ const defaultState = () => ({
   aiTone: 'friendly',
   aiGoal: 'promotional',
   aiAssistantId: null,
+  aiContextSource: 'none',
   aiUseEmojis: false,
   aiStyle: 'standard',
 });
@@ -159,6 +161,7 @@ const populateFromCampaign = campaign => {
     aiTone: 'friendly',
     aiGoal: 'promotional',
     aiAssistantId: null,
+    aiContextSource: 'none',
     aiUseEmojis: false,
     aiStyle: 'standard',
   });
@@ -236,6 +239,7 @@ const buildAiPayload = async () => {
     tone: state.aiTone,
     goal: state.aiGoal,
     assistant_id: state.aiAssistantId,
+    context_source: state.aiAssistantId ? state.aiContextSource : 'none',
     use_emojis: state.aiUseEmojis,
     style: state.aiStyle,
   });
@@ -417,6 +421,16 @@ defineExpose({
               v-model="state.aiStyle"
               :options="AI_STYLES.map(s => ({ value: s, label: t(`CAMPAIGN.API.CREATE.FORM.AI.STYLES.${s}`) }))"
               :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.STYLE_PLACEHOLDER')"
+            />
+          </div>
+          <div v-if="state.aiAssistantId" class="flex flex-col gap-1 sm:col-span-2">
+            <label class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_LABEL') }}
+            </label>
+            <ComboBox
+              v-model="state.aiContextSource"
+              :options="AI_CONTEXT_SOURCES.map(s => ({ value: s, label: t(`CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCES.${s}`) }))"
+              :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_PLACEHOLDER')"
             />
           </div>
         </div>

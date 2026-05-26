@@ -240,6 +240,13 @@
             "ASSISTANT_LABEL": "Captain bot (optional)",
             "ASSISTANT_PLACEHOLDER": "Select a bot",
             "ASSISTANT_NONE": "None — no context",
+            "CONTEXT_SOURCE_LABEL": "Bot context to inject",
+            "CONTEXT_SOURCE_PLACEHOLDER": "Select context source",
+            "CONTEXT_SOURCES": {
+              "none": "None — name & style only",
+              "guidelines": "Behavioral guidelines & guardrails",
+              "documents": "Knowledge base (document search)"
+            },
             "STYLE_LABEL": "Length",
             "STYLE_PLACEHOLDER": "Select style",
             "USE_EMOJIS_LABEL": "Include emojis",
