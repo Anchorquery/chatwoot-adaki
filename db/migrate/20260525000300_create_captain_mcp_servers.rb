@@ -23,6 +23,5 @@ class CreateCaptainMcpServers < ActiveRecord::Migration[7.1]
 
     add_index :captain_mcp_servers, [:account_id, :slug], unique: true
     add_index :captain_mcp_servers, [:account_id, :enabled]
-    add_index :captain_mcp_servers, :platform_credential_id
   end
 end
