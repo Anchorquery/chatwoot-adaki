@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
+import ContactAPI from 'dashboard/api/contacts';
 
 const props = defineProps({
   campaign: { type: Object, default: null },
@@ -11,6 +12,8 @@ const emit = defineEmits(['close']);
 const { t } = useI18n();
 
 const activeTab = ref('sent');
+const contactMap = ref({});
+const loadingContacts = ref(false);
 
 const ds = computed(() => props.campaign?.delivery_state || {});
 const total = computed(
@@ -30,6 +33,29 @@ const sentContactIds = computed(() =>
   (ds.value.contact_ids ?? []).filter(id => !failedIds.value.has(String(id)))
 );
 
+const allContactIds = computed(() => ds.value.contact_ids ?? []);
+
+const contactName = id => contactMap.value[id]?.name || '';
+const contactPhone = id => contactMap.value[id]?.phone_number || '';
+
+onMounted(async () => {
+  if (!allContactIds.value.length) return;
+  loadingContacts.value = true;
+  const results = await Promise.allSettled(
+    allContactIds.value.map(id => ContactAPI.show(id))
+  );
+  results.forEach((result, i) => {
+    if (result.status === 'fulfilled') {
+      const c = result.value.data;
+      contactMap.value[allContactIds.value[i]] = {
+        name: c.name || '',
+        phone_number: c.phone_number || c.email || '',
+      };
+    }
+  });
+  loadingContacts.value = false;
+});
+
 const formatTs = ts => {
   if (!ts) return '';
   return new Date(ts).toLocaleString();
@@ -37,21 +63,46 @@ const formatTs = ts => {
 
 const exportCSV = () => {
   const rows = [
-    [t('CAMPAIGN.RESULTS.CONTACT_ID'), 'Estado', 'Error', 'Fecha'],
+    [
+      t('CAMPAIGN.RESULTS.CONTACT_ID'),
+      t('CAMPAIGN.RESULTS.CONTACT_NAME'),
+      t('CAMPAIGN.RESULTS.CONTACT_PHONE'),
+      'Estado',
+      'Error',
+      'Fecha',
+    ],
   ];
+
   sentContactIds.value.forEach(id => {
-    rows.push([id, 'enviado', '', '']);
-  });
-  errors.value.forEach(err => {
-    rows.push([err.contact_id, 'fallido', err.message ?? '', formatTs(err.timestamp)]);
+    rows.push([
+      id,
+      contactName(id),
+      contactPhone(id),
+      'enviado',
+      '',
+      '',
+    ]);
   });
 
-  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  errors.value.forEach(err => {
+    const id = err.contact_id;
+    rows.push([
+      id,
+      contactName(id),
+      contactPhone(id),
+      'fallido',
+      err.message ?? '',
+      formatTs(err.timestamp),
+    ]);
+  });
+
+  const csv =
+    rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const title = (props.campaign?.title ?? t('CAMPAIGN.RESULTS.EXPORT_FILENAME'))
+  const title = (props.campaign?.title ?? 'resultados')
     .replace(/[^a-z0-9_\-]/gi, '_')
     .toLowerCase();
   a.download = `${title}_resultados.csv`;
@@ -97,8 +148,8 @@ const exportCSV = () => {
         </div>
       </div>
 
-      <!-- Stats -->
       <div class="p-4 flex flex-col gap-4 overflow-y-auto">
+        <!-- Stats -->
         <div class="grid grid-cols-3 gap-3">
           <div class="rounded-xl bg-n-alpha-2 p-3 flex flex-col items-center gap-1">
             <span class="text-2xl font-bold text-n-slate-12">{{ total }}</span>
@@ -155,41 +206,60 @@ const exportCSV = () => {
             </button>
           </div>
 
+          <!-- Loading -->
+          <div v-if="loadingContacts" class="flex items-center justify-center py-6 text-xs text-n-slate-10 gap-2">
+            <span class="i-lucide-loader-2 animate-spin w-4 h-4" />
+            {{ t('CAMPAIGN.RESULTS.LOADING_CONTACTS') }}
+          </div>
+
           <!-- Sent contacts list -->
           <div
-            v-if="activeTab === 'sent'"
-            class="flex flex-col gap-1 max-h-56 overflow-y-auto"
+            v-else-if="activeTab === 'sent'"
+            class="flex flex-col gap-1 max-h-60 overflow-y-auto"
           >
-            <div v-if="sentContactIds.length === 0" class="text-center py-4 text-sm text-n-slate-10">
-              —
-            </div>
             <div
               v-for="contactId in sentContactIds"
               :key="contactId"
-              class="rounded-lg bg-n-alpha-2 px-3 py-2 flex items-center justify-between"
+              class="rounded-lg bg-n-alpha-2 px-3 py-2 flex items-center justify-between gap-2"
             >
-              <span class="text-xs text-n-slate-11">
-                {{ t('CAMPAIGN.RESULTS.CONTACT_ID') }}: <span class="font-medium text-n-slate-12">{{ contactId }}</span>
-              </span>
-              <span class="i-lucide-check text-n-teal-9 w-3.5 h-3.5 flex-shrink-0" />
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-medium text-n-slate-12 truncate">
+                  {{ contactName(contactId) || `#${contactId}` }}
+                </span>
+                <span v-if="contactPhone(contactId)" class="text-xs text-n-slate-10 truncate">
+                  {{ contactPhone(contactId) }}
+                </span>
+                <span v-else class="text-xs text-n-slate-9">
+                  ID: {{ contactId }}
+                </span>
+              </div>
+              <span class="i-lucide-check text-n-teal-9 w-4 h-4 flex-shrink-0" />
             </div>
           </div>
 
           <!-- Errors list -->
           <div
-            v-if="activeTab === 'errors'"
-            class="flex flex-col gap-1 max-h-56 overflow-y-auto"
+            v-else-if="activeTab === 'errors'"
+            class="flex flex-col gap-1 max-h-60 overflow-y-auto"
           >
             <div
               v-for="(err, i) in errors"
               :key="i"
               class="rounded-lg bg-n-ruby-3 px-3 py-2 flex flex-col gap-0.5"
             >
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-medium text-n-ruby-11">
-                  {{ t('CAMPAIGN.RESULTS.CONTACT_ID') }}: {{ err.contact_id }}
-                </span>
-                <span class="text-xs text-n-ruby-10">{{ formatTs(err.timestamp) }}</span>
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs font-medium text-n-ruby-11 truncate">
+                    {{ contactName(err.contact_id) || `#${err.contact_id}` }}
+                  </span>
+                  <span v-if="contactPhone(err.contact_id)" class="text-xs text-n-ruby-10 truncate">
+                    {{ contactPhone(err.contact_id) }}
+                  </span>
+                  <span v-else class="text-xs text-n-ruby-9">
+                    ID: {{ err.contact_id }}
+                  </span>
+                </div>
+                <span class="text-xs text-n-ruby-10 flex-shrink-0">{{ formatTs(err.timestamp) }}</span>
               </div>
               <span class="text-xs text-n-ruby-10 break-words">{{ err.message }}</span>
             </div>

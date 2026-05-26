@@ -357,7 +357,10 @@
       "ERRORS_TITLE": "Errores",
       "SENT_CONTACTS": "Destinatarios",
       "CONTACT_ID": "ID Contacto",
+      "CONTACT_NAME": "Nombre",
+      "CONTACT_PHONE": "Teléfono / WhatsApp",
       "NO_ERRORS": "Todos los mensajes entregados correctamente",
+      "LOADING_CONTACTS": "Cargando contactos...",
       "EXPORT": "Exportar CSV",
       "EXPORT_FILENAME": "resultados_campaña"
     },

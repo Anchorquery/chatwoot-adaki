@@ -370,7 +370,10 @@
       "ERRORS_TITLE": "Errors",
       "SENT_CONTACTS": "Recipients",
       "CONTACT_ID": "Contact ID",
+      "CONTACT_NAME": "Name",
+      "CONTACT_PHONE": "Phone / WhatsApp",
       "NO_ERRORS": "All messages delivered successfully",
+      "LOADING_CONTACTS": "Loading contacts...",
       "EXPORT": "Export CSV",
       "EXPORT_FILENAME": "campaign_results"
     },
