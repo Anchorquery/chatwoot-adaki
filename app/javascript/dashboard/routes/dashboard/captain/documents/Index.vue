@@ -299,6 +299,60 @@ const hasActiveDocumentFilters = computed(
     Boolean(searchQuery.value.trim())
 );
 
+const knowledgeStats = computed(() => {
+  const items = documents.value || [];
+  const meta = documentsMeta.value || {};
+  const currentSyncIntervalHours = Number(syncIntervalHours.value);
+  const staleThresholdSeconds =
+    Number.isFinite(currentSyncIntervalHours) && currentSyncIntervalHours > 0
+      ? currentSyncIntervalHours * 3600
+      : null;
+  const nowSeconds = Date.now() / 1000;
+
+  const fallbackWebSources = items.filter(doc => !doc.pdf_document).length;
+  const fallbackSyncingSources = items.filter(
+    doc => doc.sync_status === 'syncing' || doc.sync_in_progress
+  ).length;
+  const fallbackStaleSources = items.filter(doc => {
+    if (doc.pdf_document || doc.sync_status !== 'synced') return false;
+    if (!staleThresholdSeconds || !doc.last_synced_at) return false;
+    return nowSeconds - doc.last_synced_at >= staleThresholdSeconds;
+  }).length;
+  const fallbackFailedSources = items.filter(
+    doc => doc.sync_status === 'failed'
+  ).length;
+
+  return [
+    {
+      label: t('CAPTAIN.DOCUMENTS.OVERVIEW.TOTAL'),
+      value: meta.totalCount ?? items.length,
+      tone: 'slate',
+    },
+    {
+      label: t('CAPTAIN.DOCUMENTS.OVERVIEW.WEBSITE_CRAWLS'),
+      value: meta.websiteCrawlCount ?? 0,
+      tone: 'brand',
+    },
+    {
+      label: t('CAPTAIN.DOCUMENTS.OVERVIEW.CRAWLED_PAGES'),
+      value: meta.websiteCrawlPagesCount ?? fallbackWebSources,
+      tone: 'slate',
+    },
+    {
+      label: t('CAPTAIN.DOCUMENTS.OVERVIEW.SYNCING'),
+      value: meta.syncingCount ?? fallbackSyncingSources,
+      tone: 'amber',
+    },
+    {
+      label: t('CAPTAIN.DOCUMENTS.OVERVIEW.NEEDS_ATTENTION'),
+      value:
+        (meta.staleCount ?? fallbackStaleSources) +
+        (meta.failedCount ?? fallbackFailedSources),
+      tone: 'ruby',
+    },
+  ];
+});
+
 watch(
   selectedAssistantId,
   async () => {
@@ -388,6 +442,44 @@ onUnmounted(() => {
     <template #body>
       <LimitBanner class="mb-5" />
 
+      <div class="mb-5 rounded-2xl border border-n-weak bg-gradient-to-br from-n-slate-2 via-n-slate-1 to-n-slate-3 p-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div class="max-w-2xl">
+            <p class="m-0 text-xs font-semibold uppercase tracking-[0.2em] text-n-slate-11">
+              {{ $t('CAPTAIN.DOCUMENTS.OVERVIEW.KICKER') }}
+            </p>
+            <h2 class="mt-2 text-xl font-semibold text-n-slate-12">
+              {{ $t('CAPTAIN.DOCUMENTS.OVERVIEW.TITLE') }}
+            </h2>
+            <p class="mt-2 mb-0 text-sm leading-6 text-n-slate-11">
+              {{ $t('CAPTAIN.DOCUMENTS.OVERVIEW.SUBTITLE') }}
+            </p>
+          </div>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 lg:min-w-[42rem]">
+            <div
+              v-for="stat in knowledgeStats"
+              :key="stat.label"
+              class="rounded-xl border border-n-weak bg-n-alpha-2 px-4 py-3"
+            >
+              <p class="m-0 text-xs font-medium uppercase tracking-wide text-n-slate-11">
+                {{ stat.label }}
+              </p>
+              <p
+                class="mt-2 mb-0 text-2xl font-semibold tabular-nums"
+                :class="{
+                  'text-n-slate-12': stat.tone === 'slate',
+                  'text-n-brand-10': stat.tone === 'brand',
+                  'text-n-amber-10': stat.tone === 'amber',
+                  'text-n-ruby-10': stat.tone === 'ruby',
+                }"
+              >
+                {{ stat.value }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div
         v-if="!documents.length && hasActiveDocumentFilters"
         class="flex flex-col items-center justify-center min-h-80 gap-2 text-center"
@@ -409,6 +501,8 @@ onUnmounted(() => {
           :external-link="doc.external_link"
           :pdf-document="doc.pdf_document"
           :assistant="doc.assistant"
+          :metadata="doc.metadata"
+          :content="doc.content"
           :created-at="doc.created_at"
           :status="doc.status"
           :sync-status="doc.sync_status"

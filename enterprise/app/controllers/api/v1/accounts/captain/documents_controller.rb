@@ -17,6 +17,16 @@ class Api::V1::Accounts::Captain::DocumentsController < Api::V1::Accounts::BaseC
     base_query = apply_sort(base_query, permitted_params[:sort])
 
     @documents_count = base_query.count
+    @web_documents_count = base_query.syncable.count
+    @pdf_documents_count = base_query.pdf_documents.count
+    @syncing_documents_count = base_query.syncable.sync_in_progress.count
+    @failed_documents_count = base_query.syncable.sync_failed.count
+    @stale_documents_count = stale_documents(base_query.syncable).count
+    @website_crawl_pages_count = base_query.where("metadata ->> 'crawl_mode' = ?", 'website').count
+    @website_crawl_count = base_query
+                           .where("metadata ->> 'crawl_mode' = ?", 'website')
+                           .where("metadata ->> 'crawl_root_url' IS NOT NULL")
+                           .count(Arel.sql("DISTINCT metadata ->> 'crawl_root_url'"))
     @sync_interval_hours = current_sync_interval&.in_hours&.to_i
     @documents = base_query.page(@current_page).per(RESULTS_PER_PAGE)
   end
@@ -128,6 +138,13 @@ class Api::V1::Accounts::Captain::DocumentsController < Api::V1::Accounts::BaseC
   end
 
   def document_params
-    params.require(:document).permit(:name, :external_link, :assistant_id, :pdf_file)
+    params.require(:document).permit(
+      :name,
+      :external_link,
+      :assistant_id,
+      :pdf_file,
+      :metadata,
+      metadata: [:crawl_mode, :crawl_root_url, :crawl_depth]
+    )
   end
 end

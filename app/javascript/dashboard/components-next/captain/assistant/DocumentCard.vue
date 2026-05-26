@@ -30,6 +30,14 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  metadata: {
+    type: Object,
+    default: () => ({}),
+  },
+  content: {
+    type: String,
+    default: '',
+  },
   externalLink: {
     type: String,
     required: true,
@@ -153,6 +161,16 @@ const displayLink = computed(() =>
 const linkIcon = computed(() =>
   isPdf.value ? 'i-ph-file-pdf' : 'i-ph-link-simple'
 );
+const isWebsiteCrawl = computed(
+  () => props.metadata?.crawl_mode === 'website'
+);
+const sourceLabel = computed(() =>
+  isWebsiteCrawl.value
+    ? t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.WEBSITE_CRAWL')
+    : isPdf.value
+    ? t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.PDF')
+    : t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.WEB')
+);
 
 const handleAction = ({ action, value }) => {
   toggleDropdown(false);
@@ -177,10 +195,19 @@ const handleRetry = () => {
     >
       <Checkbox v-model="modelValue" />
     </div>
-    <div class="flex gap-1 justify-between w-full">
-      <span class="text-base text-n-slate-12 line-clamp-1">
-        {{ name }}
-      </span>
+    <div class="flex gap-3 justify-between items-start w-full">
+      <div class="flex min-w-0 flex-1 flex-col gap-2">
+        <div class="flex min-w-0 items-center gap-2">
+          <span class="min-w-0 text-base text-n-slate-12 line-clamp-1">
+            {{ name }}
+          </span>
+          <span
+            class="inline-flex shrink-0 items-center rounded-full border border-n-weak bg-n-slate-2 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-n-slate-11"
+          >
+            {{ sourceLabel }}
+          </span>
+        </div>
+      </div>
       <div v-if="showMenu" class="flex gap-2 items-center">
         <div
           v-on-clickaway="() => toggleDropdown(false)"
@@ -243,5 +270,11 @@ const handleRetry = () => {
         {{ createdAtLabel }}
       </div>
     </div>
+    <p
+      v-if="content"
+      class="m-0 line-clamp-2 text-sm leading-6 text-n-slate-11"
+    >
+      {{ content }}
+    </p>
   </CardLayout>
 </template>

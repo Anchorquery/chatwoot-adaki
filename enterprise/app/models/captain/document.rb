@@ -36,7 +36,8 @@ class Captain::Document < ApplicationRecord
   has_many :responses, class_name: 'Captain::AssistantResponse', dependent: :destroy, as: :documentable
   belongs_to :account
   has_one_attached :pdf_file
-  store_accessor :metadata, :content_fingerprint, :last_sync_error_code, :sync_step, :openai_file_id
+  store_accessor :metadata, :content_fingerprint, :last_sync_error_code, :sync_step, :openai_file_id,
+                 :crawl_mode, :crawl_root_url, :crawl_depth
 
   validates :external_link, presence: true, unless: -> { pdf_file.attached? }
   validates :external_link, uniqueness: { scope: :assistant_id }, allow_blank: true
@@ -104,7 +105,13 @@ class Captain::Document < ApplicationRecord
   end
 
   def to_llm_metadata
-    { document_id: id, assistant_id: assistant_id, external_link: external_link }
+    {
+      document_id: id,
+      assistant_id: assistant_id,
+      external_link: external_link,
+      crawl_mode: crawl_mode,
+      crawl_root_url: crawl_root_url
+    }.compact
   end
 
   def syncable?

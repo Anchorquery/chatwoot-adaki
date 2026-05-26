@@ -11,8 +11,8 @@
 # Migration strategy:
 #   The "rails" container runs `rails db:chatwoot_prepare` on each boot
 #   (idempotent: schema-load + seed on first run, migrate on subsequent).
-#   "sidekiq" sets SKIP_DB_PREPARE=true and waits for rails healthcheck
-#   to avoid concurrent migration runs.
+#   "sidekiq" waits for "rails" to report healthy so it never starts
+#   processing jobs before the schema is ready.
 #
 # Required env vars (set in Coolify UI):
 #   GHCR_IMAGE, SECRET_KEY_BASE, FRONTEND_URL, POSTGRES_PASSWORD,
@@ -20,8 +20,6 @@
 #   ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY, ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY,
 #   ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
 
-# Shared config for rails+sidekiq containers. Extension field (x-) so
-# Compose doesn't create a standalone "base" service.
 x-base: &base
   image: ${GHCR_IMAGE:-ghcr.io/CHANGE_ME/chatwoot-adaki:latest}
   pull_policy: always
@@ -38,9 +36,6 @@ x-base: &base
     - POSTGRES_DATABASE=chatwoot
     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
-    # Coolify magic env: when a domain is configured in the UI, this
-    # expands to the FQDN and Coolify auto-generates Traefik labels
-    # routing the FQDN -> rails service port 3000.
     - SERVICE_FQDN_RAILS_3000
   volumes:
     - storage_data:/app/storage
@@ -59,8 +54,12 @@ services:
       - '3000'
     entrypoint: docker/entrypoints/rails.sh
     command: ['bundle', 'exec', 'rails', 's', '-p', '3000', '-b', '0.0.0.0']
-    # No healthcheck — Coolify proxy detects app liveness via port 3000.
-    # Avoids first-boot db:chatwoot_prepare exceeding healthcheck timeout.
+    healthcheck:
+      test: ['CMD', 'ruby', '/app/docker/entrypoints/helpers/healthcheck.rb']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     labels:
       - coolify.managed=true
 
@@ -72,7 +71,7 @@ services:
       redis:
         condition: service_healthy
       rails:
-        condition: service_started
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - RAILS_ENV=production
@@ -86,7 +85,12 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
       - SKIP_DB_PREPARE=true
     entrypoint: docker/entrypoints/rails.sh
-    command: ['bundle', 'exec', 'sidekiq', '-C', 'config/sidekiq.yml']
+    command:
+      [
+        'sh',
+        '-c',
+        'ruby /app/docker/entrypoints/helpers/wait_for_health.rb http://rails:3000/health && bundle exec sidekiq -C config/sidekiq.yml'
+      ]
     healthcheck:
       test: ['CMD-SHELL', "ps -ef | grep '[s]idekiq' | grep -v grep || exit 1"]
       interval: 30s
@@ -123,11 +127,6 @@ services:
       timeout: 5s
       retries: 10
 
-  # Nightly Postgres backup (runs `bin/adaki-backup.sh` via sidekiq image).
-  # Coolify will not restart this on success — designed to be triggered by cron.
-  # For automated daily runs, add a Coolify Scheduled Task pointing at:
-  #   docker exec <sidekiq-container> bin/adaki-backup.sh
-  # Or enable the profile to keep this service standing by.
   backup:
     <<: *base
     profiles: ['backup']

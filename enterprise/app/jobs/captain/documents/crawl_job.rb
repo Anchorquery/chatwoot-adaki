@@ -24,38 +24,54 @@ class Captain::Documents::CrawlJob < ApplicationJob
   end
 
   def perform_simple_crawl(document)
-    page_links = Captain::Tools::SimplePageCrawlService.new(document.external_link).page_links
+    available_limit = document.account.usage_limits[:captain][:documents][:current_available]
+    return if available_limit.to_i <= 0
 
-    page_links.each do |page_link|
+    page_links = Captain::Tools::SimplePageCrawlService.new(document.external_link).page_links
+    requested_limit = document.crawl_depth.to_i.positive? ? document.crawl_depth.to_i : page_links.size
+    crawl_limit = [requested_limit, available_limit.to_i].min
+    selected_page_links = crawl_limit ? page_links.first(crawl_limit) : page_links
+
+    selected_page_links.each do |page_link|
       Captain::Tools::SimplePageCrawlParserJob.perform_later(
         assistant_id: document.assistant_id,
-        page_link: page_link
+        page_link: page_link,
+        crawl_root_url: document.external_link,
+        crawl_mode: document.crawl_mode.presence || 'website',
+        crawl_depth: crawl_limit
       )
     end
 
     Captain::Tools::SimplePageCrawlParserJob.perform_later(
       assistant_id: document.assistant_id,
-      page_link: document.external_link
+      page_link: document.external_link,
+      crawl_root_url: document.external_link,
+      crawl_mode: document.crawl_mode.presence || 'website',
+      crawl_depth: crawl_limit
     )
   end
 
   def perform_firecrawl_crawl(document)
     captain_usage_limits = document.account.usage_limits[:captain] || {}
     document_limit = captain_usage_limits[:documents] || {}
-    crawl_limit = [document_limit[:current_available] || 10, 500].min
+    available_limit = document_limit[:current_available].to_i
+    return if available_limit <= 0
+
+    requested_limit = document.crawl_depth.to_i.positive? ? document.crawl_depth.to_i : available_limit
+    crawl_limit = [requested_limit, available_limit, 500].min
 
     Captain::Tools::FirecrawlService
       .new
       .perform(
         document.external_link,
-        firecrawl_webhook_url(document),
+        firecrawl_webhook_url(document, crawl_limit),
         crawl_limit
       )
   end
 
-  def firecrawl_webhook_url(document)
+  def firecrawl_webhook_url(document, crawl_limit)
     webhook_url = Rails.application.routes.url_helpers.enterprise_webhooks_firecrawl_url
 
-    "#{webhook_url}?assistant_id=#{document.assistant_id}&token=#{generate_firecrawl_token(document.assistant_id, document.account_id)}"
+    "#{webhook_url}?assistant_id=#{document.assistant_id}&token=#{generate_firecrawl_token(document.assistant_id, document.account_id)}&root_url=#{URI.encode_www_form_component(document.external_link)}&crawl_depth=#{crawl_limit}"
   end
 end

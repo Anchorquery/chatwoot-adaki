@@ -45,9 +45,12 @@ class Platform::CredentialManager
     end
 
     def fetch_optional(account:, key:, provider: nil, purpose: nil)
-      account_credential(account: account, key: key, provider: provider, purpose: purpose) ||
-        global_credential(key: key, provider: provider, purpose: purpose) ||
-        legacy_credential(key: key)
+      credential = if credentials_table_available?
+                     account_credential(account: account, key: key, provider: provider, purpose: purpose) ||
+                       global_credential(key: key, provider: provider, purpose: purpose)
+                   end
+
+      credential || legacy_credential(key: key)
     end
 
     def rotate!(credential:, payload:, user: nil)
@@ -142,6 +145,12 @@ class Platform::CredentialManager
       when 'bedrock' then Platform::Credentials::Validators::BedrockValidator.new(credential)
       else Platform::Credentials::Validators::GenericHttpValidator.new(credential)
       end
+    end
+
+    def credentials_table_available?
+      ActiveRecord::Base.connection.data_source_exists?(Platform::Credential.table_name)
+    rescue ActiveRecord::StatementInvalid, ActiveRecord::NoDatabaseError
+      false
     end
   end
 end

@@ -5,7 +5,7 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
 
   discard_on PermanentCrawlError
 
-  def perform(assistant_id:, page_link:)
+  def perform(assistant_id:, page_link:, crawl_root_url: nil, crawl_mode: 'website', crawl_depth: nil)
     assistant = Captain::Assistant.find(assistant_id)
     account = assistant.account
 
@@ -20,7 +20,14 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
 
     handle_failed_fetch!(document, crawler.status_code, page_link) unless crawler.success?
 
-    persist_document!(document, normalized_link, crawler)
+    persist_document!(
+      document,
+      normalized_link,
+      crawler,
+      crawl_root_url: crawl_root_url,
+      crawl_mode: crawl_mode,
+      crawl_depth: crawl_depth
+    )
   rescue PermanentCrawlError
     raise
   rescue StandardError => e
@@ -39,12 +46,17 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
     raise error_message
   end
 
-  def persist_document!(document, normalized_link, crawler)
+  def persist_document!(document, normalized_link, crawler, crawl_root_url:, crawl_mode:, crawl_depth:)
     document.update!(
       external_link: normalized_link,
       name: (crawler.page_title || '')[0..254],
       content: (crawler.body_markdown || '')[0..14_999],
       status: :available,
+      metadata: document.metadata.to_h.merge(
+        'crawl_mode' => crawl_mode,
+        'crawl_root_url' => crawl_root_url.presence || normalized_link,
+        'crawl_depth' => crawl_depth
+      ).compact,
       **synced_attributes
     )
   end
@@ -81,6 +93,10 @@ class Captain::Tools::SimplePageCrawlParserJob < ApplicationJob
   end
 
   def normalize_link(raw_link)
+    uri = URI.parse(raw_link.to_s)
+    uri.fragment = nil
+    uri.to_s.delete_suffix('/')
+  rescue URI::InvalidURIError
     raw_link.to_s.delete_suffix('/')
   end
 

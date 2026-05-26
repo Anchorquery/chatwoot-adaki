@@ -30,7 +30,8 @@ const formState = {
 const initialState = {
   name: '',
   url: '',
-  documentType: 'url',
+  documentType: 'web',
+  crawlDepth: 10,
   pdfFile: null,
 };
 
@@ -39,9 +40,11 @@ const fileInputRef = ref(null);
 
 const validationRules = {
   url: {
-    required: requiredIf(() => state.documentType === 'url'),
-    url: requiredIf(() => state.documentType === 'url' && url),
-    minLength: requiredIf(() => state.documentType === 'url' && minLength(1)),
+    required: requiredIf(() => state.documentType === 'web'),
+    url: value =>
+      state.documentType !== 'web' || url(value || '') === true,
+    minLength: value =>
+      state.documentType !== 'web' || minLength(1)(value || '') === true,
   },
   pdfFile: {
     required: requiredIf(() => state.documentType === 'pdf'),
@@ -49,7 +52,7 @@ const validationRules = {
 };
 
 const documentTypeOptions = [
-  { value: 'url', label: t('CAPTAIN.DOCUMENTS.FORM.TYPE.URL') },
+  { value: 'web', label: t('CAPTAIN.DOCUMENTS.FORM.TYPE.WEB') },
   { value: 'pdf', label: t('CAPTAIN.DOCUMENTS.FORM.TYPE.PDF') },
 ];
 
@@ -58,6 +61,9 @@ const v$ = useVuelidate(validationRules, state);
 const isLoading = computed(() => formState.uiFlags.value.creatingItem);
 
 const hasPdfFileError = computed(() => v$.value.pdfFile.$error);
+const webUrlHelpText = computed(() =>
+  t('CAPTAIN.DOCUMENTS.FORM.URL.HELP_TEXT')
+);
 
 const getErrorMessage = (field, errorKey) => {
   return v$.value[field].$error
@@ -104,9 +110,12 @@ const prepareDocumentDetails = () => {
   const formData = new FormData();
   formData.append('document[assistant_id]', props.assistantId);
 
-  if (state.documentType === 'url') {
+  if (state.documentType === 'web') {
     formData.append('document[external_link]', state.url);
     formData.append('document[name]', state.name || state.url);
+    formData.append('document[metadata][crawl_mode]', 'website');
+    formData.append('document[metadata][crawl_root_url]', state.url);
+    formData.append('document[metadata][crawl_depth]', String(state.crawlDepth));
   } else {
     formData.append('document[pdf_file]', state.pdfFile);
     formData.append(
@@ -131,6 +140,43 @@ const handleSubmit = async () => {
 
 <template>
   <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
+    <div
+      class="rounded-xl border border-n-weak bg-n-slate-2/60 p-4 text-sm text-n-slate-11"
+    >
+      <p class="m-0 text-base font-medium text-n-slate-12">
+        {{ t('CAPTAIN.DOCUMENTS.FORM.HELP_PANEL.TITLE') }}
+      </p>
+      <p class="mt-1 mb-0">
+        {{ t('CAPTAIN.DOCUMENTS.FORM.HELP_PANEL.SUBTITLE') }}
+      </p>
+      <div class="mt-4 grid gap-2 sm:grid-cols-3">
+        <div class="rounded-lg bg-n-alpha-2 px-3 py-2">
+          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11">
+            01
+          </p>
+          <p class="mt-1 mb-0 text-sm text-n-slate-12">
+            {{ t('CAPTAIN.DOCUMENTS.FORM.HELP_PANEL.STEP_ONE') }}
+          </p>
+        </div>
+        <div class="rounded-lg bg-n-alpha-2 px-3 py-2">
+          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11">
+            02
+          </p>
+          <p class="mt-1 mb-0 text-sm text-n-slate-12">
+            {{ t('CAPTAIN.DOCUMENTS.FORM.HELP_PANEL.STEP_TWO') }}
+          </p>
+        </div>
+        <div class="rounded-lg bg-n-alpha-2 px-3 py-2">
+          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11">
+            03
+          </p>
+          <p class="mt-1 mb-0 text-sm text-n-slate-12">
+            {{ t('CAPTAIN.DOCUMENTS.FORM.HELP_PANEL.STEP_THREE') }}
+          </p>
+        </div>
+      </div>
+    </div>
+
     <div class="flex flex-col gap-1">
       <label
         for="documentType"
@@ -147,12 +193,23 @@ const handleSubmit = async () => {
     </div>
 
     <Input
-      v-if="state.documentType === 'url'"
+      v-if="state.documentType === 'web'"
       v-model="state.url"
       :label="t('CAPTAIN.DOCUMENTS.FORM.URL.LABEL')"
       :placeholder="t('CAPTAIN.DOCUMENTS.FORM.URL.PLACEHOLDER')"
-      :message="formErrors.url"
+      :message="formErrors.url || webUrlHelpText"
       :message-type="formErrors.url ? 'error' : 'info'"
+    />
+
+    <Input
+      v-if="state.documentType === 'web'"
+      v-model="state.crawlDepth"
+      type="number"
+      min="1"
+      max="250"
+      :label="t('CAPTAIN.DOCUMENTS.FORM.CRAWL_LIMIT.LABEL')"
+      :placeholder="t('CAPTAIN.DOCUMENTS.FORM.CRAWL_LIMIT.PLACEHOLDER')"
+      :message="t('CAPTAIN.DOCUMENTS.FORM.CRAWL_LIMIT.HELP_TEXT')"
     />
 
     <div v-if="state.documentType === 'pdf'" class="flex flex-col gap-2">

@@ -2,7 +2,13 @@ class Enterprise::Webhooks::FirecrawlController < ActionController::API
   before_action :validate_token
 
   def process_payload
-    Captain::Tools::FirecrawlParserJob.perform_later(assistant_id: assistant.id, payload: payload) if crawl_page_event?
+    Captain::Tools::FirecrawlParserJob.perform_later(
+      assistant_id: assistant.id,
+      payload: payload,
+      root_url: permitted_params[:root_url],
+      crawl_mode: 'website',
+      crawl_depth: permitted_params[:crawl_depth]
+    ) if crawl_page_event?
 
     head :ok
   end
@@ -39,6 +45,8 @@ class Enterprise::Webhooks::FirecrawlController < ActionController::API
       :success,
       :id,
       :metadata,
+      :root_url,
+      :crawl_depth,
       :format,
       :firecrawl,
       data: [:markdown, { metadata: {} }]

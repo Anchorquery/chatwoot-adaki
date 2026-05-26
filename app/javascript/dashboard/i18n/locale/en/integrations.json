@@ -740,8 +740,18 @@
       }
     },
     "DOCUMENTS": {
-      "HEADER": "Documents",
-      "ADD_NEW": "Create a new document",
+      "HEADER": "Knowledge",
+      "ADD_NEW": "Add knowledge source",
+      "OVERVIEW": {
+        "KICKER": "Knowledge hub",
+        "TITLE": "Feed Captain with PDFs and web pages",
+        "SUBTITLE": "Add a web page or a PDF and Captain will crawl, extract, and use the content as assistant context.",
+        "TOTAL": "Sources",
+        "WEBSITE_CRAWLS": "Website crawls",
+        "CRAWLED_PAGES": "Crawled pages",
+        "SYNCING": "Syncing",
+        "NEEDS_ATTENTION": "Needs attention"
+      },
       "SELECTED": "{count} selected",
       "SELECT_ALL": "Select all ({count})",
       "UNSELECT_ALL": "Unselect all ({count})",
@@ -781,7 +791,12 @@
           "RECENTLY_UPDATED": "Recently updated",
           "RECENTLY_CREATED": "Recently created"
         },
-        "SEARCH_PLACEHOLDER": "Search..."
+        "SEARCH_PLACEHOLDER": "Search knowledge..."
+      },
+      "SOURCE_LABELS": {
+        "WEB": "Web",
+        "PDF": "PDF",
+        "WEBSITE_CRAWL": "Website crawl"
       },
       "SYNC_STATUS": {
         "SYNCED": "last updated {time}",
@@ -803,22 +818,35 @@
         "TITLE": "Related FAQs",
         "DESCRIPTION": "These FAQs are generated directly from the document."
       },
-      "FORM_DESCRIPTION": "Enter the URL of the document to add it as a knowledge source and choose the assistant to associate it with.",
       "CREATE": {
-        "TITLE": "Add a document",
-        "SUCCESS_MESSAGE": "The document has been successfully created",
-        "ERROR_MESSAGE": "There was an error creating the document, please try again."
+        "TITLE": "Add knowledge source",
+        "DESCRIPTION": "Add a PDF or web page. Web sources are crawled and turned into knowledge for the assistant.",
+        "SUCCESS_MESSAGE": "The knowledge source has been created successfully",
+        "ERROR_MESSAGE": "There was an error creating the knowledge source, please try again."
       },
       "FORM": {
+        "HELP_PANEL": {
+          "TITLE": "How knowledge sources work",
+          "SUBTITLE": "Web sources are crawled and turned into searchable knowledge. PDFs are uploaded directly and processed as context.",
+          "STEP_ONE": "Paste a URL or upload a PDF.",
+          "STEP_TWO": "Captain crawls the content and keeps the source updated.",
+          "STEP_THREE": "The assistant uses it as context when replying."
+        },
         "TYPE": {
-          "LABEL": "Document Type",
-          "URL": "URL",
+          "LABEL": "Source type",
+          "WEB": "Web page / website",
           "PDF": "PDF File"
         },
         "URL": {
-          "LABEL": "URL",
-          "PLACEHOLDER": "Enter the URL of the document",
-          "ERROR": "Please provide a valid URL for the document"
+          "LABEL": "Web page URL",
+          "PLACEHOLDER": "Paste a web page or website URL",
+          "HELP_TEXT": "Captain will crawl the page, extract the content, and keep it updated.",
+          "ERROR": "Please provide a valid web page URL"
+        },
+        "CRAWL_LIMIT": {
+          "LABEL": "Max pages to crawl",
+          "PLACEHOLDER": "10",
+          "HELP_TEXT": "Captain follows same-site links until this page limit is reached."
         },
         "PDF_FILE": {
           "LABEL": "PDF File",
@@ -848,13 +876,28 @@
         "DELETE_DOCUMENT": "Delete Document"
       },
       "EMPTY_STATE": {
-        "TITLE": "No documents available",
-        "SUBTITLE": "Documents are used by your assistant to generate FAQs. You can import documents to provide context for your assistant.",
-        "FILTERED_TITLE": "No matching documents",
+        "TITLE": "No knowledge sources yet",
+        "SUBTITLE": "Add help docs, policies, or web pages. Captain will crawl the content and use it as context for the assistant.",
+        "FILTERED_TITLE": "No matching knowledge sources",
         "FILTERED_SUBTITLE": "Try changing the source, status, or search term.",
+        "KNOWLEDGE_PANEL": {
+          "TITLE": "What you can add",
+          "PDFS": {
+            "TITLE": "PDF manuals",
+            "SUBTITLE": "Upload guides, playbooks, and policy docs."
+          },
+          "WEB": {
+            "TITLE": "Web pages",
+            "SUBTITLE": "Paste a URL and Captain will crawl the page and follow same-site links when available."
+          },
+          "SYNC": {
+            "TITLE": "Fresh syncs",
+            "SUBTITLE": "Track updates, retries, and crawl errors."
+          }
+        },
         "FEATURE_SPOTLIGHT": {
           "TITLE": "Captain Document",
-          "NOTE": "A document in Captain serves as a knowledge resource for the assistant. By connecting your help center or guides, Captain can analyze the content and provide accurate responses for customer inquiries."
+          "NOTE": "A knowledge source in Captain can be a PDF or a web page. Captain crawls the content and uses it to answer customer questions more accurately."
         }
       }
     },

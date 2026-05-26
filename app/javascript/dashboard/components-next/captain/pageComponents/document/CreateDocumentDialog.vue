@@ -51,7 +51,7 @@ defineExpose({ dialogRef });
   <Dialog
     ref="dialogRef"
     :title="$t(`${i18nKey}.TITLE`)"
-    :description="$t('CAPTAIN.DOCUMENTS.FORM_DESCRIPTION')"
+    :description="$t('CAPTAIN.DOCUMENTS.CREATE.DESCRIPTION')"
     :show-cancel-button="false"
     :show-confirm-button="false"
     @close="handleClose"
