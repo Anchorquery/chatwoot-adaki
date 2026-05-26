@@ -1,11 +1,10 @@
 <script setup>
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useToggle } from '@vueuse/core';
 import { useVuelidate } from '@vuelidate/core';
-import { vOnClickOutside } from '@vueuse/components';
 import { required, minLength } from '@vuelidate/validators';
 
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
@@ -15,7 +14,7 @@ const emit = defineEmits(['add']);
 
 const { t } = useI18n();
 
-const [showPopover, togglePopover] = useToggle();
+const dialogRef = ref(null);
 
 const state = reactive({
   id: '',
@@ -57,68 +56,74 @@ const resetState = () => {
     description: '',
     instruction: '',
   });
+  v$.value.$reset();
+};
+
+const openDialog = () => {
+  dialogRef.value?.open();
 };
 
 const onClickAdd = async () => {
   v$.value.$touch();
   if (v$.value.$invalid) return;
 
-  await emit('add', state);
-  resetState();
-  togglePopover(false);
+  emit('add', { ...state });
+  dialogRef.value?.close();
 };
 
 const onClickCancel = () => {
-  togglePopover(false);
+  dialogRef.value?.close();
 };
 </script>
 
 <template>
-  <div
-    v-on-click-outside="() => togglePopover(false)"
-    class="inline-flex relative"
-  >
+  <div class="inline-flex relative">
     <Button
       :label="t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.CREATE')"
       sm
       slate
       class="flex-shrink-0"
-      @click="togglePopover(!showPopover)"
+      @click="openDialog"
     />
 
-    <div
-      v-if="showPopover"
-      class="w-[31.25rem] absolute top-10 ltr:left-0 rtl:right-0 bg-n-alpha-3 backdrop-blur-[100px] p-6 rounded-xl border border-n-weak shadow-md flex flex-col gap-6 z-50"
+    <Dialog
+      ref="dialogRef"
+      type="edit"
+      :title="t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.TITLE')"
+      width="5xl"
+      overflow-y-auto
+      :show-cancel-button="false"
+      :show-confirm-button="false"
+      @close="resetState"
     >
-      <h3 class="text-base font-medium text-n-slate-12">
-        {{ t(`CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.TITLE`) }}
-      </h3>
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div class="flex flex-col gap-4">
+          <Input
+            v-model="state.title"
+            :label="t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.TITLE.LABEL')"
+            :placeholder="
+              t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.TITLE.PLACEHOLDER')
+            "
+            :message="titleError"
+            :message-type="titleError ? 'error' : 'info'"
+          />
 
-      <div class="flex flex-col gap-4">
-        <Input
-          v-model="state.title"
-          :label="t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.TITLE.LABEL')"
-          :placeholder="
-            t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.TITLE.PLACEHOLDER')
-          "
-          :message="titleError"
-          :message-type="titleError ? 'error' : 'info'"
-        />
+          <TextArea
+            v-model="state.description"
+            :label="
+              t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.DESCRIPTION.LABEL')
+            "
+            :placeholder="
+              t(
+                'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.DESCRIPTION.PLACEHOLDER'
+              )
+            "
+            :message="descriptionError"
+            :message-type="descriptionError ? 'error' : 'info'"
+            show-character-count
+          />
+        </div>
 
-        <TextArea
-          v-model="state.description"
-          :label="
-            t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.DESCRIPTION.LABEL')
-          "
-          :placeholder="
-            t(
-              'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.DESCRIPTION.PLACEHOLDER'
-            )
-          "
-          :message="descriptionError"
-          :message-type="descriptionError ? 'error' : 'info'"
-          show-character-count
-        />
         <Editor
           v-model="state.instruction"
           :label="
@@ -136,20 +141,21 @@ const onClickCancel = () => {
         />
       </div>
 
-      <div class="flex items-center justify-between w-full gap-3">
+      <div class="mt-6 flex items-center justify-end gap-3">
         <Button
           variant="faded"
           color="slate"
           :label="t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.CANCEL')"
-          class="w-full bg-n-alpha-2 !text-n-blue-11 hover:bg-n-alpha-3"
+          class="bg-n-alpha-2 !text-n-blue-11 hover:bg-n-alpha-3"
+          type="button"
           @click="onClickCancel"
         />
         <Button
           :label="t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.CREATE')"
-          class="w-full"
+          type="button"
           @click="onClickAdd"
         />
       </div>
-    </div>
+    </Dialog>
   </div>
 </template>

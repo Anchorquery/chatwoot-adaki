@@ -3,7 +3,7 @@ import ApiClient from '../ApiClient';
 
 class PlatformCredentialsAPI extends ApiClient {
   constructor() {
-    super('platform/credentials', { accountScoped: true });
+    super('captain/platform/credentials', { accountScoped: true });
   }
 
   index() {

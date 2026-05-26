@@ -15,7 +15,13 @@ class ConversationApi extends ApiClient {
   }
 
   getUnreadCounts() {
-    return axios.get(`${this.url}/unread_counts`);
+    return axios.get(`${this.url}/unread_counts`).catch(error => {
+      if (error?.response?.status === 403) {
+        return { data: {} };
+      }
+
+      throw error;
+    });
   }
 }
 

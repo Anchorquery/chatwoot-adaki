@@ -32,6 +32,10 @@ class ApiClient {
       url = `/enterprise${url}`;
     }
 
+    if (this.options.enterprise && this.resource === 'limits') {
+      return `${url}/limits`;
+    }
+
     if (this.options.accountScoped && this.accountIdFromRoute) {
       url = `${url}/accounts/${this.accountIdFromRoute}`;
     }
