@@ -54,6 +54,7 @@ const defaultDeliverySettings = () => ({
   max_failures_before_pause: 5,
   pause_on_429: true,
   business_hours_only: false,
+  immediate_dispatch: false,
 });
 
 const defaultState = () => ({
@@ -712,6 +713,24 @@ defineExpose({
         <input v-model="state.delivery.business_hours_only" type="checkbox" />
         <span>{{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.BUSINESS_HOURS_ONLY') }}</span>
       </label>
+
+      <div class="rounded-xl border border-n-weak bg-n-alpha-2 p-3 flex flex-col gap-2">
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input
+            v-model="state.delivery.immediate_dispatch"
+            type="checkbox"
+            class="mt-0.5"
+          />
+          <div class="flex flex-col gap-0.5">
+            <span class="text-sm font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH') }}
+            </span>
+            <span class="text-xs text-n-slate-10">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH_HELP') }}
+            </span>
+          </div>
+        </label>
+      </div>
     </section>
 
     <div v-if="showActionButtons" class="flex items-center justify-between w-full gap-3">

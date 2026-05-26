@@ -3,6 +3,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   before_action :find_campaign_for_clone, only: [:clone]
   before_action :check_authorization
   before_action :parse_delivery_settings, only: [:create, :update]
+  after_action :trigger_immediate_dispatch, only: [:create, :update]
 
   def index
     @campaigns = Current.account.campaigns
@@ -79,6 +80,16 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def campaign
     @campaign ||= Current.account.campaigns.find_by(display_id: params[:id])
+  end
+
+  def trigger_immediate_dispatch
+    return unless @campaign
+    return unless @campaign.campaign_type == 'one_off'
+    return unless @campaign.campaign_status == 'active'
+    return unless @campaign.delivery_settings&.dig('immediate_dispatch')
+    return unless @campaign.scheduled_at.present? && @campaign.scheduled_at <= Time.current
+
+    Campaigns::TriggerOneoffCampaignJob.perform_later(@campaign)
   end
 
   def find_campaign_for_clone

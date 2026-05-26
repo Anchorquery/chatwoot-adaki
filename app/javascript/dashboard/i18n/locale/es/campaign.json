@@ -284,7 +284,11 @@
             "BATCH_SIZE": "Tamaño del lote (mensajes/lote)",
             "DELAY_MESSAGES": "Espera entre mensajes (seg)",
             "DELAY_BATCHES": "Espera entre lotes (seg)",
-            "MAX_FAILURES": "Máx. fallos antes de auto-pausa"
+            "MAX_FAILURES": "Máx. fallos antes de auto-pausa",
+            "PAUSE_ON_429": "Pausar automáticamente en límite de tasa (429)",
+            "BUSINESS_HOURS_ONLY": "Enviar solo en horario laboral",
+            "IMMEDIATE_DISPATCH": "Iniciar inmediatamente",
+            "IMMEDIATE_DISPATCH_HELP": "Encola la campaña en cuanto se guarda (si la hora programada ya pasó). Sin esta opción, el sistema revisa cada 5 minutos."
           },
           "AI": {
             "BUTTON": "🪄 Asistente de IA",

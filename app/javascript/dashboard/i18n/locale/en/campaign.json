@@ -226,7 +226,9 @@
             "MAX_DAILY": "Max messages per day",
             "MAX_FAILURES": "Max failures before auto-pause",
             "PAUSE_ON_429": "Pause automatically on rate limit (429)",
-            "BUSINESS_HOURS_ONLY": "Send only during business hours"
+            "BUSINESS_HOURS_ONLY": "Send only during business hours",
+            "IMMEDIATE_DISPATCH": "Start immediately",
+            "IMMEDIATE_DISPATCH_HELP": "Enqueue the campaign as soon as it is saved (if scheduled time has passed). Without this, the system checks every 5 minutes."
           },
           "AI": {
             "BUTTON": "AI assistant",
