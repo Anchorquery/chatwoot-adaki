@@ -23,6 +23,8 @@
 #  updated_at          :datetime         not null
 #
 class Platform::Credential < ApplicationRecord
+  self.table_name = 'platform_credentials'
+
   belongs_to :account, optional: true
   belongs_to :owner, polymorphic: true, optional: true
   belongs_to :created_by, class_name: 'User', optional: true

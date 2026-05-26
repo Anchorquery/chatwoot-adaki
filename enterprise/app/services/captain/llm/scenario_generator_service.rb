@@ -1,42 +1,26 @@
 class Captain::Llm::ScenarioGeneratorService < Captain::BaseTaskService
-  pattr_initialize [:assistant!, :focus!, { reference_scenarios: [] }]
+  RESPONSE_SCHEMA = Captain::Llm::ScenarioGeneratorSchema
+
+  pattr_initialize [:account!, :assistant!, :prompt!]
 
   def perform
-    response = make_api_call(model: generator_model, messages: messages)
+    response = make_api_call(model: generator_model, messages: messages, schema: RESPONSE_SCHEMA)
     return response if response[:error]
 
-    response.merge(message: extract_value(response[:message]))
-  end
-
-  def generate
-    result = perform
-    return '' if result[:error]
-
-    result[:message].to_s.strip
+    response.merge(message: extract_payload(response[:message]))
   end
 
   private
 
-  def account
-    @account ||= assistant.account
-  end
+  def extract_payload(message)
+    return {} if message.blank?
 
-  def normalized_focus
-    @normalized_focus ||= focus.to_s.presence_in(%w[title description instruction]) || 'instruction'
-  end
-
-  def extract_value(message)
-    return '' if message.blank?
-
-    parsed = parse_json(message)
-    parsed.is_a?(Hash) ? parsed.fetch('value', '').to_s.strip : message.to_s.strip
-  end
-
-  def parse_json(content)
-    cleaned = content.to_s.strip.sub(/\A```(?:json)?\s*/i, '').sub(/\s*```\z/, '')
-    JSON.parse(cleaned)
-  rescue JSON::ParserError
-    nil
+    data = message.is_a?(Hash) ? message.deep_symbolize_keys : {}
+    {
+      title: data[:title].to_s.strip,
+      description: data[:description].to_s.strip,
+      instruction: data[:instruction].to_s.strip
+    }
   end
 
   def messages
@@ -47,55 +31,54 @@ class Captain::Llm::ScenarioGeneratorService < Captain::BaseTaskService
   end
 
   def system_prompt
-    Captain::Llm::SystemPromptsService.scenario_generator(normalized_focus)
+    tools_list = available_tools_text
+
+    <<~PROMPT
+      You are an expert assistant configuration writer for a customer-support AI platform.
+      Your task is to generate a complete scenario definition for an AI assistant.
+
+      A scenario defines how the assistant should behave in a specific situation.
+      It has three parts:
+      - title: A short label for the scenario (e.g. "Angry customer", "Refund request")
+      - description: One sentence explaining when this scenario applies
+      - instruction: Step-by-step Markdown instructions the assistant will follow
+
+      #{tools_list.present? ? "Available tools the assistant can use:\n#{tools_list}\n\nTo reference a tool in the instruction, use exactly this format: [@Tool Name](tool://tool_id)" : 'No tools are configured for this assistant.'}
+
+      Write the title, description, and instruction in #{locale_name}.
+      Be concrete, actionable, and professional. Do not invent tool IDs that are not listed above.
+    PROMPT
   end
 
   def user_prompt
-    {
-      focus: normalized_focus,
-      assistant_context: safe_assistant_context,
-      available_tools: available_tools_summary,
-      reference_scenarios: normalized_reference_scenarios
-    }.to_json
+    parts = [
+      "Assistant name: #{assistant.name}",
+      ("Assistant description: #{assistant.description}" if assistant.description.present?),
+      '',
+      "Generate a scenario for the following situation:",
+      prompt
+    ].compact
+    parts.join("\n")
   end
 
-  def safe_assistant_context
-    {
-      name: assistant.name,
-      description: assistant.description,
-      product_name: assistant.config['product_name'],
-      response_guidelines: assistant.response_guidelines || [],
-      guardrails: assistant.guardrails || []
-    }
+  def available_tools_text
+    tools = assistant.available_agent_tools
+    return '' if tools.blank?
+
+    tools.map { |t| "- #{t[:name]} (tool://#{t[:id]}): #{t[:description]}" }.join("\n")
   end
 
-  def available_tools_summary
-    assistant.available_agent_tools.map do |tool|
-      {
-        id: tool[:id],
-        name: tool[:title] || tool[:name],
-        description: tool[:description]
-      }
-    end
-  rescue StandardError => e
-    Rails.logger.warn("[ScenarioGenerator] Failed to load tools: #{e.message}")
-    []
-  end
-
-  def normalized_reference_scenarios
-    Array(reference_scenarios).filter_map do |scenario|
-      next unless scenario.respond_to?(:to_h)
-
-      scenario.to_h.symbolize_keys.slice(:title, :description, :instruction, :tools)
-    end
-  end
-
-  def generator_model
-    InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence || GPT_MODEL
+  def locale_name
+    code = account.locale.to_s
+    LANGUAGES_CONFIG.values.find { |v| v[:iso_639_1_code] == code }&.dig(:name) || code.presence || 'English (en)'
   end
 
   def event_name
     'scenario_generator'
+  end
+
+  def llm_credential
+    @llm_credential ||= system_llm_credential
   end
 
   def captain_tasks_enabled?
@@ -104,6 +87,10 @@ class Captain::Llm::ScenarioGeneratorService < Captain::BaseTaskService
 
   def counts_toward_usage?
     false
+  end
+
+  def generator_model
+    InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence || GPT_MODEL
   end
 
   def build_follow_up_context?

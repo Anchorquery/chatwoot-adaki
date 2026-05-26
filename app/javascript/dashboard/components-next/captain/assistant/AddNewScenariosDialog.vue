@@ -1,24 +1,17 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRoute } from 'vue-router';
 import { useVuelidate } from '@vuelidate/core';
 import { required, minLength } from '@vuelidate/validators';
+import { useRoute } from 'vue-router';
 
-import { useAlert } from 'dashboard/composables';
-import CaptainScenariosAPI from 'dashboard/api/captain/scenarios';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Editor from 'dashboard/components-next/Editor/Editor.vue';
-
-const props = defineProps({
-  referenceScenarios: {
-    type: Array,
-    default: () => [],
-  },
-});
+import CaptainScenariosAPI from 'dashboard/api/captain/scenarios';
+import { useAlert } from 'dashboard/composables';
 
 const emit = defineEmits(['add']);
 
@@ -26,7 +19,10 @@ const { t } = useI18n();
 const route = useRoute();
 
 const dialogRef = ref(null);
-const isGenerating = ref('');
+const aiPrompt = ref('');
+const isGenerating = ref(false);
+
+const assistantId = computed(() => Number(route.params.assistantId));
 
 const state = reactive({
   id: '',
@@ -42,8 +38,6 @@ const rules = {
 };
 
 const v$ = useVuelidate(rules, state);
-
-const assistantId = computed(() => Number(route.params.assistantId));
 
 const titleError = computed(() =>
   v$.value.title.$error
@@ -70,37 +64,8 @@ const resetState = () => {
     description: '',
     instruction: '',
   });
-  isGenerating.value = '';
+  aiPrompt.value = '';
   v$.value.$reset();
-};
-
-const generateField = async focus => {
-  if (!assistantId.value || isGenerating.value) return;
-
-  try {
-    isGenerating.value = focus;
-    const { data } = await CaptainScenariosAPI.generate(
-      { assistantId: assistantId.value },
-      {
-        focus,
-        reference_scenarios: props.referenceScenarios,
-      }
-    );
-
-    const generatedValue = data?.value?.trim();
-    if (!generatedValue) {
-      throw new Error('Empty AI response');
-    }
-
-    state[focus] = generatedValue;
-  } catch (error) {
-    useAlert(
-      error?.response?.data?.error ||
-        t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.GENERATE.ERROR')
-    );
-  } finally {
-    isGenerating.value = '';
-  }
 };
 
 const openDialog = () => {
@@ -117,6 +82,26 @@ const onClickAdd = async () => {
 
 const onClickCancel = () => {
   dialogRef.value?.close();
+};
+
+const onGenerateWithAI = async () => {
+  if (!aiPrompt.value.trim()) return;
+
+  isGenerating.value = true;
+  try {
+    const { data } = await CaptainScenariosAPI.generate({
+      assistantId: assistantId.value,
+      prompt: aiPrompt.value.trim(),
+    });
+    state.title = data.title || '';
+    state.description = data.description || '';
+    state.instruction = data.instruction || '';
+    v$.value.$reset();
+  } catch {
+    useAlert(t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.ERROR'));
+  } finally {
+    isGenerating.value = false;
+  }
 };
 </script>
 
@@ -140,105 +125,92 @@ const onClickCancel = () => {
       :show-confirm-button="false"
       @close="resetState"
     >
-      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center justify-between gap-3">
-              <label class="text-sm font-medium text-n-slate-12">
-                {{ t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.TITLE.LABEL') }}
-              </label>
-              <Button
-                :label="
-                  t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.GENERATE_TITLE')
-                "
-                :is-loading="isGenerating === 'title'"
-                ghost
-                xs
-                slate
-                class="shrink-0 !text-xs"
-                icon="i-lucide-sparkles"
-                @click="generateField('title')"
-              />
-            </div>
+      <!-- AI Generation Section -->
+      <div class="mb-6 p-4 rounded-xl bg-n-alpha-1 border border-n-strong/10">
+        <p class="text-sm font-medium text-n-slate-12 mb-3">
+          {{ t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.LABEL') }}
+        </p>
+        <div class="flex gap-2">
+          <div class="flex-1">
             <Input
-              v-model="state.title"
-              :placeholder="
-                t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.TITLE.PLACEHOLDER')
-              "
-              :message="titleError"
-              :message-type="titleError ? 'error' : 'info'"
-            />
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center justify-between gap-3">
-              <label class="text-sm font-medium text-n-slate-12">
-                {{
-                  t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.DESCRIPTION.LABEL')
-                }}
-              </label>
-              <Button
-                :label="
-                  t(
-                    'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.GENERATE_DESCRIPTION'
-                  )
-                "
-                :is-loading="isGenerating === 'description'"
-                ghost
-                xs
-                slate
-                class="shrink-0 !text-xs"
-                icon="i-lucide-sparkles"
-                @click="generateField('description')"
-              />
-            </div>
-            <TextArea
-              v-model="state.description"
+              v-model="aiPrompt"
               :placeholder="
                 t(
-                  'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.DESCRIPTION.PLACEHOLDER'
+                  'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.PLACEHOLDER'
                 )
               "
-              :message="descriptionError"
-              :message-type="descriptionError ? 'error' : 'info'"
-              show-character-count
+              @keyup.enter="onGenerateWithAI"
             />
           </div>
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center justify-between gap-3">
-            <label class="text-sm font-medium text-n-slate-12">
-              {{
-                t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.INSTRUCTION.LABEL')
-              }}
-            </label>
-            <Button
-              :label="
-                t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.GENERATE_INSTRUCTION')
-              "
-              :is-loading="isGenerating === 'instruction'"
-              ghost
-              xs
-              slate
-              class="shrink-0 !text-xs"
-              icon="i-lucide-sparkles"
-              @click="generateField('instruction')"
-            />
-          </div>
-          <Editor
-            v-model="state.instruction"
-            :placeholder="
-              t(
-                'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.INSTRUCTION.PLACEHOLDER'
-              )
+          <Button
+            :label="
+              isGenerating
+                ? t(
+                    'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.GENERATING'
+                  )
+                : t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.BUTTON')
             "
-            :message="instructionError"
-            :message-type="instructionError ? 'error' : 'info'"
-            :show-character-count="false"
-            enable-captain-tools
+            :is-loading="isGenerating"
+            :disabled="!aiPrompt.trim() || isGenerating"
+            icon="i-lucide-sparkles"
+            type="button"
+            @click="onGenerateWithAI"
           />
         </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="flex items-center gap-3 mb-6">
+        <div class="flex-1 h-px bg-n-strong/10" />
+        <span class="text-xs text-n-slate-10">
+          {{ t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.DIVIDER') }}
+        </span>
+        <div class="flex-1 h-px bg-n-strong/10" />
+      </div>
+
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div class="flex flex-col gap-4">
+          <Input
+            v-model="state.title"
+            :label="t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.TITLE.LABEL')"
+            :placeholder="
+              t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.TITLE.PLACEHOLDER')
+            "
+            :message="titleError"
+            :message-type="titleError ? 'error' : 'info'"
+          />
+
+          <TextArea
+            v-model="state.description"
+            :label="
+              t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.DESCRIPTION.LABEL')
+            "
+            :placeholder="
+              t(
+                'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.DESCRIPTION.PLACEHOLDER'
+              )
+            "
+            :message="descriptionError"
+            :message-type="descriptionError ? 'error' : 'info'"
+            show-character-count
+          />
+        </div>
+
+        <Editor
+          v-model="state.instruction"
+          :label="
+            t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.INSTRUCTION.LABEL')
+          "
+          :placeholder="
+            t(
+              'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.FORM.INSTRUCTION.PLACEHOLDER'
+            )
+          "
+          :message="instructionError"
+          :message-type="instructionError ? 'error' : 'info'"
+          :show-character-count="false"
+          enable-captain-tools
+        />
       </div>
 
       <div class="mt-6 flex items-center justify-end gap-3">

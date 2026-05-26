@@ -512,6 +512,16 @@
           "ERROR": "The product name is required",
           "HELP": "This is the product name Captain uses when it talks about your business or product in a reply."
         },
+        "GROUP_TRIGGER": {
+          "LABEL": "Group trigger keyword",
+          "PLACEHOLDER": "e.g. adaki",
+          "HELP": "In group chats the assistant stays silent unless someone writes @keyword or /keyword. Leave empty to use the first word of the assistant name. The commands /bot, /ask and !bot always work."
+        },
+        "WHATSAPP_NUMBER": {
+          "LABEL": "Bot WhatsApp number",
+          "PLACEHOLDER": "e.g. +54 9 351 123 4567",
+          "HELP": "The WhatsApp number connected to this bot. A native WhatsApp @mention sends the number as text, so setting it here lets group members summon the bot by tagging it. Leave empty to disable native mentions."
+        },
         "WELCOME_MESSAGE": {
           "LABEL": "Welcome Message",
           "PLACEHOLDER": "Enter welcome message"
@@ -725,6 +735,14 @@
               "GENERATE_ERROR": "We could not generate a suggestion. Please try again.",
               "CREATE": "Create",
               "CANCEL": "Cancel"
+            },
+            "AI_GENERATE": {
+              "BUTTON": "Generate with AI",
+              "GENERATING": "Generating...",
+              "LABEL": "Describe what this scenario should handle",
+              "PLACEHOLDER": "E.g. A customer wants to return a product and needs a refund",
+              "ERROR": "Could not generate scenario. Please try again.",
+              "DIVIDER": "or fill in manually"
             }
           }
         },
