@@ -78,7 +78,7 @@ Rails.application.routes.draw do
               post :test, on: :collection
             end
             resources :mcp_servers do
-              post :test, on: :collection
+              post :test, on: :member
               post :discover, on: :member
             end
             resources :documents, only: [:index, :show, :create, :destroy] do
