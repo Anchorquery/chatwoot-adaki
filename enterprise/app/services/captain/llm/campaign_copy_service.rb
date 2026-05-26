@@ -110,12 +110,17 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
     parts.join("\n")
   end
 
+  def document_responses_scope
+    assistant.responses.approved
+             .where(documentable_type: ['Captain::Document', nil])
+  end
+
   def search_assistant_documents
     embedding = Captain::Llm::EmbeddingService.new(account_id: account.id).get_embedding(prompt)
     results = if embedding.present?
-                assistant.responses.approved
-                         .nearest_neighbors(:embedding, embedding, distance: 'cosine')
-                         .limit(5)
+                document_responses_scope
+                  .nearest_neighbors(:embedding, embedding, distance: 'cosine')
+                  .limit(5)
               else
                 fallback_responses
               end
@@ -126,7 +131,7 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
   end
 
   def fallback_responses
-    assistant.responses.approved.order(created_at: :desc).limit(5)
+    document_responses_scope.order(created_at: :desc).limit(5)
   end
 
   def format_document_results(results)
@@ -134,7 +139,8 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
 
     results.map do |r|
       entry = "  Q: #{r.question}\n  A: #{r.answer}"
-      link = r.documentable&.try(:external_link).to_s.presence
+      doc = r.documentable
+      link = doc.is_a?(Captain::Document) ? doc.external_link.to_s.presence : nil
       entry += "\n  Source: #{link}" if link && !link.start_with?('PDF:') && !link.end_with?('.pdf')
       entry
     end.join("\n")
