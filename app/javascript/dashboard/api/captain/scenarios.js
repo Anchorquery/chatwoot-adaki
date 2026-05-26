@@ -22,6 +22,10 @@ class CaptainScenarios extends ApiClient {
     });
   }
 
+  generate({ assistantId }, data = {}) {
+    return axios.post(`${this.url}/${assistantId}/scenarios/generate`, data);
+  }
+
   update({ assistantId, id }, data = {}) {
     return axios.put(`${this.url}/${assistantId}/scenarios/${id}`, {
       scenario: data,

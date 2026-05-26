@@ -99,6 +99,17 @@ watch(
 
 <template>
   <div class="flex flex-col gap-6">
+    <div class="rounded-2xl border border-n-weak bg-n-alpha-black2 p-4">
+      <p class="text-sm font-medium text-n-slate-12">
+        {{ t('CAPTAIN.ASSISTANTS.SETTINGS.BASIC_SETTINGS.AI_CONTEXT.TITLE') }}
+      </p>
+      <p class="mt-1 text-sm leading-6 text-n-slate-11">
+        {{
+          t('CAPTAIN.ASSISTANTS.SETTINGS.BASIC_SETTINGS.AI_CONTEXT.DESCRIPTION')
+        }}
+      </p>
+    </div>
+
     <Input
       v-model="state.name"
       :label="t('CAPTAIN.ASSISTANTS.FORM.NAME.LABEL')"
@@ -114,6 +125,9 @@ watch(
       :message="formErrors.productName"
       :message-type="formErrors.productName ? 'error' : 'info'"
     />
+    <p class="mt-1 text-sm leading-6 text-n-slate-11">
+      {{ t('CAPTAIN.ASSISTANTS.FORM.PRODUCT_NAME.HELP') }}
+    </p>
 
     <Editor
       v-model="state.description"
@@ -146,6 +160,9 @@ watch(
           {{ t('CAPTAIN.ASSISTANTS.FORM.FEATURES.ALLOW_CONTACT_ATTRIBUTES') }}
         </label>
       </div>
+      <p class="mt-1 text-sm leading-6 text-n-slate-11">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.FEATURES.HELP') }}
+      </p>
     </div>
 
     <div>

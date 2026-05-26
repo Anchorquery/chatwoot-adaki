@@ -497,6 +497,10 @@
           "LABEL": "Temperatura de respuesta",
           "DESCRIPTION": "Ajusta cuán creativas o restrictivas deben ser las respuestas del asistente. Los valores bajos producen respuestas más enfocadas y deterministas, mientras que los valores altos permiten respuestas más creativas y variadas."
         },
+        "AUTOPILOT": {
+          "LABEL": "Autopiloto",
+          "DESCRIPTION": "Cuando está activado, este asistente responderá automáticamente a los mensajes entrantes de los clientes en las bandejas conectadas."
+        },
         "DESCRIPTION": {
           "LABEL": "Descripción",
           "PLACEHOLDER": "Introduce la descripción del asistente",
@@ -505,7 +509,8 @@
         "PRODUCT_NAME": {
           "LABEL": "Nombre del producto",
           "PLACEHOLDER": "Introduce el nombre del producto",
-          "ERROR": "El nombre del producto es obligatorio"
+          "ERROR": "El nombre del producto es obligatorio",
+          "HELP": "Este es el nombre del producto que Captain usa cuando habla de tu empresa o producto en una respuesta."
         },
         "WELCOME_MESSAGE": {
           "LABEL": "Mensaje de bienvenida",
@@ -520,7 +525,7 @@
           "PLACEHOLDER": "Introduce el mensaje de resolución"
         },
         "INSTRUCTIONS": {
-          "LABEL": "Instructions",
+          "LABEL": "Instrucciones",
           "PLACEHOLDER": "Introduce instrucciones para el asistente"
         },
         "FEATURES": {
@@ -528,7 +533,8 @@
           "ALLOW_CONVERSATION_FAQS": "Generar FAQ a partir de conversaciones resueltas",
           "ALLOW_MEMORIES": "Captura detalles clave como recuerdos a partir de las interacciones con clientes.",
           "ALLOW_CITATIONS": "Incluir citas de las fuentes en las respuestas",
-          "ALLOW_CONTACT_ATTRIBUTES": "Permitir acceso a la información del contacto"
+          "ALLOW_CONTACT_ATTRIBUTES": "Permitir acceso a la información del contacto",
+          "HELP": "Estas capacidades avanzadas pueden prepararse con el mismo contexto cuando la IA dispone de suficiente información."
         }
       },
       "EDIT": {
@@ -541,15 +547,23 @@
         "HEADER": "Ajustes",
         "BASIC_SETTINGS": {
           "TITLE": "Configuraciones básicas",
-          "DESCRIPTION": "Personaliza lo que dice el asistente al finalizar una conversación o al transferirla a una persona."
+          "DESCRIPTION": "Personaliza lo que dice el asistente al finalizar una conversación o al transferirla a una persona.",
+          "AI_CONTEXT": {
+            "TITLE": "Cómo usa Captain el contexto",
+            "DESCRIPTION": "Captain puede usar tus preguntas frecuentes aprobadas y las URLs de documentos para redactar respuestas. Si falta algún detalle, puede hacer una breve pregunta de seguimiento antes de continuar."
+          }
         },
         "SYSTEM_SETTINGS": {
           "TITLE": "Ajustes del sistema",
-          "DESCRIPTION": "Personaliza lo que dice el asistente al finalizar una conversación o al transferirla a una persona."
+          "DESCRIPTION": "Ajusta cómo responde Captain, cuándo debe pedir un dato que falta y cuándo debe transferir a una persona.",
+          "ADVANCED_HINT": {
+            "TITLE": "Comportamiento avanzado",
+            "DESCRIPTION": "Estos ajustes definen el tono, el momento y el nivel de automatización de Captain. También pueden redactarse a partir del contexto de tu producto cuando la IA tenga suficiente información."
+          }
         },
         "CONTROL_ITEMS": {
           "TITLE": "Funciones avanzadas",
-          "DESCRIPTION": "Añade más control al asistente. (Una vista más visual, tipo historia: guardrail de consulta → escenarios → salida) Invita a los usuarios a utilizarlas.",
+          "DESCRIPTION": "Añade más control al asistente. (Una vista más visual, tipo historia: filtros de consulta → escenarios → salida) Invita a los usuarios a utilizarlas.",
           "OPTIONS": {
             "GUARDRAILS": {
             "TITLE": "Límites de seguridad",
@@ -608,8 +622,8 @@
         "LIST": {
           "SEARCH_PLACEHOLDER": "Buscar..."
         },
-        "EMPTY_MESSAGE": "No se encontraron guardrails. Crea o añade ejemplos para comenzar.",
-        "SEARCH_EMPTY_MESSAGE": "No se encontraron guardrails para esta búsqueda.",
+        "EMPTY_MESSAGE": "No se encontraron límites de seguridad. Crea o añade ejemplos para comenzar.",
+        "SEARCH_EMPTY_MESSAGE": "No se encontraron límites de seguridad para esta búsqueda.",
         "API": {
           "ADD": {
             "SUCCESS": "Límites de seguridad añadidos correctamente",
@@ -705,6 +719,10 @@
                 "PLACEHOLDER": "Describe cómo y dónde se gestionará este escenario",
                 "ERROR": "El contenido del escenario es obligatorio"
               },
+              "GENERATE_TITLE": "Generar título",
+              "GENERATE_DESCRIPTION": "Generar descripción",
+              "GENERATE_INSTRUCTION": "Generar instrucciones",
+              "GENERATE_ERROR": "No pudimos generar una sugerencia. Inténtalo de nuevo.",
               "CREATE": "Crear",
               "CANCEL": "Cancelar"
             }
