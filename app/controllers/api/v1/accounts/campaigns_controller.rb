@@ -20,6 +20,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def update
     @campaign.update!(campaign_params.except(:attachments))
+    @campaign.update!(campaign_status: :active) if @campaign.draft?
     remove_files_from(@campaign)
     attach_files_to(@campaign)
   end
