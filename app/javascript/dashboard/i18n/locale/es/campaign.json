@@ -89,7 +89,11 @@
       "CARD": {
         "STATUS": {
           "COMPLETED": "Completado",
-          "SCHEDULED": "Programado"
+          "SCHEDULED": "Programado",
+          "RUNNING": "Enviando",
+          "PAUSED": "Pausado",
+          "FAILED": "Fallido",
+          "DRAFT": "Borrador"
         },
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Enviado desde",
@@ -147,7 +151,11 @@
       "CARD": {
         "STATUS": {
           "COMPLETED": "Completado",
-          "SCHEDULED": "Programado"
+          "SCHEDULED": "Programado",
+          "RUNNING": "Enviando",
+          "PAUSED": "Pausado",
+          "FAILED": "Fallido",
+          "DRAFT": "Borrador"
         },
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Enviado desde",

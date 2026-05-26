@@ -89,7 +89,11 @@
       "CARD": {
         "STATUS": {
           "COMPLETED": "Completed",
-          "SCHEDULED": "Scheduled"
+          "SCHEDULED": "Scheduled",
+          "RUNNING": "Sending",
+          "PAUSED": "Paused",
+          "FAILED": "Failed",
+          "DRAFT": "Draft"
         },
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Sent from",
@@ -147,7 +151,11 @@
       "CARD": {
         "STATUS": {
           "COMPLETED": "Completed",
-          "SCHEDULED": "Scheduled"
+          "SCHEDULED": "Scheduled",
+          "RUNNING": "Sending",
+          "PAUSED": "Paused",
+          "FAILED": "Failed",
+          "DRAFT": "Draft"
         },
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Sent from",
@@ -298,7 +306,11 @@
       "CARD": {
         "STATUS": {
           "COMPLETED": "Completed",
-          "SCHEDULED": "Scheduled"
+          "SCHEDULED": "Scheduled",
+          "RUNNING": "Sending",
+          "PAUSED": "Paused",
+          "FAILED": "Failed",
+          "DRAFT": "Draft"
         },
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Sent from",

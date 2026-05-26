@@ -62,6 +62,10 @@ const emit = defineEmits(['edit', 'delete', 'clone', 'results']);
 const { t } = useI18n();
 
 const STATUS_COMPLETED = 'completed';
+const STATUS_RUNNING = 'running';
+const STATUS_PAUSED = 'paused';
+const STATUS_FAILED = 'failed';
+const STATUS_DRAFT = 'draft';
 
 const { formatMessage } = useMessageFormatter();
 
@@ -69,10 +73,15 @@ const isActive = computed(() =>
   props.isLiveChatType ? props.isEnabled : props.status !== STATUS_COMPLETED
 );
 
-const statusTextColor = computed(() => ({
-  'text-n-teal-11': isActive.value,
-  'text-n-slate-12': !isActive.value,
-}));
+const statusTextColor = computed(() => {
+  if (props.status === STATUS_FAILED) return { 'text-n-ruby-11': true };
+  if (props.status === STATUS_PAUSED) return { 'text-n-amber-11': true };
+  if (props.status === STATUS_RUNNING) return { 'text-n-blue-11': true };
+  return {
+    'text-n-teal-11': isActive.value,
+    'text-n-slate-12': !isActive.value,
+  };
+});
 
 const campaignStatus = computed(() => {
   if (props.isLiveChatType) {
@@ -81,9 +90,20 @@ const campaignStatus = computed(() => {
       : t('CAMPAIGN.LIVE_CHAT.CARD.STATUS.DISABLED');
   }
 
-  return props.status === STATUS_COMPLETED
-    ? t('CAMPAIGN.SMS.CARD.STATUS.COMPLETED')
-    : t('CAMPAIGN.SMS.CARD.STATUS.SCHEDULED');
+  switch (props.status) {
+    case STATUS_COMPLETED:
+      return t('CAMPAIGN.SMS.CARD.STATUS.COMPLETED');
+    case STATUS_RUNNING:
+      return t('CAMPAIGN.SMS.CARD.STATUS.RUNNING');
+    case STATUS_PAUSED:
+      return t('CAMPAIGN.SMS.CARD.STATUS.PAUSED');
+    case STATUS_FAILED:
+      return t('CAMPAIGN.SMS.CARD.STATUS.FAILED');
+    case STATUS_DRAFT:
+      return t('CAMPAIGN.SMS.CARD.STATUS.DRAFT');
+    default:
+      return t('CAMPAIGN.SMS.CARD.STATUS.SCHEDULED');
+  }
 });
 
 const inboxName = computed(() => props.inbox?.name || '');
@@ -96,9 +116,8 @@ const inboxIcon = computed(() => {
 const showEditButton = computed(() => props.status !== STATUS_COMPLETED);
 const hasDeliveryResults = computed(
   () =>
-    props.status === STATUS_COMPLETED &&
-    (props.deliveryState?.sent_count > 0 ||
-      props.deliveryState?.failed_count > 0)
+    props.deliveryState?.sent_count > 0 ||
+    props.deliveryState?.failed_count > 0
 );
 </script>
 
