@@ -12,44 +12,60 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
 
   private
 
+  DESCRIPTION_MAX = 255
+  GUIDELINE_ITEM_MAX = 280
+  GUARDRAIL_ITEM_MAX = 280
+  MESSAGE_MAX = 600
+  SCENARIO_TITLE_MAX = 50
+  SCENARIO_DESCRIPTION_MAX = 300
+  SCENARIO_INSTRUCTION_MAX = 4000
+
   def extract_payload(content)
     parsed = parse_json(content)
     return {} unless parsed.is_a?(Hash)
 
     result = {}
     if requested?('description') && parsed['description'].present?
-      desc = parsed['description'].to_s.strip
-      desc = "#{desc[0, 252].rstrip}..." if desc.length > 255
-      result[:description] = desc
+      result[:description] = truncate_with_ellipsis(parsed['description'], DESCRIPTION_MAX)
     end
     if requested?('response_guidelines')
-      result[:response_guidelines] = clean_array(parsed['response_guidelines'])
+      result[:response_guidelines] = clean_array(parsed['response_guidelines'], max_per_item: GUIDELINE_ITEM_MAX)
     end
     if requested?('guardrails')
-      result[:guardrails] = clean_array(parsed['guardrails'])
+      result[:guardrails] = clean_array(parsed['guardrails'], max_per_item: GUARDRAIL_ITEM_MAX)
     end
     if requested?('handoff_message') && parsed['handoff_message'].present?
-      result[:handoff_message] = parsed['handoff_message'].to_s.strip
+      result[:handoff_message] = truncate_with_ellipsis(parsed['handoff_message'], MESSAGE_MAX)
     end
     if requested?('resolution_message') && parsed['resolution_message'].present?
-      result[:resolution_message] = parsed['resolution_message'].to_s.strip
+      result[:resolution_message] = truncate_with_ellipsis(parsed['resolution_message'], MESSAGE_MAX)
     end
     if requested?('scenarios') && parsed['scenarios'].is_a?(Array)
       result[:scenarios] = parsed['scenarios'].filter_map do |s|
         next unless s.is_a?(Hash) && s['title'].present? && s['instruction'].present?
 
         {
-          title: s['title'].to_s.strip,
-          description: s['description'].to_s.strip,
-          instruction: s['instruction'].to_s.strip
+          title: truncate_with_ellipsis(s['title'], SCENARIO_TITLE_MAX),
+          description: truncate_with_ellipsis(s['description'], SCENARIO_DESCRIPTION_MAX),
+          instruction: truncate_with_ellipsis(s['instruction'], SCENARIO_INSTRUCTION_MAX)
         }
       end
     end
     result
   end
 
-  def clean_array(raw)
-    Array(raw).map(&:to_s).map(&:strip).reject(&:blank?)
+  def truncate_with_ellipsis(text, max)
+    str = text.to_s.strip
+    return str if str.length <= max
+
+    "#{str[0, max - 3].rstrip}..."
+  end
+
+  def clean_array(raw, max_per_item: nil)
+    items = Array(raw).map(&:to_s).map(&:strip).reject(&:blank?)
+    return items unless max_per_item
+
+    items.map { |item| truncate_with_ellipsis(item, max_per_item) }
   end
 
   def requested?(field)
@@ -89,11 +105,18 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
           }
         ]
       }
-      RULES:
-      - description: MUST be 255 characters or fewer. Count carefully. If you cannot fit the idea, prioritize what the assistant does and who it helps.
-      - response_guidelines: 4-6 actionable rules specific to this product and content.
-      - guardrails: 3-5 safety and scope rules relevant to this assistant's domain.
-      - scenarios: REQUIRED if requested. Generate 2-4 realistic customer interaction flows derived from the knowledge base. Each instruction must be detailed enough to guide the assistant step by step. Do NOT return an empty array.
+      HARD CHARACTER LIMITS (count carefully — exceeding will be truncated):
+      - description: MAX 255 chars. 1-2 short sentences.
+      - response_guidelines[item]: MAX 280 chars per item. 4-6 items.
+      - guardrails[item]: MAX 280 chars per item. 3-5 items.
+      - handoff_message: MAX 600 chars. 1-2 sentences, friendly tone.
+      - resolution_message: MAX 600 chars. 1-2 sentences, friendly tone.
+      - scenarios[].title: MAX 50 chars. Short name, no emojis.
+      - scenarios[].description: MAX 300 chars. One sentence.
+      - scenarios[].instruction: MAX 4000 chars. Detailed markdown steps.
+
+      OTHER RULES:
+      - scenarios: REQUIRED if requested. Generate 2-4 realistic customer interaction flows derived from the knowledge base. Do NOT return an empty array.
       - Be specific to the product and knowledge base — no generic placeholder text.
       - Use the same language as the knowledge base content.
     PROMPT
