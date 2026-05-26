@@ -107,12 +107,28 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
   end
 
   def search_assistant_documents
-    results = assistant.responses.approved.search(prompt, account_id: account.id)
+    embedding = Captain::Llm::EmbeddingService.new(account_id: account.id).get_embedding(prompt)
+    results = if embedding.present?
+                assistant.responses.approved
+                         .nearest_neighbors(:embedding, embedding, distance: 'cosine')
+                         .limit(5)
+              else
+                fallback_responses
+              end
+    format_document_results(results)
+  rescue StandardError => e
+    Rails.logger.warn("[CampaignCopy] Embedding search failed (#{e.class}): #{e.message}. Using recent responses.")
+    format_document_results(fallback_responses)
+  end
+
+  def fallback_responses
+    assistant.responses.approved.order(created_at: :desc).limit(5)
+  end
+
+  def format_document_results(results)
     return '' if results.blank?
 
-    results.first(5).map { |r| "  Q: #{r.question}\n  A: #{r.answer}" }.join("\n")
-  rescue StandardError
-    ''
+    results.map { |r| "  Q: #{r.question}\n  A: #{r.answer}" }.join("\n")
   end
 
   def emoji_instruction
