@@ -22,4 +22,8 @@ class CampaignPolicy < ApplicationPolicy
   def ai_generate?
     @account_user.administrator?
   end
+
+  def clone?
+    @account_user.administrator?
+  end
 end
