@@ -94,7 +94,8 @@ class Platform::CredentialManager
       credential = fetch!(account: account, key: key, provider: provider, purpose: purpose)
       payload = credential.payload
       access_token = payload[:api_key] || payload['api_key'] || payload[:token] || payload['token'] || payload[:access_token] || payload['access_token']
-      api_base ||= credential.metadata['api_base'] || credential.metadata[:api_base]
+      metadata = credential.metadata.is_a?(Hash) ? credential.metadata : {}
+      api_base ||= metadata['api_base'].to_s.presence || metadata[:api_base].to_s.presence
 
       raise CustomExceptions::Platform::MissingCredential.new(account: account, key: key, provider: provider, purpose: purpose) if access_token.blank?
 

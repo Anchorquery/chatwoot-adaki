@@ -33,10 +33,12 @@ class Captain::BaseTaskService
 
   def api_base
     credential = llm_credential
-    endpoint = credential&.metadata&.dig('api_base').presence || credential&.metadata&.dig(:api_base).presence
-    endpoint ||= InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
-    endpoint = endpoint.chomp('/')
-    "#{endpoint}/v1"
+    metadata = credential.is_a?(Hash) ? (credential[:metadata] || credential['metadata']) : credential&.metadata
+    metadata = metadata.is_a?(Hash) ? metadata : {}
+    endpoint = metadata['api_base'].to_s.presence || metadata[:api_base].to_s.presence
+    endpoint ||= InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.to_s.presence
+    endpoint ||= 'https://api.openai.com/'
+    "#{endpoint.chomp('/')}/v1"
   end
 
   def make_api_call(model:, messages:, schema: nil, tools: [])

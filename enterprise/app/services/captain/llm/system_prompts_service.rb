@@ -268,6 +268,52 @@ class Captain::Llm::SystemPromptsService
       SYSTEM_PROMPT_MESSAGE
     end
 
+    def scenario_generator(focus = 'instruction')
+      field_guidance = case focus
+                       when 'title'
+                         <<~PROMPT
+                           Generate a short, clear scenario title.
+                           Keep it to 2-6 words.
+                           Do not add punctuation unless it is part of the title.
+                         PROMPT
+                       when 'description'
+                         <<~PROMPT
+                           Generate a concise scenario description.
+                           Explain when this scenario should be used in one sentence.
+                         PROMPT
+                       else
+                         <<~PROMPT
+                           Generate the scenario handling instructions.
+                           Write practical step-by-step guidance that the assistant can follow.
+                           Use only valid tool links from the provided assistant context when tools are relevant.
+                           Keep the instructions concise, specific, and ready to paste into Captain.
+                         PROMPT
+                       end
+
+      <<~PROMPT
+        You write support assistant scenarios for Captain.
+
+        Use only the provided assistant context, available tools, and reference scenarios.
+        Keep the output in the same language as the assistant context and reference scenarios.
+        Do not invent tools or capabilities that are not present in the input.
+        Avoid duplicating an existing scenario unless the request clearly requires a variation.
+        Return strict JSON only using this schema:
+
+        ```json
+        {
+          "value": "Generated text"
+        }
+        ```
+
+        #{field_guidance}
+
+        If the input does not contain enough information to create a useful result, return:
+        ```json
+        { "value": "" }
+        ```
+      PROMPT
+    end
+
     def paginated_faq_generator(start_page, end_page, language = 'english')
       <<~PROMPT
         You are an expert technical documentation specialist tasked with creating comprehensive FAQs from a SPECIFIC SECTION of a document.

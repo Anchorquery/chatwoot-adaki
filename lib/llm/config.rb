@@ -37,9 +37,10 @@ module Llm::Config
 
     def with_api_key(api_key, api_base: nil)
       initialize!
+      effective_base = api_base.to_s.presence
       context = RubyLLM.context do |config|
         config.openai_api_key = api_key
-        config.openai_api_base = api_base
+        config.openai_api_base = effective_base if effective_base
       end
 
       yield context
