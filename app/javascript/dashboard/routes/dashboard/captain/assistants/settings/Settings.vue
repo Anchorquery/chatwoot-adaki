@@ -13,6 +13,7 @@ import SettingsHeader from 'dashboard/components-next/captain/pageComponents/set
 import AssistantBasicSettingsForm from 'dashboard/components-next/captain/pageComponents/assistant/settings/AssistantBasicSettingsForm.vue';
 import AssistantSystemSettingsForm from 'dashboard/components-next/captain/pageComponents/assistant/settings/AssistantSystemSettingsForm.vue';
 import AssistantControlItems from 'dashboard/components-next/captain/pageComponents/assistant/settings/AssistantControlItems.vue';
+import AssistantAIConfigPanel from 'dashboard/components-next/captain/pageComponents/assistant/settings/AssistantAIConfigPanel.vue';
 import DeleteDialog from 'dashboard/components-next/captain/pageComponents/DeleteDialog.vue';
 
 const { t } = useI18n();
@@ -26,6 +27,8 @@ const router = useRouter();
 const store = useStore();
 
 const deleteAssistantDialog = ref(null);
+const basicFormRef = ref(null);
+const systemFormRef = ref(null);
 
 const uiFlags = useMapGetter('captainAssistants/getUIFlags');
 const assistants = useMapGetter('captainAssistants/getRecords');
@@ -72,6 +75,27 @@ const handleSubmit = async updatedAssistant => {
   }
 };
 
+const handleGenerated = async data => {
+  basicFormRef.value?.fillFromGenerated(data);
+  systemFormRef.value?.fillFromGenerated(data);
+
+  const updatePayload = {};
+  if (data.response_guidelines?.length)
+    updatePayload.response_guidelines = data.response_guidelines;
+  if (data.guardrails?.length) updatePayload.guardrails = data.guardrails;
+
+  if (Object.keys(updatePayload).length) {
+    try {
+      await store.dispatch('captainAssistants/update', {
+        id: assistantId.value,
+        ...updatePayload,
+      });
+    } catch {
+      // guidelines/guardrails save failed silently — user can retry manually
+    }
+  }
+};
+
 const handleDelete = () => {
   deleteAssistantDialog.value.dialogRef.open();
 };
@@ -113,6 +137,12 @@ const handleDeleteSuccess = () => {
     }"
   >
     <template #body>
+      <div class="mb-6">
+        <AssistantAIConfigPanel
+          :assistant="assistant"
+          @generated="handleGenerated"
+        />
+      </div>
       <div
         class="gap-6 lg:gap-16 pb-8"
         :class="{ 'grid grid-cols-2': isCaptainV2Enabled }"
@@ -126,6 +156,7 @@ const handleDeleteSuccess = () => {
               "
             />
             <AssistantBasicSettingsForm
+              ref="basicFormRef"
               :assistant="assistant"
               @submit="handleSubmit"
             />
@@ -139,6 +170,7 @@ const handleDeleteSuccess = () => {
               "
             />
             <AssistantSystemSettingsForm
+              ref="systemFormRef"
               :assistant="assistant"
               @submit="handleSubmit"
             />

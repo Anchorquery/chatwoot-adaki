@@ -2,7 +2,7 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
   before_action :current_account
   before_action -> { check_authorization(Captain::Assistant) }
 
-  before_action :set_assistant, only: [:show, :update, :destroy, :playground]
+  before_action :set_assistant, only: [:show, :update, :destroy, :playground, :generate_config]
 
   def index
     @assistants = account_assistants.ordered
@@ -36,6 +36,27 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
                end
 
     render json: response
+  end
+
+  def generate_config
+    allowed_fields = %w[description response_guidelines guardrails handoff_message resolution_message]
+    fields = Array(params[:fields]).select { |f| allowed_fields.include?(f) }
+    fields = allowed_fields if fields.empty?
+
+    result = Captain::Llm::AssistantConfigGeneratorService.new(
+      account: Current.account,
+      assistant: @assistant,
+      fields: fields
+    ).perform
+
+    if result[:error]
+      render json: { error: result[:error] }, status: (result[:error_code] || :unprocessable_entity)
+    else
+      render json: result[:message]
+    end
+  rescue StandardError => e
+    Rails.logger.error("[AssistantConfigGenerator] #{e.class}: #{e.message}")
+    render json: { error: "Failed to generate config: #{e.message}" }, status: :bad_request
   end
 
   def tools

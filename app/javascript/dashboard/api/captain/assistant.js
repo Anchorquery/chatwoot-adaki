@@ -21,6 +21,10 @@ class CaptainAssistant extends ApiClient {
       message_history: messageHistory,
     });
   }
+
+  generateConfig(assistantId, fields) {
+    return axios.post(`${this.url}/${assistantId}/generate_config`, { fields });
+  }
 }
 
 export default new CaptainAssistant();

@@ -102,6 +102,13 @@ watch(
   },
   { immediate: true }
 );
+
+const fillFromGenerated = data => {
+  if (data.handoff_message) state.handoffMessage = data.handoff_message;
+  if (data.resolution_message) state.resolutionMessage = data.resolution_message;
+};
+
+defineExpose({ fillFromGenerated });
 </script>
 
 <template>

@@ -585,6 +585,20 @@
             }
           }
         },
+        "AI_CONFIG_PANEL": {
+          "TITLE": "Generate settings with AI",
+          "DESCRIPTION": "Use the assistant's knowledge base to auto-generate its description, response guidelines, guardrails, handoff message, and resolution message.",
+          "BUTTON": "Generate",
+          "SUCCESS": "Settings generated — review and save each section.",
+          "ERROR": "Failed to generate settings. Please try again.",
+          "FIELDS": {
+            "description": "Description",
+            "response_guidelines": "Response guidelines",
+            "guardrails": "Guardrails",
+            "handoff_message": "Handoff message",
+            "resolution_message": "Resolution message"
+          }
+        },
         "DELETE": {
           "TITLE": "Delete Assistant",
           "DESCRIPTION": "This action is permanent. Deleting this assistant will remove it from all connected inboxes and permanently erase all generated knowledge.",

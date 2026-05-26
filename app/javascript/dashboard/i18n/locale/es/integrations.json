@@ -585,6 +585,20 @@
             }
           }
         },
+        "AI_CONFIG_PANEL": {
+          "TITLE": "Generar configuración con IA",
+          "DESCRIPTION": "Usa la base de conocimiento del asistente para generar automáticamente su descripción, pautas de respuesta, barreras de seguridad, mensaje de transferencia y mensaje de resolución.",
+          "BUTTON": "Generar",
+          "SUCCESS": "Configuración generada — revisa y guarda cada sección.",
+          "ERROR": "No se pudo generar la configuración. Inténtalo de nuevo.",
+          "FIELDS": {
+            "description": "Descripción",
+            "response_guidelines": "Pautas de respuesta",
+            "guardrails": "Barreras de seguridad",
+            "handoff_message": "Mensaje de transferencia",
+            "resolution_message": "Mensaje de resolución"
+          }
+        },
         "DELETE": {
         "TITLE": "Eliminar asistente",
           "DESCRIPTION": "Esta acción es permanente. Eliminar este asistente lo quitará de todas las bandejas conectadas y borrará de forma definitiva todo el conocimiento generado.",

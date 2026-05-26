@@ -62,6 +62,7 @@ Rails.application.routes.draw do
             resources :assistants do
               member do
                 post :playground
+                post :generate_config
               end
               collection do
                 get :tools
