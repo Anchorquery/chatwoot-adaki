@@ -1,13 +1,24 @@
 require 'rack-timeout'
 
+# rack-timeout 0.6.3 reads service_timeout once at init (no per-request env
+# override). Patch service_timeout to allow per-request override stored in
+# Thread.current — each Puma worker thread serves one request at a time, so
+# thread-local is request-scoped and safe.
+module RackTimeoutPerRequestOverride
+  def service_timeout
+    Thread.current[:rack_timeout_service_override] || super
+  end
+end
+Rack::Timeout.prepend(RackTimeoutPerRequestOverride)
+
 # Routes that call LLMs and need more time than the default 15s.
 SLOW_AI_ROUTES = [
   %r{/captain/assistants/\d+/generate_config\z},
   %r{/campaigns/ai_generate\z}
 ].freeze
 
-# Per-request override of rack-timeout's service-timeout. Runs before
-# Rack::Timeout starts its timer so the new value is honored.
+# Middleware inserted BEFORE Rack::Timeout. Sets thread-local override that
+# the patched service_timeout method reads.
 class SlowAiRouteTimeout
   SERVICE_TIMEOUT_SECONDS = 60
 
@@ -16,10 +27,11 @@ class SlowAiRouteTimeout
   end
 
   def call(env)
-    if SLOW_AI_ROUTES.any? { |pattern| pattern.match?(env['PATH_INFO']) }
-      env['rack-timeout.service-timeout'] = SERVICE_TIMEOUT_SECONDS
-    end
+    slow = SLOW_AI_ROUTES.any? { |pattern| pattern.match?(env['PATH_INFO']) }
+    Thread.current[:rack_timeout_service_override] = SERVICE_TIMEOUT_SECONDS if slow
     @app.call(env)
+  ensure
+    Thread.current[:rack_timeout_service_override] = nil if slow
   end
 end
 
