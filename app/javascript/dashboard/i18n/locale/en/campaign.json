@@ -230,14 +230,21 @@
           "AI": {
             "BUTTON": "AI assistant",
             "MODAL_TITLE": "AI Copywriter",
-            "HELP": "Draft a base message and one or more variants for human review.",
+            "HELP": "Draft a title, base message, and variants using AI.",
             "PROMPT_LABEL": "What is your campaign about?",
             "PROMPT_PLACEHOLDER": "E.g. Promote our new AI webinar, friendly and engaging tone...",
             "TONE_LABEL": "Tone",
             "TONE_PLACEHOLDER": "Select a tone",
             "GOAL_LABEL": "Goal",
             "GOAL_PLACEHOLDER": "Select a goal",
+            "ASSISTANT_LABEL": "Captain bot (optional)",
+            "ASSISTANT_PLACEHOLDER": "Select a bot",
+            "ASSISTANT_NONE": "None — no context",
+            "STYLE_LABEL": "Length",
+            "STYLE_PLACEHOLDER": "Select style",
+            "USE_EMOJIS_LABEL": "Include emojis",
             "GENERATE": "Generate Message & Variants",
+            "GENERATE_ALL": "Generate Title, Message & Variants",
             "CLEAR": "Clear",
             "CANCEL": "Cancel",
             "ERROR": "There was an error generating the copy. Please try again.",
@@ -252,6 +259,11 @@
               "promotional": "Promotional",
               "reminder": "Reminder",
               "support": "Support"
+            },
+            "STYLES": {
+              "concise": "Concise (<80 chars)",
+              "standard": "Standard",
+              "detailed": "Detailed"
             }
           }
         }

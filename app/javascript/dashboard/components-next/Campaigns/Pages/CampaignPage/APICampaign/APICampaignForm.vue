@@ -1,9 +1,9 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useVuelidate } from '@vuelidate/core';
 import { required, minLength } from '@vuelidate/validators';
-import { useMapGetter } from 'dashboard/composables/store';
+import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 
 import CampaignsAPI from 'dashboard/api/campaigns';
@@ -33,13 +33,16 @@ const emit = defineEmits(['submit', 'cancel']);
 
 const { t } = useI18n();
 
+const store = useStore();
 const uiFlags = useMapGetter('campaigns/getUIFlags');
 const labels = useMapGetter('labels/getLabels');
 const inboxes = useMapGetter('inboxes/getApiInboxes');
+const captainAssistants = useMapGetter('captainAssistants/getRecords');
 
 const TABS = ['CONTENT', 'VARIANTS', 'FILES', 'DELIVERY'];
 const AI_TONES = ['professional', 'friendly', 'casual', 'persuasive'];
 const AI_GOALS = ['informative', 'promotional', 'reminder', 'support'];
+const AI_STYLES = ['concise', 'standard', 'detailed'];
 
 const defaultDeliverySettings = () => ({
   batch_size: 10,
@@ -66,6 +69,9 @@ const defaultState = () => ({
   aiPrompt: '',
   aiTone: 'friendly',
   aiGoal: 'promotional',
+  aiAssistantId: null,
+  aiUseEmojis: false,
+  aiStyle: 'standard',
 });
 
 const state = reactive(defaultState());
@@ -93,6 +99,10 @@ const mapToOptions = (items, valueKey, labelKey) =>
 
 const audienceList = computed(() => mapToOptions(labels.value, 'id', 'title'));
 const inboxOptions = computed(() => mapToOptions(inboxes.value, 'id', 'name'));
+const assistantOptions = computed(() => [
+  { value: null, label: t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_NONE') },
+  ...mapToOptions(captainAssistants.value, 'id', 'name'),
+]);
 
 const currentDateTime = computed(() => {
   const now = new Date();
@@ -148,6 +158,9 @@ const populateFromCampaign = campaign => {
     aiPrompt: '',
     aiTone: 'friendly',
     aiGoal: 'promotional',
+    aiAssistantId: null,
+    aiUseEmojis: false,
+    aiStyle: 'standard',
   });
 };
 
@@ -222,7 +235,14 @@ const buildAiPayload = async () => {
     prompt: state.aiPrompt,
     tone: state.aiTone,
     goal: state.aiGoal,
+    assistant_id: state.aiAssistantId,
+    use_emojis: state.aiUseEmojis,
+    style: state.aiStyle,
   });
+
+  if (data?.title) {
+    state.title = data.title;
+  }
 
   if (data?.message) {
     state.message = data.message;
@@ -296,6 +316,10 @@ const handleSubmit = async () => {
 
   emit('submit', prepareCampaignDetails());
 };
+
+onMounted(() => {
+  store.dispatch('captainAssistants/get');
+});
 
 watch(
   () => props.selectedCampaign,
@@ -375,7 +399,31 @@ defineExpose({
               :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.GOAL_PLACEHOLDER')"
             />
           </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_LABEL') }}
+            </label>
+            <ComboBox
+              v-model="state.aiAssistantId"
+              :options="assistantOptions"
+              :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_PLACEHOLDER')"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.AI.STYLE_LABEL') }}
+            </label>
+            <ComboBox
+              v-model="state.aiStyle"
+              :options="AI_STYLES.map(s => ({ value: s, label: t(`CAMPAIGN.API.CREATE.FORM.AI.STYLES.${s}`) }))"
+              :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.STYLE_PLACEHOLDER')"
+            />
+          </div>
         </div>
+        <label class="flex items-center gap-2 text-sm text-n-slate-11">
+          <input v-model="state.aiUseEmojis" type="checkbox" />
+          <span>{{ t('CAMPAIGN.API.CREATE.FORM.AI.USE_EMOJIS_LABEL') }}</span>
+        </label>
         <div class="flex gap-2">
           <Button
             type="button"
@@ -388,7 +436,7 @@ defineExpose({
           <Button
             type="button"
             class="flex-1"
-            :label="t('CAMPAIGN.API.CREATE.FORM.AI.GENERATE')"
+            :label="t('CAMPAIGN.API.CREATE.FORM.AI.GENERATE_ALL')"
             :is-loading="aiLoading"
             :disabled="aiLoading || !state.aiPrompt.trim()"
             @click="generateWithAI"

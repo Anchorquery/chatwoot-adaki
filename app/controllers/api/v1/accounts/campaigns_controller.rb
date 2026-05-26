@@ -26,18 +26,25 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     head :ok
   end
 
-  # Endpoint para Generación de Variaciones y Mensajes con IA
   def ai_generate
     if params[:prompt].to_s.strip.blank?
       render json: { error: 'Prompt is required.' }, status: :bad_request
       return
     end
 
+    allowed_styles = %w[concise standard detailed]
+    style = allowed_styles.include?(params[:style]) ? params[:style] : 'standard'
+    use_emojis = ActiveModel::Type::Boolean.new.cast(params[:use_emojis])
+    assistant = Current.account.captain_assistants.find_by(id: params[:assistant_id])
+
     result = Captain::Llm::CampaignCopyService.new(
       account: Current.account,
       prompt: params[:prompt].to_s,
       tone: params[:tone].presence || 'friendly',
-      goal: params[:goal].presence || 'informative'
+      goal: params[:goal].presence || 'informative',
+      assistant: assistant,
+      use_emojis: use_emojis,
+      style: style
     ).perform
 
     if result[:error]

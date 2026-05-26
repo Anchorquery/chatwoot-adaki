@@ -288,12 +288,24 @@
           "AI": {
             "BUTTON": "🪄 Asistente de IA",
             "MODAL_TITLE": "Redactor con IA",
+            "HELP": "Genera título, mensaje y variaciones con IA.",
             "PROMPT_LABEL": "¿De qué trata tu campaña?",
             "PROMPT_PLACEHOLDER": "Ej. Promover nuestro webinar de IA, tono amigable y cercano...",
             "TONE_LABEL": "Tono",
+            "TONE_PLACEHOLDER": "Seleccionar tono",
             "GOAL_LABEL": "Objetivo",
+            "GOAL_PLACEHOLDER": "Seleccionar objetivo",
+            "ASSISTANT_LABEL": "Bot Captain (opcional)",
+            "ASSISTANT_PLACEHOLDER": "Seleccionar bot",
+            "ASSISTANT_NONE": "Ninguno — sin contexto",
+            "STYLE_LABEL": "Extensión",
+            "STYLE_PLACEHOLDER": "Seleccionar estilo",
+            "USE_EMOJIS_LABEL": "Incluir emojis",
             "GENERATE": "Generar Mensaje y Variaciones",
+            "GENERATE_ALL": "Generar Título, Mensaje y Variaciones",
+            "CLEAR": "Limpiar",
             "CANCEL": "Cancelar",
+            "ERROR": "Error al generar el contenido. Por favor intente nuevamente.",
             "TONES": {
               "professional": "Profesional",
               "friendly": "Amigable",
@@ -305,6 +317,11 @@
               "promotional": "Promocional",
               "reminder": "Recordatorio",
               "support": "Soporte"
+            },
+            "STYLES": {
+              "concise": "Conciso (<80 car.)",
+              "standard": "Estándar",
+              "detailed": "Detallado"
             }
           }
         }
