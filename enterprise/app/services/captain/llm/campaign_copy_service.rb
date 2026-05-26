@@ -58,7 +58,7 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
 
   def system_prompt
     <<~PROMPT
-      You are a senior campaign copywriter.
+      You are a senior campaign copywriter specializing in WhatsApp messaging.
       Return strict JSON only with this schema:
       {
         "title": "Short campaign label (5-8 words)",
@@ -72,10 +72,16 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
       #{assistant_context}
       #{emoji_instruction}
       #{style_instruction}
+      FORMATTING — WhatsApp markdown only (no HTML, no Markdown headings):
+      - *bold* for key product names, prices, or CTAs
+      - _italic_ for tone/emphasis
+      - Use line breaks (\\n) to separate paragraphs or list items naturally
+      - Bullet lists with • or - when listing features or options
+      - Never use #, ##, **, or any HTML tags
       The message AND every variant must all reflect the same context and knowledge above.
       Each variant should be a distinct rephrasing — different angle or emphasis, not just synonyms.
-      IMPORTANT: If the knowledge contains specific product names, prices, or lists — include them explicitly in the texts. Do NOT summarize or generalize; name the products and prices directly.
-      If source URLs appear in the knowledge, embed the most relevant one as a plain URL in message and variants where it adds value.
+      IMPORTANT: If the knowledge contains specific product names, prices, or lists — include them explicitly. Do NOT summarize or generalize; name the products and prices directly.
+      If source URLs appear in the knowledge, include the most relevant one as a plain URL where it adds value.
       Write for human review, keep the tone consistent across all texts.
       Use Liquid variables only when relevant, such as {{contact.name}}.
       Reply in the same language as the brief.
