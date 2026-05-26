@@ -101,12 +101,6 @@ watch(
   },
   { immediate: true }
 );
-
-const fillFromGenerated = data => {
-  if (data.description) state.description = data.description;
-};
-
-defineExpose({ fillFromGenerated });
 </script>
 
 <template>

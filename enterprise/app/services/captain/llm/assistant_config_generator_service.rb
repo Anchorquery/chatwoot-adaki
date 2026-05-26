@@ -1,5 +1,5 @@
 class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
-  ALLOWED_FIELDS = %w[description response_guidelines guardrails handoff_message resolution_message].freeze
+  ALLOWED_FIELDS = %w[description response_guidelines guardrails handoff_message resolution_message scenarios].freeze
 
   pattr_initialize [:account!, :assistant!, { fields: ALLOWED_FIELDS }]
 
@@ -32,6 +32,17 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
     if requested?('resolution_message') && parsed['resolution_message'].present?
       result[:resolution_message] = parsed['resolution_message'].to_s.strip
     end
+    if requested?('scenarios') && parsed['scenarios'].is_a?(Array)
+      result[:scenarios] = parsed['scenarios'].filter_map do |s|
+        next unless s.is_a?(Hash) && s['title'].present? && s['instruction'].present?
+
+        {
+          title: s['title'].to_s.strip,
+          description: s['description'].to_s.strip,
+          instruction: s['instruction'].to_s.strip
+        }
+      end
+    end
     result
   end
 
@@ -61,17 +72,25 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
     <<~PROMPT
       You are an expert AI assistant configurator for a customer support platform.
       Based on the assistant identity and knowledge base content, generate configuration fields.
-      Return strict JSON only with this schema (include all requested fields):
+      Return strict JSON only with this schema (include only the requested fields):
       {
         "description": "2-4 sentence description of what this assistant does and who it helps",
         "response_guidelines": ["Concrete guideline 1", "Concrete guideline 2", "Concrete guideline 3", "Concrete guideline 4"],
         "guardrails": ["Never do X", "Never share Y", "Always escalate when Z"],
         "handoff_message": "Friendly message shown when transferring to a human agent",
-        "resolution_message": "Friendly closing message shown when the conversation is resolved"
+        "resolution_message": "Friendly closing message shown when the conversation is resolved",
+        "scenarios": [
+          {
+            "title": "Short scenario name",
+            "description": "One sentence explaining when this scenario triggers",
+            "instruction": "Step-by-step instructions for the assistant. Use markdown lists. Be specific and actionable."
+          }
+        ]
       }
       Be specific to the product and knowledge base — no generic placeholder text.
       For response_guidelines: 4-6 actionable rules specific to this product and content.
       For guardrails: 3-5 safety and scope rules relevant to this assistant's domain.
+      For scenarios: 2-4 realistic customer interaction flows derived from the knowledge base. Each instruction must be detailed enough to guide the assistant step by step.
       Use the same language as the knowledge base content.
     PROMPT
   end

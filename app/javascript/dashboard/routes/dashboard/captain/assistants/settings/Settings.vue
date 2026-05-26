@@ -27,8 +27,6 @@ const router = useRouter();
 const store = useStore();
 
 const deleteAssistantDialog = ref(null);
-const basicFormRef = ref(null);
-const systemFormRef = ref(null);
 
 const uiFlags = useMapGetter('captainAssistants/getUIFlags');
 const assistants = useMapGetter('captainAssistants/getRecords');
@@ -76,22 +74,29 @@ const handleSubmit = async updatedAssistant => {
 };
 
 const handleGenerated = async data => {
-  basicFormRef.value?.fillFromGenerated(data);
-  systemFormRef.value?.fillFromGenerated(data);
+  const updatePayload = { id: assistantId.value };
 
-  const updatePayload = {};
+  if (data.description) updatePayload.description = data.description;
   if (data.response_guidelines?.length)
     updatePayload.response_guidelines = data.response_guidelines;
   if (data.guardrails?.length) updatePayload.guardrails = data.guardrails;
 
-  if (Object.keys(updatePayload).length) {
+  const configUpdate = {};
+  if (data.handoff_message)
+    configUpdate.handoff_message = data.handoff_message;
+  if (data.resolution_message)
+    configUpdate.resolution_message = data.resolution_message;
+  if (Object.keys(configUpdate).length) {
+    updatePayload.config = { ...assistant.value.config, ...configUpdate };
+  }
+
+  if (Object.keys(updatePayload).length > 1) {
     try {
-      await store.dispatch('captainAssistants/update', {
-        id: assistantId.value,
-        ...updatePayload,
-      });
-    } catch {
-      // guidelines/guardrails save failed silently — user can retry manually
+      await store.dispatch('captainAssistants/update', updatePayload);
+    } catch (error) {
+      useAlert(
+        error?.message || t('CAPTAIN.ASSISTANTS.EDIT.ERROR_MESSAGE')
+      );
     }
   }
 };
@@ -156,7 +161,6 @@ const handleDeleteSuccess = () => {
               "
             />
             <AssistantBasicSettingsForm
-              ref="basicFormRef"
               :assistant="assistant"
               @submit="handleSubmit"
             />
@@ -170,7 +174,6 @@ const handleDeleteSuccess = () => {
               "
             />
             <AssistantSystemSettingsForm
-              ref="systemFormRef"
               :assistant="assistant"
               @submit="handleSubmit"
             />

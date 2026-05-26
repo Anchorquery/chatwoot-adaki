@@ -39,7 +39,7 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
   end
 
   def generate_config
-    allowed_fields = %w[description response_guidelines guardrails handoff_message resolution_message]
+    allowed_fields = Captain::Llm::AssistantConfigGeneratorService::ALLOWED_FIELDS
     fields = Array(params[:fields]).select { |f| allowed_fields.include?(f) }
     fields = allowed_fields if fields.empty?
 
@@ -52,7 +52,9 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
     if result[:error]
       render json: { error: result[:error] }, status: (result[:error_code] || :unprocessable_entity)
     else
-      render json: result[:message]
+      payload = result[:message]
+      create_generated_scenarios(payload.delete(:scenarios))
+      render json: payload
     end
   rescue StandardError => e
     Rails.logger.error("[AssistantConfigGenerator] #{e.class}: #{e.message}")
@@ -65,6 +67,21 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
   end
 
   private
+
+  def create_generated_scenarios(scenarios)
+    return if scenarios.blank?
+
+    scenarios.each do |s|
+      @assistant.scenarios.create!(
+        title: s[:title],
+        description: s[:description].presence || s[:title],
+        instruction: s[:instruction],
+        account: Current.account
+      )
+    rescue StandardError => e
+      Rails.logger.warn("[AssistantConfigGenerator] Skipping scenario '#{s[:title]}': #{e.message}")
+    end
+  end
 
   def set_assistant
     @assistant = account_assistants.find(params[:id])

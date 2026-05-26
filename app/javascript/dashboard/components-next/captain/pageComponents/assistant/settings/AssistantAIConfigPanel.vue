@@ -21,6 +21,7 @@ const fields = reactive({
   guardrails: true,
   handoff_message: true,
   resolution_message: true,
+  scenarios: true,
 });
 
 const FIELD_KEYS = Object.keys(fields);
