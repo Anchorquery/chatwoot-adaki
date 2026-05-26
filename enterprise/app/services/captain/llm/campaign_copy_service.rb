@@ -134,8 +134,7 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
 
     results.map do |r|
       entry = "  Q: #{r.question}\n  A: #{r.answer}"
-      doc = r.documentable
-      link = doc.respond_to?(:external_link) ? doc.external_link.to_s.presence : nil
+      link = r.documentable&.try(:external_link).to_s.presence
       entry += "\n  Source: #{link}" if link && !link.start_with?('PDF:') && !link.end_with?('.pdf')
       entry
     end.join("\n")
