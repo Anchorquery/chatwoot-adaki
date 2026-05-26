@@ -1217,5 +1217,26 @@ RSpec.describe Conversation do
         expect(conversation.bot_mentioned?('mañana hablamos del tema')).to be(false)
       end
     end
+
+    context 'with a configured WhatsApp number (native mention)' do
+      let(:assistant) do
+        create(:captain_assistant, account: inbox.account, name: 'Adaki',
+                                    config: { 'whatsapp_number' => '+54 9 351 123 4567' })
+      end
+
+      before { create(:captain_inbox, inbox: inbox, captain_assistant: assistant) }
+
+      it 'matches a native @mention delivered as the bot number in the text' do
+        expect(conversation.bot_mentioned?('@5493511234567 hola bot')).to be(true)
+      end
+
+      it 'does not match a different number mentioned in the group' do
+        expect(conversation.bot_mentioned?('@5499990000000 hola')).to be(false)
+      end
+
+      it 'does not match the number when it appears without an @ mention' do
+        expect(conversation.bot_mentioned?('mi numero es 5493511234567')).to be(false)
+      end
+    end
   end
 end

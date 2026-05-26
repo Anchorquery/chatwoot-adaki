@@ -24,6 +24,7 @@ const initialState = {
   description: '',
   productName: '',
   groupTrigger: '',
+  whatsappNumber: '',
   features: {
     conversationFaqs: false,
     memories: false,
@@ -58,6 +59,7 @@ const updateStateFromAssistant = assistant => {
   state.description = assistant.description;
   state.productName = config.product_name;
   state.groupTrigger = config.group_trigger || '';
+  state.whatsappNumber = config.whatsapp_number || '';
   state.features = {
     conversationFaqs: config.feature_faq || false,
     memories: config.feature_memory || false,
@@ -81,6 +83,7 @@ const handleBasicInfoUpdate = async () => {
       ...props.assistant.config,
       product_name: state.productName,
       group_trigger: state.groupTrigger,
+      whatsapp_number: state.whatsappNumber,
       feature_faq: state.features.conversationFaqs,
       feature_memory: state.features.memories,
       feature_citation: state.features.citations,
@@ -123,6 +126,14 @@ watch(
       :label="t('CAPTAIN.ASSISTANTS.FORM.GROUP_TRIGGER.LABEL')"
       :placeholder="t('CAPTAIN.ASSISTANTS.FORM.GROUP_TRIGGER.PLACEHOLDER')"
       :message="t('CAPTAIN.ASSISTANTS.FORM.GROUP_TRIGGER.HELP')"
+      message-type="info"
+    />
+
+    <Input
+      v-model="state.whatsappNumber"
+      :label="t('CAPTAIN.ASSISTANTS.FORM.WHATSAPP_NUMBER.LABEL')"
+      :placeholder="t('CAPTAIN.ASSISTANTS.FORM.WHATSAPP_NUMBER.PLACEHOLDER')"
+      :message="t('CAPTAIN.ASSISTANTS.FORM.WHATSAPP_NUMBER.HELP')"
       message-type="info"
     />
 
