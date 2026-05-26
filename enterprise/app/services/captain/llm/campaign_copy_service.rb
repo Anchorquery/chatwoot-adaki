@@ -74,7 +74,8 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
       #{style_instruction}
       The message AND every variant must all reflect the same context and knowledge above.
       Each variant should be a distinct rephrasing — different angle or emphasis, not just synonyms.
-      If source URLs appear in the knowledge, include the most relevant one naturally in message and variants when it adds value.
+      IMPORTANT: If the knowledge contains specific product names, prices, or lists — include them explicitly in the texts. Do NOT summarize or generalize; name the products and prices directly.
+      If source URLs appear in the knowledge, embed the most relevant one as a plain URL in message and variants where it adds value.
       Write for human review, keep the tone consistent across all texts.
       Use Liquid variables only when relevant, such as {{contact.name}}.
       Reply in the same language as the brief.

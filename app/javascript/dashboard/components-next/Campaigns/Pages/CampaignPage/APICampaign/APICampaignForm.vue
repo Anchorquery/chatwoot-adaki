@@ -471,6 +471,7 @@ defineExpose({
         :label="t('CAMPAIGN.API.CREATE.FORM.MESSAGE.LABEL')"
         :placeholder="t('CAMPAIGN.API.CREATE.FORM.MESSAGE.PLACEHOLDER')"
         show-character-count
+        :max-length="1000"
         :message="formErrors.message"
         :message-type="formErrors.message ? 'error' : 'info'"
       />
