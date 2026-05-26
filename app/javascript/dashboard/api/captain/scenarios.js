@@ -31,6 +31,12 @@ class CaptainScenarios extends ApiClient {
   delete({ assistantId, id }) {
     return axios.delete(`${this.url}/${assistantId}/scenarios/${id}`);
   }
+
+  generate({ assistantId, prompt }) {
+    return axios.post(`${this.url}/${assistantId}/scenarios/generate`, {
+      prompt,
+    });
+  }
 }
 
 export default new CaptainScenarios();

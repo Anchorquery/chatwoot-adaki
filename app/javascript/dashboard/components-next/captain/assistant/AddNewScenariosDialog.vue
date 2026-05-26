@@ -3,18 +3,26 @@ import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useVuelidate } from '@vuelidate/core';
 import { required, minLength } from '@vuelidate/validators';
+import { useRoute } from 'vue-router';
 
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Editor from 'dashboard/components-next/Editor/Editor.vue';
+import CaptainScenariosAPI from 'dashboard/api/captain/scenarios';
+import { useAlert } from 'dashboard/composables';
 
 const emit = defineEmits(['add']);
 
 const { t } = useI18n();
+const route = useRoute();
 
 const dialogRef = ref(null);
+const aiPrompt = ref('');
+const isGenerating = ref(false);
+
+const assistantId = computed(() => Number(route.params.assistantId));
 
 const state = reactive({
   id: '',
@@ -56,6 +64,7 @@ const resetState = () => {
     description: '',
     instruction: '',
   });
+  aiPrompt.value = '';
   v$.value.$reset();
 };
 
@@ -73,6 +82,26 @@ const onClickAdd = async () => {
 
 const onClickCancel = () => {
   dialogRef.value?.close();
+};
+
+const onGenerateWithAI = async () => {
+  if (!aiPrompt.value.trim()) return;
+
+  isGenerating.value = true;
+  try {
+    const { data } = await CaptainScenariosAPI.generate({
+      assistantId: assistantId.value,
+      prompt: aiPrompt.value.trim(),
+    });
+    state.title = data.title || '';
+    state.description = data.description || '';
+    state.instruction = data.instruction || '';
+    v$.value.$reset();
+  } catch {
+    useAlert(t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.ERROR'));
+  } finally {
+    isGenerating.value = false;
+  }
 };
 </script>
 
@@ -96,6 +125,49 @@ const onClickCancel = () => {
       :show-confirm-button="false"
       @close="resetState"
     >
+      <!-- AI Generation Section -->
+      <div class="mb-6 p-4 rounded-xl bg-n-alpha-1 border border-n-strong/10">
+        <p class="text-sm font-medium text-n-slate-12 mb-3">
+          {{ t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.LABEL') }}
+        </p>
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <Input
+              v-model="aiPrompt"
+              :placeholder="
+                t(
+                  'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.PLACEHOLDER'
+                )
+              "
+              @keyup.enter="onGenerateWithAI"
+            />
+          </div>
+          <Button
+            :label="
+              isGenerating
+                ? t(
+                    'CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.GENERATING'
+                  )
+                : t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.BUTTON')
+            "
+            :is-loading="isGenerating"
+            :disabled="!aiPrompt.trim() || isGenerating"
+            icon="i-lucide-sparkles"
+            type="button"
+            @click="onGenerateWithAI"
+          />
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="flex items-center gap-3 mb-6">
+        <div class="flex-1 h-px bg-n-strong/10" />
+        <span class="text-xs text-n-slate-10">
+          {{ t('CAPTAIN.ASSISTANTS.SCENARIOS.ADD.NEW.AI_GENERATE.DIVIDER') }}
+        </span>
+        <div class="flex-1 h-px bg-n-strong/10" />
+      </div>
+
       <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <div class="flex flex-col gap-4">
           <Input
