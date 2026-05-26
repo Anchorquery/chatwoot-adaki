@@ -34,4 +34,8 @@ class Captain::AssistantPolicy < ApplicationPolicy
   def playground?
     true
   end
+
+  def generate_config?
+    @account_user.administrator?
+  end
 end
