@@ -6,28 +6,31 @@ module Platform::Credentials
 
       case key.to_s
       when 'openai.default'
-        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_API_KEY')&.value
-        metadata[:api_base] = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value
-        metadata[:model] = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value
+        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_API_KEY')&.value.presence
+        metadata[:api_base] = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence
+        metadata[:model] = InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence
       when 'anthropic.default'
-        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_ANTHROPIC_API_KEY')&.value
+        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_ANTHROPIC_API_KEY')&.value.presence
       when 'gemini.default'
-        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_GEMINI_API_KEY')&.value
+        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_GEMINI_API_KEY')&.value.presence
       when 'deepseek.default'
-        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_DEEPSEEK_API_KEY')&.value
+        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_DEEPSEEK_API_KEY')&.value.presence
       when 'openrouter.default'
-        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_OPENROUTER_API_KEY')&.value
+        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_OPENROUTER_API_KEY')&.value.presence
       when 'ollama.default'
-        metadata[:api_base] = InstallationConfig.find_by(name: 'CAPTAIN_OLLAMA_API_BASE')&.value
+        metadata[:api_base] = InstallationConfig.find_by(name: 'CAPTAIN_OLLAMA_API_BASE')&.value.presence
       when 'bedrock.default'
-        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_BEDROCK_API_KEY')&.value
-        payload[:secret_key] = InstallationConfig.find_by(name: 'CAPTAIN_BEDROCK_SECRET_KEY')&.value
-        metadata[:region] = InstallationConfig.find_by(name: 'CAPTAIN_BEDROCK_REGION')&.value
+        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_BEDROCK_API_KEY')&.value.presence
+        payload[:secret_key] = InstallationConfig.find_by(name: 'CAPTAIN_BEDROCK_SECRET_KEY')&.value.presence
+        metadata[:region] = InstallationConfig.find_by(name: 'CAPTAIN_BEDROCK_REGION')&.value.presence
       when 'firecrawl.default'
-        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_FIRECRAWL_API_KEY')&.value
+        payload[:api_key] = InstallationConfig.find_by(name: 'CAPTAIN_FIRECRAWL_API_KEY')&.value.presence
       else
         return nil
       end
+
+      payload.compact!
+      metadata.compact!
 
       return nil if payload.blank? && metadata.blank?
 

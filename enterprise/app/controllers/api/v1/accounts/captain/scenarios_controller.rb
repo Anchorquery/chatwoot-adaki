@@ -14,6 +14,30 @@ class Api::V1::Accounts::Captain::ScenariosController < Api::V1::Accounts::BaseC
     @scenario = assistant_scenarios.create!(scenario_params.merge(account: Current.account))
   end
 
+  def generate
+    result = Captain::Llm::ScenarioGeneratorService.new(
+      assistant: @assistant,
+      focus: generation_focus,
+      reference_scenarios: generation_reference_scenarios
+    ).perform
+
+    if result[:error]
+      render json: { error: result[:error] }, status: (result[:error_code] || :unprocessable_entity)
+      return
+    end
+
+    generated_value = result[:message].to_s.strip
+    if generated_value.blank?
+      render json: { error: 'Unable to generate scenario content.' }, status: :unprocessable_entity
+      return
+    end
+
+    render json: { value: generated_value }
+  rescue StandardError => e
+    Rails.logger.error("[ScenarioGenerator] #{e.class}: #{e.message}")
+    render json: { error: "Failed to generate scenario content: #{e.message}" }, status: :bad_request
+  end
+
   def update
     @scenario.update!(scenario_params)
   end
@@ -43,5 +67,19 @@ class Api::V1::Accounts::Captain::ScenariosController < Api::V1::Accounts::BaseC
 
   def scenario_params
     params.require(:scenario).permit(:title, :description, :instruction, :enabled, tools: [])
+  end
+
+  def generation_focus
+    allowed_fields = %w[title description instruction]
+    focus = params[:focus].to_s
+    allowed_fields.include?(focus) ? focus : 'instruction'
+  end
+
+  def generation_reference_scenarios
+    Array(params[:reference_scenarios]).filter_map do |scenario|
+      next unless scenario.respond_to?(:to_h)
+
+      scenario.to_h.symbolize_keys.slice(:title, :description, :instruction, :tools)
+    end
   end
 end
