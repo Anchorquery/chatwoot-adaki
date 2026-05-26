@@ -14,6 +14,8 @@
 #  used_by_id            :bigint
 #
 class Platform::CredentialUsage < ApplicationRecord
+  self.table_name = 'platform_credential_usages'
+
   belongs_to :account, optional: true
   belongs_to :platform_credential, class_name: 'Platform::Credential'
   belongs_to :used_by, polymorphic: true, optional: true

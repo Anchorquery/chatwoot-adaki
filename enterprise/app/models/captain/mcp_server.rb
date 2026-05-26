@@ -31,7 +31,7 @@ class Captain::McpServer < ApplicationRecord
   self.table_name = 'captain_mcp_servers'
 
   belongs_to :account
-  belongs_to :platform_credential, optional: true
+  belongs_to :platform_credential, optional: true, class_name: '::Platform::Credential'
 
   enum :transport_type, {
     streamable_http: 'streamable_http',
