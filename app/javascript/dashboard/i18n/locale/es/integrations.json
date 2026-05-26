@@ -738,6 +738,16 @@
     "DOCUMENTS": {
       "HEADER": "Documentos",
       "ADD_NEW": "Crear un nuevo documento",
+      "OVERVIEW": {
+        "KICKER": "Centro de conocimiento",
+        "TITLE": "Alimenta a Captain con PDFs y páginas web",
+        "SUBTITLE": "Añade una página web o un PDF y Captain rastreará, extraerá y usará ese contenido como contexto para el asistente.",
+        "TOTAL": "Fuentes",
+        "WEBSITE_CRAWLS": "Rastreos web",
+        "CRAWLED_PAGES": "Páginas rastreadas",
+        "SYNCING": "Sincronizando",
+        "NEEDS_ATTENTION": "Requiere atención"
+      },
       "SELECTED": "{count} seleccionadas",
       "SELECT_ALL": "Seleccionar todo ({count})",
       "UNSELECT_ALL": "Deseleccionar todo ({count})",
@@ -768,9 +778,9 @@
         },
         "STATUS": {
           "ANY": "Cualquier estado",
-          "UPDATED": "Updated",
+          "UPDATED": "Actualizado",
           "NEEDS_UPDATE": "Necesita actualización",
-          "UPDATING": "Updating",
+          "UPDATING": "Actualizando",
           "FAILED": "Fallido"
         },
         "SORT": {
@@ -868,6 +878,21 @@
         "SUBTITLE": "Los documentos alimentan al asistente con contexto útil. Puedes añadir páginas web o PDF para mejorar sus respuestas.",
         "FILTERED_TITLE": "No hay documentos que coincidan",
         "FILTERED_SUBTITLE": "Prueba a cambiar la fuente, el estado o el término de búsqueda.",
+        "KNOWLEDGE_PANEL": {
+          "TITLE": "Qué puedes añadir",
+          "PDFS": {
+            "TITLE": "Manuales PDF",
+            "SUBTITLE": "Sube guías, playbooks y documentos de políticas."
+          },
+          "WEB": {
+            "TITLE": "Páginas web",
+            "SUBTITLE": "Pega una URL y Captain rastreará la página y seguirá los enlaces del mismo sitio cuando estén disponibles."
+          },
+          "SYNC": {
+            "TITLE": "Sincronizaciones recientes",
+            "SUBTITLE": "Haz seguimiento de las actualizaciones, los reintentos y los errores de rastreo."
+          }
+        },
         "FEATURE_SPOTLIGHT": {
           "TITLE": "Fuentes de conocimiento",
           "NOTE": "Un documento en Captain funciona como una fuente de conocimiento para el asistente. Al conectar tu centro de ayuda o tus guías, Captain puede analizar el contenido y ofrecer respuestas más precisas a las consultas de los clientes."

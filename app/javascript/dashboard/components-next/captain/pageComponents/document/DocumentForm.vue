@@ -2,7 +2,7 @@
 import { reactive, computed, ref, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useVuelidate } from '@vuelidate/core';
-import { minLength, requiredIf, url } from '@vuelidate/validators';
+import { requiredIf } from '@vuelidate/validators';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 
@@ -37,14 +37,29 @@ const initialState = {
 
 const state = reactive({ ...initialState });
 const fileInputRef = ref(null);
+const normalizeWebUrl = value => `${value || ''}`.trim();
+const isValidWebUrl = value => {
+  if (state.documentType !== 'web') {
+    return true;
+  }
+
+  const normalizedUrl = normalizeWebUrl(value);
+  if (!normalizedUrl) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+    return ['http:', 'https:'].includes(parsedUrl.protocol);
+  } catch {
+    return false;
+  }
+};
 
 const validationRules = {
   url: {
     required: requiredIf(() => state.documentType === 'web'),
-    url: value =>
-      state.documentType !== 'web' || url(value || '') === true,
-    minLength: value =>
-      state.documentType !== 'web' || minLength(1)(value || '') === true,
+    url: isValidWebUrl,
   },
   pdfFile: {
     required: requiredIf(() => state.documentType === 'pdf'),
@@ -111,10 +126,12 @@ const prepareDocumentDetails = () => {
   formData.append('document[assistant_id]', props.assistantId);
 
   if (state.documentType === 'web') {
-    formData.append('document[external_link]', state.url);
-    formData.append('document[name]', state.name || state.url);
+    const normalizedUrl = normalizeWebUrl(state.url);
+
+    formData.append('document[external_link]', normalizedUrl);
+    formData.append('document[name]', state.name || normalizedUrl);
     formData.append('document[metadata][crawl_mode]', 'website');
-    formData.append('document[metadata][crawl_root_url]', state.url);
+    formData.append('document[metadata][crawl_root_url]', normalizedUrl);
     formData.append('document[metadata][crawl_depth]', String(state.crawlDepth));
   } else {
     formData.append('document[pdf_file]', state.pdfFile);

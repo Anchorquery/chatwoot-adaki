@@ -41,6 +41,7 @@ class Captain::Document < ApplicationRecord
 
   validates :external_link, presence: true, unless: -> { pdf_file.attached? }
   validates :external_link, uniqueness: { scope: :assistant_id }, allow_blank: true
+  validate :validate_external_link_url, unless: :pdf_document?
   validates :content, length: { maximum: 200_000 }
   validates :pdf_file, presence: true, if: :pdf_document?
   validate :validate_pdf_format, if: :pdf_document?
@@ -197,6 +198,17 @@ class Captain::Document < ApplicationRecord
     return unless pdf_file.blob.byte_size > 10.megabytes
 
     errors.add(:pdf_file, I18n.t('captain.documents.pdf_size_error'))
+  end
+
+  def validate_external_link_url
+    return if external_link.blank?
+
+    uri = URI.parse(external_link)
+    return if uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+
+    errors.add(:external_link, :invalid)
+  rescue URI::InvalidURIError
+    errors.add(:external_link, :invalid)
   end
 
   def set_external_link_for_pdf

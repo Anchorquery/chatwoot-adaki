@@ -15,6 +15,31 @@ RSpec.describe Captain::Document, type: :model do
     end
   end
 
+  describe 'URL validation' do
+    it 'rejects invalid web document URLs' do
+      document = build(
+        :captain_document,
+        assistant: assistant,
+        account: account,
+        external_link: 'not-a-valid-url'
+      )
+
+      expect(document).not_to be_valid
+      expect(document.errors[:external_link]).to include(I18n.t('errors.messages.invalid'))
+    end
+
+    it 'accepts valid http and https web document URLs' do
+      document = build(
+        :captain_document,
+        assistant: assistant,
+        account: account,
+        external_link: 'https://example.com/product/page'
+      )
+
+      expect(document).to be_valid
+    end
+  end
+
   describe 'PDF support' do
     let(:pdf_document) do
       doc = build(:captain_document, assistant: assistant, account: account)
