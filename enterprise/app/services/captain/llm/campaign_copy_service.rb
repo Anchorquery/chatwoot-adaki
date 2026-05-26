@@ -75,9 +75,10 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
       FORMATTING — WhatsApp markdown only (no HTML, no Markdown headings):
       - *bold* for key product names, prices, or CTAs
       - _italic_ for tone/emphasis
-      - Separate paragraphs with a real line break between them
-      - Bullet lists with • or - when listing features or options
+      - To separate paragraphs, use the literal \n escape inside the JSON string. Example: "First paragraph.\n\nSecond paragraph."
+      - Bullet lists: put each bullet on its own line using \n before each bullet. Example: "Intro:\n• Feature 1\n• Feature 2"
       - Never use #, ##, **, or any HTML tags
+      - The JSON "message" and "variants[].text" values MUST contain \n characters for line breaks — never output a single flat paragraph when the content has multiple ideas.
       The message AND every variant must all reflect the same context and knowledge above.
       Each variant should be a distinct rephrasing — different angle or emphasis, not just synonyms.
       IMPORTANT: If the knowledge contains specific product names, prices, or lists — include them explicitly. Do NOT summarize or generalize; name the products and prices directly.
