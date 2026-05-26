@@ -273,13 +273,27 @@ class Conversation < ApplicationRecord
   end
 
   # Digits-only WhatsApp number of the bot, used to detect native WhatsApp mentions.
+  # A native WhatsApp @mention embeds the mentioned party's number in the message text
+  # as "@<digits>". The bot's own number lives on the WhatsApp channel, so we fall back
+  # to it when no number was set manually — this makes native mentions work with zero config.
   def bot_whatsapp_number
+    configured_bot_whatsapp_number || channel_whatsapp_number
+  end
+
+  def configured_bot_whatsapp_number
     return unless inbox.respond_to?(:captain_assistant) && inbox.captain_assistant.present?
 
     config = inbox.captain_assistant.config
     return unless config.is_a?(Hash)
 
     config['whatsapp_number'].to_s.gsub(/\D/, '').presence
+  end
+
+  def channel_whatsapp_number
+    channel = inbox&.channel
+    return unless channel.respond_to?(:phone_number)
+
+    channel.phone_number.to_s.gsub(/\D/, '').presence
   end
 
   def bot_alias_mentioned?(content, alias_token)
