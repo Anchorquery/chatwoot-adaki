@@ -1,6 +1,7 @@
 class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::BaseController
   before_action :current_account
-  before_action -> { check_authorization(Captain::Assistant) }
+  before_action -> { check_authorization(Captain::Assistant) }, except: [:generate_config]
+  before_action :check_admin_for_generate_config, only: [:generate_config]
 
   before_action :set_assistant, only: [:show, :update, :destroy, :playground, :generate_config]
 
@@ -67,6 +68,10 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
   end
 
   private
+
+  def check_admin_for_generate_config
+    raise Pundit::NotAuthorizedError unless Current.account_user&.administrator?
+  end
 
   def create_generated_scenarios(scenarios)
     return if scenarios.blank?
