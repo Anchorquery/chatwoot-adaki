@@ -347,20 +347,23 @@
         "SUCCESS_MESSAGE": "Campaña borrada satisfactoriamente",
         "ERROR_MESSAGE": "Se presentó un error. Por favor intente nuevamente."
       }
+    },
+    "RESULTS": {
+      "TITLE": "Resultados de campaña",
+      "TOTAL": "Total",
+      "SENT": "Enviados",
+      "FAILED": "Fallidos",
+      "PROGRESS": "Progreso de entrega",
+      "ERRORS_TITLE": "Errores",
+      "SENT_CONTACTS": "Destinatarios",
+      "CONTACT_ID": "ID Contacto",
+      "NO_ERRORS": "Todos los mensajes entregados correctamente",
+      "EXPORT": "Exportar CSV",
+      "EXPORT_FILENAME": "resultados_campaña"
+    },
+    "CLONE": {
+      "SUCCESS": "Campaña clonada correctamente. La encontrarás como borrador en la lista.",
+      "ERROR": "No se pudo clonar la campaña. Inténtalo de nuevo."
     }
-  },
-  "RESULTS": {
-    "TITLE": "Resultados de campaña",
-    "TOTAL": "Total",
-    "SENT": "Enviados",
-    "FAILED": "Fallidos",
-    "PROGRESS": "Progreso de entrega",
-    "ERRORS_TITLE": "Errores",
-    "CONTACT_ID": "ID Contacto",
-    "NO_ERRORS": "Todos los mensajes entregados correctamente"
-  },
-  "CLONE": {
-    "SUCCESS": "Campaña clonada correctamente. La encontrarás como borrador en la lista.",
-    "ERROR": "No se pudo clonar la campaña. Inténtalo de nuevo."
   }
 }

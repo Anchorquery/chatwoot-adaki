@@ -360,20 +360,23 @@
         "SUCCESS_MESSAGE": "Campaign deleted successfully",
         "ERROR_MESSAGE": "There was an error. Please try again."
       }
+    },
+    "RESULTS": {
+      "TITLE": "Campaign Results",
+      "TOTAL": "Total",
+      "SENT": "Sent",
+      "FAILED": "Failed",
+      "PROGRESS": "Delivery progress",
+      "ERRORS_TITLE": "Errors",
+      "SENT_CONTACTS": "Recipients",
+      "CONTACT_ID": "Contact ID",
+      "NO_ERRORS": "All messages delivered successfully",
+      "EXPORT": "Export CSV",
+      "EXPORT_FILENAME": "campaign_results"
+    },
+    "CLONE": {
+      "SUCCESS": "Campaign cloned successfully. You can find it as a draft in the list.",
+      "ERROR": "Failed to clone campaign. Please try again."
     }
-  },
-  "RESULTS": {
-    "TITLE": "Campaign Results",
-    "TOTAL": "Total",
-    "SENT": "Sent",
-    "FAILED": "Failed",
-    "PROGRESS": "Delivery progress",
-    "ERRORS_TITLE": "Errors",
-    "CONTACT_ID": "Contact ID",
-    "NO_ERRORS": "All messages delivered successfully"
-  },
-  "CLONE": {
-    "SUCCESS": "Campaign cloned successfully. You can find it as a draft in the list.",
-    "ERROR": "Failed to clone campaign. Please try again."
   }
 }
