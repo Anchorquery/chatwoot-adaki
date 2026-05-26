@@ -5,6 +5,7 @@ class Campaigns::ApiWebhookDispatchPlannerService
     campaign = message.conversation.campaign
     return Time.current unless campaign&.one_off?
     return Time.current unless campaign.inbox_id == inbox.id
+    return Time.current if campaign.completed?
 
     campaign.with_lock do
       state = campaign.delivery_state.to_h.with_indifferent_access
