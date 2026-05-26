@@ -32,6 +32,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def clone
     @campaign = @source_campaign.dup
+    @campaign.display_id = nil
     @campaign.title = "#{@source_campaign.title} (copia)"
     @campaign.campaign_status = :active
     @campaign.scheduled_at = 1.day.from_now

@@ -9,6 +9,7 @@ import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import CampaignLayout from 'dashboard/components-next/Campaigns/CampaignLayout.vue';
 import CampaignList from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignList.vue';
 import WhatsAppCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/WhatsAppCampaign/WhatsAppCampaignDialog.vue';
+import APICampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/APICampaign/APICampaignDialog.vue';
 import ConfirmDeleteCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/ConfirmDeleteCampaignDialog.vue';
 import CampaignResultsDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignResultsDialog.vue';
 import WhatsAppCampaignEmptyState from 'dashboard/components-next/Campaigns/EmptyState/WhatsAppCampaignEmptyState.vue';
@@ -19,6 +20,7 @@ const store = useStore();
 
 const selectedCampaign = ref(null);
 const [showWhatsAppCampaignDialog, toggleWhatsAppCampaignDialog] = useToggle();
+const [showEditCampaignDialog, toggleEditCampaignDialog] = useToggle();
 const [showResultsDialog, toggleResultsDialog] = useToggle();
 const resultsCampaign = ref(null);
 
@@ -40,10 +42,16 @@ const handleDelete = campaign => {
   confirmDeleteCampaignDialogRef.value.dialogRef.open();
 };
 
+const handleEdit = campaign => {
+  selectedCampaign.value = campaign;
+  toggleEditCampaignDialog(true);
+};
+
 const handleClone = async campaign => {
   try {
-    await store.dispatch('campaigns/clone', campaign.id);
-    useAlert(t('CAMPAIGN.CLONE.SUCCESS'));
+    const cloned = await store.dispatch('campaigns/clone', campaign.id);
+    selectedCampaign.value = cloned;
+    toggleEditCampaignDialog(true);
   } catch {
     useAlert(t('CAMPAIGN.CLONE.ERROR'));
   }
@@ -77,9 +85,16 @@ const handleResults = campaign => {
     <CampaignList
       v-else-if="!hasNoWhatsAppCampaigns"
       :campaigns="WhatsAppCampaigns"
+      @edit="handleEdit"
       @delete="handleDelete"
       @clone="handleClone"
       @results="handleResults"
+    />
+    <APICampaignDialog
+      v-if="showEditCampaignDialog"
+      mode="edit"
+      :selected-campaign="selectedCampaign"
+      @close="toggleEditCampaignDialog(false)"
     />
     <WhatsAppCampaignEmptyState
       v-else
