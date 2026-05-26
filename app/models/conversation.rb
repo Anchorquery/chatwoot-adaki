@@ -214,6 +214,10 @@ class Conversation < ApplicationRecord
     # avoid false positives with domains such as "img.us".
     return true if group_jid_present?
 
+    # Fallback for bridges that strip the "@g.us" suffix and store only the raw group id:
+    # WhatsApp group ids are structurally distinct from individual phone numbers.
+    return true if group_structured_identifier?
+
     # Explicit group markers set by Telegram, Evolution and other integrations, on either
     # the conversation or the contact (snake_case and camelCase variants).
     return true if group_attributes.any? { |attrs| %w[chat_type type].any? { |k| attrs[k].to_s.downcase.include?('group') } }
@@ -281,6 +285,21 @@ class Conversation < ApplicationRecord
 
   def group_attributes
     [additional_attributes, contact&.additional_attributes].select { |attrs| attrs.is_a?(Hash) }
+  end
+
+  # Recognizes a WhatsApp group id even when the "@g.us" suffix was stripped by the bridge.
+  # Group ids are structurally distinct from individual phone numbers:
+  #   - legacy groups look like "<digits>-<digits>" (e.g. 12345-67890); phone numbers never
+  #     contain a hyphen,
+  #   - modern groups are ~18-digit numbers, well beyond the 15-digit E.164 phone maximum.
+  def group_structured_identifier?
+    [contact_inbox&.source_id, contact&.identifier].any? do |raw|
+      local_part = raw.to_s.split('@').first.to_s
+      next false if local_part.blank?
+      next true if local_part.match?(/\A\+?\d{3,}-\d{3,}\z/)
+
+      local_part.gsub(/\D/, '').length > 15
+    end
   end
 
   # Tokens that summon the bot in a group when written as "@token" or "/token".
