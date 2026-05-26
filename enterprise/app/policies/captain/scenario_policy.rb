@@ -18,4 +18,8 @@ class Captain::ScenarioPolicy < ApplicationPolicy
   def destroy?
     @account_user.administrator?
   end
+
+  def generate?
+    @account_user.administrator?
+  end
 end
