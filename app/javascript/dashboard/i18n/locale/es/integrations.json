@@ -707,6 +707,14 @@
               },
               "CREATE": "Crear",
               "CANCEL": "Cancelar"
+            },
+            "AI_GENERATE": {
+              "BUTTON": "Generar con IA",
+              "GENERATING": "Generando...",
+              "LABEL": "Describe qué debe manejar este escenario",
+              "PLACEHOLDER": "Ej. Un cliente quiere devolver un producto y necesita un reembolso",
+              "ERROR": "No se pudo generar el escenario. Por favor, inténtalo de nuevo.",
+              "DIVIDER": "o rellena manualmente"
             }
           }
         },

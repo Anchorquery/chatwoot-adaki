@@ -23,6 +23,21 @@ class Api::V1::Accounts::Captain::ScenariosController < Api::V1::Accounts::BaseC
     head :no_content
   end
 
+  def generate
+    prompt = params.require(:prompt)
+    result = Captain::Llm::ScenarioGeneratorService.new(
+      account: Current.account,
+      assistant: @assistant,
+      prompt: prompt
+    ).perform
+
+    if result[:error]
+      render json: { error: result[:error] }, status: result[:error_code] || :unprocessable_entity
+    else
+      render json: result[:message], status: :ok
+    end
+  end
+
   private
 
   def set_assistant
