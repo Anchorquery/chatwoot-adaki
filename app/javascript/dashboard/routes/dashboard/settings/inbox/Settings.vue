@@ -1123,6 +1123,28 @@ export default {
                       {{ $t('INBOX_MGMT.FEATURES.USE_INBOX_AVATAR_FOR_BOT') }}
                     </label>
                   </div>
+                  <div class="flex gap-2 py-0.5">
+                    <input
+                      v-model="selectedFeatureFlags"
+                      type="checkbox"
+                      value="continue_bot_after_assignment"
+                      @input="handleFeatureFlag"
+                    />
+                    <label for="continue_bot_after_assignment">
+                      {{ $t('INBOX_MGMT.FEATURES.CONTINUE_BOT_AFTER_ASSIGNMENT') }}
+                    </label>
+                  </div>
+                  <div class="flex gap-2 py-0.5">
+                    <input
+                      v-model="selectedFeatureFlags"
+                      type="checkbox"
+                      value="show_assignment_handoff_message"
+                      @input="handleFeatureFlag"
+                    />
+                    <label for="show_assignment_handoff_message">
+                      {{ $t('INBOX_MGMT.FEATURES.SHOW_ASSIGNMENT_HANDOFF_MESSAGE') }}
+                    </label>
+                  </div>
                 </div>
               </SettingsFieldSection>
             </SettingsAccordion>

@@ -94,6 +94,9 @@ Rails.application.routes.draw do
                 end
               end
             end
+            namespace :platform do
+              resources :credentials, only: [:index], controller: '/api/v1/accounts/captain/platform/credentials'
+            end
             resource :tasks, only: [], controller: 'tasks' do
               post :rewrite
               post :summarize

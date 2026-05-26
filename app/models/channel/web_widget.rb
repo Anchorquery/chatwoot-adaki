@@ -52,6 +52,8 @@ class Channel::WebWidget < ApplicationRecord
             3 => :end_conversation,
             4 => :use_inbox_avatar_for_bot,
             5 => :allow_mobile_webview,
+            6 => :continue_bot_after_assignment,
+            7 => :show_assignment_handoff_message,
             :column => 'feature_flags',
             :check_for_column => false
 

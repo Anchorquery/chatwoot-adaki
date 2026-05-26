@@ -115,13 +115,15 @@ defineExpose({ dialogRef });
     overflow-y-auto
     @confirm="handleSubmit"
   >
-    <APICampaignForm
-      ref="apiCampaignFormRef"
-      :mode="mode"
-      :selected-campaign="selectedCampaign"
-      :show-action-buttons="false"
-      @submit="handleSubmit"
-      @cancel="emit('close')"
-    />
+    <div data-campaign-dialog-content @click.stop>
+      <APICampaignForm
+        ref="apiCampaignFormRef"
+        :mode="mode"
+        :selected-campaign="selectedCampaign"
+        :show-action-buttons="false"
+        @submit="handleSubmit"
+        @cancel="emit('close')"
+      />
+    </div>
   </Dialog>
 </template>

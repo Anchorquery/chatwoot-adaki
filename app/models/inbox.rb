@@ -175,6 +175,14 @@ class Inbox < ApplicationRecord
                                             status: 'enabled').count.positive?
   end
 
+  def continue_bot_after_assignment?
+    channel.respond_to?(:continue_bot_after_assignment?) && channel.continue_bot_after_assignment?
+  end
+
+  def show_assignment_handoff_message?
+    channel.respond_to?(:show_assignment_handoff_message?) && channel.show_assignment_handoff_message?
+  end
+
   def inbox_type
     channel.name
   end

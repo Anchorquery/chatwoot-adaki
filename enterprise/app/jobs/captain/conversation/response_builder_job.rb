@@ -218,7 +218,11 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
   def conversation_captain_controllable?
     status, assignee_id = Conversation.uncached { Conversation.where(id: @conversation.id).pick(:status, :assignee_id) }
-    (pending_status?(status) || open_status?(status)) && assignee_id.blank? && !human_response_exists?
+    return false unless pending_status?(status) || open_status?(status)
+    return true if assignee_id.blank?
+    return false if human_response_exists?
+
+    inbox.continue_bot_after_assignment?
   end
 
   def pending_status?(status)

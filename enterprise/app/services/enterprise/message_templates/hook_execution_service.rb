@@ -86,7 +86,10 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   def conversation_captain_controllable?
-    (conversation.pending? || conversation.open?) && !human_takeover?
+    return false unless conversation.pending? || conversation.open?
+    return true unless human_takeover?
+
+    conversation.inbox.continue_bot_after_assignment?
   end
 
   def human_takeover?
