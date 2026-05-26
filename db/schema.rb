@@ -1126,11 +1126,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_000101) do
     t.string "error_code"
     t.jsonb "context", default: {}, null: false
     t.datetime "created_at", null: false
-    t.index ["account_id", "created_at"], name: "index_platform_credential_usages_on_account_id_and_created_at"
+    t.index ["account_id", "created_at"], name: "idx_pcu_on_account_id_created_at"
     t.index ["account_id"], name: "index_platform_credential_usages_on_account_id"
-    t.index ["platform_credential_id", "created_at"], name: "index_platform_credential_usages_on_platform_credential_id_and_created_at"
+    t.index ["platform_credential_id", "created_at"], name: "idx_pcu_on_platform_credential_id_created_at"
     t.index ["platform_credential_id"], name: "index_platform_credential_usages_on_platform_credential_id"
-    t.index ["used_by_type", "used_by_id"], name: "index_platform_credential_usages_on_used_by_type_and_used_by_id"
+    t.index ["used_by_type", "used_by_id"], name: "idx_pcu_on_used_by_type_and_id"
   end
 
   create_table "platform_credentials", force: :cascade do |t|

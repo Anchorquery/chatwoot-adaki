@@ -14,8 +14,8 @@ class CreatePlatformCredentialUsages < ActiveRecord::Migration[7.0]
       t.datetime :created_at, null: false
     end
 
-    add_index :platform_credential_usages, [:platform_credential_id, :created_at]
-    add_index :platform_credential_usages, [:account_id, :created_at]
-    add_index :platform_credential_usages, [:used_by_type, :used_by_id]
+    add_index :platform_credential_usages, [:platform_credential_id, :created_at], name: 'idx_pcu_on_platform_credential_id_created_at'
+    add_index :platform_credential_usages, [:account_id, :created_at], name: 'idx_pcu_on_account_id_created_at'
+    add_index :platform_credential_usages, [:used_by_type, :used_by_id], name: 'idx_pcu_on_used_by_type_and_id'
   end
 end
