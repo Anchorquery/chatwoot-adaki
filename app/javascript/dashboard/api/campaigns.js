@@ -10,6 +10,10 @@ class CampaignsAPI extends ApiClient {
   aiGenerate(data) {
     return axios.post(`${this.url}/ai_generate`, data);
   }
+
+  clone(id) {
+    return axios.post(`${this.url}/${id}/clone`);
+  }
 }
 
 export default new CampaignsAPI();

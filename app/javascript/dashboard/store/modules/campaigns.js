@@ -91,6 +91,15 @@ export const actions = {
       commit(types.SET_CAMPAIGN_UI_FLAG, { isUpdating: false });
     }
   },
+  clone: async ({ commit }, id) => {
+    try {
+      const response = await CampaignsAPI.clone(id);
+      commit(types.ADD_CAMPAIGN, response.data);
+      return response.data;
+    } catch (error) {
+      throw new Error(error);
+    }
+  },
   delete: async ({ commit }, id) => {
     commit(types.SET_CAMPAIGN_UI_FLAG, { isDeleting: true });
     try {

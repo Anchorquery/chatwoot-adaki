@@ -12,10 +12,12 @@ defineProps({
   },
 });
 
-const emit = defineEmits(['edit', 'delete']);
+const emit = defineEmits(['edit', 'delete', 'clone', 'results']);
 
 const handleEdit = campaign => emit('edit', campaign);
 const handleDelete = campaign => emit('delete', campaign);
+const handleClone = campaign => emit('clone', campaign);
+const handleResults = campaign => emit('results', campaign);
 </script>
 
 <template>
@@ -33,8 +35,11 @@ const handleDelete = campaign => emit('delete', campaign);
       :is-live-chat-type="isLiveChatType"
       :requires-approval="campaign.requires_approval"
       :approval-status="campaign.approval_status"
+      :delivery-state="campaign.delivery_state"
       @edit="handleEdit(campaign)"
       @delete="handleDelete(campaign)"
+      @clone="handleClone(campaign)"
+      @results="handleResults(campaign)"
     />
   </div>
 </template>

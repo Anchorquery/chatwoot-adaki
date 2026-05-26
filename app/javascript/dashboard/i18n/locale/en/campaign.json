@@ -359,5 +359,18 @@
         "ERROR_MESSAGE": "There was an error. Please try again."
       }
     }
+  },
+  "RESULTS": {
+    "TITLE": "Campaign Results",
+    "TOTAL": "Total",
+    "SENT": "Sent",
+    "FAILED": "Failed",
+    "PROGRESS": "Delivery progress",
+    "ERRORS_TITLE": "Errors",
+    "CONTACT_ID": "Contact ID",
+    "NO_ERRORS": "All messages delivered successfully"
+  },
+  "CLONE": {
+    "ERROR": "Failed to clone campaign. Please try again."
   }
 }

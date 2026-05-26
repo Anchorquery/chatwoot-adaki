@@ -1,5 +1,6 @@
 class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
-  before_action :campaign, except: [:index, :create, :ai_generate]
+  before_action :campaign, except: [:index, :create, :ai_generate, :clone]
+  before_action :find_campaign_for_clone, only: [:clone]
   before_action :check_authorization
   before_action :parse_delivery_settings, only: [:create, :update]
 
@@ -24,6 +25,17 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   def destroy
     @campaign.destroy!
     head :ok
+  end
+
+  def clone
+    @campaign = @source_campaign.dup
+    @campaign.title = "#{@source_campaign.title} (copia)"
+    @campaign.campaign_status = :draft
+    @campaign.scheduled_at = nil
+    @campaign.delivery_state = nil
+    @campaign.requires_approval = false if @campaign.respond_to?(:requires_approval=)
+    @campaign.save!
+    render :show
   end
 
   def ai_generate
@@ -67,6 +79,11 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def campaign
     @campaign ||= Current.account.campaigns.find_by(display_id: params[:id])
+  end
+
+  def find_campaign_for_clone
+    @source_campaign = Current.account.campaigns.find_by(display_id: params[:id])
+    head :not_found unless @source_campaign
   end
 
   def attach_files_to(campaign)

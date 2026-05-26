@@ -344,5 +344,18 @@
         "ERROR_MESSAGE": "Se presentó un error. Por favor intente nuevamente."
       }
     }
+  },
+  "RESULTS": {
+    "TITLE": "Resultados de campaña",
+    "TOTAL": "Total",
+    "SENT": "Enviados",
+    "FAILED": "Fallidos",
+    "PROGRESS": "Progreso de entrega",
+    "ERRORS_TITLE": "Errores",
+    "CONTACT_ID": "ID Contacto",
+    "NO_ERRORS": "Todos los mensajes entregados correctamente"
+  },
+  "CLONE": {
+    "ERROR": "No se pudo clonar la campaña. Inténtalo de nuevo."
   }
 }

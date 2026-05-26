@@ -51,9 +51,13 @@ const props = defineProps({
     type: String,
     default: 'not_required',
   },
+  deliveryState: {
+    type: Object,
+    default: () => ({}),
+  },
 });
 
-const emit = defineEmits(['edit', 'delete']);
+const emit = defineEmits(['edit', 'delete', 'clone', 'results']);
 
 const { t } = useI18n();
 
@@ -90,6 +94,12 @@ const inboxIcon = computed(() => {
 });
 
 const showEditButton = computed(() => props.status !== STATUS_COMPLETED);
+const hasDeliveryResults = computed(
+  () =>
+    props.status === STATUS_COMPLETED &&
+    (props.deliveryState?.sent_count > 0 ||
+      props.deliveryState?.failed_count > 0)
+);
 </script>
 
 <template>
@@ -131,7 +141,23 @@ const showEditButton = computed(() => props.status !== STATUS_COMPLETED);
         />
       </div>
     </div>
-    <div class="flex items-center justify-end w-20 gap-2">
+    <div class="flex items-center justify-end gap-2 flex-shrink-0">
+      <Button
+        v-if="hasDeliveryResults"
+        variant="faded"
+        size="sm"
+        color="slate"
+        icon="i-lucide-bar-chart-2"
+        @click="emit('results')"
+      />
+      <Button
+        v-if="!isLiveChatType"
+        variant="faded"
+        size="sm"
+        color="slate"
+        icon="i-lucide-copy"
+        @click="emit('clone')"
+      />
       <Button
         v-if="showEditButton"
         variant="faded"
