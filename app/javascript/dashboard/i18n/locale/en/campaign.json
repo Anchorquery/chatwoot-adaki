@@ -373,6 +373,7 @@
     "NO_ERRORS": "All messages delivered successfully"
   },
   "CLONE": {
+    "SUCCESS": "Campaign cloned successfully. You can find it as a draft in the list.",
     "ERROR": "Failed to clone campaign. Please try again."
   }
 }

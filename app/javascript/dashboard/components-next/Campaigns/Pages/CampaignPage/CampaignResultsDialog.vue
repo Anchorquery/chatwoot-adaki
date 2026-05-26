@@ -12,7 +12,7 @@ const { t } = useI18n();
 
 const ds = computed(() => props.campaign?.delivery_state || {});
 const total = computed(
-  () => ds.value.contact_ids?.length ?? ds.value.sent_count + ds.value.failed_count
+  () => ds.value.contact_ids?.length ?? (ds.value.sent_count ?? 0) + (ds.value.failed_count ?? 0)
 );
 const sent = computed(() => ds.value.sent_count ?? 0);
 const failed = computed(() => ds.value.failed_count ?? 0);

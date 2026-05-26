@@ -360,6 +360,7 @@
     "NO_ERRORS": "Todos los mensajes entregados correctamente"
   },
   "CLONE": {
+    "SUCCESS": "Campaña clonada correctamente. La encontrarás como borrador en la lista.",
     "ERROR": "No se pudo clonar la campaña. Inténtalo de nuevo."
   }
 }

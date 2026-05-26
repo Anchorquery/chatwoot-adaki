@@ -83,7 +83,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   end
 
   def trigger_immediate_dispatch
-    return unless @campaign
+    return unless @campaign&.persisted?
     return unless @campaign.campaign_type == 'one_off'
     return unless @campaign.campaign_status == 'active'
     return unless @campaign.delivery_settings&.dig('immediate_dispatch')
