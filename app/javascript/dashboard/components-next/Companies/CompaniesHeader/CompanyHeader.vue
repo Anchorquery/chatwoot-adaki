@@ -8,6 +8,7 @@ defineProps({
   showSearch: { type: Boolean, default: true },
   searchValue: { type: String, default: '' },
   headerTitle: { type: String, required: true },
+  headerSubtitle: { type: String, default: '' },
   activeSort: { type: String, default: 'last_activity_at' },
   activeOrdering: { type: String, default: '' },
 });
@@ -20,9 +21,17 @@ const emit = defineEmits(['search', 'update:sort', 'create']);
     <div
       class="flex items-start sm:items-center justify-between w-full py-6 gap-2 mx-auto max-w-5xl"
     >
-      <span class="text-xl font-medium truncate text-n-slate-12">
-        {{ headerTitle }}
-      </span>
+      <div class="flex min-w-0 flex-col gap-1">
+        <span class="text-xl font-medium truncate text-n-slate-12">
+          {{ headerTitle }}
+        </span>
+        <p
+          v-if="headerSubtitle"
+          class="max-w-2xl text-sm leading-5 text-n-slate-11"
+        >
+          {{ headerSubtitle }}
+        </p>
+      </div>
       <div class="flex items-center flex-col sm:flex-row flex-shrink-0 gap-4">
         <div v-if="showSearch" class="flex items-center gap-2 w-full">
           <Input

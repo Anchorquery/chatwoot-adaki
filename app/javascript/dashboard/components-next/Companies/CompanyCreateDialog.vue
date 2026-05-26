@@ -1,6 +1,9 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useVuelidate } from '@vuelidate/core';
+import { helpers, required } from '@vuelidate/validators';
+import { isDomain } from 'shared/helpers/Validators';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -18,16 +21,49 @@ const dialogRef = ref(null);
 
 const form = reactive({ name: '', domain: '', description: '' });
 
-const isFormInvalid = computed(() => !form.name.trim());
+const domainFormat = value => isDomain(value.trim());
+
+const rules = {
+  name: {
+    required: helpers.withMessage(
+      () => t('COMPANIES.CREATE.FIELDS.NAME.ERROR'),
+      required
+    ),
+  },
+  domain: {
+    domainFormat: helpers.withMessage(
+      () => t('COMPANIES.CREATE.FIELDS.DOMAIN.ERROR'),
+      domainFormat
+    ),
+  },
+};
+
+const v$ = useVuelidate(rules, form);
+
+const nameError = computed(() =>
+  v$.value.name.$error ? t('COMPANIES.CREATE.FIELDS.NAME.ERROR') : ''
+);
+
+const domainError = computed(() =>
+  v$.value.domain.$error ? v$.value.domain.$errors[0]?.$message : ''
+);
+
+const domainMessage = computed(() =>
+  domainError.value || t('COMPANIES.CREATE.FIELDS.DOMAIN.MESSAGE')
+);
+
+const isFormInvalid = computed(() => v$.value.$invalid);
 
 const resetForm = () => {
   form.name = '';
   form.domain = '';
   form.description = '';
+  v$.value.$reset();
 };
 
-const handleConfirm = () => {
-  if (isFormInvalid.value) return;
+const handleConfirm = async () => {
+  const isFormValid = await v$.value.$validate();
+  if (!isFormValid) return;
 
   emit('create', {
     name: form.name.trim(),
@@ -61,19 +97,33 @@ defineExpose({ dialogRef, onSuccess });
         <span class="py-1 text-sm font-medium text-n-slate-12">
           {{ t('COMPANIES.CREATE.TITLE') }}
         </span>
+        <p class="text-sm leading-5 text-n-slate-11">
+          {{ t('COMPANIES.CREATE.DESCRIPTION') }}
+        </p>
         <div class="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
+            id="company-name"
             v-model="form.name"
             :placeholder="t('COMPANIES.DETAIL.PROFILE.FIELDS.NAME')"
+            :label="t('COMPANIES.DETAIL.PROFILE.FIELDS.NAME')"
+            :message="nameError"
+            :message-type="nameError ? 'error' : 'info'"
             :disabled="isLoading"
             custom-input-class="h-8 !pt-1 !pb-1 [&:not(.error,.focus)]:!outline-transparent"
             autofocus
+            @blur="v$.name.$touch()"
           />
           <Input
+            id="company-domain"
             v-model="form.domain"
             :placeholder="t('COMPANIES.DETAIL.PROFILE.FIELDS.DOMAIN')"
+            :label="t('COMPANIES.DETAIL.PROFILE.FIELDS.DOMAIN')"
+            :message="domainMessage"
+            :message-type="domainError ? 'error' : 'info'"
             :disabled="isLoading"
             custom-input-class="h-8 !pt-1 !pb-1 [&:not(.error,.focus)]:!outline-transparent"
+            @blur="v$.domain.$touch()"
+            @input="v$.domain.$touch()"
           />
         </div>
       </div>

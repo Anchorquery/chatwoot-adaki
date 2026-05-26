@@ -27,6 +27,16 @@
     },
     "CREATE": {
       "TITLE": "Add company details",
+      "DESCRIPTION": "Companies group related contacts so you can keep track of the organizations they belong to, their website, and internal notes.",
+      "FIELDS": {
+        "NAME": {
+          "ERROR": "Enter a company name."
+        },
+        "DOMAIN": {
+          "ERROR": "Enter a valid domain name like example.com, without https:// or any path.",
+          "MESSAGE": "Use only the domain name, for example example.com or www.example.com."
+        }
+      },
       "ACTIONS": {
         "SAVE": "Add company"
       },

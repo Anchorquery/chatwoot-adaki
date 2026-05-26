@@ -682,7 +682,7 @@
         "ADD": {
           "SUGGESTED": {
             "TITLE": "Ejemplos de escenarios",
-            "ADD": "Añadir todo",
+            "ADD": "Añadir todos",
             "ADD_SINGLE": "Añadir este",
             "TOOLS_USED": "Herramientas usadas:"
           },

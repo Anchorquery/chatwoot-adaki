@@ -54,17 +54,17 @@ const guidelinesExample = [
   {
     id: 1,
     content:
-      'Block queries that share or request sensitive personal information (e.g. phone numbers, passwords).',
+      'Bloquea consultas que compartan o soliciten información personal sensible (p. ej., números de teléfono o contraseñas).',
   },
   {
     id: 2,
     content:
-      'Reject queries that include offensive, discriminatory, or threatening language.',
+      'Rechaza consultas que incluyan lenguaje ofensivo, discriminatorio o amenazante.',
   },
   {
     id: 3,
     content:
-      'Deflect when the assistant is asked for legal or medical diagnosis or treatment.',
+      'Desvía la conversación cuando el asistente reciba una solicitud de diagnóstico o tratamiento legal o médico.',
   },
 ];
 

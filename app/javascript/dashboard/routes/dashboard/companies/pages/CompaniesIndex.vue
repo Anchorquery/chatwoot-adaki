@@ -135,8 +135,8 @@ const createCompany = async company => {
     createCompanyDialogRef.value?.onSuccess();
     useAlert(t('COMPANIES.CREATE.MESSAGES.SUCCESS'));
     showCompany(newCompany.id);
-  } catch {
-    useAlert(t('COMPANIES.CREATE.MESSAGES.ERROR'));
+  } catch (error) {
+    useAlert(error?.message || t('COMPANIES.CREATE.MESSAGES.ERROR'));
   }
 };
 
@@ -165,6 +165,7 @@ onMounted(() => {
   <CompaniesListLayout
     :search-value="searchValue"
     :header-title="t('COMPANIES.HEADER')"
+    :header-subtitle="t('COMPANIES.DESCRIPTION')"
     :current-page="pageNumber"
     :total-items="Number(meta.totalCount || 0)"
     :active-sort="activeSort"

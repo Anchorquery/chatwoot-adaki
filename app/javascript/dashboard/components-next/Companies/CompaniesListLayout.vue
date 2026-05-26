@@ -5,6 +5,7 @@ import PaginationFooter from 'dashboard/components-next/pagination/PaginationFoo
 defineProps({
   searchValue: { type: String, default: '' },
   headerTitle: { type: String, default: '' },
+  headerSubtitle: { type: String, default: '' },
   currentPage: { type: Number, default: 1 },
   totalItems: { type: Number, default: 100 },
   activeSort: { type: String, default: 'name' },
@@ -32,6 +33,7 @@ const updateCurrentPage = page => {
       <CompanyHeader
         :search-value="searchValue"
         :header-title="headerTitle"
+        :header-subtitle="headerSubtitle"
         :active-sort="activeSort"
         :active-ordering="activeOrdering"
         @search="emit('search', $event)"
