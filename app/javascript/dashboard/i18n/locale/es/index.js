@@ -82,4 +82,8 @@ export default {
   ...teamsSettings,
   ...whatsappTemplates,
   ...adaki,
+  CAPTAIN: {
+    ...integrations.CAPTAIN,
+    ...adaki.CAPTAIN,
+  },
 };

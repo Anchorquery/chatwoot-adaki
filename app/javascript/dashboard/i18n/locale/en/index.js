@@ -88,4 +88,8 @@ export default {
   ...onboarding,
   ...yearInReview,
   ...adaki,
+  CAPTAIN: {
+    ...integrations.CAPTAIN,
+    ...adaki.CAPTAIN,
+  },
 };

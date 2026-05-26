@@ -85,7 +85,7 @@ Rails.application.routes.draw do
               post :sync, on: :member
             end
             namespace :platform do
-              resources :credentials, only: [:index, :show, :create, :update, :destroy] do
+              resources :credentials, only: [:index, :show, :create, :update, :destroy], controller: '/api/v1/accounts/platform/credentials' do
                 member do
                   post :rotate
                   post :validate
@@ -93,9 +93,6 @@ Rails.application.routes.draw do
                   get :usages
                 end
               end
-            end
-            namespace :platform do
-              resources :credentials, only: [:index], controller: '/api/v1/accounts/captain/platform/credentials'
             end
             resource :tasks, only: [], controller: 'tasks' do
               post :rewrite

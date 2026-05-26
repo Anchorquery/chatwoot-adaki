@@ -167,12 +167,17 @@ class ActionCableConnector extends BaseActionCableConnector {
 
   isConversationUnreadCountsEnabled = () => {
     const accountId = this.app.$store.getters.getCurrentAccountId;
+    const isOnChatwootCloud =
+      this.app.$store.getters['globalConfig/isOnChatwootCloud'];
+    const currentAccount =
+      this.app.$store.getters['accounts/getAccount'](accountId);
     const isFeatureEnabled =
-      this.app.$store.getters['accounts/isFeatureEnabledonAccount'];
+      currentAccount?.features?.[FEATURE_FLAGS.CONVERSATION_UNREAD_COUNTS] ===
+      true;
 
-    return isFeatureEnabled?.(
-      accountId,
-      FEATURE_FLAGS.CONVERSATION_UNREAD_COUNTS
+    return (
+      isOnChatwootCloud &&
+      isFeatureEnabled
     );
   };
 

@@ -38,28 +38,10 @@ const initialState = {
 const state = reactive({ ...initialState });
 const fileInputRef = ref(null);
 const normalizeWebUrl = value => `${value || ''}`.trim();
-const isValidWebUrl = value => {
-  if (state.documentType !== 'web') {
-    return true;
-  }
-
-  const normalizedUrl = normalizeWebUrl(value);
-  if (!normalizedUrl) {
-    return false;
-  }
-
-  try {
-    const parsedUrl = new URL(normalizedUrl);
-    return ['http:', 'https:'].includes(parsedUrl.protocol);
-  } catch {
-    return false;
-  }
-};
 
 const validationRules = {
   url: {
     required: requiredIf(() => state.documentType === 'web'),
-    url: isValidWebUrl,
   },
   pdfFile: {
     required: requiredIf(() => state.documentType === 'pdf'),

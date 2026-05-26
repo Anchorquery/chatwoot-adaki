@@ -134,7 +134,7 @@ const openPurchaseCreditsModal = () => {
 
 const handleTopupSuccess = () => {
   // Refresh limits to show updated credit balance
-  fetchLimits();
+  fetchLimits({ force: true });
 };
 
 onMounted(handleBillingPageLogic);
@@ -203,7 +203,7 @@ onMounted(handleBillingPageLogic);
                 slate
                 icon="i-lucide-refresh-cw"
                 :is-loading="isFetchingLimits"
-                @click="fetchLimits"
+                @click="fetchLimits({ force: true })"
               >
                 {{ $t('BILLING_SETTINGS.CAPTAIN.REFRESH_CREDITS') }}
               </ButtonV4>
