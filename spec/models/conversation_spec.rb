@@ -1169,4 +1169,53 @@ RSpec.describe Conversation do
       end
     end
   end
+
+  describe '#bot_mentioned?' do
+    let(:inbox) { create(:inbox) }
+    let(:conversation) { create(:conversation, inbox: inbox) }
+
+    it 'returns false for blank content' do
+      expect(conversation.bot_mentioned?(nil)).to be(false)
+      expect(conversation.bot_mentioned?('   ')).to be(false)
+    end
+
+    it 'matches the generic commands regardless of the bot name' do
+      expect(conversation.bot_mentioned?('!bot tell me a joke')).to be(true)
+      expect(conversation.bot_mentioned?('/bot help')).to be(true)
+      expect(conversation.bot_mentioned?('/ask something')).to be(true)
+    end
+
+    context 'with a captain assistant that has a long name' do
+      let(:assistant) do
+        create(:captain_assistant, account: inbox.account, name: 'Asistente Virtual Adaki Soporte',
+                                    config: { 'group_trigger' => 'adaki' })
+      end
+
+      before { create(:captain_inbox, inbox: inbox, captain_assistant: assistant) }
+
+      it 'matches the configured short alias written as @alias or /alias' do
+        expect(conversation.bot_mentioned?('hola @adaki cómo estás')).to be(true)
+        expect(conversation.bot_mentioned?('/adaki ayúdame')).to be(true)
+        expect(conversation.bot_mentioned?('@Adaki')).to be(true)
+      end
+
+      it 'falls back to the first word of the name when no alias is configured' do
+        assistant.update!(config: assistant.config.except('group_trigger'))
+        expect(conversation.bot_mentioned?('@asistente hola')).to be(true)
+      end
+
+      it 'does not match a plain mention of the full name without @ or /' do
+        expect(conversation.bot_mentioned?('hablé con el Asistente Virtual Adaki ayer')).to be(false)
+      end
+
+      it 'does not match when the alias is only part of a longer word' do
+        expect(conversation.bot_mentioned?('mira esta @adakiweb cosa')).to be(false)
+        expect(conversation.bot_mentioned?('escribe a soporte@adaki.com')).to be(false)
+      end
+
+      it 'does not match unrelated messages' do
+        expect(conversation.bot_mentioned?('mañana hablamos del tema')).to be(false)
+      end
+    end
+  end
 end

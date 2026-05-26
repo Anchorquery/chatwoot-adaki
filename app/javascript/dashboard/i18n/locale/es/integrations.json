@@ -507,6 +507,11 @@
           "PLACEHOLDER": "Introduce el nombre del producto",
           "ERROR": "El nombre del producto es obligatorio"
         },
+        "GROUP_TRIGGER": {
+          "LABEL": "Palabra clave para grupos",
+          "PLACEHOLDER": "ej. adaki",
+          "HELP": "En los grupos el asistente permanece en silencio salvo que alguien escriba @palabra o /palabra. Déjalo vacío para usar la primera palabra del nombre del asistente. Los comandos /bot, /ask y !bot siempre funcionan."
+        },
         "WELCOME_MESSAGE": {
           "LABEL": "Mensaje de bienvenida",
           "PLACEHOLDER": "Introduce el mensaje de bienvenida"
