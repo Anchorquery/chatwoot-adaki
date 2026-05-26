@@ -54,6 +54,7 @@ defineExpose({ dialogRef });
     :description="$t('CAPTAIN.DOCUMENTS.CREATE.DESCRIPTION')"
     :show-cancel-button="false"
     :show-confirm-button="false"
+    overflow-y-auto
     @close="handleClose"
   >
     <DocumentForm

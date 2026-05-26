@@ -779,6 +779,11 @@
         },
         "SEARCH_PLACEHOLDER": "Buscar..."
       },
+      "SOURCE_LABELS": {
+        "WEB": "Web",
+        "PDF": "PDF",
+        "WEBSITE_CRAWL": "Rastreo web"
+      },
       "SYNC_STATUS": {
         "SYNCED": "última actualización {time}",
         "SYNCING": "actualizando...",
@@ -786,6 +791,7 @@
         "FAILED": "No se pudo sincronizar",
         "NEVER_SYNCED": "aún no actualizado"
       },
+      "CRAWL_PROGRESS": "Insertadas {count} de {total} páginas",
       "SYNC_ERRORS": {
         "NOT_FOUND": "Página no encontrada",
         "ACCESS_DENIED": "Acceso denegado",
@@ -802,6 +808,7 @@
       "FORM_DESCRIPTION": "Introduce la URL del documento para añadirlo como fuente de conocimiento y elige el asistente al que quieres asociarlo.",
       "CREATE": {
         "TITLE": "Añadir un documento",
+        "DESCRIPTION": "Añade un PDF o una página web. Las fuentes web se rastrean y se convierten en conocimiento para el asistente.",
         "SUCCESS_MESSAGE": "El documento se ha creado correctamente",
         "ERROR_MESSAGE": "Se produjo un error al crear el documento. Inténtalo de nuevo."
       },
@@ -809,12 +816,26 @@
         "TYPE": {
           "LABEL": "Tipo de documento",
           "URL": "URL",
+          "WEB": "Página web",
           "PDF": "Archivo PDF"
         },
         "URL": {
           "LABEL": "URL",
           "PLACEHOLDER": "Introduce la URL del documento",
-          "ERROR": "Introduce una URL válida para el documento"
+          "ERROR": "Introduce una URL válida para el documento",
+          "HELP_TEXT": "Pega la URL de una guía, artículo o centro de ayuda que quieras usar como contexto."
+        },
+        "HELP_PANEL": {
+          "TITLE": "Cómo funcionan las fuentes de conocimiento",
+          "SUBTITLE": "Las fuentes web se rastrean y se convierten en conocimiento consultable. Los PDF se suben directamente y se procesan como contexto.",
+          "STEP_ONE": "Pega una URL o sube un PDF.",
+          "STEP_TWO": "Captain rastrea el contenido y mantiene la fuente actualizada.",
+          "STEP_THREE": "El asistente usa esa información como contexto al responder."
+        },
+        "CRAWL_LIMIT": {
+          "LABEL": "Límite de páginas",
+          "PLACEHOLDER": "10",
+          "HELP_TEXT": "Cantidad máxima de páginas que se rastrearán desde esta fuente. Usa un valor bajo para sitios grandes."
         },
         "PDF_FILE": {
           "LABEL": "Archivo PDF",
@@ -844,12 +865,12 @@
       },
       "EMPTY_STATE": {
         "TITLE": "No hay documentos disponibles",
-        "SUBTITLE": "Los documentos se usan para que tu asistente genere preguntas frecuentes. Puedes importar documentos para darle contexto.",
+        "SUBTITLE": "Los documentos alimentan al asistente con contexto útil. Puedes añadir páginas web o PDF para mejorar sus respuestas.",
         "FILTERED_TITLE": "No hay documentos que coincidan",
         "FILTERED_SUBTITLE": "Prueba a cambiar la fuente, el estado o el término de búsqueda.",
         "FEATURE_SPOTLIGHT": {
-          "TITLE": "Documento de Captain",
-          "NOTE": "Un documento en Captain funciona como una fuente de conocimiento para el asistente. Al conectar tu centro de ayuda o tus guías, Captain puede analizar el contenido y ofrecer respuestas precisas a las consultas de los clientes."
+          "TITLE": "Fuentes de conocimiento",
+          "NOTE": "Un documento en Captain funciona como una fuente de conocimiento para el asistente. Al conectar tu centro de ayuda o tus guías, Captain puede analizar el contenido y ofrecer respuestas más precisas a las consultas de los clientes."
         }
       }
     },

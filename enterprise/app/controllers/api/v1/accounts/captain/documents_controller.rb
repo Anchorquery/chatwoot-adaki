@@ -22,11 +22,13 @@ class Api::V1::Accounts::Captain::DocumentsController < Api::V1::Accounts::BaseC
     @syncing_documents_count = base_query.syncable.sync_in_progress.count
     @failed_documents_count = base_query.syncable.sync_failed.count
     @stale_documents_count = stale_documents(base_query.syncable).count
-    @website_crawl_pages_count = base_query.where("metadata ->> 'crawl_mode' = ?", 'website').count
+    @website_crawl_pages_count = base_query
+                                 .where("captain_documents.metadata ->> 'crawl_mode' = ?", 'website')
+                                 .count
     @website_crawl_count = base_query
-                           .where("metadata ->> 'crawl_mode' = ?", 'website')
-                           .where("metadata ->> 'crawl_root_url' IS NOT NULL")
-                           .count(Arel.sql("DISTINCT metadata ->> 'crawl_root_url'"))
+                           .where("captain_documents.metadata ->> 'crawl_mode' = ?", 'website')
+                           .where("captain_documents.metadata ->> 'crawl_root_url' IS NOT NULL")
+                           .count(Arel.sql("DISTINCT captain_documents.metadata ->> 'crawl_root_url'"))
     @sync_interval_hours = current_sync_interval&.in_hours&.to_i
     @documents = base_query.page(@current_page).per(RESULTS_PER_PAGE)
   end

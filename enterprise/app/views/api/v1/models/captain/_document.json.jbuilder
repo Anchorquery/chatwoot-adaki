@@ -4,6 +4,9 @@ json.assistant do
 end
 json.content resource.content
 json.content_type resource.content_type
+json.crawl_pages_count resource.crawl_pages_count
+json.crawl_expected_pages_count resource.crawl_expected_pages_count
+json.crawl_progress_percent resource.crawl_progress_percent
 json.created_at resource.created_at.to_i
 json.external_link resource.external_link
 json.display_url resource.display_url

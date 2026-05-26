@@ -798,6 +798,7 @@
         "PDF": "PDF",
         "WEBSITE_CRAWL": "Website crawl"
       },
+      "CRAWL_PROGRESS": "Inserted {count} of {total} pages",
       "SYNC_STATUS": {
         "SYNCED": "last updated {time}",
         "SYNCING": "updating...",

@@ -38,6 +38,18 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  crawlPagesCount: {
+    type: Number,
+    default: null,
+  },
+  crawlExpectedPagesCount: {
+    type: Number,
+    default: null,
+  },
+  crawlProgressPercent: {
+    type: Number,
+    default: null,
+  },
   externalLink: {
     type: String,
     required: true,
@@ -164,6 +176,20 @@ const linkIcon = computed(() =>
 const isWebsiteCrawl = computed(
   () => props.metadata?.crawl_mode === 'website'
 );
+const hasCrawlProgress = computed(
+  () =>
+    isWebsiteCrawl.value &&
+    Number.isFinite(Number(props.crawlExpectedPagesCount)) &&
+    Number(props.crawlExpectedPagesCount) > 0
+);
+const crawlProgressPercent = computed(() => {
+  if (!hasCrawlProgress.value) return 0;
+
+  const value = Number(props.crawlProgressPercent);
+  if (!Number.isFinite(value)) return 0;
+
+  return Math.min(Math.max(value, 0), 100);
+});
 const sourceLabel = computed(() =>
   isWebsiteCrawl.value
     ? t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.WEBSITE_CRAWL')
@@ -276,5 +302,28 @@ const handleRetry = () => {
     >
       {{ content }}
     </p>
+    <div
+      v-if="hasCrawlProgress"
+      class="flex flex-col gap-1 rounded-lg border border-n-weak bg-n-slate-2/60 px-3 py-2"
+    >
+      <div class="flex items-center justify-between gap-3 text-xs text-n-slate-11">
+        <span>
+          {{
+            t('CAPTAIN.DOCUMENTS.CRAWL_PROGRESS', {
+              count: crawlPagesCount || 0,
+              total: crawlExpectedPagesCount || 0,
+            })
+          }}
+        </span>
+        <span class="tabular-nums">
+          {{ crawlProgressPercent }}%
+        </span>
+      </div>
+      <progress
+        class="h-1.5 w-full overflow-hidden rounded-full bg-n-slate-3 [&::-webkit-progress-bar]:bg-n-slate-3 [&::-webkit-progress-value]:bg-n-brand-10 [&::-moz-progress-bar]:bg-n-brand-10"
+        :value="crawlProgressPercent"
+        max="100"
+      />
+    </div>
   </CardLayout>
 </template>

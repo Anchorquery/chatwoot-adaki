@@ -122,7 +122,9 @@ defineExpose({ open, close });
       :class="[
         maxWidthClass,
         positionClass,
-        overflowYAuto ? 'overflow-y-auto' : 'overflow-visible',
+        overflowYAuto
+          ? 'max-h-[calc(100vh-2rem)] overflow-y-auto'
+          : 'overflow-visible',
       ]"
       @close.prevent="handleDialogClose"
     >

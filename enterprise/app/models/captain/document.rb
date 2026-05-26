@@ -114,6 +114,29 @@ class Captain::Document < ApplicationRecord
     }.compact
   end
 
+  def website_crawl?
+    crawl_mode == 'website' && crawl_root_url.present?
+  end
+
+  def crawl_expected_pages_count
+    crawl_depth.to_i.positive? ? crawl_depth.to_i : nil
+  end
+
+  def crawl_pages_count
+    return nil unless website_crawl?
+
+    @crawl_pages_count ||= assistant.documents
+                                   .where("captain_documents.metadata ->> 'crawl_mode' = ?", 'website')
+                                   .where("captain_documents.metadata ->> 'crawl_root_url' = ?", crawl_root_url)
+                                   .count
+  end
+
+  def crawl_progress_percent
+    return nil unless crawl_expected_pages_count.present?
+
+    ((crawl_pages_count.to_f / crawl_expected_pages_count) * 100).round.clamp(0, 100)
+  end
+
   def syncable?
     !pdf_document?
   end
