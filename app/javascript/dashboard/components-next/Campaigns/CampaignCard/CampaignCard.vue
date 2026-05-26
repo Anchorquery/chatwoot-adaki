@@ -85,9 +85,11 @@ const campaignStatus = computed(() => {
 const inboxName = computed(() => props.inbox?.name || '');
 
 const inboxIcon = computed(() => {
-  const { medium, channel_type: type } = props.inbox;
+  const { medium, channel_type: type } = props.inbox || {};
   return getInboxIconByType(type, medium);
 });
+
+const showEditButton = computed(() => props.status !== STATUS_COMPLETED);
 </script>
 
 <template>
@@ -131,11 +133,11 @@ const inboxIcon = computed(() => {
     </div>
     <div class="flex items-center justify-end w-20 gap-2">
       <Button
-        v-if="isLiveChatType"
+        v-if="showEditButton"
         variant="faded"
         size="sm"
         color="slate"
-        icon="i-lucide-sliders-vertical"
+        :icon="isLiveChatType ? 'i-lucide-sliders-vertical' : 'i-lucide-pencil'"
         @click="emit('edit')"
       />
       <Button

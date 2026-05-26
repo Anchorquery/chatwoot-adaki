@@ -17,7 +17,7 @@
       },
       "EMPTY_STATE": {
         "TITLE": "No live chat campaigns are available",
-        "SUBTITLE": "Connect with your customers using proactive messages.  Click 'Create campaign' to get started."
+        "SUBTITLE": "Connect with your customers using proactive messages. Click 'Create campaign' to get started."
       },
       "CREATE": {
         "TITLE": "Create a live chat campaign",
@@ -154,6 +154,12 @@
           "ON": "on"
         }
       },
+      "TABS": {
+        "CONTENT": "Content",
+        "VARIANTS": "Variants",
+        "FILES": "Files",
+        "DELIVERY": "Safe Delivery"
+      },
       "CREATE": {
         "TITLE": "Create API campaign",
         "CANCEL_BUTTON_TEXT": "Cancel",
@@ -186,10 +192,75 @@
           },
           "BUTTONS": {
             "CREATE": "Create",
-            "CANCEL": "Cancel"
+            "CANCEL": "Cancel",
+            "UPDATE": "Update",
+            "SAVE_DRAFT": "Save Draft"
           },
           "API": {
             "SUCCESS_MESSAGE": "API campaign created successfully",
+            "ERROR_MESSAGE": "There was an error. Please try again."
+          },
+          "VARIANTS": {
+            "TITLE": "Message Variants",
+            "HELP": "Add message variants so you can tailor the copy for different audiences.",
+            "ADD_BUTTON": "Add Variant",
+            "PLACEHOLDER": "Variant {num}..."
+          },
+          "FILES": {
+            "TITLE": "Attachments",
+            "DROP_LABEL": "Drag files here or click to browse",
+            "EXISTING": "Existing attachments",
+            "KEEP": "Kept on update",
+            "NEW": "New attachments",
+            "REMOVE": "Remove"
+          },
+          "DELIVERY": {
+            "TITLE": "Safe Delivery Settings",
+            "PRESET_SAFE": "Safe preset (Evolution API)",
+            "PRESET_BALANCED": "Balanced preset",
+            "BATCH_SIZE": "Batch size (messages/batch)",
+            "DELAY_MESSAGES": "Delay between messages (sec)",
+            "DELAY_BATCHES": "Delay between batches (sec)",
+            "MAX_PER_MINUTE": "Max messages per minute",
+            "MAX_DAILY": "Max messages per day",
+            "MAX_FAILURES": "Max failures before auto-pause",
+            "PAUSE_ON_429": "Pause automatically on rate limit (429)",
+            "BUSINESS_HOURS_ONLY": "Send only during business hours"
+          },
+          "AI": {
+            "BUTTON": "AI assistant",
+            "MODAL_TITLE": "AI Copywriter",
+            "HELP": "Draft a base message and one or more variants for human review.",
+            "PROMPT_LABEL": "What is your campaign about?",
+            "PROMPT_PLACEHOLDER": "E.g. Promote our new AI webinar, friendly and engaging tone...",
+            "TONE_LABEL": "Tone",
+            "TONE_PLACEHOLDER": "Select a tone",
+            "GOAL_LABEL": "Goal",
+            "GOAL_PLACEHOLDER": "Select a goal",
+            "GENERATE": "Generate Message & Variants",
+            "CLEAR": "Clear",
+            "CANCEL": "Cancel",
+            "ERROR": "There was an error generating the copy. Please try again.",
+            "TONES": {
+              "professional": "Professional",
+              "friendly": "Friendly",
+              "casual": "Casual",
+              "persuasive": "Persuasive"
+            },
+            "GOALS": {
+              "informative": "Informative",
+              "promotional": "Promotional",
+              "reminder": "Reminder",
+              "support": "Support"
+            }
+          }
+        }
+      },
+      "EDIT": {
+        "TITLE": "Edit API campaign",
+        "FORM": {
+          "API": {
+            "SUCCESS_MESSAGE": "API campaign updated successfully",
             "ERROR_MESSAGE": "There was an error. Please try again."
           }
         }

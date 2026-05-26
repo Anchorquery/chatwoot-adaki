@@ -57,7 +57,7 @@ defineExpose({ dialogRef, formRef });
 <template>
   <Dialog
     ref="dialogRef"
-    width="2xl"
+    width="3xl"
     :title="$t(`${i18nKey}.TITLE`)"
     :show-cancel-button="false"
     :show-confirm-button="false"

@@ -139,6 +139,7 @@ Rails.application.routes.draw do
             end
           end
           resources :campaigns, only: [:index, :create, :show, :update, :destroy] do
+            post :ai_generate, on: :collection
             scope module: :campaigns do
               resources :approvals, only: [:index, :create] do
                 collection do

@@ -201,6 +201,115 @@
         }
       }
     },
+    "API": {
+      "HEADER_TITLE": "Campañas API",
+      "NEW_CAMPAIGN": "Crear campaña",
+      "EMPTY_STATE": {
+        "TITLE": "No hay campañas API disponibles",
+        "SUBTITLE": "Crea una campaña API para enviar mensajes masivos a través de tu canal. Haz clic en 'Crear campaña' para empezar."
+      },
+      "CARD": {
+        "STATUS": {
+          "COMPLETED": "Completado",
+          "SCHEDULED": "Programado",
+          "RUNNING": "Enviando",
+          "PAUSED": "Pausado"
+        },
+        "CAMPAIGN_DETAILS": {
+          "SENT_FROM": "Enviado desde",
+          "ON": "en"
+        }
+      },
+      "TABS": {
+        "CONTENT": "Contenido",
+        "VARIANTS": "Variaciones",
+        "FILES": "Archivos",
+        "DELIVERY": "Entrega Segura"
+      },
+      "CREATE": {
+        "TITLE": "Crear campaña API",
+        "CANCEL_BUTTON_TEXT": "Cancelar",
+        "CREATE_BUTTON_TEXT": "Crear",
+        "FORM": {
+          "TITLE": {
+            "LABEL": "Título",
+            "PLACEHOLDER": "Por favor escriba un título para la campaña",
+            "ERROR": "El título es obligatorio"
+          },
+          "MESSAGE": {
+            "LABEL": "Mensaje",
+            "PLACEHOLDER": "Por favor escriba el mensaje para la campaña",
+            "ERROR": "El mensaje es obligatorio"
+          },
+          "INBOX": {
+            "LABEL": "Seleccione una bandeja de entrada",
+            "PLACEHOLDER": "Seleccione una bandeja de entrada",
+            "ERROR": "Se requiere buzón de entrada"
+          },
+          "AUDIENCE": {
+            "LABEL": "Audiencia",
+            "PLACEHOLDER": "Seleccione las etiquetas de clientes",
+            "ERROR": "El público es requerido"
+          },
+          "SCHEDULED_AT": {
+            "LABEL": "Programar envío",
+            "PLACEHOLDER": "Por favor, seleccione la fecha y hora",
+            "ERROR": "El tiempo programado es requerido"
+          },
+          "BUTTONS": {
+            "CREATE": "Crear",
+            "CANCEL": "Cancelar",
+            "SAVE_DRAFT": "Guardar Borrador"
+          },
+          "API": {
+            "SUCCESS_MESSAGE": "Campaña API creada con éxito",
+            "ERROR_MESSAGE": "Se presentó un error. Por favor intente nuevamente."
+          },
+          "VARIANTS": {
+            "TITLE": "Variaciones del Mensaje",
+            "HELP": "Añade variaciones al mensaje para reducir la detección como spam. Se elige una variación al azar por contacto.",
+            "ADD_BUTTON": "Agregar Variación",
+            "PLACEHOLDER": "Variación {num}..."
+          },
+          "FILES": {
+            "TITLE": "Archivos Adjuntos",
+            "DROP_LABEL": "Arrastra archivos aquí o haz clic para explorar",
+            "REMOVE": "Eliminar"
+          },
+          "DELIVERY": {
+            "TITLE": "Configuración de Entrega Segura",
+            "PRESET_SAFE": "🛡️ Preset Seguro (Evolution API)",
+            "PRESET_BALANCED": "⚖️ Preset Balanceado",
+            "BATCH_SIZE": "Tamaño del lote (mensajes/lote)",
+            "DELAY_MESSAGES": "Espera entre mensajes (seg)",
+            "DELAY_BATCHES": "Espera entre lotes (seg)",
+            "MAX_FAILURES": "Máx. fallos antes de auto-pausa"
+          },
+          "AI": {
+            "BUTTON": "🪄 Asistente de IA",
+            "MODAL_TITLE": "Redactor con IA",
+            "PROMPT_LABEL": "¿De qué trata tu campaña?",
+            "PROMPT_PLACEHOLDER": "Ej. Promover nuestro webinar de IA, tono amigable y cercano...",
+            "TONE_LABEL": "Tono",
+            "GOAL_LABEL": "Objetivo",
+            "GENERATE": "Generar Mensaje y Variaciones",
+            "CANCEL": "Cancelar",
+            "TONES": {
+              "professional": "Profesional",
+              "friendly": "Amigable",
+              "casual": "Casual",
+              "persuasive": "Persuasivo"
+            },
+            "GOALS": {
+              "informative": "Informativo",
+              "promotional": "Promocional",
+              "reminder": "Recordatorio",
+              "support": "Soporte"
+            }
+          }
+        }
+      }
+    },
     "CONFIRM_DELETE": {
       "TITLE": "¿Está seguro de eliminar?",
       "DESCRIPTION": "La acción de eliminación es permanente y no puede ser revertida.",

@@ -788,9 +788,9 @@ const menuItems = computed(() => {
         },
         {
           name: 'Adaki Captain',
-          label: t('ADAKI.SIDEBAR.CAPTAIN'),
+          label: t('CAPTAIN_SETTINGS.TITLE'),
           icon: 'i-lucide-brain-circuit',
-          to: accountScopedRoute('adaki_captain_settings'),
+          to: accountScopedRoute('captain_settings_index'),
         },
       ],
     },

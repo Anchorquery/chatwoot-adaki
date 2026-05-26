@@ -13,6 +13,17 @@ json.template_params resource.template_params
 json.campaign_status resource.campaign_status
 json.enabled resource.enabled
 json.campaign_type resource.campaign_type
+json.delivery_settings resource.delivery_settings || {}
+json.delivery_state resource.delivery_state || {}
+json.attachments resource.attachments.map { |attachment|
+  {
+    id: attachment.id,
+    filename: attachment.filename.to_s,
+    content_type: attachment.content_type,
+    byte_size: attachment.byte_size,
+    signed_id: attachment.blob.signed_id
+  }
+}
 if resource.campaign_type == 'one_off'
   json.scheduled_at resource.scheduled_at.to_i
   json.audience resource.audience

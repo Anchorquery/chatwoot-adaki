@@ -29,7 +29,7 @@ class WebhookListener < BaseListener
     return unless message.webhook_sendable?
 
     payload = message.webhook_data.merge(event: __method__.to_s)
-    deliver_webhook_payloads(payload, inbox)
+    deliver_webhook_payloads(payload, inbox, message: message, event_name: __method__.to_s)
   end
 
   def message_updated(event)
@@ -39,7 +39,7 @@ class WebhookListener < BaseListener
     return unless message.webhook_sendable?
 
     payload = message.webhook_data.merge(event: __method__.to_s)
-    deliver_webhook_payloads(payload, inbox)
+    deliver_webhook_payloads(payload, inbox, event_name: __method__.to_s)
   end
 
   def webwidget_triggered(event)
@@ -117,16 +117,30 @@ class WebhookListener < BaseListener
     end
   end
 
-  def deliver_api_inbox_webhooks(payload, inbox)
+  def deliver_api_inbox_webhooks(payload, inbox, message: nil, event_name: nil)
     return unless inbox.channel_type == 'Channel::Api'
     return if inbox.channel.webhook_url.blank?
+
+    if event_name == 'message_created' && message&.conversation&.campaign.present?
+      dispatch_at = Campaigns::ApiWebhookDispatchPlannerService.new(message: message, inbox: inbox).perform
+      return if dispatch_at.nil?
+
+      WebhookJob.set(wait_until: dispatch_at).perform_later(
+        inbox.channel.webhook_url,
+        payload,
+        :api_inbox_webhook,
+        secret: inbox.channel.secret,
+        delivery_id: SecureRandom.uuid
+      )
+      return
+    end
 
     WebhookJob.perform_later(inbox.channel.webhook_url, payload, :api_inbox_webhook,
                              secret: inbox.channel.secret, delivery_id: SecureRandom.uuid)
   end
 
-  def deliver_webhook_payloads(payload, inbox)
+  def deliver_webhook_payloads(payload, inbox, message: nil, event_name: nil)
     deliver_account_webhooks(payload, inbox.account)
-    deliver_api_inbox_webhooks(payload, inbox)
+    deliver_api_inbox_webhooks(payload, inbox, message: message, event_name: event_name)
   end
 end

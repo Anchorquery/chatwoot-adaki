@@ -128,8 +128,8 @@
       }
     },
     "CAPTAIN": {
-      "HEADER": "Captain limits and usage",
-      "DESCRIPTION": "Set monthly cap on Captain LLM invocations per municipality. Every call is recorded in the audit log.",
+      "HEADER": "AI providers",
+      "DESCRIPTION": "Configure platform providers, credentials, models, and usage limits for Captain and other integrations.",
       "LOADING": "Loading Captain settings",
       "LIMIT_TITLE": "Monthly limit",
       "LIMIT_HINT": "Leave empty for unlimited.",
@@ -142,10 +142,10 @@
       "USAGE_INPUT_TOKENS": "Input tokens",
       "USAGE_OUTPUT_TOKENS": "Output tokens",
       "CREDENTIALS": {
-        "HEADER": "Provider credentials",
-        "DESCRIPTION": "Store and manage per-account provider secrets for Captain and future integrations.",
-        "NEW": "New credential",
-        "EMPTY": "No credentials configured",
+        "HEADER": "Platform providers",
+        "DESCRIPTION": "Store and manage provider credentials for Captain and shared integrations.",
+        "NEW": "Add provider",
+        "EMPTY": "No providers configured",
         "TABLE": {
           "NAME": "Name",
           "PROVIDER": "Provider",
@@ -157,8 +157,10 @@
           "ACTIONS": "Actions"
         },
         "FORM": {
-          "NEW_TITLE": "New credential",
-          "EDIT_TITLE": "Edit credential",
+          "NEW_TITLE": "New provider",
+          "EDIT_TITLE": "Edit provider",
+          "DESCRIPTION": "Configure the provider, model, and authentication data used by Captain and shared integrations.",
+          "BADGE": "Platform provider",
           "NAME": "Name",
           "KEY": "Key",
           "PROVIDER": "Provider",
@@ -166,8 +168,15 @@
           "PURPOSE": "Purpose",
           "AUTH_TYPE": "Auth type",
           "API_BASE": "API base URL",
+          "NAME_PLACEHOLDER": "OpenAI production",
+          "KEY_PLACEHOLDER": "openai.default",
+          "PROVIDER_PLACEHOLDER": "Choose a provider",
+          "MODEL_PLACEHOLDER": "Choose a model",
+          "PURPOSE_PLACEHOLDER": "ai_provider",
+          "API_BASE_PLACEHOLDER": "https://api.openai.com/v1",
           "SECRET": "Secret",
           "API_KEY": "API key",
+          "API_KEY_PLACEHOLDER": "sk-...",
           "TOKEN": "Token",
           "USERNAME": "Username",
           "PASSWORD": "Password",
@@ -219,7 +228,7 @@
       "TIER": "WhatsApp tier",
       "APPROVALS": "Approvals",
       "AUDIT": "Audit log",
-      "CAPTAIN": "Captain limits"
+      "CAPTAIN": "AI Providers"
     }
   }
 }

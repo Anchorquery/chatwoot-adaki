@@ -47,18 +47,23 @@ class Campaign < ApplicationRecord
 
   enum campaign_type: { ongoing: 0, one_off: 1 }
   # TODO : enabled attribute is unneccessary . lets move that to the campaign status with additional statuses like draft, disabled etc.
-  enum campaign_status: { active: 0, completed: 1 }
+  enum campaign_status: { active: 0, completed: 1, draft: 2, paused: 3, running: 4, failed: 5 }
 
   has_many :conversations, dependent: :nullify, autosave: true
+  has_many_attached :attachments
 
   before_validation :ensure_correct_campaign_attributes
   after_commit :set_display_id, unless: :display_id?
 
   def trigger!
     return unless one_off?
-    return if completed?
+    return if completed? || paused? || failed?
 
-    execute_campaign
+    if inbox.inbox_type == 'API'
+      Campaigns::DeliveryPlannerService.new(campaign: self).perform
+    else
+      execute_campaign
+    end
   end
 
   private
@@ -71,8 +76,6 @@ class Campaign < ApplicationRecord
       Sms::OneoffSmsCampaignService.new(campaign: self).perform
     when 'Whatsapp'
       Whatsapp::OneoffCampaignService.new(campaign: self).perform if account.feature_enabled?(:whatsapp_campaign)
-    when 'API'
-      Api::OneoffCampaignService.new(campaign: self).perform
     end
   end
 

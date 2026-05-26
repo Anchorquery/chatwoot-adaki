@@ -386,11 +386,18 @@
     "CONVERSATION_WORKFLOW": "Conversation Workflow"
   },
   "CAPTAIN_SETTINGS": {
-    "TITLE": "Captain Settings",
-    "DESCRIPTION": "Configure your AI models and features for Captain. Captain follows a credit based billing, you will be charged credits for every action Captain takes based on the model selected.",
+    "TITLE": "AI configuration",
+    "DESCRIPTION": "Configure AI providers, models, and feature behavior for Captain and related automation.",
     "LOADING": "Loading Captain configuration...",
     "LINK_TEXT": "Learn more about Captain Credits",
     "NOT_ENABLED": "Captain is not enabled for your account. Please upgrade your plan to access Captain features.",
+    "PROVIDERS": {
+      "TITLE": "AI providers",
+      "DESCRIPTION": "Manage the system providers used by Captain and shared integrations.",
+      "CARD_TITLE": "Provider registry",
+      "CARD_DESCRIPTION": "Create, edit, validate, and revoke the shared AI provider credentials from one place.",
+      "ACTION": "Manage providers"
+    },
     "MODEL_CONFIG": {
       "TITLE": "Model Configuration",
       "DESCRIPTION": "Select AI models for different features.",
@@ -493,6 +500,8 @@
           "CREDENTIAL": "Credential",
           "CREDENTIAL_PLACEHOLDER": "Select a credential",
           "NO_CREDENTIAL": "No credential",
+          "NO_CREDENTIAL_HELP": "No providers configured yet. Add them in Settings > AI providers.",
+          "MANAGE_PROVIDERS": "Open AI providers",
           "ENABLED": "Enabled",
           "CANCEL": "Cancel",
           "CREATE": "Create",

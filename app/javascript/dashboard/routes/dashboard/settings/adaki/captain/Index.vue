@@ -524,23 +524,48 @@ export default {
       </div>
 
       <woot-modal v-model:show="showCredentialModal" :on-close="closeCredentialModal">
-        <div class="w-[760px] max-w-[calc(100vw-2rem)] p-6">
-          <h2 class="mb-4 text-heading-2">{{ credentialModalTitle }}</h2>
+        <div class="w-[960px] max-w-[calc(100vw-2rem)] p-6">
+          <div class="mb-5 flex items-start justify-between gap-4">
+            <div class="space-y-1">
+              <h2 class="text-heading-2">{{ credentialModalTitle }}</h2>
+              <p class="text-sm text-n-slate-11">
+                {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.DESCRIPTION') }}
+              </p>
+            </div>
+            <span
+              class="shrink-0 rounded-full border border-n-weak px-3 py-1 text-xs font-medium text-n-slate-11"
+            >
+              {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.BADGE') }}
+            </span>
+          </div>
 
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label class="flex flex-col gap-1">
               <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.NAME') }}</span>
-              <input v-model="credentialForm.name" class="form-input" type="text" />
+              <input
+                v-model="credentialForm.name"
+                class="form-input"
+                type="text"
+                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.NAME_PLACEHOLDER')"
+              />
             </label>
 
             <label class="flex flex-col gap-1">
               <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.KEY') }}</span>
-              <input v-model="credentialForm.key" class="form-input" type="text" />
+              <input
+                v-model="credentialForm.key"
+                class="form-input"
+                type="text"
+                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.KEY_PLACEHOLDER')"
+              />
             </label>
 
             <label class="flex flex-col gap-1">
               <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PROVIDER') }}</span>
               <select v-model="credentialForm.provider" class="form-input">
+                <option disabled value="">
+                  {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PROVIDER_PLACEHOLDER') }}
+                </option>
                 <option v-for="option in providerOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
@@ -550,6 +575,9 @@ export default {
             <label class="flex flex-col gap-1">
               <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.MODEL') }}</span>
               <select v-model="credentialForm.metadata.model" class="form-input">
+                <option disabled value="">
+                  {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.MODEL_PLACEHOLDER') }}
+                </option>
                 <option v-for="option in modelOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
@@ -558,7 +586,12 @@ export default {
 
             <label class="flex flex-col gap-1">
               <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PURPOSE') }}</span>
-              <input v-model="credentialForm.purpose" class="form-input" type="text" />
+              <input
+                v-model="credentialForm.purpose"
+                class="form-input"
+                type="text"
+                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PURPOSE_PLACEHOLDER')"
+              />
             </label>
 
             <label class="flex flex-col gap-1">
@@ -572,15 +605,25 @@ export default {
 
             <label class="flex flex-col gap-1 md:col-span-2">
               <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_BASE') }}</span>
-              <input v-model="credentialForm.metadata.api_base" class="form-input" type="text" />
+              <input
+                v-model="credentialForm.metadata.api_base"
+                class="form-input"
+                type="text"
+                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_BASE_PLACEHOLDER')"
+              />
             </label>
           </div>
 
-          <div class="mt-4 grid gap-4">
+          <div class="mt-4 grid gap-4 rounded-2xl border border-n-weak p-4">
             <template v-if="credentialForm.auth_type === 'api_key'">
               <label class="flex flex-col gap-1">
                 <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY') }}</span>
-                <input v-model="credentialForm.secrets.api_key" class="form-input" type="password" />
+                <input
+                  v-model="credentialForm.secrets.api_key"
+                  class="form-input"
+                  type="password"
+                  :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY_PLACEHOLDER')"
+                />
               </label>
             </template>
 

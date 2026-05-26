@@ -15,6 +15,7 @@ const { t } = useI18n();
 const getters = useStoreGetters();
 
 const selectedCampaign = ref(null);
+const dialogMode = ref('create');
 const [showAPICampaignDialog, toggleAPICampaignDialog] = useToggle();
 
 const uiFlags = useMapGetter('campaigns/getUIFlags');
@@ -28,6 +29,18 @@ const hasNoAPICampaigns = computed(
   () => apiCampaigns.value?.length === 0 && !isFetchingCampaigns.value
 );
 
+const handleCreate = () => {
+  dialogMode.value = 'create';
+  selectedCampaign.value = null;
+  toggleAPICampaignDialog(true);
+};
+
+const handleEdit = campaign => {
+  dialogMode.value = 'edit';
+  selectedCampaign.value = campaign;
+  toggleAPICampaignDialog(true);
+};
+
 const handleDelete = campaign => {
   selectedCampaign.value = campaign;
   confirmDeleteCampaignDialogRef.value.dialogRef.open();
@@ -38,12 +51,14 @@ const handleDelete = campaign => {
   <CampaignLayout
     :header-title="t('CAMPAIGN.API.HEADER_TITLE')"
     :button-label="t('CAMPAIGN.API.NEW_CAMPAIGN')"
-    @click="toggleAPICampaignDialog()"
+    @click="handleCreate"
     @close="toggleAPICampaignDialog(false)"
   >
     <template #action>
       <APICampaignDialog
         v-if="showAPICampaignDialog"
+        :mode="dialogMode"
+        :selected-campaign="selectedCampaign"
         @close="toggleAPICampaignDialog(false)"
       />
     </template>
@@ -57,6 +72,7 @@ const handleDelete = campaign => {
     <CampaignList
       v-else-if="!hasNoAPICampaigns"
       :campaigns="apiCampaigns"
+      @edit="handleEdit"
       @delete="handleDelete"
     />
     <SMSCampaignEmptyState

@@ -1,8 +1,10 @@
 <script setup>
 import { computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { storeToRefs } from 'pinia';
 import { useAlert } from 'dashboard/composables';
+import { useAccount } from 'dashboard/composables/useAccount';
 import { useCaptain } from 'dashboard/composables/useCaptain';
 import { useConfig } from 'dashboard/composables/useConfig';
 import { useCaptainConfigStore } from 'dashboard/store/captain/preferences';
@@ -13,10 +15,13 @@ import SectionLayout from '../account/components/SectionLayout.vue';
 import ModelSelector from './components/ModelSelector.vue';
 import FeatureToggle from './components/FeatureToggle.vue';
 import CaptainPaywall from 'next/captain/pageComponents/Paywall.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 
 const { t } = useI18n();
 const { captainEnabled } = useCaptain();
 const { isEnterprise, enterprisePlanName } = useConfig();
+const { accountScopedRoute } = useAccount();
+const router = useRouter();
 
 const captainConfigStore = useCaptainConfigStore();
 const { uiFlags } = storeToRefs(captainConfigStore);
@@ -56,6 +61,10 @@ const featureToggles = computed(() => [
     enterprise: true,
   },
 ]);
+
+const goToProviders = () => {
+  router.push(accountScopedRoute('captain_providers_index'));
+};
 
 // Adaki self-hosted fork: all Captain features visible + accessible regardless
 // of cloud/enterprise/plan. Original gating logic removed.
@@ -123,6 +132,30 @@ onMounted(() => {
               :title="feature.title"
               :description="feature.description"
               @change="handleModelChange"
+            />
+          </div>
+        </SectionLayout>
+
+        <SectionLayout
+          :title="t('CAPTAIN_SETTINGS.PROVIDERS.TITLE')"
+          :description="t('CAPTAIN_SETTINGS.PROVIDERS.DESCRIPTION')"
+          with-border
+        >
+          <div class="flex items-center justify-between gap-4 rounded-xl border border-n-weak p-4">
+            <div class="space-y-1">
+              <p class="text-sm font-medium text-n-slate-12">
+                {{ t('CAPTAIN_SETTINGS.PROVIDERS.CARD_TITLE') }}
+              </p>
+              <p class="text-sm text-n-slate-11">
+                {{ t('CAPTAIN_SETTINGS.PROVIDERS.CARD_DESCRIPTION') }}
+              </p>
+            </div>
+            <Button
+              size="sm"
+              color="blue"
+              icon="i-lucide-server-cog"
+              :label="t('CAPTAIN_SETTINGS.PROVIDERS.ACTION')"
+              @click="goToProviders"
             />
           </div>
         </SectionLayout>

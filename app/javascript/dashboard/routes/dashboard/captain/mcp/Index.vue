@@ -1,8 +1,10 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { usePolicy } from 'dashboard/composables/usePolicy';
+import { useAccount } from 'dashboard/composables/useAccount';
 
 import PageLayout from 'dashboard/components-next/captain/PageLayout.vue';
 import CaptainPaywall from 'dashboard/components-next/captain/pageComponents/Paywall.vue';
@@ -10,9 +12,12 @@ import McpServersPageEmptyState from 'dashboard/components-next/captain/pageComp
 import CreateMcpServerDialog from 'dashboard/components-next/captain/pageComponents/mcp/CreateMcpServerDialog.vue';
 import McpServerCard from 'dashboard/components-next/captain/pageComponents/mcp/McpServerCard.vue';
 import DeleteDialog from 'dashboard/components-next/captain/pageComponents/DeleteDialog.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 
 const store = useStore();
 const { shouldShowPaywall } = usePolicy();
+const { accountScopedRoute } = useAccount();
+const router = useRouter();
 
 const uiFlags = useMapGetter('captainMcpServers/getUIFlags');
 const servers = useMapGetter('captainMcpServers/getRecords');
@@ -63,6 +68,10 @@ const onDeleteSuccess = () => {
   fetchServers();
 };
 
+const openProvidersSettings = () => {
+  router.push(accountScopedRoute('captain_providers_index'));
+};
+
 onMounted(() => {
   if (!shouldShowPaywall(FEATURE_FLAGS.CAPTAIN_MCP)) {
     fetchServers();
@@ -86,6 +95,17 @@ onMounted(() => {
   >
     <template #paywall>
       <CaptainPaywall feature-prefix="CAPTAIN.MCP" />
+    </template>
+
+    <template #action>
+      <Button
+        variant="outline"
+        color="slate"
+        size="sm"
+        icon="i-lucide-sliders-horizontal"
+        :label="$t('CAPTAIN.MCP.MANAGE_PROVIDERS')"
+        @click="openProvidersSettings"
+      />
     </template>
 
     <template #emptyState>

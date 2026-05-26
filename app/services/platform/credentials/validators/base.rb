@@ -40,7 +40,7 @@ module Platform::Credentials::Validators
 
     def mark_invalid(error_code)
       @credential.update!(
-        status: :invalid,
+        status: :invalid_credential,
         last_validated_at: Time.current,
         metadata: @credential.metadata.merge('validation' => { 'status' => 'invalid', 'error_code' => error_code })
       )

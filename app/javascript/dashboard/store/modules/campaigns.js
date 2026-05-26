@@ -80,11 +80,10 @@ export const actions = {
       commit(types.SET_CAMPAIGN_UI_FLAG, { isCreating: false });
     }
   },
-  update: async ({ commit }, { id, ...updateObj }) => {
+  update: async ({ commit }, { id, payload }) => {
     commit(types.SET_CAMPAIGN_UI_FLAG, { isUpdating: true });
     try {
-      const response = await CampaignsAPI.update(id, updateObj);
-      AnalyticsHelper.track(CAMPAIGNS_EVENTS.UPDATE_CAMPAIGN);
+      const response = await CampaignsAPI.update(id, payload);
       commit(types.EDIT_CAMPAIGN, response.data);
     } catch (error) {
       throw new Error(error);
