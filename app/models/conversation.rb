@@ -221,31 +221,18 @@ class Conversation < ApplicationRecord
     false
   end
 
+  # Generic commands that always summon the bot, regardless of its name.
+  GROUP_BOT_COMMANDS = ['!bot', '/bot', '/ask'].freeze
+
   def bot_mentioned?(message_content)
     return false if message_content.blank?
 
-    # 1. Check if the message starts with a command or common prefix
-    return true if message_content.strip.start_with?('!bot', '/ask', '/bot')
+    content = message_content.strip
+    downcased = content.downcase
 
-    # 2. Check if the message mentions the Captain Assistant's name
-    if inbox.respond_to?(:captain_assistant) && inbox.captain_assistant.present?
-      assistant_name = inbox.captain_assistant.name
-      if assistant_name.present?
-        regex = Regexp.new(Regexp.escape(assistant_name), Regexp::IGNORECASE)
-        return true if message_content.match?(regex)
-      end
-    end
+    return true if GROUP_BOT_COMMANDS.any? { |command| downcased.start_with?(command) }
 
-    # 3. Check if the message mentions the AgentBot's name
-    if inbox.agent_bot.present?
-      bot_name = inbox.agent_bot.name
-      if bot_name.present?
-        regex = Regexp.new(Regexp.escape(bot_name), Regexp::IGNORECASE)
-        return true if message_content.match?(regex)
-      end
-    end
-
-    false
+    bot_trigger_aliases.any? { |alias_token| bot_alias_mentioned?(content, alias_token) }
   end
 
   def recent_messages
@@ -261,6 +248,47 @@ class Conversation < ApplicationRecord
   end
 
   private
+
+  # Tokens that summon the bot in a group when written as "@token" or "/token".
+  # Built from, in priority order:
+  #   - the explicitly configured short alias (config.group_trigger),
+  #   - the first word of the bot's name (so long names are still reachable),
+  #   - the bot's WhatsApp number. A native WhatsApp @mention is delivered in the
+  #     message text as "@<number>" (the digits, no "+"), so registering the number
+  #     makes native mentions work through the very same text path.
+  def bot_trigger_aliases
+    aliases = []
+
+    if inbox.respond_to?(:captain_assistant) && inbox.captain_assistant.present?
+      assistant = inbox.captain_assistant
+      aliases << assistant.config['group_trigger'] if assistant.config.is_a?(Hash)
+      aliases << assistant.name
+    end
+
+    aliases << inbox.agent_bot.name if inbox.agent_bot.present?
+
+    tokens = aliases.filter_map { |value| value.to_s.strip.split.first&.downcase }
+    tokens << bot_whatsapp_number
+    tokens.compact_blank.uniq
+  end
+
+  # Digits-only WhatsApp number of the bot, used to detect native WhatsApp mentions.
+  def bot_whatsapp_number
+    return unless inbox.respond_to?(:captain_assistant) && inbox.captain_assistant.present?
+
+    config = inbox.captain_assistant.config
+    return unless config.is_a?(Hash)
+
+    config['whatsapp_number'].to_s.gsub(/\D/, '').presence
+  end
+
+  def bot_alias_mentioned?(content, alias_token)
+    return false if alias_token.blank?
+
+    # Match "@token" or "/token" as a whole token, anywhere in the message, case-insensitive.
+    pattern = /(?:\A|\s|[[:punct:]])[@\/]#{Regexp.escape(alias_token)}(?![[:alnum:]])/i
+    content.match?(pattern)
+  end
 
   def execute_after_update_commit_callbacks
     handle_resolved_status_change

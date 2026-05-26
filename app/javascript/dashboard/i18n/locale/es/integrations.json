@@ -507,6 +507,16 @@
           "PLACEHOLDER": "Introduce el nombre del producto",
           "ERROR": "El nombre del producto es obligatorio"
         },
+        "GROUP_TRIGGER": {
+          "LABEL": "Palabra clave para grupos",
+          "PLACEHOLDER": "ej. adaki",
+          "HELP": "En los grupos el asistente permanece en silencio salvo que alguien escriba @palabra o /palabra. Déjalo vacío para usar la primera palabra del nombre del asistente. Los comandos /bot, /ask y !bot siempre funcionan."
+        },
+        "WHATSAPP_NUMBER": {
+          "LABEL": "Número de WhatsApp del bot",
+          "PLACEHOLDER": "ej. +54 9 351 123 4567",
+          "HELP": "El número de WhatsApp conectado a este bot. Una mención nativa @ en WhatsApp envía el número como texto, así que al configurarlo aquí los miembros del grupo pueden invocar al bot etiquetándolo. Déjalo vacío para desactivar las menciones nativas."
+        },
         "WELCOME_MESSAGE": {
           "LABEL": "Mensaje de bienvenida",
           "PLACEHOLDER": "Introduce el mensaje de bienvenida"
