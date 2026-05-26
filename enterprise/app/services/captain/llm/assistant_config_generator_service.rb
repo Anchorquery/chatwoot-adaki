@@ -18,7 +18,9 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
 
     result = {}
     if requested?('description') && parsed['description'].present?
-      result[:description] = parsed['description'].to_s.strip
+      desc = parsed['description'].to_s.strip
+      desc = "#{desc[0, 252].rstrip}..." if desc.length > 255
+      result[:description] = desc
     end
     if requested?('response_guidelines')
       result[:response_guidelines] = clean_array(parsed['response_guidelines'])
@@ -72,9 +74,9 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
     <<~PROMPT
       You are an expert AI assistant configurator for a customer support platform.
       Based on the assistant identity and knowledge base content, generate configuration fields.
-      Return strict JSON only with this schema (include only the requested fields):
+      Return strict JSON only with this schema. EVERY field listed in the user's "Generate these fields" list MUST be present in your response — do not skip any.
       {
-        "description": "2-4 sentence description of what this assistant does and who it helps",
+        "description": "Short description: 1-2 sentences. HARD LIMIT: 255 characters total. Be concise.",
         "response_guidelines": ["Concrete guideline 1", "Concrete guideline 2", "Concrete guideline 3", "Concrete guideline 4"],
         "guardrails": ["Never do X", "Never share Y", "Always escalate when Z"],
         "handoff_message": "Friendly message shown when transferring to a human agent",
@@ -87,11 +89,13 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
           }
         ]
       }
-      Be specific to the product and knowledge base — no generic placeholder text.
-      For response_guidelines: 4-6 actionable rules specific to this product and content.
-      For guardrails: 3-5 safety and scope rules relevant to this assistant's domain.
-      For scenarios: 2-4 realistic customer interaction flows derived from the knowledge base. Each instruction must be detailed enough to guide the assistant step by step.
-      Use the same language as the knowledge base content.
+      RULES:
+      - description: MUST be 255 characters or fewer. Count carefully. If you cannot fit the idea, prioritize what the assistant does and who it helps.
+      - response_guidelines: 4-6 actionable rules specific to this product and content.
+      - guardrails: 3-5 safety and scope rules relevant to this assistant's domain.
+      - scenarios: REQUIRED if requested. Generate 2-4 realistic customer interaction flows derived from the knowledge base. Each instruction must be detailed enough to guide the assistant step by step. Do NOT return an empty array.
+      - Be specific to the product and knowledge base — no generic placeholder text.
+      - Use the same language as the knowledge base content.
     PROMPT
   end
 
