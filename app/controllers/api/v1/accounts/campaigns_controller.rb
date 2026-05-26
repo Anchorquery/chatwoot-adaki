@@ -32,7 +32,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   def clone
     @campaign = @source_campaign.dup
     @campaign.title = "#{@source_campaign.title} (copia)"
-    @campaign.campaign_status = :draft
+    @campaign.campaign_status = :active
     @campaign.scheduled_at = 1.day.from_now
     @campaign.delivery_state = nil
     @campaign.requires_approval = false if @campaign.respond_to?(:requires_approval=)
