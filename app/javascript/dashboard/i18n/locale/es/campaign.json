@@ -239,7 +239,8 @@
           "MESSAGE": {
             "LABEL": "Mensaje",
             "PLACEHOLDER": "Por favor escriba el mensaje para la campaña",
-            "ERROR": "El mensaje es obligatorio"
+            "ERROR": "El mensaje es obligatorio",
+            "WA_PREVIEW": "Vista previa WhatsApp"
           },
           "INBOX": {
             "LABEL": "Seleccione una bandeja de entrada",

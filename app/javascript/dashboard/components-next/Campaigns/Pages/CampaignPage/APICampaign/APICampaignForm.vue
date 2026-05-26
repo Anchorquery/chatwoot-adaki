@@ -276,6 +276,19 @@ const generateWithAI = async () => {
   }
 };
 
+const renderWAMarkdown = text =>
+  text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*((?!\s)[\s\S]*?(?<!\s))\*/g, '<strong>$1</strong>')
+    .replace(/_((?!\s)[\s\S]*?(?<!\s))_/g, '<em>$1</em>')
+    .replace(/~((?!\s)[\s\S]*?(?<!\s))~/g, '<del>$1</del>')
+    .replace(/`([^`]+)`/g, '<code class="bg-n-alpha-3 px-1 rounded text-xs">$1</code>')
+    .replace(/\n/g, '<br>');
+
+const waPreviewHtml = computed(() => renderWAMarkdown(state.message));
+
 const formatToUTCString = value => (value ? new Date(value).toISOString() : null);
 
 const buildFormData = () => {
@@ -472,9 +485,25 @@ defineExpose({
         :placeholder="t('CAMPAIGN.API.CREATE.FORM.MESSAGE.PLACEHOLDER')"
         show-character-count
         :max-length="1000"
+        auto-height
+        :min-height="'6rem'"
+        :max-height="'20rem'"
         :message="formErrors.message"
         :message-type="formErrors.message ? 'error' : 'info'"
       />
+      <div
+        v-if="state.message"
+        class="rounded-lg border border-n-weak bg-n-alpha-2 px-3 py-2"
+      >
+        <p class="mb-1 text-xs font-medium text-n-slate-10">
+          {{ t('CAMPAIGN.API.CREATE.FORM.MESSAGE.WA_PREVIEW') }}
+        </p>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div
+          class="text-sm text-n-slate-12 whitespace-pre-wrap leading-relaxed"
+          v-html="waPreviewHtml"
+        />
+      </div>
 
       <div class="flex flex-col gap-1">
         <label class="mb-0.5 text-sm font-medium text-n-slate-12">
@@ -530,6 +559,9 @@ defineExpose({
           <TextArea
             v-model="variant.text"
             class="flex-1"
+            auto-height
+            :min-height="'4rem'"
+            :max-height="'16rem'"
             :placeholder="t('CAMPAIGN.API.CREATE.FORM.VARIANTS.PLACEHOLDER').replace('{num}', index + 1)"
           />
           <Button

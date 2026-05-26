@@ -75,7 +75,7 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
       FORMATTING — WhatsApp markdown only (no HTML, no Markdown headings):
       - *bold* for key product names, prices, or CTAs
       - _italic_ for tone/emphasis
-      - Use line breaks (\\n) to separate paragraphs or list items naturally
+      - Separate paragraphs with a real line break between them
       - Bullet lists with • or - when listing features or options
       - Never use #, ##, **, or any HTML tags
       The message AND every variant must all reflect the same context and knowledge above.

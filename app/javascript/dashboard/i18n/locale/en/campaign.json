@@ -173,7 +173,8 @@
           "MESSAGE": {
             "LABEL": "Message",
             "PLACEHOLDER": "Please enter the message of campaign",
-            "ERROR": "Message is required"
+            "ERROR": "Message is required",
+            "WA_PREVIEW": "WhatsApp preview"
           },
           "INBOX": {
             "LABEL": "Select Inbox",
