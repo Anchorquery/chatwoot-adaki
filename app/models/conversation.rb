@@ -207,16 +207,22 @@ class Conversation < ApplicationRecord
   end
 
   def group?
-    # WhatsApp groups via Evolution API or custom integrations (ends with or contains g.us)
-    return true if contact_inbox&.source_id&.include?('g.us')
+    # WhatsApp group JIDs always contain "@g.us" (e.g. 1203630...@g.us). API-channel
+    # bridges (Evolution and similar) may stash this JID in the contact_inbox source_id,
+    # the contact identifier/phone, or anywhere inside the conversation/contact
+    # additional_attributes, so we scan all of them. "@g.us" (with the "@") is used to
+    # avoid false positives with domains such as "img.us".
+    return true if group_jid_present?
 
-    # Telegram groups or other channels that explicitly mark group chats in additional_attributes
-    return true if additional_attributes&.dig('chat_type')&.to_s&.include?('group')
-    return true if additional_attributes&.dig('type')&.to_s&.include?('group')
+    # Fallback for bridges that strip the "@g.us" suffix and store only the raw group id:
+    # WhatsApp group ids are structurally distinct from individual phone numbers.
+    return true if group_structured_identifier?
 
-    # If there is a group_id or is_group flag in additional_attributes
-    return true if additional_attributes&.dig('group_id').present?
-    return true if ActiveModel::Type::Boolean.new.cast(additional_attributes&.dig('is_group'))
+    # Explicit group markers set by Telegram, Evolution and other integrations, on either
+    # the conversation or the contact (snake_case and camelCase variants).
+    return true if group_attributes.any? { |attrs| %w[chat_type type].any? { |k| attrs[k].to_s.downcase.include?('group') } }
+    return true if group_attributes.any? { |attrs| %w[group_id groupId].any? { |k| attrs[k].present? } }
+    return true if group_attributes.any? { |attrs| %w[is_group isGroup].any? { |k| ActiveModel::Type::Boolean.new.cast(attrs[k]) } }
 
     false
   end
@@ -248,6 +254,53 @@ class Conversation < ApplicationRecord
   end
 
   private
+
+  WHATSAPP_GROUP_JID_MARKER = '@g.us'.freeze
+
+  def group_jid_present?
+    group_jid_candidates.any? { |value| value.to_s.include?(WHATSAPP_GROUP_JID_MARKER) }
+  end
+
+  def group_jid_candidates
+    [
+      contact_inbox&.source_id,
+      contact&.identifier,
+      contact&.phone_number,
+      *flatten_attribute_values(additional_attributes),
+      *flatten_attribute_values(contact&.additional_attributes)
+    ]
+  end
+
+  def flatten_attribute_values(attributes)
+    return [] unless attributes.is_a?(Hash)
+
+    attributes.values.flat_map do |value|
+      case value
+      when Hash then flatten_attribute_values(value)
+      when Array then value.map(&:to_s)
+      else value.to_s
+      end
+    end
+  end
+
+  def group_attributes
+    [additional_attributes, contact&.additional_attributes].select { |attrs| attrs.is_a?(Hash) }
+  end
+
+  # Recognizes a WhatsApp group id even when the "@g.us" suffix was stripped by the bridge.
+  # Group ids are structurally distinct from individual phone numbers:
+  #   - legacy groups look like "<digits>-<digits>" (e.g. 12345-67890); phone numbers never
+  #     contain a hyphen,
+  #   - modern groups are ~18-digit numbers, well beyond the 15-digit E.164 phone maximum.
+  def group_structured_identifier?
+    [contact_inbox&.source_id, contact&.identifier].any? do |raw|
+      local_part = raw.to_s.split('@').first.to_s
+      next false if local_part.blank?
+      next true if local_part.match?(/\A\+?\d{3,}-\d{3,}\z/)
+
+      local_part.gsub(/\D/, '').length > 15
+    end
+  end
 
   # Tokens that summon the bot in a group when written as "@token" or "/token".
   # Built from, in priority order:
