@@ -1,5 +1,5 @@
 class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
-  pattr_initialize [:account!, :prompt!, { tone: 'friendly', goal: 'informative' }]
+  pattr_initialize [:account!, :prompt!, { tone: 'friendly', goal: 'informative', assistant: nil, use_emojis: false, style: 'standard' }]
 
   def perform
     response = make_api_call(model: copy_model, messages: messages)
@@ -15,6 +15,7 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
     return blank_payload unless parsed.is_a?(Hash)
 
     {
+      title: parsed['title'].to_s.strip,
       message: parsed['message'].to_s.strip,
       variants: extract_variants(parsed['variants'])
     }
@@ -31,7 +32,7 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
   end
 
   def blank_payload
-    { message: '', variants: [] }
+    { title: '', message: '', variants: [] }
   end
 
   def parse_json(content)
@@ -53,6 +54,7 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
       You are a senior campaign copywriter.
       Return strict JSON only with this schema:
       {
+        "title": "Short campaign label (5-8 words)",
         "message": "Main message",
         "variants": [
           { "text": "Variant 1" },
@@ -60,10 +62,40 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
           { "text": "Variant 3" }
         ]
       }
-      Write for human review, keep the tone consistent, and keep the text concise.
+      #{assistant_context}
+      #{emoji_instruction}
+      #{style_instruction}
+      Write for human review, keep the tone consistent.
       Use Liquid variables only when relevant, such as {{contact.name}}.
       Reply in the same language as the brief.
     PROMPT
+  end
+
+  def assistant_context
+    return '' unless assistant.present?
+
+    scenario_titles = assistant.scenarios.enabled.map(&:title).join(', ')
+    parts = [
+      "Assistant context:",
+      "- Name: #{assistant.name}",
+      "- Description: #{assistant.description}",
+      "- Product: #{assistant.config['product_name'].presence || 'this product'}"
+    ]
+    parts << "- Scenarios: #{scenario_titles}" if scenario_titles.present?
+    parts << "Write consistent with this assistant's style and brand voice."
+    parts.join("\n")
+  end
+
+  def emoji_instruction
+    use_emojis ? 'Use emojis naturally throughout the text.' : 'Do NOT use emojis.'
+  end
+
+  def style_instruction
+    case style.to_s
+    when 'concise'  then 'Keep each text under 80 characters.'
+    when 'detailed' then 'Include supporting detail and a clear call to action.'
+    else                 'Use normal message length.'
+    end
   end
 
   def user_prompt
