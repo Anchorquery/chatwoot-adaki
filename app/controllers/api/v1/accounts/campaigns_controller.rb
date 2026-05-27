@@ -62,6 +62,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   end
 
   def results
+    Rails.logger.info("[CampaignResults] requested campaign id=#{@campaign.id} display_id=#{@campaign.display_id} status=#{@campaign.campaign_status} delivery_state=#{@campaign.delivery_state.inspect}")
     state = @campaign.delivery_state.to_h.with_indifferent_access
     recipients_map = state[:recipients].to_h
     contact_ids = (state[:contact_ids] || []).map(&:to_i)

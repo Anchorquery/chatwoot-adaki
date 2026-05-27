@@ -2,7 +2,11 @@ class Campaigns::ProcessBatchJob < ApplicationJob
   queue_as :low
 
   def perform(campaign)
-    return unless campaign.running?
+    Rails.logger.info("[CampaignBatch] perform START campaign=#{campaign.id} status=#{campaign.campaign_status} delivery_state=#{campaign.delivery_state.inspect}")
+    unless campaign.running?
+      Rails.logger.warn("[CampaignBatch] perform SKIPPED campaign=#{campaign.id} not running (status=#{campaign.campaign_status})")
+      return
+    end
 
     state = campaign.delivery_state.to_h.with_indifferent_access
     state[:sent_count] = state[:sent_count].to_i
@@ -109,6 +113,7 @@ class Campaigns::ProcessBatchJob < ApplicationJob
 
   def persist_state(campaign, updates)
     campaign.with_lock do
+      Rails.logger.info("[CampaignBatch] persist_state BEFORE for campaign=#{campaign.id} state=#{campaign.delivery_state.inspect} updates=#{updates.inspect}")
       current_state = campaign.delivery_state.to_h.with_indifferent_access
       current_state[:sent_count] = current_state[:sent_count].to_i
       current_state[:failed_count] = current_state[:failed_count].to_i
@@ -129,6 +134,7 @@ class Campaigns::ProcessBatchJob < ApplicationJob
       end
 
       campaign.update!(delivery_state: current_state)
+      Rails.logger.info("[CampaignBatch] persist_state AFTER  for campaign=#{campaign.id} state=#{campaign.reload.delivery_state.inspect}")
       current_state
     end
   end

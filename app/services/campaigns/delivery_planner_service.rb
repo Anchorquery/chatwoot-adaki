@@ -2,10 +2,13 @@ class Campaigns::DeliveryPlannerService
   pattr_initialize [:campaign!]
 
   def perform
+    Rails.logger.info("[CampaignPlanner] perform START campaign=#{campaign.id} status=#{campaign.campaign_status}")
     return if campaign.completed?
 
     contacts = fetch_audience_contacts
+    Rails.logger.info("[CampaignPlanner] audience for campaign=#{campaign.id} contacts=#{contacts.map(&:id)}")
     if contacts.empty?
+      Rails.logger.warn("[CampaignPlanner] no contacts for campaign=#{campaign.id} — marking completed without sending")
       campaign.completed!
       return
     end
@@ -31,6 +34,7 @@ class Campaigns::DeliveryPlannerService
       }
     )
 
+    Rails.logger.info("[CampaignPlanner] initialized campaign=#{campaign.id} delivery_state=#{campaign.reload.delivery_state.inspect}")
     # Inicia la ejecución del primer lote
     Campaigns::ProcessBatchJob.perform_later(campaign)
   end
