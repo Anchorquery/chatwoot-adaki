@@ -133,13 +133,16 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     failed_ids = recipients_map.select { |_, v| v['status'] == 'failed' }.keys.map(&:to_i)
     return render json: { error: 'No failed contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
 
-    # Reset failed recipients to pending and re-queue
+    # Remove failed entries so they get re-attempted
     failed_ids.each { |id| recipients_map.delete(id.to_s) }
 
-    all_ids = state[:contact_ids] || []
-    # Rebuild: keep already-sent + add failed ones at end to re-process
     already_done_ids = recipients_map.select { |_, v| %w[sent skipped].include?(v['status']) }.keys.map(&:to_i)
-    new_contact_ids = already_done_ids + failed_ids
+    all_original_ids = (state[:contact_ids] || []).map(&:to_i)
+    processed_ids = recipients_map.keys.map(&:to_i)
+    unprocessed_ids = all_original_ids - processed_ids - already_done_ids
+
+    # Order: already done (skip by index) → failed (retry) → never processed
+    new_contact_ids = already_done_ids + failed_ids + unprocessed_ids
 
     @campaign.update!(
       campaign_status: :running,
@@ -154,7 +157,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     )
 
     Campaigns::ProcessBatchJob.perform_later(@campaign)
-    render json: { message: 'Retry enqueued', retry_count: failed_ids.size }
+    render json: { message: 'Retry enqueued', retry_count: failed_ids.size + unprocessed_ids.size }
   end
 
   def ai_generate

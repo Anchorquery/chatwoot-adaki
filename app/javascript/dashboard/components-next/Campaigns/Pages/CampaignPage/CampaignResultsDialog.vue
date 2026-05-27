@@ -14,6 +14,7 @@ const { t } = useI18n();
 // ── state ────────────────────────────────────────────────────────────────────
 const loading = ref(false);
 const retrying = ref(false);
+const exporting = ref(false);
 const contacts = ref([]);
 const meta = ref({ total: 0, page: 1, per_page: 25, total_pages: 1 });
 const stats = ref({});
@@ -89,7 +90,7 @@ function onSearchInput(e) {
 }
 
 function setFilter(f) {
-  activeFilter.value = f === activeFilter.value ? '' : f;
+  activeFilter.value = f;
   currentPage.value = 1;
   fetchResults();
 }
@@ -118,51 +119,56 @@ async function retryFailed() {
 
 // ── export CSV ────────────────────────────────────────────────────────────────
 async function exportCSV() {
-  // Fetch all pages without filter for full export
-  const allContacts = [];
-  let page = 1;
-  let totalPages = 1;
-  do {
-    const { data } = await CampaignsAPI.results(props.campaign.display_id, { page, status: '', q: '' });
-    allContacts.push(...data.contacts);
-    totalPages = data.meta.total_pages;
-    page++;
-  } while (page <= totalPages);
+  if (exporting.value) return;
+  exporting.value = true;
+  try {
+    const allContacts = [];
+    let page = 1;
+    let totalPages = 1;
+    do {
+      const { data } = await CampaignsAPI.results(props.campaign.display_id, { page, status: '', q: '' });
+      allContacts.push(...data.contacts);
+      totalPages = data.meta.total_pages;
+      page++;
+    } while (page <= totalPages);
 
-  const rows = [
-    [
-      t('CAMPAIGN.RESULTS.CONTACT_ID'),
-      t('CAMPAIGN.RESULTS.CONTACT_NAME'),
-      t('CAMPAIGN.RESULTS.CONTACT_PHONE'),
-      t('CAMPAIGN.RESULTS.COL_STATUS'),
-      t('CAMPAIGN.RESULTS.COL_SENT_AT'),
-      t('CAMPAIGN.RESULTS.COL_ERROR'),
-      'Conversation ID',
-    ],
-    ...allContacts.map(c => [
-      c.id,
-      c.name || '',
-      c.phone_number || '',
-      c.status,
-      c.sent_at || c.failed_at || c.skipped_at || '',
-      c.error || '',
-      c.conversation_id || '',
-    ]),
-  ];
+    const rows = [
+      [
+        t('CAMPAIGN.RESULTS.CONTACT_ID'),
+        t('CAMPAIGN.RESULTS.CONTACT_NAME'),
+        t('CAMPAIGN.RESULTS.CONTACT_PHONE'),
+        t('CAMPAIGN.RESULTS.COL_STATUS'),
+        t('CAMPAIGN.RESULTS.COL_SENT_AT'),
+        t('CAMPAIGN.RESULTS.COL_ERROR'),
+        'Conversation ID',
+      ],
+      ...allContacts.map(c => [
+        c.id,
+        c.name || '',
+        c.phone_number || '',
+        c.status,
+        c.sent_at || c.failed_at || c.skipped_at || '',
+        c.error || '',
+        c.conversation_id || '',
+      ]),
+    ];
 
-  const csv = rows
-    .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
-    .join('\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const title = (props.campaign?.title ?? 'resultados')
-    .replace(/[^a-z0-9_-]/gi, '_')
-    .toLowerCase();
-  a.download = `${title}_resultados.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+    const csv = rows
+      .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const title = (props.campaign?.title ?? 'resultados')
+      .replace(/[^a-z0-9_-]/gi, '_')
+      .toLowerCase();
+    a.download = `${title}_resultados.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } finally {
+    exporting.value = false;
+  }
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -233,8 +239,9 @@ onUnmounted(() => {
             variant="faded"
             size="sm"
             color="slate"
-            icon="i-lucide-download"
+            :icon="exporting ? 'i-lucide-loader-2' : 'i-lucide-download'"
             :label="t('CAMPAIGN.RESULTS.EXPORT')"
+            :disabled="exporting"
             @click="exportCSV"
           />
           <Button
