@@ -37,6 +37,14 @@ class Campaigns::DeliveryPlannerService
   def fetch_audience_contacts
     audience_label_ids = campaign.audience.select { |aud| aud['type'] == 'Label' }.pluck('id')
     labels = campaign.account.labels.where(id: audience_label_ids).pluck(:title)
-    campaign.account.contacts.tagged_with(labels, any: true)
+    return campaign.account.contacts.none if labels.empty?
+
+    directly_tagged = campaign.account.contacts.tagged_with(labels, any: true)
+    via_conversation_ids = campaign.account.conversations.tagged_with(labels, any: true).pluck(:contact_id).uniq
+    via_conversation = campaign.account.contacts.where(id: via_conversation_ids)
+
+    campaign.account.contacts.where(id: directly_tagged.select(:id)).or(
+      campaign.account.contacts.where(id: via_conversation.select(:id))
+    )
   end
 end

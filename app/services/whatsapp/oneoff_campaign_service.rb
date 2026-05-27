@@ -65,12 +65,20 @@ class Whatsapp::OneoffCampaignService
   end
 
   def process_audience(audience_labels)
-    contacts = campaign.account.contacts.tagged_with(audience_labels, any: true)
+    contacts = audience_contacts(audience_labels)
     Rails.logger.info "Processing #{contacts.count} contacts for campaign #{campaign.id}"
 
     contacts.each { |contact| process_contact(contact) }
 
     Rails.logger.info "Campaign #{campaign.id} processing completed"
+  end
+
+  def audience_contacts(audience_labels)
+    return campaign.account.contacts.none if audience_labels.empty?
+
+    directly_tagged_ids = campaign.account.contacts.tagged_with(audience_labels, any: true).pluck(:id)
+    via_conversation_ids = campaign.account.conversations.tagged_with(audience_labels, any: true).pluck(:contact_id).uniq
+    campaign.account.contacts.where(id: (directly_tagged_ids + via_conversation_ids).uniq)
   end
 
   def process_liquid_template_params(contact)
