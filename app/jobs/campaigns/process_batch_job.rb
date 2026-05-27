@@ -10,6 +10,16 @@ class Campaigns::ProcessBatchJob < ApplicationJob
     state[:consecutive_failures] = state[:consecutive_failures].to_i
     state[:processed_index] = state[:processed_index].to_i
     state[:errors] = Array(state[:errors])
+    state[:recipients] ||= {}
+
+    # Mark start time on first batch
+    unless state[:started_at]
+      campaign.with_lock do
+        s = campaign.delivery_state.to_h.with_indifferent_access
+        s[:started_at] = Time.current.iso8601 unless s[:started_at]
+        campaign.update!(delivery_state: s)
+      end
+    end
 
     batch_size = [(campaign.delivery_settings.to_h.with_indifferent_access[:batch_size] || 10).to_i, 1].max
     contact_ids = state[:contact_ids] || []
@@ -24,7 +34,8 @@ class Campaigns::ProcessBatchJob < ApplicationJob
       contact_inbox = campaign.inbox.contact_inboxes.find_by(contact: contact)
 
       if contact_inbox.nil?
-        persist_state(campaign, processed_index: idx + 1)
+        persist_state(campaign, processed_index: idx + 1,
+                                recipient: { contact_id: contact_id, status: 'skipped', skipped_at: Time.current.iso8601 })
         next
       end
 
@@ -45,14 +56,18 @@ class Campaigns::ProcessBatchJob < ApplicationJob
           attachments: campaign.attachments.map { |attachment| attachment.blob.signed_id }
         }).perform
 
-        state = increment_state(campaign, sent_count: 1, consecutive_failures: 0, processed_index: idx + 1)
+        state = increment_state(campaign, sent_count: 1, consecutive_failures: 0, processed_index: idx + 1,
+                                          recipient: { contact_id: contact_id, status: 'sent',
+                                                       sent_at: Time.current.iso8601, conversation_id: conversation.id })
       rescue StandardError => e
         state = increment_state(
           campaign,
           failed_count: 1,
           consecutive_failures: 1,
           processed_index: idx + 1,
-          errors: [{ contact_id: contact_id, error: e.message, time: Time.current }]
+          errors: [{ contact_id: contact_id, error: e.message, time: Time.current }],
+          recipient: { contact_id: contact_id, status: 'failed',
+                       failed_at: Time.current.iso8601, error: e.message }
         )
 
         if state[:consecutive_failures].to_i >= 5
@@ -63,7 +78,15 @@ class Campaigns::ProcessBatchJob < ApplicationJob
       end
     end
 
-    campaign.completed! if state[:processed_index].to_i >= contact_ids.size
+    if state[:processed_index].to_i >= contact_ids.size
+      campaign.with_lock do
+        s = campaign.delivery_state.to_h.with_indifferent_access
+        s[:completed_at] = Time.current.iso8601
+        campaign.update!(delivery_state: s)
+      end
+      campaign.completed!
+    end
+
     Campaigns::ProcessBatchJob.perform_later(campaign) if state[:processed_index].to_i < contact_ids.size
   end
 
@@ -92,12 +115,18 @@ class Campaigns::ProcessBatchJob < ApplicationJob
       current_state[:consecutive_failures] = current_state[:consecutive_failures].to_i
       current_state[:processed_index] = current_state[:processed_index].to_i
       current_state[:errors] = Array(current_state[:errors])
+      current_state[:recipients] ||= {}
 
       current_state[:sent_count] += updates[:sent_count].to_i if updates.key?(:sent_count)
       current_state[:failed_count] += updates[:failed_count].to_i if updates.key?(:failed_count)
       current_state[:consecutive_failures] = updates[:consecutive_failures] if updates.key?(:consecutive_failures)
       current_state[:processed_index] = updates[:processed_index] if updates.key?(:processed_index)
       current_state[:errors] += Array(updates[:errors]) if updates.key?(:errors)
+
+      if updates[:recipient]
+        r = updates[:recipient]
+        current_state[:recipients][r[:contact_id].to_s] = r.except(:contact_id)
+      end
 
       campaign.update!(delivery_state: current_state)
       current_state

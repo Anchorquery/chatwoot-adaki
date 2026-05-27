@@ -24,7 +24,10 @@ class Campaigns::DeliveryPlannerService
         sent_window_count: 0,
         window_started_at: nil,
         last_sent_on: nil,
-        errors: []
+        errors: [],
+        recipients: {},
+        started_at: Time.current.iso8601,
+        completed_at: nil
       }
     )
 

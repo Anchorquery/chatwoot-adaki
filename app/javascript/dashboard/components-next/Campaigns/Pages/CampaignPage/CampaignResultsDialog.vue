@@ -1,8 +1,8 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
-import ContactAPI from 'dashboard/api/contacts';
+import CampaignsAPI from 'dashboard/api/campaigns';
 
 const props = defineProps({
   campaign: { type: Object, default: null },
@@ -11,104 +11,205 @@ const props = defineProps({
 const emit = defineEmits(['close']);
 const { t } = useI18n();
 
-const activeTab = ref('sent');
-const contactMap = ref({});
-const loadingContacts = ref(false);
+// ── state ────────────────────────────────────────────────────────────────────
+const loading = ref(false);
+const retrying = ref(false);
+const contacts = ref([]);
+const meta = ref({ total: 0, page: 1, per_page: 25, total_pages: 1 });
+const stats = ref({});
+const activeFilter = ref('');
+const searchQuery = ref('');
+const currentPage = ref(1);
+let searchTimer = null;
+let pollTimer = null;
 
-const ds = computed(() => props.campaign?.delivery_state || {});
-const total = computed(
-  () =>
-    ds.value.contact_ids?.length ??
-    (ds.value.sent_count ?? 0) + (ds.value.failed_count ?? 0)
-);
-const sent = computed(() => ds.value.sent_count ?? 0);
-const failed = computed(() => ds.value.failed_count ?? 0);
-const errors = computed(() => ds.value.errors ?? []);
-const sentPct = computed(() =>
-  total.value > 0 ? Math.round((sent.value / total.value) * 100) : 0
-);
-
-const failedIds = computed(() => new Set(errors.value.map(e => String(e.contact_id))));
-const sentContactIds = computed(() =>
-  (ds.value.contact_ids ?? []).filter(id => !failedIds.value.has(String(id)))
-);
-
-const allContactIds = computed(() => ds.value.contact_ids ?? []);
-
-const contactName = id => contactMap.value[id]?.name || '';
-const contactPhone = id => contactMap.value[id]?.phone_number || '';
-
-onMounted(async () => {
-  if (!allContactIds.value.length) return;
-  loadingContacts.value = true;
-  const results = await Promise.allSettled(
-    allContactIds.value.map(id => ContactAPI.show(id))
-  );
-  results.forEach((result, i) => {
-    if (result.status === 'fulfilled') {
-      const c = result.value.data;
-      contactMap.value[allContactIds.value[i]] = {
-        name: c.name || '',
-        phone_number: c.phone_number || c.email || '',
-      };
-    }
-  });
-  loadingContacts.value = false;
+// ── computed ─────────────────────────────────────────────────────────────────
+const isRunning = computed(() => props.campaign?.campaign_status === 'running');
+const sentPct = computed(() => {
+  const total = stats.value.total_contacts || 0;
+  const sent = stats.value.sent_count || 0;
+  return total > 0 ? Math.round((sent / total) * 100) : 0;
 });
 
-const formatTs = ts => {
-  if (!ts) return '';
-  return new Date(ts).toLocaleString();
-};
+const durationLabel = computed(() => {
+  const sec = stats.value.duration_seconds;
+  if (!sec) return null;
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+});
 
-const exportCSV = () => {
+// ── data fetching ─────────────────────────────────────────────────────────────
+async function fetchResults() {
+  if (!props.campaign) return;
+  loading.value = true;
+  try {
+    const { data } = await CampaignsAPI.results(props.campaign.display_id, {
+      page: currentPage.value,
+      status: activeFilter.value,
+      q: searchQuery.value,
+    });
+    contacts.value = data.contacts;
+    meta.value = data.meta;
+    stats.value = data.stats;
+  } catch {
+    // silent
+  } finally {
+    loading.value = false;
+  }
+}
+
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(() => {
+    if (!isRunning.value) {
+      stopPolling();
+      return;
+    }
+    fetchResults();
+  }, 5000);
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+// ── search debounce ───────────────────────────────────────────────────────────
+function onSearchInput(e) {
+  clearTimeout(searchTimer);
+  searchQuery.value = e.target.value;
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    fetchResults();
+  }, 300);
+}
+
+function setFilter(f) {
+  activeFilter.value = f === activeFilter.value ? '' : f;
+  currentPage.value = 1;
+  fetchResults();
+}
+
+function goPage(p) {
+  currentPage.value = p;
+  fetchResults();
+}
+
+// ── retry ─────────────────────────────────────────────────────────────────────
+async function retryFailed() {
+  if (!confirm(t('CAMPAIGN.RESULTS.RETRY_CONFIRM', { count: stats.value.failed_count }))) return;
+  retrying.value = true;
+  try {
+    const { data } = await CampaignsAPI.retryFailed(props.campaign.display_id);
+    alert(t('CAMPAIGN.RESULTS.RETRY_SUCCESS', { count: data.retry_count }));
+    currentPage.value = 1;
+    await fetchResults();
+    startPolling();
+  } catch {
+    alert(t('CAMPAIGN.RESULTS.RETRY_ERROR'));
+  } finally {
+    retrying.value = false;
+  }
+}
+
+// ── export CSV ────────────────────────────────────────────────────────────────
+async function exportCSV() {
+  // Fetch all pages without filter for full export
+  const allContacts = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const { data } = await CampaignsAPI.results(props.campaign.display_id, { page, status: '', q: '' });
+    allContacts.push(...data.contacts);
+    totalPages = data.meta.total_pages;
+    page++;
+  } while (page <= totalPages);
+
   const rows = [
     [
       t('CAMPAIGN.RESULTS.CONTACT_ID'),
       t('CAMPAIGN.RESULTS.CONTACT_NAME'),
       t('CAMPAIGN.RESULTS.CONTACT_PHONE'),
-      'Estado',
-      'Error',
-      'Fecha',
+      t('CAMPAIGN.RESULTS.COL_STATUS'),
+      t('CAMPAIGN.RESULTS.COL_SENT_AT'),
+      t('CAMPAIGN.RESULTS.COL_ERROR'),
+      'Conversation ID',
     ],
+    ...allContacts.map(c => [
+      c.id,
+      c.name || '',
+      c.phone_number || '',
+      c.status,
+      c.sent_at || c.failed_at || c.skipped_at || '',
+      c.error || '',
+      c.conversation_id || '',
+    ]),
   ];
 
-  sentContactIds.value.forEach(id => {
-    rows.push([
-      id,
-      contactName(id),
-      contactPhone(id),
-      'enviado',
-      '',
-      '',
-    ]);
-  });
-
-  errors.value.forEach(err => {
-    const id = err.contact_id;
-    rows.push([
-      id,
-      contactName(id),
-      contactPhone(id),
-      'fallido',
-      err.message ?? '',
-      formatTs(err.timestamp),
-    ]);
-  });
-
-  const csv =
-    rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const csv = rows
+    .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   const title = (props.campaign?.title ?? 'resultados')
-    .replace(/[^a-z0-9_\-]/gi, '_')
+    .replace(/[^a-z0-9_-]/gi, '_')
     .toLowerCase();
   a.download = `${title}_resultados.csv`;
   a.click();
   URL.revokeObjectURL(url);
-};
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+function formatTs(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString();
+}
+
+function statusLabel(s) {
+  const map = {
+    sent: t('CAMPAIGN.RESULTS.STATUS_SENT'),
+    failed: t('CAMPAIGN.RESULTS.STATUS_FAILED'),
+    skipped: t('CAMPAIGN.RESULTS.STATUS_SKIPPED'),
+    pending: t('CAMPAIGN.RESULTS.STATUS_PENDING'),
+  };
+  return map[s] || s;
+}
+
+function statusClass(s) {
+  return {
+    sent: 'text-n-teal-10 bg-n-teal-3',
+    failed: 'text-n-ruby-10 bg-n-ruby-3',
+    skipped: 'text-n-amber-10 bg-n-amber-3',
+    pending: 'text-n-slate-10 bg-n-alpha-2',
+  }[s] || 'text-n-slate-10 bg-n-alpha-2';
+}
+
+function conversationUrl(conversationId) {
+  if (!conversationId) return null;
+  return `/app/accounts/${props.campaign?.account_id}/conversations/${conversationId}`;
+}
+
+// ── lifecycle ─────────────────────────────────────────────────────────────────
+onMounted(() => {
+  fetchResults();
+  if (isRunning.value) startPolling();
+});
+
+watch(isRunning, val => {
+  if (val) startPolling();
+  else stopPolling();
+});
+
+onUnmounted(() => {
+  stopPolling();
+  clearTimeout(searchTimer);
+});
 </script>
 
 <template>
@@ -117,7 +218,7 @@ const exportCSV = () => {
     @click.self="emit('close')"
   >
     <div
-      class="bg-n-solid-1 rounded-2xl shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]"
+      class="bg-n-solid-1 rounded-2xl shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]"
     >
       <!-- Header -->
       <div class="flex items-center justify-between p-4 border-b border-n-weak">
@@ -125,9 +226,7 @@ const exportCSV = () => {
           <h3 class="text-base font-semibold text-n-slate-12">
             {{ t('CAMPAIGN.RESULTS.TITLE') }}
           </h3>
-          <p class="text-xs text-n-slate-10 mt-0.5 truncate">
-            {{ campaign?.title }}
-          </p>
+          <p class="text-xs text-n-slate-10 mt-0.5 truncate">{{ campaign?.title }}</p>
         </div>
         <div class="flex items-center gap-2 ml-3 flex-shrink-0">
           <Button
@@ -137,6 +236,16 @@ const exportCSV = () => {
             icon="i-lucide-download"
             :label="t('CAMPAIGN.RESULTS.EXPORT')"
             @click="exportCSV"
+          />
+          <Button
+            v-if="(stats.failed_count || 0) > 0 && !isRunning"
+            variant="faded"
+            size="sm"
+            color="ruby"
+            icon="i-lucide-refresh-cw"
+            :label="t('CAMPAIGN.RESULTS.RETRY_FAILED')"
+            :disabled="retrying"
+            @click="retryFailed"
           />
           <Button
             variant="faded"
@@ -149,23 +258,29 @@ const exportCSV = () => {
       </div>
 
       <div class="p-4 flex flex-col gap-4 overflow-y-auto">
-        <!-- Stats -->
-        <div class="grid grid-cols-3 gap-3">
+        <!-- Stats row -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="rounded-xl bg-n-alpha-2 p-3 flex flex-col items-center gap-1">
-            <span class="text-2xl font-bold text-n-slate-12">{{ total }}</span>
+            <span class="text-2xl font-bold text-n-slate-12">{{ stats.total_contacts ?? 0 }}</span>
             <span class="text-xs text-n-slate-10">{{ t('CAMPAIGN.RESULTS.TOTAL') }}</span>
           </div>
           <div class="rounded-xl bg-n-teal-3 p-3 flex flex-col items-center gap-1">
-            <span class="text-2xl font-bold text-n-teal-11">{{ sent }}</span>
+            <span class="text-2xl font-bold text-n-teal-11">{{ stats.sent_count ?? 0 }}</span>
             <span class="text-xs text-n-teal-10">{{ t('CAMPAIGN.RESULTS.SENT') }}</span>
           </div>
           <div class="rounded-xl bg-n-ruby-3 p-3 flex flex-col items-center gap-1">
-            <span class="text-2xl font-bold text-n-ruby-11">{{ failed }}</span>
+            <span class="text-2xl font-bold text-n-ruby-11">{{ stats.failed_count ?? 0 }}</span>
             <span class="text-xs text-n-ruby-10">{{ t('CAMPAIGN.RESULTS.FAILED') }}</span>
+          </div>
+          <div class="rounded-xl bg-n-alpha-2 p-3 flex flex-col items-center gap-1">
+            <span class="text-2xl font-bold text-n-slate-12">
+              {{ stats.success_rate != null ? `${stats.success_rate}%` : '—' }}
+            </span>
+            <span class="text-xs text-n-slate-10">{{ t('CAMPAIGN.RESULTS.SUCCESS_RATE') }}</span>
           </div>
         </div>
 
-        <!-- Progress -->
+        <!-- Progress bar -->
         <div>
           <div class="flex justify-between text-xs text-n-slate-10 mb-1">
             <span>{{ t('CAMPAIGN.RESULTS.PROGRESS') }}</span>
@@ -179,99 +294,157 @@ const exportCSV = () => {
           </div>
         </div>
 
-        <!-- Tabs -->
+        <!-- Timing info -->
         <div
-          v-if="sentContactIds.length || errors.length"
-          class="flex flex-col gap-3"
+          v-if="stats.started_at"
+          class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-n-slate-10"
         >
-          <div class="flex gap-1 border-b border-n-weak">
+          <span>
+            <span class="font-medium text-n-slate-11">{{ t('CAMPAIGN.RESULTS.STARTED_AT') }}:</span>
+            {{ formatTs(stats.started_at) }}
+          </span>
+          <span v-if="stats.completed_at">
+            <span class="font-medium text-n-slate-11">{{ t('CAMPAIGN.RESULTS.COMPLETED_AT') }}:</span>
+            {{ formatTs(stats.completed_at) }}
+          </span>
+          <span v-if="durationLabel">
+            <span class="font-medium text-n-slate-11">{{ t('CAMPAIGN.RESULTS.DURATION') }}:</span>
+            {{ durationLabel }}
+          </span>
+          <span v-if="stats.throughput_per_minute">
+            <span class="font-medium text-n-slate-11">{{ t('CAMPAIGN.RESULTS.THROUGHPUT') }}:</span>
+            {{ stats.throughput_per_minute }} {{ t('CAMPAIGN.RESULTS.MSGS_PER_MIN') }}
+          </span>
+        </div>
+
+        <!-- Search + filter -->
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="relative flex-1">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 i-lucide-search w-3.5 h-3.5 text-n-slate-9" />
+            <input
+              class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-n-alpha-2 border border-n-weak text-n-slate-12 placeholder:text-n-slate-9 focus:outline-none focus:ring-1 focus:ring-n-teal-7"
+              :placeholder="t('CAMPAIGN.RESULTS.SEARCH_PLACEHOLDER')"
+              @input="onSearchInput"
+            />
+          </div>
+          <div class="flex gap-1">
             <button
-              class="text-xs font-medium px-3 py-1.5 border-b-2 transition-colors"
-              :class="activeTab === 'sent'
-                ? 'border-n-teal-9 text-n-teal-11'
-                : 'border-transparent text-n-slate-10 hover:text-n-slate-12'"
-              @click="activeTab = 'sent'"
+              v-for="f in [{ key: '', label: t('CAMPAIGN.RESULTS.FILTER_ALL') }, { key: 'sent', label: t('CAMPAIGN.RESULTS.FILTER_SENT') }, { key: 'failed', label: t('CAMPAIGN.RESULTS.FILTER_FAILED') }]"
+              :key="f.key"
+              class="text-xs px-3 py-1.5 rounded-lg border transition-colors"
+              :class="activeFilter === f.key
+                ? 'bg-n-teal-9 text-white border-n-teal-9'
+                : 'bg-n-alpha-2 text-n-slate-10 border-n-weak hover:text-n-slate-12'"
+              @click="setFilter(f.key)"
             >
-              {{ t('CAMPAIGN.RESULTS.SENT_CONTACTS') }} ({{ sentContactIds.length }})
-            </button>
-            <button
-              v-if="errors.length"
-              class="text-xs font-medium px-3 py-1.5 border-b-2 transition-colors"
-              :class="activeTab === 'errors'
-                ? 'border-n-ruby-9 text-n-ruby-11'
-                : 'border-transparent text-n-slate-10 hover:text-n-slate-12'"
-              @click="activeTab = 'errors'"
-            >
-              {{ t('CAMPAIGN.RESULTS.ERRORS_TITLE') }} ({{ errors.length }})
+              {{ f.label }}
             </button>
           </div>
+        </div>
 
+        <!-- Table -->
+        <div class="flex flex-col gap-1 min-h-[80px]">
           <!-- Loading -->
-          <div v-if="loadingContacts" class="flex items-center justify-center py-6 text-xs text-n-slate-10 gap-2">
+          <div
+            v-if="loading"
+            class="flex items-center justify-center py-8 text-xs text-n-slate-10 gap-2"
+          >
             <span class="i-lucide-loader-2 animate-spin w-4 h-4" />
             {{ t('CAMPAIGN.RESULTS.LOADING_CONTACTS') }}
           </div>
 
-          <!-- Sent contacts list -->
+          <!-- Empty -->
           <div
-            v-else-if="activeTab === 'sent'"
-            class="flex flex-col gap-1 max-h-60 overflow-y-auto"
+            v-else-if="contacts.length === 0"
+            class="text-center py-8 text-xs text-n-slate-10"
           >
-            <div
-              v-for="contactId in sentContactIds"
-              :key="contactId"
-              class="rounded-lg bg-n-alpha-2 px-3 py-2 flex items-center justify-between gap-2"
-            >
-              <div class="flex flex-col min-w-0">
-                <span class="text-xs font-medium text-n-slate-12 truncate">
-                  {{ contactName(contactId) || `#${contactId}` }}
-                </span>
-                <span v-if="contactPhone(contactId)" class="text-xs text-n-slate-10 truncate">
-                  {{ contactPhone(contactId) }}
-                </span>
-                <span v-else class="text-xs text-n-slate-9">
-                  ID: {{ contactId }}
-                </span>
-              </div>
-              <span class="i-lucide-check text-n-teal-9 w-4 h-4 flex-shrink-0" />
-            </div>
+            {{ t('CAMPAIGN.RESULTS.NO_RESULTS') }}
           </div>
 
-          <!-- Errors list -->
+          <!-- Rows -->
           <div
-            v-else-if="activeTab === 'errors'"
-            class="flex flex-col gap-1 max-h-60 overflow-y-auto"
+            v-else
+            class="flex flex-col gap-1"
           >
             <div
-              v-for="(err, i) in errors"
-              :key="i"
-              class="rounded-lg bg-n-ruby-3 px-3 py-2 flex flex-col gap-0.5"
+              v-for="c in contacts"
+              :key="c.id"
+              class="rounded-lg bg-n-alpha-2 px-3 py-2 flex items-center gap-3"
             >
-              <div class="flex items-start justify-between gap-2">
-                <div class="flex flex-col min-w-0">
-                  <span class="text-xs font-medium text-n-ruby-11 truncate">
-                    {{ contactName(err.contact_id) || `#${err.contact_id}` }}
-                  </span>
-                  <span v-if="contactPhone(err.contact_id)" class="text-xs text-n-ruby-10 truncate">
-                    {{ contactPhone(err.contact_id) }}
-                  </span>
-                  <span v-else class="text-xs text-n-ruby-9">
-                    ID: {{ err.contact_id }}
-                  </span>
-                </div>
-                <span class="text-xs text-n-ruby-10 flex-shrink-0">{{ formatTs(err.timestamp) }}</span>
+              <!-- Avatar -->
+              <div
+                class="w-7 h-7 rounded-full bg-n-alpha-3 flex-shrink-0 flex items-center justify-center text-xs font-medium text-n-slate-11 overflow-hidden"
+              >
+                <img v-if="c.avatar_url" :src="c.avatar_url" class="w-full h-full object-cover" alt="" />
+                <span v-else>{{ (c.name || '?')[0].toUpperCase() }}</span>
               </div>
-              <span class="text-xs text-n-ruby-10 break-words">{{ err.message }}</span>
+
+              <!-- Info -->
+              <div class="flex-1 min-w-0 flex flex-col">
+                <span class="text-xs font-medium text-n-slate-12 truncate">
+                  {{ c.name || `#${c.id}` }}
+                </span>
+                <span class="text-xs text-n-slate-10 truncate">
+                  {{ c.phone_number || c.email || `ID: ${c.id}` }}
+                </span>
+                <span
+                  v-if="c.error"
+                  class="text-xs text-n-ruby-9 truncate"
+                  :title="c.error"
+                >
+                  {{ c.error }}
+                </span>
+              </div>
+
+              <!-- Status badge -->
+              <span
+                class="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                :class="statusClass(c.status)"
+              >
+                {{ statusLabel(c.status) }}
+              </span>
+
+              <!-- Sent at -->
+              <span class="text-xs text-n-slate-9 flex-shrink-0 hidden sm:block whitespace-nowrap">
+                {{ formatTs(c.sent_at || c.failed_at || c.skipped_at) }}
+              </span>
+
+              <!-- Conversation link -->
+              <a
+                v-if="c.conversation_id"
+                :href="conversationUrl(c.conversation_id)"
+                target="_blank"
+                class="i-lucide-external-link w-3.5 h-3.5 text-n-slate-9 hover:text-n-teal-9 flex-shrink-0"
+                :title="t('CAMPAIGN.RESULTS.VIEW_CONVERSATION')"
+              />
+              <span v-else class="w-3.5 flex-shrink-0" />
             </div>
           </div>
         </div>
 
-        <!-- No errors state -->
+        <!-- Pagination -->
         <div
-          v-else-if="sent > 0"
-          class="text-center py-2 text-sm text-n-teal-10"
+          v-if="meta.total_pages > 1"
+          class="flex items-center justify-between text-xs text-n-slate-10"
         >
-          {{ t('CAMPAIGN.RESULTS.NO_ERRORS') }}
+          <span>{{ meta.total }} {{ t('CAMPAIGN.RESULTS.TOTAL').toLowerCase() }}</span>
+          <div class="flex gap-1 items-center">
+            <button
+              class="px-2 py-1 rounded bg-n-alpha-2 hover:bg-n-alpha-3 disabled:opacity-40"
+              :disabled="currentPage <= 1"
+              @click="goPage(currentPage - 1)"
+            >
+              ‹
+            </button>
+            <span class="px-2">{{ currentPage }} / {{ meta.total_pages }}</span>
+            <button
+              class="px-2 py-1 rounded bg-n-alpha-2 hover:bg-n-alpha-3 disabled:opacity-40"
+              :disabled="currentPage >= meta.total_pages"
+              @click="goPage(currentPage + 1)"
+            >
+              ›
+            </button>
+          </div>
         </div>
       </div>
     </div>

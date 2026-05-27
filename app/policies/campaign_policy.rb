@@ -26,4 +26,12 @@ class CampaignPolicy < ApplicationPolicy
   def clone?
     @account_user.administrator?
   end
+
+  def results?
+    @account_user.administrator?
+  end
+
+  def retry_failed?
+    @account_user.administrator?
+  end
 end

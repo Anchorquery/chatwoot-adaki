@@ -1,7 +1,8 @@
 class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
-  before_action :campaign, except: [:index, :create, :ai_generate, :clone]
+  before_action :campaign, except: [:index, :create, :ai_generate, :clone, :results, :retry_failed]
+  before_action :campaign_for_results, only: [:results, :retry_failed]
   before_action :find_campaign_for_clone, only: [:clone]
-  before_action :check_authorization, except: [:clone]
+  before_action :check_authorization
   before_action :check_clone_authorization, only: [:clone]
   before_action :parse_delivery_settings, only: [:create, :update]
   after_action :trigger_immediate_dispatch, only: [:create, :update]
@@ -40,6 +41,120 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     @campaign.requires_approval = false if @campaign.respond_to?(:requires_approval=)
     @campaign.save!
     render :show
+  end
+
+  def results
+    state = @campaign.delivery_state.to_h.with_indifferent_access
+    recipients_map = state[:recipients].to_h
+    contact_ids = (state[:contact_ids] || []).map(&:to_i)
+
+    status_filter = params[:status].to_s.presence
+    query = params[:q].to_s.strip.downcase
+
+    filtered_ids = case status_filter
+                   when 'sent'
+                     recipients_map.select { |_, v| v['status'] == 'sent' }.keys.map(&:to_i)
+                   when 'failed'
+                     recipients_map.select { |_, v| v['status'] == 'failed' }.keys.map(&:to_i)
+                   when 'skipped'
+                     recipients_map.select { |_, v| v['status'] == 'skipped' }.keys.map(&:to_i)
+                   else
+                     contact_ids
+                   end
+
+    contacts_scope = Current.account.contacts.where(id: filtered_ids)
+    if query.present?
+      contacts_scope = contacts_scope.where(
+        'LOWER(name) LIKE :q OR phone_number LIKE :q OR email LIKE :q',
+        q: "%#{query}%"
+      )
+    end
+
+    per_page = 25
+    page = [params[:page].to_i, 1].max
+    total = contacts_scope.count
+    contacts = contacts_scope.order(:name).offset((page - 1) * per_page).limit(per_page)
+
+    sent_count = state[:sent_count].to_i
+    failed_count = state[:failed_count].to_i
+    total_contacts = state[:total_contacts].to_i
+    started_at = state[:started_at]
+    completed_at = state[:completed_at]
+
+    duration_seconds = if started_at && completed_at
+                         (Time.parse(completed_at) - Time.parse(started_at)).round
+                       end
+    throughput = if duration_seconds&.positive? && sent_count.positive?
+                   (sent_count.to_f / (duration_seconds / 60.0)).round(1)
+                 end
+    success_rate = total_contacts.positive? ? (sent_count.to_f / total_contacts * 100).round(1) : nil
+
+    render json: {
+      contacts: contacts.map do |c|
+        info = recipients_map[c.id.to_s] || {}
+        {
+          id: c.id,
+          name: c.name,
+          phone_number: c.phone_number,
+          email: c.email,
+          avatar_url: c.avatar_url,
+          status: info['status'] || 'pending',
+          sent_at: info['sent_at'],
+          failed_at: info['failed_at'],
+          skipped_at: info['skipped_at'],
+          error: info['error'],
+          conversation_id: info['conversation_id']
+        }
+      end,
+      meta: {
+        total: total,
+        page: page,
+        per_page: per_page,
+        total_pages: [(total.to_f / per_page).ceil, 1].max
+      },
+      stats: {
+        total_contacts: total_contacts,
+        sent_count: sent_count,
+        failed_count: failed_count,
+        processed_index: state[:processed_index].to_i,
+        started_at: started_at,
+        completed_at: completed_at,
+        duration_seconds: duration_seconds,
+        throughput_per_minute: throughput,
+        success_rate: success_rate
+      }
+    }
+  end
+
+  def retry_failed
+    state = @campaign.delivery_state.to_h.with_indifferent_access
+    recipients_map = state[:recipients].to_h
+
+    failed_ids = recipients_map.select { |_, v| v['status'] == 'failed' }.keys.map(&:to_i)
+    return render json: { error: 'No failed contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
+
+    # Reset failed recipients to pending and re-queue
+    failed_ids.each { |id| recipients_map.delete(id.to_s) }
+
+    all_ids = state[:contact_ids] || []
+    # Rebuild: keep already-sent + add failed ones at end to re-process
+    already_done_ids = recipients_map.select { |_, v| %w[sent skipped].include?(v['status']) }.keys.map(&:to_i)
+    new_contact_ids = already_done_ids + failed_ids
+
+    @campaign.update!(
+      campaign_status: :running,
+      delivery_state: state.merge(
+        contact_ids: new_contact_ids,
+        total_contacts: new_contact_ids.size,
+        processed_index: already_done_ids.size,
+        failed_count: 0,
+        consecutive_failures: 0,
+        recipients: recipients_map
+      )
+    )
+
+    Campaigns::ProcessBatchJob.perform_later(@campaign)
+    render json: { message: 'Retry enqueued', retry_count: failed_ids.size }
   end
 
   def ai_generate
@@ -97,6 +212,11 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     return unless @campaign.scheduled_at.present? && @campaign.scheduled_at <= Time.current
 
     Campaigns::TriggerOneoffCampaignJob.perform_later(@campaign)
+  end
+
+  def campaign_for_results
+    @campaign = Current.account.campaigns.find_by(display_id: params[:id])
+    head :not_found unless @campaign
   end
 
   def find_campaign_for_clone
