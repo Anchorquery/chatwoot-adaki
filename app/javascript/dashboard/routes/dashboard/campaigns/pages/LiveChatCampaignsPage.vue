@@ -2,40 +2,47 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToggle } from '@vueuse/core';
-import { useStoreGetters, useMapGetter } from 'dashboard/composables/store';
+import { INBOX_TYPES } from 'dashboard/helper/inbox';
+import { useCampaignList } from 'dashboard/composables/useCampaignList';
 
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import CampaignLayout from 'dashboard/components-next/Campaigns/CampaignLayout.vue';
+import CampaignFilterBar from 'dashboard/components-next/Campaigns/CampaignFilterBar.vue';
 import CampaignList from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignList.vue';
 import LiveChatCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/LiveChatCampaign/LiveChatCampaignDialog.vue';
 import EditLiveChatCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/LiveChatCampaign/EditLiveChatCampaignDialog.vue';
 import ConfirmDeleteCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/ConfirmDeleteCampaignDialog.vue';
 import LiveChatCampaignEmptyState from 'dashboard/components-next/Campaigns/EmptyState/LiveChatCampaignEmptyState.vue';
+import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
 
 const { t } = useI18n();
-const getters = useStoreGetters();
+
+const {
+  campaigns,
+  meta,
+  isFetching,
+  filters,
+  currentPage,
+  onFilterChange,
+  onPageChange,
+  refresh,
+} = useCampaignList([INBOX_TYPES.WEB]);
 
 const editLiveChatCampaignDialogRef = ref(null);
 const confirmDeleteCampaignDialogRef = ref(null);
 const selectedCampaign = ref(null);
 
-const uiFlags = useMapGetter('campaigns/getUIFlags');
-const isFetchingCampaigns = computed(() => uiFlags.value.isFetching);
-
 const [showLiveChatCampaignDialog, toggleLiveChatCampaignDialog] = useToggle();
 
-const liveChatCampaigns = computed(
-  () => getters['campaigns/getLiveChatCampaigns'].value
-);
-
-const hasNoLiveChatCampaigns = computed(
-  () => liveChatCampaigns.value?.length === 0 && !isFetchingCampaigns.value
+const hasNoCampaigns = computed(
+  () => campaigns.value?.length === 0 && !isFetching.value
 );
 
 const handleEdit = campaign => {
   selectedCampaign.value = campaign;
   editLiveChatCampaignDialogRef.value.dialogRef.open();
 };
+
 const handleDelete = campaign => {
   selectedCampaign.value = campaign;
   confirmDeleteCampaignDialogRef.value.dialogRef.open();
@@ -56,15 +63,19 @@ const handleDelete = campaign => {
       />
     </template>
 
+    <template #filters>
+      <CampaignFilterBar :model-value="filters" @update:model-value="onFilterChange" />
+    </template>
+
     <div
-      v-if="isFetchingCampaigns"
+      v-if="isFetching"
       class="flex justify-center items-center py-10 text-n-slate-11"
     >
       <Spinner />
     </div>
     <CampaignList
-      v-else-if="!hasNoLiveChatCampaigns"
-      :campaigns="liveChatCampaigns"
+      v-else-if="!hasNoCampaigns"
+      :campaigns="campaigns"
       is-live-chat-type
       @edit="handleEdit"
       @delete="handleDelete"
@@ -75,6 +86,7 @@ const handleDelete = campaign => {
       :subtitle="t('CAMPAIGN.LIVE_CHAT.EMPTY_STATE.SUBTITLE')"
       class="pt-14"
     />
+
     <EditLiveChatCampaignDialog
       ref="editLiveChatCampaignDialogRef"
       :selected-campaign="selectedCampaign"
@@ -82,6 +94,17 @@ const handleDelete = campaign => {
     <ConfirmDeleteCampaignDialog
       ref="confirmDeleteCampaignDialogRef"
       :selected-campaign="selectedCampaign"
+      @deleted="refresh"
     />
+
+    <template #pagination>
+      <PaginationFooter
+        v-if="meta.totalCount > meta.perPage"
+        :current-page="currentPage"
+        :total-items="meta.totalCount"
+        :items-per-page="meta.perPage"
+        @update:current-page="onPageChange"
+      />
+    </template>
   </CampaignLayout>
 </template>
