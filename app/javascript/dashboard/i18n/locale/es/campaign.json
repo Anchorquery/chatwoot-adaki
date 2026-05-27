@@ -1,5 +1,16 @@
 {
   "CAMPAIGN": {
+    "FILTER": {
+      "SEARCH_PLACEHOLDER": "Buscar campañas...",
+      "STATUS_LABEL": "Estado",
+      "STATUS_ALL": "Todos los estados",
+      "STATUS_ACTIVE": "Programado",
+      "STATUS_RUNNING": "Enviando",
+      "STATUS_PAUSED": "Pausado",
+      "STATUS_COMPLETED": "Completado",
+      "STATUS_FAILED": "Fallido",
+      "STATUS_DRAFT": "Borrador"
+    },
     "LIVE_CHAT": {
       "HEADER_TITLE": "Campañas de chat en vivo",
       "NEW_CAMPAIGN": "Crear campaña",

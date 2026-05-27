@@ -7,6 +7,16 @@ class CampaignsAPI extends ApiClient {
     super('campaigns', { accountScoped: true });
   }
 
+  list({ page = 1, status = '', channelTypes = null, q = '' } = {}) {
+    const params = { page };
+    if (status) params.status = status;
+    if (q) params.q = q;
+    if (channelTypes && channelTypes.length) {
+      params['channel_types[]'] = channelTypes;
+    }
+    return axios.get(this.url, { params });
+  }
+
   aiGenerate(data) {
     return axios.post(`${this.url}/ai_generate`, data);
   }

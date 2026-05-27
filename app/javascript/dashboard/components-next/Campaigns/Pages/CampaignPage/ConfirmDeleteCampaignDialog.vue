@@ -15,6 +15,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const store = useStore();
+const emit = defineEmits(['deleted']);
 
 const dialogRef = ref(null);
 
@@ -24,6 +25,7 @@ const deleteCampaign = async id => {
   try {
     await store.dispatch('campaigns/delete', id);
     useAlert(t('CAMPAIGN.CONFIRM_DELETE.API.SUCCESS_MESSAGE'));
+    emit('deleted');
   } catch (error) {
     useAlert(t('CAMPAIGN.CONFIRM_DELETE.API.ERROR_MESSAGE'));
   }

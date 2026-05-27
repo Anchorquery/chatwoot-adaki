@@ -1,5 +1,16 @@
 {
   "CAMPAIGN": {
+    "FILTER": {
+      "SEARCH_PLACEHOLDER": "Search campaigns...",
+      "STATUS_LABEL": "Status",
+      "STATUS_ALL": "All statuses",
+      "STATUS_ACTIVE": "Scheduled",
+      "STATUS_RUNNING": "Sending",
+      "STATUS_PAUSED": "Paused",
+      "STATUS_COMPLETED": "Completed",
+      "STATUS_FAILED": "Failed",
+      "STATUS_DRAFT": "Draft"
+    },
     "LIVE_CHAT": {
       "HEADER_TITLE": "Live chat campaigns",
       "NEW_CAMPAIGN": "Create campaign",

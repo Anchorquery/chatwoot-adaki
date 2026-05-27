@@ -8,6 +8,11 @@ import { INBOX_TYPES } from 'dashboard/helper/inbox';
 
 export const state = {
   records: [],
+  meta: {
+    totalCount: 0,
+    currentPage: 1,
+    perPage: 15,
+  },
   uiFlags: {
     isFetching: false,
     isCreating: false,
@@ -17,6 +22,9 @@ export const state = {
 export const getters = {
   getUIFlags(_state) {
     return _state.uiFlags;
+  },
+  getMeta(_state) {
+    return _state.meta;
   },
   getCampaigns:
     _state =>
@@ -58,11 +66,22 @@ export const getters = {
 };
 
 export const actions = {
-  get: async function getCampaigns({ commit }) {
+  get: async function getCampaigns(
+    { commit },
+    { page, status, channelTypes, q } = {}
+  ) {
     commit(types.SET_CAMPAIGN_UI_FLAG, { isFetching: true });
     try {
-      const response = await CampaignsAPI.get();
-      commit(types.SET_CAMPAIGNS, response.data);
+      const response = await CampaignsAPI.list({ page, status, channelTypes, q });
+      const { payload, meta } = response.data;
+      if (payload !== undefined) {
+        // paginated response
+        commit(types.SET_CAMPAIGNS, payload);
+        commit(types.SET_CAMPAIGNS_META, meta);
+      } else {
+        // legacy flat array (shouldn't happen after backend update, but safeguard)
+        commit(types.SET_CAMPAIGNS, response.data);
+      }
     } catch (error) {
       // Ignore error
     } finally {
@@ -119,6 +138,14 @@ export const mutations = {
     _state.uiFlags = {
       ..._state.uiFlags,
       ...data,
+    };
+  },
+  [types.SET_CAMPAIGNS_META](_state, data) {
+    if (!data) return;
+    _state.meta = {
+      totalCount: data.total_count ?? 0,
+      currentPage: data.current_page ?? 1,
+      perPage: data.per_page ?? 15,
     };
   },
 

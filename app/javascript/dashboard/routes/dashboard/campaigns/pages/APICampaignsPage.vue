@@ -2,36 +2,44 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToggle } from '@vueuse/core';
-import { useStoreGetters, useMapGetter, useStore } from 'dashboard/composables/store';
+import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
+import { INBOX_TYPES } from 'dashboard/helper/inbox';
+import { useCampaignList } from 'dashboard/composables/useCampaignList';
 
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import CampaignLayout from 'dashboard/components-next/Campaigns/CampaignLayout.vue';
+import CampaignFilterBar from 'dashboard/components-next/Campaigns/CampaignFilterBar.vue';
 import CampaignList from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignList.vue';
 import APICampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/APICampaign/APICampaignDialog.vue';
 import ConfirmDeleteCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/ConfirmDeleteCampaignDialog.vue';
 import CampaignResultsDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignResultsDialog.vue';
 import SMSCampaignEmptyState from 'dashboard/components-next/Campaigns/EmptyState/SMSCampaignEmptyState.vue';
+import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
 
 const { t } = useI18n();
-const getters = useStoreGetters();
 const store = useStore();
+
+const {
+  campaigns,
+  meta,
+  isFetching,
+  filters,
+  currentPage,
+  onFilterChange,
+  onPageChange,
+  refresh,
+} = useCampaignList([INBOX_TYPES.API]);
 
 const selectedCampaign = ref(null);
 const dialogMode = ref('create');
 const [showAPICampaignDialog, toggleAPICampaignDialog] = useToggle();
 const [showResultsDialog, toggleResultsDialog] = useToggle();
 const resultsCampaign = ref(null);
-
-const uiFlags = useMapGetter('campaigns/getUIFlags');
-const isFetchingCampaigns = computed(() => uiFlags.value.isFetching);
-
 const confirmDeleteCampaignDialogRef = ref(null);
 
-const apiCampaigns = computed(() => getters['campaigns/getAPICampaigns'].value);
-
-const hasNoAPICampaigns = computed(
-  () => apiCampaigns.value?.length === 0 && !isFetchingCampaigns.value
+const hasNoCampaigns = computed(
+  () => campaigns.value?.length === 0 && !isFetching.value
 );
 
 const handleCreate = () => {
@@ -66,6 +74,11 @@ const handleResults = campaign => {
   resultsCampaign.value = campaign;
   toggleResultsDialog(true);
 };
+
+const handleDialogClose = () => {
+  toggleAPICampaignDialog(false);
+  refresh();
+};
 </script>
 
 <template>
@@ -80,19 +93,23 @@ const handleResults = campaign => {
         v-if="showAPICampaignDialog"
         :mode="dialogMode"
         :selected-campaign="selectedCampaign"
-        @close="toggleAPICampaignDialog(false)"
+        @close="handleDialogClose"
       />
     </template>
 
+    <template #filters>
+      <CampaignFilterBar :model-value="filters" @update:model-value="onFilterChange" />
+    </template>
+
     <div
-      v-if="isFetchingCampaigns"
+      v-if="isFetching"
       class="flex items-center justify-center py-10 text-n-slate-11"
     >
       <Spinner />
     </div>
     <CampaignList
-      v-else-if="!hasNoAPICampaigns"
-      :campaigns="apiCampaigns"
+      v-else-if="!hasNoCampaigns"
+      :campaigns="campaigns"
       @edit="handleEdit"
       @delete="handleDelete"
       @clone="handleClone"
@@ -104,14 +121,26 @@ const handleResults = campaign => {
       :subtitle="t('CAMPAIGN.API.EMPTY_STATE.SUBTITLE')"
       class="pt-14"
     />
+
     <ConfirmDeleteCampaignDialog
       ref="confirmDeleteCampaignDialogRef"
       :selected-campaign="selectedCampaign"
+      @deleted="refresh"
     />
     <CampaignResultsDialog
       v-if="showResultsDialog"
       :campaign="resultsCampaign"
       @close="toggleResultsDialog(false)"
     />
+
+    <template #pagination>
+      <PaginationFooter
+        v-if="meta.totalCount > meta.perPage"
+        :current-page="currentPage"
+        :total-items="meta.totalCount"
+        :items-per-page="meta.perPage"
+        @update:current-page="onPageChange"
+      />
+    </template>
   </CampaignLayout>
 </template>

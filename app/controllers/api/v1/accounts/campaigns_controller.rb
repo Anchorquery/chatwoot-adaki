@@ -8,7 +8,25 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   after_action :trigger_immediate_dispatch, only: [:create, :update]
 
   def index
-    @campaigns = Current.account.campaigns
+    scope = Current.account.campaigns
+
+    if params[:channel_types].present?
+      channel_types = Array(params[:channel_types])
+      scope = scope.joins(:inbox).where(inboxes: { channel_type: channel_types })
+    end
+
+    scope = scope.where(campaign_status: params[:status]) if params[:status].present?
+
+    if params[:q].present?
+      q = "%#{params[:q].strip.downcase}%"
+      scope = scope.where('LOWER(campaigns.title) LIKE :q', q: q)
+    end
+
+    @total_count = scope.count
+    @current_page = [params[:page].to_i, 1].max
+    per_page = 15
+    @campaigns = scope.order(created_at: :desc).page(@current_page).per(per_page)
+    @per_page = per_page
   end
 
   def show; end

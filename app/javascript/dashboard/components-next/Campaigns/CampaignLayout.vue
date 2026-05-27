@@ -40,9 +40,17 @@ const handleButtonClick = () => {
         </div>
       </div>
     </header>
-    <main class="flex-1 px-6 overflow-y-auto">
-      <div class="w-full max-w-5xl mx-auto py-4">
+    <div v-if="$slots.filters" class="px-6 border-b border-n-weak">
+      <div class="w-full max-w-5xl mx-auto">
+        <slot name="filters" />
+      </div>
+    </div>
+    <main class="flex-1 px-6 overflow-y-auto flex flex-col min-h-0">
+      <div class="w-full max-w-5xl mx-auto py-4 flex-1">
         <slot name="default" />
+      </div>
+      <div v-if="$slots.pagination" class="w-full max-w-5xl mx-auto">
+        <slot name="pagination" />
       </div>
     </main>
   </section>
