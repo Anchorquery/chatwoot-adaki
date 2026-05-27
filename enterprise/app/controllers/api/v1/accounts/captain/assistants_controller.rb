@@ -16,7 +16,14 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
   end
 
   def update
-    @assistant.update!(assistant_params)
+    attrs = assistant_params.to_h
+    # config es jsonb — el update! lo REEMPLAZA entero. Hacer merge manual evita
+    # que un payload parcial (e.g. AI config panel mandando solo handoff/resolution
+    # message) descarte keys críticas como autopilot_enabled, product_name, etc.
+    if attrs[:config].present?
+      attrs[:config] = (@assistant.config || {}).merge(attrs[:config].stringify_keys)
+    end
+    @assistant.update!(attrs)
   end
 
   def destroy

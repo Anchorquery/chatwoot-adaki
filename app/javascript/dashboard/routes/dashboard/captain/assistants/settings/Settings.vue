@@ -81,13 +81,16 @@ const handleGenerated = async data => {
     updatePayload.response_guidelines = data.response_guidelines;
   if (data.guardrails?.length) updatePayload.guardrails = data.guardrails;
 
+  // Mandar SOLO los keys de config que cambian. Backend hace deep_merge —
+  // spread del config entero descartaba keys ausentes en Vuex (e.g.
+  // autopilot_enabled = undefined) y silenciaba el bot.
   const configUpdate = {};
   if (data.handoff_message)
     configUpdate.handoff_message = data.handoff_message;
   if (data.resolution_message)
     configUpdate.resolution_message = data.resolution_message;
   if (Object.keys(configUpdate).length) {
-    updatePayload.config = { ...assistant.value.config, ...configUpdate };
+    updatePayload.config = configUpdate;
   }
 
   if (Object.keys(updatePayload).length > 1) {
