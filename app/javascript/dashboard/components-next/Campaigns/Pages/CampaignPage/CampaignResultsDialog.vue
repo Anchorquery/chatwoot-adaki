@@ -46,7 +46,7 @@ async function fetchResults() {
   if (!props.campaign) return;
   loading.value = true;
   try {
-    const { data } = await CampaignsAPI.results(props.campaign.display_id, {
+    const { data } = await CampaignsAPI.results(props.campaign.id, {
       page: currentPage.value,
       status: activeFilter.value,
       q: searchQuery.value,
@@ -105,7 +105,7 @@ async function retryFailed() {
   if (!confirm(t('CAMPAIGN.RESULTS.RETRY_CONFIRM', { count: stats.value.failed_count }))) return;
   retrying.value = true;
   try {
-    const { data } = await CampaignsAPI.retryFailed(props.campaign.display_id);
+    const { data } = await CampaignsAPI.retryFailed(props.campaign.id);
     alert(t('CAMPAIGN.RESULTS.RETRY_SUCCESS', { count: data.retry_count }));
     currentPage.value = 1;
     await fetchResults();
@@ -126,7 +126,7 @@ async function exportCSV() {
     let page = 1;
     let totalPages = 1;
     do {
-      const { data } = await CampaignsAPI.results(props.campaign.display_id, { page, status: '', q: '' });
+      const { data } = await CampaignsAPI.results(props.campaign.id, { page, status: '', q: '' });
       allContacts.push(...data.contacts);
       totalPages = data.meta.total_pages;
       page++;
