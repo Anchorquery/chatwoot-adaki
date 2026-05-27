@@ -39,12 +39,8 @@ class Campaigns::DeliveryPlannerService
     labels = campaign.account.labels.where(id: audience_label_ids).pluck(:title)
     return campaign.account.contacts.none if labels.empty?
 
-    directly_tagged = campaign.account.contacts.tagged_with(labels, any: true)
-    via_conversation_ids = campaign.account.conversations.tagged_with(labels, any: true).pluck(:contact_id).uniq
-    via_conversation = campaign.account.contacts.where(id: via_conversation_ids)
-
-    campaign.account.contacts.where(id: directly_tagged.select(:id)).or(
-      campaign.account.contacts.where(id: via_conversation.select(:id))
-    )
+    directly_tagged_ids = campaign.account.contacts.tagged_with(labels, any: true).pluck(:id)
+    via_conversation_ids = campaign.account.conversations.tagged_with(labels, any: true).pluck(:contact_id).compact.uniq
+    campaign.account.contacts.where(id: (directly_tagged_ids + via_conversation_ids).uniq)
   end
 end
