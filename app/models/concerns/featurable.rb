@@ -34,29 +34,32 @@ module Featurable
     has_flags FEATURES_PRIMARY.merge(column: 'feature_flags').merge(QUERY_MODE)
     has_flags FEATURES_SECONDARY.merge(column: 'feature_flags_2').merge(QUERY_MODE) if FEATURES_SECONDARY.any?
 
-    before_create :enable_default_features
-  end
+    # flag_shih_tzu define selected_feature_flags / selected_feature_flags=
+    # directamente en la clase incluyente (class_eval). Sobreescribimos aquí,
+    # despues de has_flags, para que el setter rutee cada flag a la columna
+    # correcta (feature_flags o feature_flags_2) en vez de fallar con
+    # ArgumentError ("Invalid flag") cuando el flag pertenece a la segunda
+    # columna.
+    define_method(:selected_feature_flags=) do |chosen_flags|
+      unselect_all_flags('feature_flags')
+      unselect_all_flags('feature_flags_2') if self.class.flag_mapping.key?('feature_flags_2')
+      next if chosen_flags.nil?
 
-  # Override generado por flag_shih_tzu. Setter por columna ('feature_flags')
-  # solo enable_flag dentro de esa columna. Con bitfield split en dos columnas
-  # necesitamos rutear cada flag a la columna que le corresponde.
-  def selected_feature_flags=(chosen_flags)
-    unselect_all_flags('feature_flags')
-    unselect_all_flags('feature_flags_2') if self.class.flag_mapping.key?('feature_flags_2')
-    return if chosen_flags.nil?
+      chosen_flags.each do |flag|
+        next if flag.blank?
 
-    chosen_flags.each do |flag|
-      next if flag.blank?
-
-      enable_flag(flag.to_sym)
+        enable_flag(flag.to_sym)
+      end
     end
-  end
 
-  def selected_feature_flags
-    primary = selected_flags('feature_flags')
-    return primary unless self.class.flag_mapping.key?('feature_flags_2')
+    define_method(:selected_feature_flags) do
+      primary = selected_flags('feature_flags')
+      next primary unless self.class.flag_mapping.key?('feature_flags_2')
 
-    primary + selected_flags('feature_flags_2')
+      primary + selected_flags('feature_flags_2')
+    end
+
+    before_create :enable_default_features
   end
 
   def enable_features(*names)
