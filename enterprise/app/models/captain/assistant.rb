@@ -36,9 +36,14 @@ class Captain::Assistant < ApplicationRecord
   has_many :copilot_threads, dependent: :destroy_async
   has_many :scenarios, class_name: 'Captain::Scenario', dependent: :destroy_async
 
+  HUMAN_TAKEOVER_MODES = %w[always after_window never].freeze
+  DEFAULT_HUMAN_TAKEOVER_MODE = 'after_window'
+  DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES = 15
+
   store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes,
                  :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number,
-                 :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover
+                 :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
+                 :human_takeover_mode, :human_takeover_window_minutes
 
   validates :name, presence: true
   validates :description, presence: true
@@ -72,6 +77,26 @@ class Captain::Assistant < ApplicationRecord
   def auto_resolve_hours_value
     value = config['auto_resolve_hours'].to_i
     value.positive? ? value : 24
+  end
+
+  # Modo de re-enganche del bot tras intervención humana.
+  # always: bot siempre puede responder. on_reopen: solo si conversación se resolvió y reabrió.
+  # after_window: bot retoma si última respuesta humana fue hace > N minutos.
+  def human_takeover_mode_value
+    raw = config['human_takeover_mode']
+    return raw if HUMAN_TAKEOVER_MODES.include?(raw)
+
+    # Compat: si toggle legacy off, bot nunca retoma → equivalente a windows=∞.
+    # Si toggle legacy on (default), usamos default nuevo.
+    return 'never' if config.key?('continue_after_human_takeover') &&
+                      !ActiveModel::Type::Boolean.new.cast(config['continue_after_human_takeover'])
+
+    DEFAULT_HUMAN_TAKEOVER_MODE
+  end
+
+  def human_takeover_window_minutes_value
+    value = config['human_takeover_window_minutes'].to_i
+    value.positive? ? value : DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES
   end
 
   def available_agent_tools

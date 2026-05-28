@@ -217,12 +217,10 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def conversation_captain_controllable?
-    status, assignee_id = Conversation.uncached { Conversation.where(id: @conversation.id).pick(:status, :assignee_id) }
+    status = Conversation.uncached { Conversation.where(id: @conversation.id).pick(:status) }
     return false unless pending_status?(status) || open_status?(status)
-    return true if assignee_id.blank?
-    return false if human_response_exists?
 
-    inbox.continue_bot_after_assignment?
+    !Captain::HumanTakeoverEvaluator.new(conversation: @conversation).human_takeover?
   end
 
   def pending_status?(status)
@@ -231,13 +229,5 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
   def open_status?(status)
     status == 'open' || status == Conversation.statuses[:open]
-  end
-
-  def human_response_exists?
-    @conversation.messages
-                 .outgoing
-                 .where(private: false)
-                 .where(sender_type: 'User')
-                 .exists?
   end
 end

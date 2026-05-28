@@ -26,6 +26,8 @@ const isCaptainV2Enabled = computed(() =>
   isCloudFeatureEnabled(FEATURE_FLAGS.CAPTAIN_V2)
 );
 
+const HUMAN_TAKEOVER_MODES = ['always', 'after_window', 'never'];
+
 const initialState = {
   handoffMessage: '',
   resolutionMessage: '',
@@ -33,6 +35,8 @@ const initialState = {
   temperature: 1,
   autopilotEnabled: false,
   continueAfterHumanTakeover: true,
+  humanTakeoverMode: 'after_window',
+  humanTakeoverWindowMinutes: 15,
   autoHandoffEnabled: false,
   autoResolveHours: 24,
 };
@@ -70,6 +74,11 @@ const updateStateFromAssistant = assistant => {
       : !!config.continue_after_human_takeover;
   state.autoHandoffEnabled = !!config.auto_handoff_enabled;
   state.autoResolveHours = Number(config.auto_resolve_hours) || 24;
+  state.humanTakeoverMode = HUMAN_TAKEOVER_MODES.includes(config.human_takeover_mode)
+    ? config.human_takeover_mode
+    : 'after_window';
+  state.humanTakeoverWindowMinutes =
+    Number(config.human_takeover_window_minutes) || 15;
 };
 
 const handleSystemMessagesUpdate = async () => {
@@ -95,6 +104,9 @@ const handleSystemMessagesUpdate = async () => {
       temperature: state.temperature || 1,
       autopilot_enabled: state.autopilotEnabled,
       continue_after_human_takeover: state.continueAfterHumanTakeover,
+      human_takeover_mode: state.humanTakeoverMode,
+      human_takeover_window_minutes:
+        Number(state.humanTakeoverWindowMinutes) || 15,
       auto_handoff_enabled: state.autoHandoffEnabled,
       auto_resolve_hours: Number(state.autoResolveHours) || 24,
     },
@@ -193,6 +205,50 @@ watch(
         t('CAPTAIN.ASSISTANTS.FORM.CONTINUE_AFTER_TAKEOVER.DESCRIPTION')
       "
     />
+
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-n-slate-12">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.LABEL') }}
+      </label>
+      <select
+        v-model="state.humanTakeoverMode"
+        class="w-full px-3 py-2 rounded-lg border border-n-weak bg-n-alpha-black2 text-sm text-n-slate-12"
+      >
+        <option value="always">
+          {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.ALWAYS') }}
+        </option>
+        <option value="after_window">
+          {{
+            t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.AFTER_WINDOW')
+          }}
+        </option>
+        <option value="never">
+          {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.NEVER') }}
+        </option>
+      </select>
+      <p class="text-sm text-n-slate-11 italic">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.DESCRIPTION') }}
+      </p>
+    </div>
+
+    <div
+      v-if="state.humanTakeoverMode === 'after_window'"
+      class="flex flex-col gap-2"
+    >
+      <label class="text-sm font-medium text-n-slate-12">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_WINDOW.LABEL') }}
+      </label>
+      <input
+        v-model.number="state.humanTakeoverWindowMinutes"
+        type="number"
+        min="1"
+        max="10080"
+        class="w-32 px-3 py-2 rounded-lg border border-n-weak bg-n-alpha-black2 text-sm text-n-slate-12"
+      />
+      <p class="text-sm text-n-slate-11 italic">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_WINDOW.DESCRIPTION') }}
+      </p>
+    </div>
 
     <SettingsToggleSection
       v-model="state.autoHandoffEnabled"

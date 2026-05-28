@@ -505,6 +505,19 @@
           "LABEL": "Continue replying after human takeover",
           "DESCRIPTION": "When enabled, the assistant keeps replying to the customer even if an agent has been assigned or has already replied. Disable to stop the bot once a human steps in."
         },
+        "HUMAN_TAKEOVER_MODE": {
+          "LABEL": "Re-engagement mode after human",
+          "DESCRIPTION": "Defines when the bot resumes replying after a human agent has stepped in.",
+          "OPTIONS": {
+            "ALWAYS": "Always (bot replies even after human responses)",
+            "AFTER_WINDOW": "After human inactivity window",
+            "NEVER": "Never (human owns the conversation)"
+          }
+        },
+        "HUMAN_TAKEOVER_WINDOW": {
+          "LABEL": "Human inactivity window (minutes)",
+          "DESCRIPTION": "If the last human reply is older than N minutes, the bot resumes. Useful so humans can chat live and the bot re-engages when the customer comes back hours/days later."
+        },
         "AUTO_HANDOFF": {
           "LABEL": "Auto handoff on inactivity",
           "DESCRIPTION": "Periodically evaluate inactive pending conversations and hand off to a human (or auto-resolve) when the customer has stopped replying."

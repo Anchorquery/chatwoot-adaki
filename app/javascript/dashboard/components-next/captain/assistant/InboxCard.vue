@@ -82,6 +82,10 @@ const showOverrides = ref(false);
 const localContinue = ref(null);
 const localAutoHandoff = ref(null);
 const localHours = ref(null);
+const localTakeoverMode = ref(null);
+const localTakeoverWindow = ref(null);
+
+const HUMAN_TAKEOVER_MODES = ['always', 'after_window', 'never'];
 
 const syncLocal = () => {
   localContinue.value =
@@ -96,6 +100,15 @@ const syncLocal = () => {
     settings.value.auto_resolve_hours === undefined
       ? null
       : Number(settings.value.auto_resolve_hours);
+  localTakeoverMode.value = HUMAN_TAKEOVER_MODES.includes(
+    settings.value.human_takeover_mode
+  )
+    ? settings.value.human_takeover_mode
+    : null;
+  localTakeoverWindow.value =
+    settings.value.human_takeover_window_minutes === undefined
+      ? null
+      : Number(settings.value.human_takeover_window_minutes);
 };
 watch(() => props.inbox, syncLocal, { immediate: true, deep: true });
 
@@ -248,6 +261,71 @@ const clearOverride = async key => {
             <option value="true">{{ t('CAPTAIN.INBOXES.OVERRIDES.ON') }}</option>
             <option value="false">{{ t('CAPTAIN.INBOXES.OVERRIDES.OFF') }}</option>
           </select>
+        </div>
+      </div>
+
+      <!-- human_takeover_mode -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-n-slate-12">
+            {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.LABEL') }}
+          </p>
+          <p class="text-xs text-n-slate-11">
+            {{
+              t('CAPTAIN.INBOXES.OVERRIDES.EFFECTIVE', {
+                value: effective.human_takeover_mode || 'after_window',
+              })
+            }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select
+            :value="localTakeoverMode === null ? 'inherit' : localTakeoverMode"
+            :disabled="saving"
+            class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            @change="
+              $event.target.value === 'inherit'
+                ? clearOverride('human_takeover_mode')
+                : saveOverride({ human_takeover_mode: $event.target.value })
+            "
+          >
+            <option value="inherit">{{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}</option>
+            <option value="always">{{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.ALWAYS') }}</option>
+            <option value="after_window">{{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.AFTER_WINDOW') }}</option>
+            <option value="never">{{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.NEVER') }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- human_takeover_window_minutes -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-n-slate-12">
+            {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_WINDOW.LABEL') }}
+          </p>
+          <p class="text-xs text-n-slate-11">
+            {{
+              t('CAPTAIN.INBOXES.OVERRIDES.EFFECTIVE', {
+                value: (effective.human_takeover_window_minutes || 15) + 'm',
+              })
+            }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            v-model.number="localTakeoverWindow"
+            type="number"
+            min="1"
+            max="10080"
+            :placeholder="t('CAPTAIN.INBOXES.OVERRIDES.INHERIT')"
+            :disabled="saving"
+            class="w-24 text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            @change="
+              localTakeoverWindow
+                ? saveOverride({ human_takeover_window_minutes: Number(localTakeoverWindow) })
+                : clearOverride('human_takeover_window_minutes')
+            "
+          />
         </div>
       </div>
 

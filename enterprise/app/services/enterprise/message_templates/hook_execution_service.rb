@@ -93,14 +93,6 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   def human_takeover?
-    conversation.assignee_id.present? || human_response_exists?
-  end
-
-  def human_response_exists?
-    conversation.messages
-                .outgoing
-                .where(private: false)
-                .where(sender_type: 'User')
-                .exists?
+    Captain::HumanTakeoverEvaluator.new(conversation: conversation).human_takeover?
   end
 end

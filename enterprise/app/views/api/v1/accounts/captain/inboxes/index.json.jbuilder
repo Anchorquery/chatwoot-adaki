@@ -8,6 +8,8 @@ json.payload do
         json.continue_after_human_takeover ci.continue_after_human_takeover?
         json.auto_handoff_enabled ci.auto_handoff_enabled?
         json.auto_resolve_hours ci.auto_resolve_hours_value
+        json.human_takeover_mode ci.human_takeover_mode_value
+        json.human_takeover_window_minutes ci.human_takeover_window_minutes_value
       end
     end
   end

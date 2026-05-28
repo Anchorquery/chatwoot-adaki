@@ -30,7 +30,8 @@ class Api::V1::Accounts::Captain::InboxesController < Api::V1::Accounts::BaseCon
 
   def settings_params
     params.require(:captain_inbox).permit(
-      settings: [:auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover]
+      settings: [:auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
+                 :human_takeover_mode, :human_takeover_window_minutes]
     )[:settings] || {}
   end
 
