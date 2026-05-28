@@ -3,9 +3,13 @@ module Enterprise::MessageTemplates::HookExecutionService
 
   def trigger_templates
     super
+    Rails.logger.info("[CAPTAIN-DEBUG] trigger_templates conv=#{conversation.id} msg=#{message.id} incoming=#{message.incoming?}")
+    Rails.logger.info("[CAPTAIN-DEBUG] should_process=#{should_process_captain_response?} captain_active=#{inbox.captain_active?}")
+    Rails.logger.info("[CAPTAIN-DEBUG] controllable=#{conversation_captain_controllable?} autopilot=#{captain_autopilot_enabled?} human_takeover=#{human_takeover?}")
     return unless should_process_captain_response?
     return perform_handoff unless inbox.captain_active?
 
+    Rails.logger.info("[CAPTAIN-DEBUG] scheduling response for conv=#{conversation.id}")
     schedule_captain_response
   end
 
