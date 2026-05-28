@@ -8,15 +8,55 @@ module Featurable
 
   FEATURE_LIST = YAML.safe_load(Rails.root.join('config/features.yml').read).freeze
 
-  FEATURES = FEATURE_LIST.each_with_object({}) do |feature, result|
-    result[result.keys.size + 1] = "feature_#{feature['name']}".to_sym
+  # PostgreSQL signed bigint cabe 63 bits utilizables (bit 64 desborda).
+  # Bits 1..63 -> feature_flags. Bits 64+ -> feature_flags_2.
+  MAX_BITS_PER_COLUMN = 63
+
+  FEATURES_PRIMARY = {}
+  FEATURES_SECONDARY = {}
+  FEATURE_LIST.each_with_index do |feature, idx|
+    key = "feature_#{feature['name']}".to_sym
+    if idx < MAX_BITS_PER_COLUMN
+      FEATURES_PRIMARY[idx + 1] = key
+    else
+      FEATURES_SECONDARY[idx - MAX_BITS_PER_COLUMN + 1] = key
+    end
   end
+  FEATURES_PRIMARY.freeze
+  FEATURES_SECONDARY.freeze
+
+  FEATURES = FEATURES_PRIMARY.merge(
+    FEATURES_SECONDARY.transform_keys { |k| k + MAX_BITS_PER_COLUMN }
+  ).freeze
 
   included do
     include FlagShihTzu
-    has_flags FEATURES.merge(column: 'feature_flags').merge(QUERY_MODE)
+    has_flags FEATURES_PRIMARY.merge(column: 'feature_flags').merge(QUERY_MODE)
+    has_flags FEATURES_SECONDARY.merge(column: 'feature_flags_2').merge(QUERY_MODE) if FEATURES_SECONDARY.any?
 
     before_create :enable_default_features
+  end
+
+  # Override generado por flag_shih_tzu. Setter por columna ('feature_flags')
+  # solo enable_flag dentro de esa columna. Con bitfield split en dos columnas
+  # necesitamos rutear cada flag a la columna que le corresponde.
+  def selected_feature_flags=(chosen_flags)
+    unselect_all_flags('feature_flags')
+    unselect_all_flags('feature_flags_2') if self.class.flag_mapping.key?('feature_flags_2')
+    return if chosen_flags.nil?
+
+    chosen_flags.each do |flag|
+      next if flag.blank?
+
+      enable_flag(flag.to_sym)
+    end
+  end
+
+  def selected_feature_flags
+    primary = selected_flags('feature_flags')
+    return primary unless self.class.flag_mapping.key?('feature_flags_2')
+
+    primary + selected_flags('feature_flags_2')
   end
 
   def enable_features(*names)
