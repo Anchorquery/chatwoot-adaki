@@ -126,6 +126,23 @@ deseada (humano activo gana, pero cliente recurrente vuelve al bot).
 agente chatea activo, bot calla. Cuando el cliente regresa horas o días
 después, la última respuesta humana es vieja y el bot retoma automáticamente.
 
+## Bug relacionado: falsa detección de grupo en Channel::Api
+
+Durante la investigación se detectó que `Conversation#group?` retornaba `true`
+para conversaciones 1:1 cuando el inbox es de tipo `Channel::Api` (Evolution
+WhatsApp bridge). Causa: `group_structured_identifier?` aplicaba la heurística
+"más de 15 dígitos = grupo" sobre `contact_inbox.source_id` que en API channel
+es un UUID. `UUID.gsub(/\D/, '')` produce 32 dígitos hex → falso positivo.
+
+Fix: rechazar identificadores con letras antes de la heurística numérica
+([conversation.rb](app/models/conversation.rb#L295)). JIDs WhatsApp legítimos
+son 100% numéricos (modernos) o `digits-digits` (legacy); cualquier letra
+descarta el candidato.
+
+Síntoma observado: el bot ignoraba todos los mensajes incoming en inboxes API
+porque el Hook entraba al branch `conversation.group?` y exigía mención del
+bot que nunca llegaba.
+
 ## Migración
 
 Ninguna. Defaults cubren todos los registros existentes:

@@ -2,7 +2,6 @@ class MessageTemplates::HookExecutionService
   pattr_initialize [:message!]
 
   def perform
-    Rails.logger.info("[CAPTAIN-DEBUG] HookExecutionService#perform START conv=#{conversation.id} msg=#{message.id} incoming=#{message.incoming?} last_incoming=#{conversation.last_incoming_message&.id}")
     return if conversation.last_incoming_message.blank?
     return if message.auto_reply_email?
 

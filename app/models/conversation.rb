@@ -296,6 +296,9 @@ class Conversation < ApplicationRecord
     [contact_inbox&.source_id, contact&.identifier].any? do |raw|
       local_part = raw.to_s.split('@').first.to_s
       next false if local_part.blank?
+      # WhatsApp JIDs are 100% numeric (modern) or "<digits>-<digits>" (legacy). Anything
+      # with letters (UUIDs from API channel source_ids, slugs, etc.) is NOT a group id.
+      next false if local_part.match?(/[a-z]/i)
       next true if local_part.match?(/\A\+?\d{3,}-\d{3,}\z/)
 
       local_part.gsub(/\D/, '').length > 15
