@@ -21,6 +21,12 @@ class CaptainInboxes extends ApiClient {
     const { assistantId, inboxId } = params;
     return axios.delete(`${this.url}/${assistantId}/inboxes/${inboxId}`);
   }
+
+  updateSettings({ assistantId, inboxId, settings }) {
+    return axios.patch(`${this.url}/${assistantId}/inboxes/${inboxId}`, {
+      captain_inbox: { settings },
+    });
+  }
 }
 
 export default new CaptainInboxes();

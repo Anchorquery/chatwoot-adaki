@@ -74,21 +74,21 @@
       "DELETE_ALL_READ": "Todas las notificaciones leídas eliminadas"
     },
     "REAUTHORIZE": {
-      "TITLE": "Reauthorization Required",
+      "TITLE": "Se requiere reautorización",
       "DESCRIPTION": "Tu conexión de WhatsApp ha caducado. Vuelve a conectarla para seguir recibiendo y enviando mensajes.",
-      "BUTTON_TEXT": "Reconnect WhatsApp",
+      "BUTTON_TEXT": "Reconectar WhatsApp",
       "LOADING_FACEBOOK": "Cargando el SDK de Facebook...",
-      "SUCCESS": "WhatsApp reconnected successfully",
+      "SUCCESS": "WhatsApp reconectado correctamente",
       "ERROR": "No se pudo reconectar WhatsApp. Inténtalo de nuevo.",
       "WHATSAPP_APP_ID_MISSING": "El ID de la aplicación de WhatsApp no está configurado. Ponte en contacto con tu administrador.",
       "WHATSAPP_CONFIG_ID_MISSING": "El ID de configuración de WhatsApp no está configurado. Ponte en contacto con tu administrador.",
-      "CONFIGURATION_ERROR": "Configuration error occurred during reauthorization.",
+      "CONFIGURATION_ERROR": "Se produjo un error de configuración durante la reautorización.",
       "FACEBOOK_LOAD_ERROR": "No se pudo cargar el SDK de Facebook. Inténtalo de nuevo.",
       "TROUBLESHOOTING": {
-        "TITLE": "Troubleshooting",
-        "POPUP_BLOCKED": "Ensure pop-ups are allowed for this site",
-        "COOKIES": "Third-party cookies must be enabled",
-        "ADMIN_ACCESS": "You need admin access to the WhatsApp Business Account"
+        "TITLE": "Resolución de problemas",
+        "POPUP_BLOCKED": "Asegúrate de que los pop-ups estén permitidos en este sitio",
+        "COOKIES": "Las cookies de terceros deben estar habilitadas",
+        "ADMIN_ACCESS": "Necesitas acceso de administrador a la cuenta de WhatsApp Business"
       }
     }
   }

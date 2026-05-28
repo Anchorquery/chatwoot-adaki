@@ -1,7 +1,9 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
+import { useStore } from 'dashboard/composables/store';
+import { useRoute } from 'vue-router';
 
 import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
@@ -66,6 +68,66 @@ const handleAction = ({ action, value }) => {
   toggleDropdown(false);
   emit('action', { action, value, id: props.id });
 };
+
+const store = useStore();
+const route = useRoute();
+const assistantId = computed(() => Number(route.params.assistantId));
+
+const ci = computed(() => props.inbox.captain_inbox || {});
+const effective = computed(() => ci.value.effective || {});
+const settings = computed(() => ci.value.settings || {});
+
+const showOverrides = ref(false);
+
+const localContinue = ref(null);
+const localAutoHandoff = ref(null);
+const localHours = ref(null);
+
+const syncLocal = () => {
+  localContinue.value =
+    settings.value.continue_after_human_takeover === undefined
+      ? null
+      : !!settings.value.continue_after_human_takeover;
+  localAutoHandoff.value =
+    settings.value.auto_handoff_enabled === undefined
+      ? null
+      : !!settings.value.auto_handoff_enabled;
+  localHours.value =
+    settings.value.auto_resolve_hours === undefined
+      ? null
+      : Number(settings.value.auto_resolve_hours);
+};
+watch(() => props.inbox, syncLocal, { immediate: true, deep: true });
+
+const saving = ref(false);
+const saveOverride = async patch => {
+  saving.value = true;
+  try {
+    const newSettings = { ...settings.value, ...patch };
+    await store.dispatch('captainInboxes/updateSettings', {
+      assistantId: assistantId.value,
+      inboxId: props.id,
+      settings: newSettings,
+    });
+  } finally {
+    saving.value = false;
+  }
+};
+
+const clearOverride = async key => {
+  const newSettings = { ...settings.value };
+  delete newSettings[key];
+  saving.value = true;
+  try {
+    await store.dispatch('captainInboxes/updateSettings', {
+      assistantId: assistantId.value,
+      inboxId: props.id,
+      settings: newSettings,
+    });
+  } finally {
+    saving.value = false;
+  }
+};
 </script>
 
 <template>
@@ -78,6 +140,15 @@ const handleAction = ({ action, value }) => {
         {{ inboxName }}
       </span>
       <div class="flex items-center gap-2">
+        <Button
+          :icon="
+            showOverrides ? 'i-lucide-chevron-up' : 'i-lucide-sliders-horizontal'
+          "
+          color="slate"
+          size="xs"
+          class="rounded-md"
+          @click="showOverrides = !showOverrides"
+        />
         <Policy
           v-on-clickaway="() => toggleDropdown(false)"
           :permissions="['administrator']"
@@ -97,6 +168,119 @@ const handleAction = ({ action, value }) => {
             @action="handleAction($event)"
           />
         </Policy>
+      </div>
+    </div>
+
+    <div
+      v-if="showOverrides"
+      class="mt-4 pt-4 border-t border-n-weak flex flex-col gap-4"
+    >
+      <p class="text-xs text-n-slate-11">
+        {{ t('CAPTAIN.INBOXES.OVERRIDES.HINT') }}
+      </p>
+
+      <!-- continue_after_human_takeover -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-n-slate-12">
+            {{ t('CAPTAIN.ASSISTANTS.FORM.CONTINUE_AFTER_TAKEOVER.LABEL') }}
+          </p>
+          <p class="text-xs text-n-slate-11">
+            {{
+              t('CAPTAIN.INBOXES.OVERRIDES.EFFECTIVE', {
+                value: effective.continue_after_human_takeover
+                  ? t('CAPTAIN.INBOXES.OVERRIDES.ON')
+                  : t('CAPTAIN.INBOXES.OVERRIDES.OFF'),
+              })
+            }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select
+            :value="localContinue === null ? 'inherit' : String(localContinue)"
+            :disabled="saving"
+            class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            @change="
+              $event.target.value === 'inherit'
+                ? clearOverride('continue_after_human_takeover')
+                : saveOverride({
+                    continue_after_human_takeover: $event.target.value === 'true',
+                  })
+            "
+          >
+            <option value="inherit">{{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}</option>
+            <option value="true">{{ t('CAPTAIN.INBOXES.OVERRIDES.ON') }}</option>
+            <option value="false">{{ t('CAPTAIN.INBOXES.OVERRIDES.OFF') }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- auto_handoff_enabled -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-n-slate-12">
+            {{ t('CAPTAIN.ASSISTANTS.FORM.AUTO_HANDOFF.LABEL') }}
+          </p>
+          <p class="text-xs text-n-slate-11">
+            {{
+              t('CAPTAIN.INBOXES.OVERRIDES.EFFECTIVE', {
+                value: effective.auto_handoff_enabled
+                  ? t('CAPTAIN.INBOXES.OVERRIDES.ON')
+                  : t('CAPTAIN.INBOXES.OVERRIDES.OFF'),
+              })
+            }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select
+            :value="localAutoHandoff === null ? 'inherit' : String(localAutoHandoff)"
+            :disabled="saving"
+            class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            @change="
+              $event.target.value === 'inherit'
+                ? clearOverride('auto_handoff_enabled')
+                : saveOverride({
+                    auto_handoff_enabled: $event.target.value === 'true',
+                  })
+            "
+          >
+            <option value="inherit">{{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}</option>
+            <option value="true">{{ t('CAPTAIN.INBOXES.OVERRIDES.ON') }}</option>
+            <option value="false">{{ t('CAPTAIN.INBOXES.OVERRIDES.OFF') }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- auto_resolve_hours -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-n-slate-12">
+            {{ t('CAPTAIN.ASSISTANTS.FORM.AUTO_RESOLVE_HOURS.LABEL') }}
+          </p>
+          <p class="text-xs text-n-slate-11">
+            {{
+              t('CAPTAIN.INBOXES.OVERRIDES.EFFECTIVE', {
+                value: effective.auto_resolve_hours + 'h',
+              })
+            }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            v-model.number="localHours"
+            type="number"
+            min="1"
+            max="720"
+            :placeholder="t('CAPTAIN.INBOXES.OVERRIDES.INHERIT')"
+            :disabled="saving"
+            class="w-24 text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            @change="
+              localHours
+                ? saveOverride({ auto_resolve_hours: Number(localHours) })
+                : clearOverride('auto_resolve_hours')
+            "
+          />
+        </div>
       </div>
     </div>
   </CardLayout>

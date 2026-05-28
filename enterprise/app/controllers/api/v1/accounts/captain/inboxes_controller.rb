@@ -4,13 +4,20 @@ class Api::V1::Accounts::Captain::InboxesController < Api::V1::Accounts::BaseCon
 
   before_action :set_assistant
   def index
-    @inboxes = @assistant.inboxes
+    @captain_inboxes = @assistant.captain_inboxes.includes(:inbox)
   end
 
   def create
     inbox = Current.account.inboxes.find(assistant_params[:inbox_id])
     @captain_inbox = @assistant.captain_inboxes.build(inbox: inbox)
     @captain_inbox.save!
+  end
+
+  def update
+    @captain_inbox = @assistant.captain_inboxes.find_by!(inbox_id: permitted_params[:inbox_id])
+    merged = (@captain_inbox.settings || {}).merge(settings_params.to_h.stringify_keys)
+    @captain_inbox.update!(settings: merged)
+    render json: { settings: @captain_inbox.settings }
   end
 
   def destroy
@@ -20,6 +27,12 @@ class Api::V1::Accounts::Captain::InboxesController < Api::V1::Accounts::BaseCon
   end
 
   private
+
+  def settings_params
+    params.require(:captain_inbox).permit(
+      settings: [:auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover]
+    )[:settings] || {}
+  end
 
   def set_assistant
     @assistant = account_assistants.find(permitted_params[:assistant_id])

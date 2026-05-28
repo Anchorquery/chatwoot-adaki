@@ -7,10 +7,10 @@
     },
     "CLOSE": "Cerrar",
     "BETA": "Beta",
-    "BETA_DESCRIPTION": "This feature is in beta and may change as we improve it.",
-    "ACCEPT": "Accept",
+    "BETA_DESCRIPTION": "Esta función está en beta y puede cambiar a medida que la mejoramos.",
+    "ACCEPT": "Aceptar",
     "DISCARD": "Descartar",
-    "PREFERRED": "Preferred"
+    "PREFERRED": "Preferido"
   },
   "CHOICE_TOGGLE": {
     "YES": "Si",

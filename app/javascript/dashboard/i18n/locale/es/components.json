@@ -42,7 +42,7 @@
   },
   "FEATURE_SPOTLIGHT": {
     "LEARN_MORE": "Más información",
-    "WATCH_VIDEO": "Watch video"
+    "WATCH_VIDEO": "Ver vídeo"
   },
   "DURATION_INPUT": {
     "MINUTES": "Minutos",
@@ -54,15 +54,15 @@
     "COMING_SOON": "¡Muy pronto!"
   },
   "SLASH_COMMANDS": {
-    "HEADING_1": "Heading 1",
-    "HEADING_2": "Heading 2",
-    "HEADING_3": "Heading 3",
-    "BOLD": "Bold",
-    "ITALIC": "Italic",
-    "STRIKETHROUGH": "Strikethrough",
-    "CODE": "Code",
-    "BULLET_LIST": "Bullet List",
-    "ORDERED_LIST": "Ordered List",
-    "TABLE": "Table"
+    "HEADING_1": "Encabezado 1",
+    "HEADING_2": "Encabezado 2",
+    "HEADING_3": "Encabezado 3",
+    "BOLD": "Negrita",
+    "ITALIC": "Cursiva",
+    "STRIKETHROUGH": "Tachado",
+    "CODE": "Código",
+    "BULLET_LIST": "Lista de viñetas",
+    "ORDERED_LIST": "Lista ordenada",
+    "TABLE": "Tabla"
   }
 }

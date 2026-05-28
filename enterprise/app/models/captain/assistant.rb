@@ -37,7 +37,8 @@ class Captain::Assistant < ApplicationRecord
   has_many :scenarios, class_name: 'Captain::Scenario', dependent: :destroy_async
 
   store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes,
-                 :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number
+                 :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number,
+                 :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover
 
   validates :name, presence: true
   validates :description, presence: true
@@ -53,6 +54,24 @@ class Captain::Assistant < ApplicationRecord
 
   def autopilot_enabled?
     ActiveModel::Type::Boolean.new.cast(config['autopilot_enabled'])
+  end
+
+  # Default true: bot retoma conversación aunque exista assignee o respuesta humana previa.
+  def continue_after_human_takeover?
+    return true unless config.key?('continue_after_human_takeover')
+
+    ActiveModel::Type::Boolean.new.cast(config['continue_after_human_takeover'])
+  end
+
+  # Default false: desactiva cron de auto-handoff por evaluación LLM.
+  def auto_handoff_enabled?
+    ActiveModel::Type::Boolean.new.cast(config['auto_handoff_enabled'])
+  end
+
+  # Default 24h: ventana de inactividad antes de evaluar auto-resolve/handoff.
+  def auto_resolve_hours_value
+    value = config['auto_resolve_hours'].to_i
+    value.positive? ? value : 24
   end
 
   def available_agent_tools

@@ -176,6 +176,10 @@ class Inbox < ApplicationRecord
   end
 
   def continue_bot_after_assignment?
+    if respond_to?(:captain_inbox) && captain_inbox.present? && captain_inbox.captain_assistant&.autopilot_enabled?
+      return true if captain_inbox.continue_after_human_takeover?
+    end
+
     channel.respond_to?(:continue_bot_after_assignment?) && channel.continue_bot_after_assignment?
   end
 

@@ -501,6 +501,18 @@
           "LABEL": "Autopilot",
           "DESCRIPTION": "When enabled, this assistant will automatically reply to incoming customer messages on connected inboxes."
         },
+        "CONTINUE_AFTER_TAKEOVER": {
+          "LABEL": "Continue replying after human takeover",
+          "DESCRIPTION": "When enabled, the assistant keeps replying to the customer even if an agent has been assigned or has already replied. Disable to stop the bot once a human steps in."
+        },
+        "AUTO_HANDOFF": {
+          "LABEL": "Auto handoff on inactivity",
+          "DESCRIPTION": "Periodically evaluate inactive pending conversations and hand off to a human (or auto-resolve) when the customer has stopped replying."
+        },
+        "AUTO_RESOLVE_HOURS": {
+          "LABEL": "Inactivity window (hours)",
+          "DESCRIPTION": "How many hours a conversation must be inactive before auto handoff / auto resolution kicks in. Default: 24."
+        },
         "DESCRIPTION": {
           "LABEL": "Description",
           "PLACEHOLDER": "Enter assistant description",
@@ -1167,6 +1179,13 @@
     "INBOXES": {
       "HEADER": "Connected Inboxes",
       "ADD_NEW": "Connect a new inbox",
+      "OVERRIDES": {
+        "HINT": "Per-inbox overrides. Leave as 'Inherit' to use the assistant defaults.",
+        "EFFECTIVE": "Currently: {value}",
+        "INHERIT": "Inherit",
+        "ON": "On",
+        "OFF": "Off"
+      },
       "OPTIONS": {
         "DISCONNECT": "Disconnect"
       },

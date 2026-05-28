@@ -32,7 +32,7 @@
         "LABEL": "Correo laboral",
         "PLACEHOLDER": "Introduce tu correo laboral"
       },
-      "SUBMIT": "Continue with SSO",
+      "SUBMIT": "Continuar con SSO",
       "API": {
         "ERROR_MESSAGE": "Falló la autenticación SSO. Revisa tus credenciales e inténtalo de nuevo."
       }

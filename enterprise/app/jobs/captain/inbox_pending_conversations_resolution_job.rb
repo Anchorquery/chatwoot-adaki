@@ -6,6 +6,7 @@ class Captain::InboxPendingConversationsResolutionJob < ApplicationJob
 
   def perform(inbox)
     return if inbox.account.captain_auto_resolve_disabled?
+    return unless inbox.captain_inbox&.auto_handoff_enabled?
 
     if evaluate_conversation_completion?(inbox.account)
       perform_with_evaluation(inbox)
@@ -55,19 +56,20 @@ class Captain::InboxPendingConversationsResolutionJob < ApplicationJob
 
   def resolvable_pending_conversations(inbox)
     inbox.conversations.pending
-         .where('last_activity_at < ?', auto_resolve_cutoff_time)
+         .where('last_activity_at < ?', auto_resolve_cutoff_time(inbox))
          .limit(Limits::BULK_ACTIONS_LIMIT)
   end
 
   def still_resolvable_after_evaluation?(conversation)
     conversation.reload
-    conversation.pending? && conversation.last_activity_at < auto_resolve_cutoff_time
+    conversation.pending? && conversation.last_activity_at < auto_resolve_cutoff_time(conversation.inbox)
   rescue ActiveRecord::RecordNotFound
     false
   end
 
-  def auto_resolve_cutoff_time
-    Time.now.utc - 1.hour
+  def auto_resolve_cutoff_time(inbox)
+    hours = inbox.captain_inbox&.auto_resolve_hours_value || 24
+    Time.now.utc - hours.hours
   end
 
   def resolve_conversation(conversation, inbox, reason)

@@ -12,8 +12,8 @@
     "NO_INBOX_2": " para empezar",
     "NO_INBOX_AGENT": "¡Uh Oh! Parece que no eres parte de ninguna bandeja de entrada. Por favor, contacta con tu administrador",
     "SEARCH_MESSAGES": "Buscar mensajes en conversaciones",
-    "VIEW_ORIGINAL": "View original",
-    "VIEW_TRANSLATED": "View translated",
+    "VIEW_ORIGINAL": "Ver original",
+    "VIEW_TRANSLATED": "Ver traducción",
     "EMPTY_STATE": {
       "CMD_BAR": "para abrir el menú de comandos",
       "KEYBOARD_SHORTCUTS": "para ver los atajos del teclado"
@@ -366,37 +366,37 @@
       "PREVIOUS_CONVERSATION": "Conversaciones anteriores",
       "MACROS": "Macros",
       "LINEAR_ISSUES": "Problemas lineales vinculados",
-      "SHOPIFY_ORDERS": "Shopify Orders",
-      "SHARED_FILES": "Attachments"
+      "SHOPIFY_ORDERS": "Pedidos de Shopify",
+      "SHARED_FILES": "Adjuntos"
     },
     "SHARED_FILES": {
-      "EMPTY": "No attachments yet",
-      "DOWNLOAD": "Download file",
+      "EMPTY": "Aún no hay adjuntos",
+      "DOWNLOAD": "Descargar archivo",
       "DOWNLOAD_ERROR": "No se pudo descargar el archivo. Inténtalo de nuevo.",
-      "MEDIA_HEADING": "Media",
-      "FILES_HEADING": "Files",
+      "MEDIA_HEADING": "Multimedia",
+      "FILES_HEADING": "Archivos",
       "VIEW_ALL": "Ver todo",
-      "SHOW_LESS": "Show less",
+      "SHOW_LESS": "Ver menos",
       "MORE_COUNT": "+{count}",
-      "UNTITLED_FILE": "Untitled file"
+      "UNTITLED_FILE": "Archivo sin título"
     },
     "SHOPIFY": {
-      "ORDER_ID": "Order #{id}",
+      "ORDER_ID": "Pedido #{id}",
       "ERROR": "Error al cargar los pedidos",
-      "NO_SHOPIFY_ORDERS": "No orders found",
+      "NO_SHOPIFY_ORDERS": "No se encontraron pedidos",
       "FINANCIAL_STATUS": {
         "PENDING": "Pendientes",
-        "AUTHORIZED": "Authorized",
-        "PARTIALLY_PAID": "Partially Paid",
-        "PAID": "Paid",
-        "PARTIALLY_REFUNDED": "Partially Refunded",
-        "REFUNDED": "Refunded",
-        "VOIDED": "Voided"
+        "AUTHORIZED": "Autorizado",
+        "PARTIALLY_PAID": "Parcialmente pagado",
+        "PAID": "Pagado",
+        "PARTIALLY_REFUNDED": "Parcialmente reembolsado",
+        "REFUNDED": "Reembolsado",
+        "VOIDED": "Anulado"
       },
       "FULFILLMENT_STATUS": {
-        "FULFILLED": "Fulfilled",
-        "PARTIALLY_FULFILLED": "Partially Fulfilled",
-        "UNFULFILLED": "Unfulfilled"
+        "FULFILLED": "Completado",
+        "PARTIALLY_FULFILLED": "Parcialmente completado",
+        "UNFULFILLED": "Sin completar"
       }
     }
   },

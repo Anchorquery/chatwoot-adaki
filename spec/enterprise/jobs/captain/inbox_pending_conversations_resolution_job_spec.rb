@@ -9,6 +9,12 @@ RSpec.describe Captain::InboxPendingConversationsResolutionJob, type: :job do
 
   before do
     create(:captain_inbox, inbox: inbox, captain_assistant: captain_assistant)
+    captain_assistant.update!(
+      config: (captain_assistant.config || {}).merge(
+        'auto_handoff_enabled' => true,
+        'auto_resolve_hours' => 1
+      )
+    )
     stub_const('Limits::BULK_ACTIONS_LIMIT', 3)
     inbox.reload
   end

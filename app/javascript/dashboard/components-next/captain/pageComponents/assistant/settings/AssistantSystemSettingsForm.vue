@@ -32,6 +32,9 @@ const initialState = {
   instructions: '',
   temperature: 1,
   autopilotEnabled: false,
+  continueAfterHumanTakeover: true,
+  autoHandoffEnabled: false,
+  autoResolveHours: 24,
 };
 
 const state = reactive({ ...initialState });
@@ -61,6 +64,12 @@ const updateStateFromAssistant = assistant => {
   state.instructions = config.instructions;
   state.temperature = config.temperature || 1;
   state.autopilotEnabled = config.autopilot_enabled || false;
+  state.continueAfterHumanTakeover =
+    config.continue_after_human_takeover === undefined
+      ? true
+      : !!config.continue_after_human_takeover;
+  state.autoHandoffEnabled = !!config.auto_handoff_enabled;
+  state.autoResolveHours = Number(config.auto_resolve_hours) || 24;
 };
 
 const handleSystemMessagesUpdate = async () => {
@@ -85,6 +94,9 @@ const handleSystemMessagesUpdate = async () => {
       resolution_message: state.resolutionMessage,
       temperature: state.temperature || 1,
       autopilot_enabled: state.autopilotEnabled,
+      continue_after_human_takeover: state.continueAfterHumanTakeover,
+      auto_handoff_enabled: state.autoHandoffEnabled,
+      auto_resolve_hours: Number(state.autoResolveHours) || 24,
     },
   };
 
@@ -173,6 +185,36 @@ watch(
       :header="t('CAPTAIN.ASSISTANTS.FORM.AUTOPILOT.LABEL')"
       :description="t('CAPTAIN.ASSISTANTS.FORM.AUTOPILOT.DESCRIPTION')"
     />
+
+    <SettingsToggleSection
+      v-model="state.continueAfterHumanTakeover"
+      :header="t('CAPTAIN.ASSISTANTS.FORM.CONTINUE_AFTER_TAKEOVER.LABEL')"
+      :description="
+        t('CAPTAIN.ASSISTANTS.FORM.CONTINUE_AFTER_TAKEOVER.DESCRIPTION')
+      "
+    />
+
+    <SettingsToggleSection
+      v-model="state.autoHandoffEnabled"
+      :header="t('CAPTAIN.ASSISTANTS.FORM.AUTO_HANDOFF.LABEL')"
+      :description="t('CAPTAIN.ASSISTANTS.FORM.AUTO_HANDOFF.DESCRIPTION')"
+    />
+
+    <div v-if="state.autoHandoffEnabled" class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-n-slate-12">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.AUTO_RESOLVE_HOURS.LABEL') }}
+      </label>
+      <input
+        v-model.number="state.autoResolveHours"
+        type="number"
+        min="1"
+        max="720"
+        class="w-32 px-3 py-2 rounded-lg border border-n-weak bg-n-alpha-black2 text-sm text-n-slate-12"
+      />
+      <p class="text-sm text-n-slate-11 italic">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.AUTO_RESOLVE_HOURS.DESCRIPTION') }}
+      </p>
+    </div>
 
     <div>
       <Button

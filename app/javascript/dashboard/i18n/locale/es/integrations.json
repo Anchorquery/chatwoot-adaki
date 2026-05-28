@@ -501,6 +501,18 @@
           "LABEL": "Autopiloto",
           "DESCRIPTION": "Cuando está activado, este asistente responderá automáticamente a los mensajes entrantes de los clientes en las bandejas conectadas."
         },
+        "CONTINUE_AFTER_TAKEOVER": {
+          "LABEL": "Continuar respondiendo tras intervención humana",
+          "DESCRIPTION": "Cuando está activado, el asistente sigue respondiendo al cliente aunque haya un agente asignado o ya haya respondido. Desactívalo para que el bot deje de responder al entrar un humano."
+        },
+        "AUTO_HANDOFF": {
+          "LABEL": "Transferencia automática por inactividad",
+          "DESCRIPTION": "Evalúa periódicamente las conversaciones pendientes inactivas y las transfiere a un humano (o las resuelve) cuando el cliente dejó de responder."
+        },
+        "AUTO_RESOLVE_HOURS": {
+          "LABEL": "Ventana de inactividad (horas)",
+          "DESCRIPTION": "Cuántas horas debe estar inactiva la conversación antes de aplicar transferencia/resolución automática. Por defecto: 24."
+        },
         "DESCRIPTION": {
           "LABEL": "Descripción",
           "PLACEHOLDER": "Introduce la descripción del asistente",
@@ -1168,6 +1180,13 @@
     "INBOXES": {
       "HEADER": "Bandejas conectadas",
       "ADD_NEW": "Conectar una nueva bandeja",
+      "OVERRIDES": {
+        "HINT": "Overrides por bandeja. Deja en 'Heredar' para usar los valores del asistente.",
+        "EFFECTIVE": "Actual: {value}",
+        "INHERIT": "Heredar",
+        "ON": "Activado",
+        "OFF": "Desactivado"
+      },
       "OPTIONS": {
         "DISCONNECT": "Desconectar"
       },

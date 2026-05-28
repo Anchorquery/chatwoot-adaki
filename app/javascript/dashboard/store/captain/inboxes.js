@@ -18,5 +18,31 @@ export default createStore({
         return throwErrorMessage(error);
       }
     },
+    updateSettings: async function update(
+      { commit, state },
+      { assistantId, inboxId, settings }
+    ) {
+      try {
+        const response = await CaptainInboxes.updateSettings({
+          assistantId,
+          inboxId,
+          settings,
+        });
+        const existing = state.records.find(r => r.id === inboxId);
+        if (existing) {
+          const updated = {
+            ...existing,
+            captain_inbox: {
+              ...(existing.captain_inbox || {}),
+              settings: response.data.settings,
+            },
+          };
+          commit(mutations.UPDATE, updated);
+        }
+        return response.data;
+      } catch (error) {
+        return throwErrorMessage(error);
+      }
+    },
   }),
 });

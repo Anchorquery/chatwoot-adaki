@@ -114,7 +114,8 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
                                                     :feature_contact_attributes,
                                                     :welcome_message, :handoff_message, :resolution_message,
                                                     :instructions, :temperature, :autopilot_enabled, :group_trigger,
-                                                    :whatsapp_number
+                                                    :whatsapp_number,
+                                                    :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover
                                                   ])
 
     # Handle array parameters separately to allow partial updates
