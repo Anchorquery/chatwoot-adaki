@@ -80,8 +80,9 @@ class Captain::Assistant < ApplicationRecord
   end
 
   # Modo de re-enganche del bot tras intervención humana.
-  # always: bot siempre puede responder. on_reopen: solo si conversación se resolvió y reabrió.
+  # always: bot siempre puede responder.
   # after_window: bot retoma si última respuesta humana fue hace > N minutos.
+  # never: humano queda dueño de la conversación.
   def human_takeover_mode_value
     raw = config['human_takeover_mode']
     return raw if HUMAN_TAKEOVER_MODES.include?(raw)

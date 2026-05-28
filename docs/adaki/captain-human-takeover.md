@@ -143,6 +143,23 @@ Síntoma observado: el bot ignoraba todos los mensajes incoming en inboxes API
 porque el Hook entraba al branch `conversation.group?` y exigía mención del
 bot que nunca llegaba.
 
+## Bug relacionado: auto-handoff dispara en conversaciones de campaña
+
+`Captain::InboxPendingConversationsResolutionJob` evaluaba TODAS las pending
+conversations vencidas (`last_activity_at < cutoff`), incluyendo las creadas
+por una campaña outbound. Resultado: a las N horas el bot mandaba el
+"Auto-handoff: ..." y el `handoff_message` configurado (p. ej. "Gracias por
+contactarnos. Te transfiero..."), aunque el cliente nunca abrió la conversación
+ni interactuó — solo fue blanco de la campaña.
+
+Fix: `resolvable_pending_conversations` ahora filtra `campaign_id: nil`,
+alineado con la lógica que ya excluía campañas del envío de OOO post-handoff
+([inbox_pending_conversations_resolution_job.rb](enterprise/app/jobs/captain/inbox_pending_conversations_resolution_job.rb#L57)).
+
+Si una conversación nace de una campaña, su cadencia la maneja la campaña.
+Captain no debe interferir hasta que el contacto responda — en cuyo momento
+la conversación pasa a `open` y `pending` ya no aplica.
+
 ## Migración
 
 Ninguna. Defaults cubren todos los registros existentes:

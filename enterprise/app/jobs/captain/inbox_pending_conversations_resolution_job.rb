@@ -55,7 +55,12 @@ class Captain::InboxPendingConversationsResolutionJob < ApplicationJob
   end
 
   def resolvable_pending_conversations(inbox)
+    # Campaign conversations are seeded by an outbound broadcast — they should never
+    # be auto-resolved or auto-handed off when the recipient stays silent. The campaign
+    # itself owns the follow-up cadence; Captain piggy-backing on it produces unwanted
+    # "Auto-handoff" messages on cold leads.
     inbox.conversations.pending
+         .where(campaign_id: nil)
          .where('last_activity_at < ?', auto_resolve_cutoff_time(inbox))
          .limit(Limits::BULK_ACTIONS_LIMIT)
   end
