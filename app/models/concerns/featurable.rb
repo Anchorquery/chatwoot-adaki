@@ -29,36 +29,40 @@ module Featurable
     FEATURES_SECONDARY.transform_keys { |k| k + MAX_BITS_PER_COLUMN }
   ).freeze
 
+  # flag_shih_tzu define `selected_feature_flags` y `selected_feature_flags=`
+  # directamente sobre la clase incluyente via class_eval, por lo que metodos
+  # definidos en el module body de Featurable quedan en el ancestor chain por
+  # debajo y nunca ganan el lookup. Usamos `prepend` con este module: garantiza
+  # que el override se invoca primero independientemente del orden de carga.
+  module SelectedFlagsRouter
+    def selected_feature_flags=(chosen_flags)
+      unselect_all_flags('feature_flags')
+      unselect_all_flags('feature_flags_2') if self.class.flag_mapping.key?('feature_flags_2')
+      return if chosen_flags.nil?
+
+      chosen_flags.each do |flag|
+        next if flag.blank?
+
+        # `enable_flag` con colmn=nil delega en `determine_flag_colmn_for`
+        # para enrutar el flag a la columna correcta.
+        enable_flag(flag.to_sym)
+      end
+    end
+
+    def selected_feature_flags
+      primary = selected_flags('feature_flags')
+      return primary unless self.class.flag_mapping.key?('feature_flags_2')
+
+      primary + selected_flags('feature_flags_2')
+    end
+  end
+
   included do
     include FlagShihTzu
     has_flags FEATURES_PRIMARY.merge(column: 'feature_flags').merge(QUERY_MODE)
     has_flags FEATURES_SECONDARY.merge(column: 'feature_flags_2').merge(QUERY_MODE) if FEATURES_SECONDARY.any?
 
-    # flag_shih_tzu define selected_feature_flags / selected_feature_flags=
-    # directamente en la clase incluyente via class_eval. Los overrides en el
-    # module body de Featurable quedan abajo en la cadena de ancestros y
-    # nunca se ejecutan: el setter del gem rutea todo a 'feature_flags' y
-    # lanza ArgumentError ("Invalid flag") cuando el flag pertenece a
-    # 'feature_flags_2'. define_method dentro de included do registra los
-    # overrides en la clase incluyente, sobreescribiendo los del gem.
-    define_method(:selected_feature_flags=) do |chosen_flags|
-      unselect_all_flags('feature_flags')
-      unselect_all_flags('feature_flags_2') if self.class.flag_mapping.key?('feature_flags_2')
-      next if chosen_flags.nil?
-
-      chosen_flags.each do |flag|
-        next if flag.blank?
-
-        enable_flag(flag.to_sym)
-      end
-    end
-
-    define_method(:selected_feature_flags) do
-      primary = selected_flags('feature_flags')
-      next primary unless self.class.flag_mapping.key?('feature_flags_2')
-
-      primary + selected_flags('feature_flags_2')
-    end
+    prepend SelectedFlagsRouter
 
     before_create :enable_default_features
   end
