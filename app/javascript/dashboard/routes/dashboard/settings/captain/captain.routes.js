@@ -3,7 +3,6 @@ import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { INSTALLATION_TYPES } from 'dashboard/constants/installationTypes';
 import SettingsWrapper from '../SettingsWrapper.vue';
 import Index from './Index.vue';
-import ProvidersIndex from '../adaki/captain/Index.vue';
 
 export default {
   routes: [
@@ -24,19 +23,6 @@ export default {
           path: '',
           name: 'captain_settings_index',
           component: Index,
-          meta: {
-            permissions: ['administrator'],
-            featureFlag: FEATURE_FLAGS.CAPTAIN,
-            installationTypes: [
-              INSTALLATION_TYPES.ENTERPRISE,
-              INSTALLATION_TYPES.CLOUD,
-            ],
-          },
-        },
-        {
-          path: 'providers',
-          name: 'captain_providers_index',
-          component: ProvidersIndex,
           meta: {
             permissions: ['administrator'],
             featureFlag: FEATURE_FLAGS.CAPTAIN,

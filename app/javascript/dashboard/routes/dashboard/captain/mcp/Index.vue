@@ -69,7 +69,7 @@ const onDeleteSuccess = () => {
 };
 
 const openProvidersSettings = () => {
-  router.push(accountScopedRoute('captain_providers_index'));
+  router.push(accountScopedRoute('adaki_providers_index'));
 };
 
 onMounted(() => {

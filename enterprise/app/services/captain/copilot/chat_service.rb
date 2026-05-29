@@ -14,6 +14,10 @@ class Captain::Copilot::ChatService < Llm::BaseAiService
     @conversation = @account.conversations.find_by(display_id: config[:conversation_id])
     @conversation_id = @conversation&.display_id
 
+    # Re-resolve model now that @account is set so Platform::Models::Resolver
+    # can honor the credential/model toggles.
+    setup_model
+
     setup_user(config)
     setup_message_history(config)
     @tools = build_tools
@@ -111,7 +115,17 @@ class Captain::Copilot::ChatService < Llm::BaseAiService
   end
 
   def credential_provider
-    Llm::Models.models[@model]&.fetch('provider', 'openai') || 'openai'
+    @resolved_credential&.provider ||
+      Llm::Models.models[@model]&.fetch('provider', 'openai') ||
+      'openai'
+  end
+
+  def resolver_account
+    @account
+  end
+
+  def feature_key
+    feature_name
   end
 
   def current_viewing_history(conversation_id)

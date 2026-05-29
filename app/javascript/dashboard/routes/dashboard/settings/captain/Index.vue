@@ -63,7 +63,7 @@ const featureToggles = computed(() => [
 ]);
 
 const goToProviders = () => {
-  router.push(accountScopedRoute('captain_providers_index'));
+  router.push(accountScopedRoute('adaki_providers_index'));
 };
 
 // Adaki self-hosted fork: all Captain features visible + accessible regardless

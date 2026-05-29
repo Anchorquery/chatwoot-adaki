@@ -30,7 +30,6 @@ class Api::V1::Accounts::Adaki::CaptainSettingsController < Api::V1::Accounts::B
       input_tokens: usage.input_tokens,
       output_tokens: usage.output_tokens,
       providers: Llm::Models.providers,
-      models: Llm::Models.models,
       credentials: Current.account.platform_credentials.order(created_at: :desc).map do |credential|
         {
           id: credential.id,

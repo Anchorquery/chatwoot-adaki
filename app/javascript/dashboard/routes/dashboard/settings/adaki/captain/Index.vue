@@ -3,13 +3,9 @@ import { mapGetters } from 'vuex';
 import { useAlert } from 'dashboard/composables';
 import SettingsLayout from '../../SettingsLayout.vue';
 import BaseSettingsHeader from 'dashboard/routes/dashboard/settings/components/BaseSettingsHeader.vue';
-import {
-  BaseTable,
-  BaseTableRow,
-  BaseTableCell,
-} from 'dashboard/components-next/table';
-import WootLabel from 'dashboard/components-next/label/Label.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import ProviderCard from 'dashboard/components-next/captain/pageComponents/providers/ProviderCard.vue';
+import PlatformCredentialModelsAPI from '../../../../../api/platform/credentialModels';
 
 function buildEmptyCredentialForm(provider) {
   return {
@@ -40,18 +36,14 @@ export default {
   components: {
     SettingsLayout,
     BaseSettingsHeader,
-    BaseTable,
-    BaseTableRow,
-    BaseTableCell,
-    WootLabel,
     NextButton,
+    ProviderCard,
   },
   data() {
     return {
       limit: '',
       showCredentialModal: false,
       editingCredentialId: null,
-      originalAuthType: null,
       credentialActionLoading: {
         validate: null,
         revoke: null,
@@ -77,37 +69,6 @@ export default {
         label: meta.display_name || value,
       }));
     },
-    modelOptions() {
-      const models = this.settings?.models || {};
-      return Object.entries(models)
-        .filter(([, meta]) => meta.provider === this.credentialForm.provider)
-        .map(([value, meta]) => ({
-          value,
-          label: meta.display_name || value,
-          comingSoon: Boolean(meta.coming_soon),
-        }));
-    },
-    credentialHeaders() {
-      return [
-        this.$t('ADAKI.CAPTAIN.CREDENTIALS.TABLE.NAME'),
-        this.$t('ADAKI.CAPTAIN.CREDENTIALS.TABLE.PROVIDER'),
-        this.$t('ADAKI.CAPTAIN.CREDENTIALS.TABLE.MODEL'),
-        this.$t('ADAKI.CAPTAIN.CREDENTIALS.TABLE.PURPOSE'),
-        this.$t('ADAKI.CAPTAIN.CREDENTIALS.TABLE.AUTH'),
-        this.$t('ADAKI.CAPTAIN.CREDENTIALS.TABLE.STATUS'),
-        this.$t('ADAKI.CAPTAIN.CREDENTIALS.TABLE.LAST_USED'),
-        this.$t('ADAKI.CAPTAIN.CREDENTIALS.TABLE.ACTIONS'),
-      ];
-    },
-    authTypeOptions() {
-      return [
-        { value: 'api_key', label: this.$t('ADAKI.CAPTAIN.CREDENTIALS.AUTH_TYPES.API_KEY') },
-        { value: 'bearer', label: this.$t('ADAKI.CAPTAIN.CREDENTIALS.AUTH_TYPES.BEARER') },
-        { value: 'basic', label: this.$t('ADAKI.CAPTAIN.CREDENTIALS.AUTH_TYPES.BASIC') },
-        { value: 'oauth2', label: this.$t('ADAKI.CAPTAIN.CREDENTIALS.AUTH_TYPES.OAUTH2') },
-        { value: 'custom_json', label: this.$t('ADAKI.CAPTAIN.CREDENTIALS.AUTH_TYPES.CUSTOM_JSON') },
-      ];
-    },
     isEditingCredential() {
       return Boolean(this.editingCredentialId);
     },
@@ -131,17 +92,6 @@ export default {
         }
       },
     },
-    'credentialForm.provider': function onCredentialProviderChange(provider) {
-      if (!this.modelOptions.length) {
-        this.credentialForm.metadata.model = '';
-        return;
-      }
-
-      const hasCurrentModel = this.modelOptions.some(option => option.value === this.credentialForm.metadata.model);
-      if (!hasCurrentModel) {
-        this.credentialForm.metadata.model = this.defaultModelForProvider(provider);
-      }
-    },
   },
   mounted() {
     this.$store.dispatch('adakiCaptainSettings/fetch');
@@ -150,52 +100,19 @@ export default {
     defaultProvider() {
       return this.providerOptions[0]?.value || 'openai';
     },
-    defaultModelForProvider(provider) {
-      return this.modelOptionsForProvider(provider)[0]?.value || '';
-    },
-    modelOptionsForProvider(provider) {
-      const models = this.settings?.models || {};
-      return Object.entries(models)
-        .filter(([, meta]) => meta.provider === provider)
-        .map(([value, meta]) => ({
-          value,
-          label: meta.display_name || value,
-          comingSoon: Boolean(meta.coming_soon),
-        }));
-    },
     providerLabel(provider) {
       return this.providerOptions.find(option => option.value === provider)?.label || provider || '-';
     },
-    modelLabel(model) {
-      if (!model) return '-';
-      return this.settings?.models?.[model]?.display_name || model;
-    },
-    authTypeLabel(authType) {
-      const option = this.authTypeOptions.find(item => item.value === authType);
-      return option?.label || authType || '-';
-    },
-    statusLabel(status) {
-      return (
-        {
-          active: this.$t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.ACTIVE'),
-          invalid: this.$t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.INVALID'),
-          expired: this.$t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.EXPIRED'),
-          revoked: this.$t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.REVOKED'),
-        }[status] || status || '-'
-      );
-    },
-    statusColor(status) {
-      return (
-        {
-          active: 'teal',
-          invalid: 'amber',
-          expired: 'amber',
-          revoked: 'ruby',
-        }[status] || 'slate'
-      );
-    },
-    formatDate(value) {
-      return value ? new Date(value).toLocaleString() : '-';
+    async save() {
+      try {
+        const value = this.limit === '' || this.limit === null ? null : Number(this.limit);
+        await this.$store.dispatch('adakiCaptainSettings/update', {
+          adaki_captain_monthly_limit: value,
+        });
+        useAlert(this.$t('ADAKI.CAPTAIN.ALERTS.SAVED'));
+      } catch (error) {
+        useAlert(error.message || this.$t('ADAKI.CAPTAIN.ALERTS.ERROR'));
+      }
     },
     resetCredentialForm(provider = this.defaultProvider()) {
       this.credentialForm = buildEmptyCredentialForm(provider);
@@ -207,19 +124,17 @@ export default {
     },
     openEditCredential(credential) {
       this.editingCredentialId = credential.id;
-      this.originalAuthType = credential.auth_type || 'api_key';
       const provider = credential.provider || this.defaultProvider();
-      const model = credential.metadata?.model || this.defaultModelForProvider(provider);
 
       this.credentialForm = {
         provider,
         purpose: credential.purpose || 'ai_provider',
         key: credential.key || '',
         name: credential.name || '',
-        auth_type: credential.auth_type || 'api_key',
+        auth_type: 'api_key',
         metadata: {
           api_base: credential.metadata?.api_base || '',
-          model,
+          model: credential.metadata?.model || '',
         },
         secrets: {
           api_key: '',
@@ -239,46 +154,11 @@ export default {
     closeCredentialModal() {
       this.showCredentialModal = false;
       this.editingCredentialId = null;
-      this.originalAuthType = null;
       this.resetCredentialForm(this.defaultProvider());
     },
     secretPayload() {
-      const form = this.credentialForm;
-
-      switch (form.auth_type) {
-        case 'bearer':
-          return form.secrets.token.trim() ? { token: form.secrets.token.trim() } : null;
-        case 'basic':
-          return form.secrets.username.trim() || form.secrets.password.trim()
-            ? {
-              username: form.secrets.username.trim(),
-              password: form.secrets.password,
-            }
-            : null;
-        case 'oauth2':
-          return form.secrets.access_token.trim() ||
-            form.secrets.refresh_token.trim() ||
-            form.secrets.client_id.trim() ||
-            form.secrets.client_secret.trim()
-            ? {
-              access_token: form.secrets.access_token.trim(),
-              refresh_token: form.secrets.refresh_token.trim(),
-              client_id: form.secrets.client_id.trim(),
-              client_secret: form.secrets.client_secret,
-            }
-            : null;
-        case 'custom_json':
-          if (!form.secrets.custom_json.trim()) return null;
-          try {
-            const parsed = JSON.parse(form.secrets.custom_json);
-            return parsed && typeof parsed === 'object' ? parsed : null;
-          } catch (_error) {
-            throw new Error(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.INVALID_JSON'));
-          }
-        case 'api_key':
-        default:
-          return form.secrets.api_key.trim() ? { api_key: form.secrets.api_key.trim() } : null;
-      }
+      const apiKey = this.credentialForm.secrets.api_key.trim();
+      return apiKey ? { api_key: apiKey } : null;
     },
     async saveCredential() {
       try {
@@ -288,17 +168,12 @@ export default {
           return;
         }
 
-        if (this.isEditingCredential && this.originalAuthType !== this.credentialForm.auth_type && !payload) {
-          useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.SECRET_REQUIRED'));
-          return;
-        }
-
         const credential = {
           provider: this.credentialForm.provider,
-          purpose: this.credentialForm.purpose,
+          purpose: 'ai_provider',
           key: this.credentialForm.key || undefined,
           name: this.credentialForm.name,
-          auth_type: this.credentialForm.auth_type,
+          auth_type: 'api_key',
           metadata: {
             api_base: this.credentialForm.metadata.api_base || null,
             model: this.credentialForm.metadata.model || null,
@@ -382,8 +257,49 @@ export default {
         };
       }
     },
-    rowModels(credential) {
-      return this.modelLabel(credential.metadata?.model);
+    openProviderModels(credential) {
+      this.$router.push({
+        name: 'adaki_provider_models',
+        params: {
+          accountId: this.$route.params.accountId,
+          credentialId: credential.id,
+        },
+      });
+    },
+    async syncProviderModels(credential) {
+      try {
+        const { data } = await PlatformCredentialModelsAPI.sync(credential.id);
+        useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.MODELS_SYNCED', { count: data.imported }));
+        this.openProviderModels(credential);
+      } catch (error) {
+        const msg = error.response?.data?.error || error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR');
+        useAlert(msg);
+      }
+    },
+    async toggleProviderEnabled(credential, enabled) {
+      try {
+        if (enabled) {
+          await this.$store.dispatch('adakiCaptainSettings/validateCredential', credential.id);
+        } else {
+          await this.$store.dispatch('adakiCaptainSettings/revokeCredential', credential.id);
+        }
+        useAlert(this.$t(enabled ? 'ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ENABLED' : 'ADAKI.CAPTAIN.CREDENTIALS.ALERTS.REVOKED'));
+      } catch (error) {
+        useAlert(error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR'));
+      }
+    },
+    handleProviderAction({ action }, credential) {
+      switch (action) {
+        case 'sync_models': this.syncProviderModels(credential); break;
+        case 'configure_models': this.openProviderModels(credential); break;
+        case 'edit': this.openEditCredential(credential); break;
+        case 'validate': this.validateCredential(credential); break;
+        case 'delete': this.destroyCredential(credential); break;
+        default: break;
+      }
+    },
+    handleProviderToggle({ enabled }, credential) {
+      this.toggleProviderEnabled(credential, enabled);
     },
   },
 };
@@ -465,66 +381,51 @@ export default {
             />
           </div>
 
-          <BaseTable
-            :headers="credentialHeaders"
-            :items="credentials"
-            :no-data-message="$t('ADAKI.CAPTAIN.CREDENTIALS.EMPTY')"
+          <div
+            v-if="!credentials.length"
+            class="rounded-lg border border-dashed border-n-weak p-6 text-center text-sm text-n-slate-11"
           >
-            <template #row="{ items }">
-              <BaseTableRow v-for="credential in items" :key="credential.id" :item="credential">
-                <template #default>
-                  <BaseTableCell>{{ credential.name }}</BaseTableCell>
-                  <BaseTableCell>{{ providerLabel(credential.provider) }}</BaseTableCell>
-                  <BaseTableCell>{{ rowModels(credential) }}</BaseTableCell>
-                  <BaseTableCell>{{ credential.purpose }}</BaseTableCell>
-                  <BaseTableCell>{{ authTypeLabel(credential.auth_type) }}</BaseTableCell>
-                  <BaseTableCell>
-                    <WootLabel
-                      :label="statusLabel(credential.status)"
-                      :color="statusColor(credential.status)"
-                      compact
-                    />
-                  </BaseTableCell>
-                  <BaseTableCell>{{ formatDate(credential.last_used_at) }}</BaseTableCell>
-                  <BaseTableCell align="end">
-                    <div class="flex justify-end gap-1">
-                      <NextButton
-                        :label="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.EDIT')"
-                        sm
-                        slate
-                        @click="openEditCredential(credential)"
-                      />
-                      <NextButton
-                        :label="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.VALIDATE')"
-                        sm
-                        :is-loading="credentialActionLoading.validate === credential.id"
-                        @click="validateCredential(credential)"
-                      />
-                      <NextButton
-                        :label="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.REVOKE')"
-                        sm
-                        ruby
-                        :is-loading="credentialActionLoading.revoke === credential.id"
-                        @click="revokeCredential(credential)"
-                      />
-                      <NextButton
-                        :label="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.DELETE')"
-                        sm
-                        ruby
-                        :is-loading="credentialActionLoading.destroy === credential.id"
-                        @click="destroyCredential(credential)"
-                      />
-                    </div>
-                  </BaseTableCell>
-                </template>
-              </BaseTableRow>
-            </template>
-          </BaseTable>
+            {{ $t('ADAKI.CAPTAIN.CREDENTIALS.EMPTY') }}
+          </div>
+
+          <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <ProviderCard
+              v-for="credential in credentials"
+              :key="credential.id"
+              :id="credential.id"
+              :name="credential.name"
+              :provider="credential.provider"
+              :provider-label="providerLabel(credential.provider)"
+              :status="credential.status"
+              @action="handleProviderAction($event, credential)"
+              @toggle="handleProviderToggle($event, credential)"
+            />
+          </div>
         </section>
       </div>
 
-      <woot-modal v-model:show="showCredentialModal" :on-close="closeCredentialModal">
-        <div class="w-[960px] max-w-[calc(100vw-2rem)] p-6">
+      <woot-modal
+        v-model:show="showCredentialModal"
+        size="medium"
+        :on-close="closeCredentialModal"
+      >
+        <form class="w-full p-6" autocomplete="off" @submit.prevent="saveCredential">
+          <input
+            type="text"
+            name="fake-username"
+            autocomplete="username"
+            class="hidden"
+            tabindex="-1"
+            aria-hidden="true"
+          />
+          <input
+            type="password"
+            name="fake-password"
+            autocomplete="new-password"
+            class="hidden"
+            tabindex="-1"
+            aria-hidden="true"
+          />
           <div class="mb-5 flex items-start justify-between gap-4">
             <div class="space-y-1">
               <h2 class="text-heading-2">{{ credentialModalTitle }}</h2>
@@ -539,24 +440,16 @@ export default {
             </span>
           </div>
 
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="grid grid-cols-1 gap-4">
             <label class="flex flex-col gap-1">
               <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.NAME') }}</span>
               <input
                 v-model="credentialForm.name"
                 class="form-input"
                 type="text"
+                name="credential_name"
+                autocomplete="off"
                 :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.NAME_PLACEHOLDER')"
-              />
-            </label>
-
-            <label class="flex flex-col gap-1">
-              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.KEY') }}</span>
-              <input
-                v-model="credentialForm.key"
-                class="form-input"
-                type="text"
-                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.KEY_PLACEHOLDER')"
               />
             </label>
 
@@ -573,121 +466,44 @@ export default {
             </label>
 
             <label class="flex flex-col gap-1">
-              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.MODEL') }}</span>
-              <select v-model="credentialForm.metadata.model" class="form-input">
-                <option disabled value="">
-                  {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.MODEL_PLACEHOLDER') }}
-                </option>
-                <option v-for="option in modelOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-            </label>
-
-            <label class="flex flex-col gap-1">
-              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PURPOSE') }}</span>
-              <input
-                v-model="credentialForm.purpose"
-                class="form-input"
-                type="text"
-                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PURPOSE_PLACEHOLDER')"
-              />
-            </label>
-
-            <label class="flex flex-col gap-1">
-              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.AUTH_TYPE') }}</span>
-              <select v-model="credentialForm.auth_type" class="form-input">
-                <option v-for="option in authTypeOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-            </label>
-
-            <label class="flex flex-col gap-1 md:col-span-2">
-              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_BASE') }}</span>
+              <span class="text-body-main">
+                {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_BASE') }}
+                <span class="text-n-slate-10">({{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.OPTIONAL') }})</span>
+              </span>
               <input
                 v-model="credentialForm.metadata.api_base"
                 class="form-input"
-                type="text"
+                type="url"
+                name="credential_api_base_url"
+                autocomplete="off"
+                inputmode="url"
                 :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_BASE_PLACEHOLDER')"
               />
             </label>
-          </div>
 
-          <div class="mt-4 grid gap-4 rounded-2xl border border-n-weak p-4">
-            <template v-if="credentialForm.auth_type === 'api_key'">
-              <label class="flex flex-col gap-1">
-                <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY') }}</span>
-                <input
-                  v-model="credentialForm.secrets.api_key"
-                  class="form-input"
-                  type="password"
-                  :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY_PLACEHOLDER')"
-                />
-              </label>
-            </template>
-
-            <template v-else-if="credentialForm.auth_type === 'bearer'">
-              <label class="flex flex-col gap-1">
-                <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.TOKEN') }}</span>
-                <input v-model="credentialForm.secrets.token" class="form-input" type="password" />
-              </label>
-            </template>
-
-            <template v-else-if="credentialForm.auth_type === 'basic'">
-              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label class="flex flex-col gap-1">
-                  <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.USERNAME') }}</span>
-                  <input v-model="credentialForm.secrets.username" class="form-input" type="text" />
-                </label>
-                <label class="flex flex-col gap-1">
-                  <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PASSWORD') }}</span>
-                  <input v-model="credentialForm.secrets.password" class="form-input" type="password" />
-                </label>
-              </div>
-            </template>
-
-            <template v-else-if="credentialForm.auth_type === 'oauth2'">
-              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label class="flex flex-col gap-1">
-                  <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.ACCESS_TOKEN') }}</span>
-                  <input v-model="credentialForm.secrets.access_token" class="form-input" type="password" />
-                </label>
-                <label class="flex flex-col gap-1">
-                  <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.REFRESH_TOKEN') }}</span>
-                  <input v-model="credentialForm.secrets.refresh_token" class="form-input" type="password" />
-                </label>
-                <label class="flex flex-col gap-1">
-                  <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.CLIENT_ID') }}</span>
-                  <input v-model="credentialForm.secrets.client_id" class="form-input" type="text" />
-                </label>
-                <label class="flex flex-col gap-1">
-                  <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.CLIENT_SECRET') }}</span>
-                  <input v-model="credentialForm.secrets.client_secret" class="form-input" type="password" />
-                </label>
-              </div>
-            </template>
-
-            <template v-else>
-              <label class="flex flex-col gap-1">
-                <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.CUSTOM_JSON') }}</span>
-                <textarea
-                  v-model="credentialForm.secrets.custom_json"
-                  rows="6"
-                  class="form-input font-mono"
-                ></textarea>
-              </label>
-            </template>
+            <label class="flex flex-col gap-1">
+              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY') }}</span>
+              <input
+                v-model="credentialForm.secrets.api_key"
+                class="form-input"
+                type="password"
+                name="credential_api_key"
+                autocomplete="new-password"
+                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY_PLACEHOLDER')"
+              />
+            </label>
           </div>
 
           <div class="mt-6 flex justify-end gap-2">
             <NextButton
+              type="button"
               :label="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.CANCEL')"
               sm
               slate
               @click="closeCredentialModal"
             />
             <NextButton
+              type="submit"
               :label="isEditingCredential
                 ? $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.UPDATE')
                 : $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.SAVE')"
@@ -696,7 +512,7 @@ export default {
               @click="saveCredential"
             />
           </div>
-        </div>
+        </form>
       </woot-modal>
     </template>
   </SettingsLayout>

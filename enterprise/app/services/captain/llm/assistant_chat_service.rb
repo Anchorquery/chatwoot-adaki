@@ -9,6 +9,10 @@ class Captain::Llm::AssistantChatService < Llm::BaseAiService
     @conversation_id = conversation&.display_id
     @source = source
 
+    # Re-resolve model now that @assistant (and therefore the account) is set,
+    # so Platform::Models::Resolver can honor the credential/model toggles.
+    setup_model
+
     @messages = [system_message]
     @response = ''
     @tools = build_tools
@@ -80,7 +84,17 @@ class Captain::Llm::AssistantChatService < Llm::BaseAiService
   end
 
   def credential_provider
-    Llm::Models.models[@model]&.fetch('provider', 'openai') || 'openai'
+    @resolved_credential&.provider ||
+      Llm::Models.models[@model]&.fetch('provider', 'openai') ||
+      'openai'
+  end
+
+  def resolver_account
+    @assistant&.account
+  end
+
+  def feature_key
+    feature_name
   end
 
   def persist_message(message, message_type = 'assistant')

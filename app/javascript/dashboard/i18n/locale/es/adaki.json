@@ -128,9 +128,9 @@
       }
     },
     "CAPTAIN": {
-      "HEADER": "Límites y uso de Captain",
-      "DESCRIPTION": "Configura el tope mensual de invocaciones LLM Captain por municipio. Cada llamada queda en el audit log.",
-      "LOADING": "Cargando configuración Captain",
+      "HEADER": "Proveedores de IA",
+      "DESCRIPTION": "Configura credenciales de proveedores (OpenAI, Anthropic, Gemini, etc.) y gestiona los modelos disponibles. Se comparten con todas las funciones de IA de la plataforma.",
+      "LOADING": "Cargando proveedores",
       "LIMIT_TITLE": "Límite mensual",
       "LIMIT_HINT": "Vacío = sin límite.",
       "LIMIT_LABEL": "Máx. invocaciones al mes",
@@ -144,6 +144,149 @@
       "ALERTS": {
         "SAVED": "Configuración guardada",
         "ERROR": "Error al guardar"
+      },
+      "CREDENTIALS": {
+        "HEADER": "Proveedores de plataforma",
+        "DESCRIPTION": "Guarda y gestiona credenciales de proveedores compartidas con todas las funciones de IA.",
+        "NEW": "Añadir proveedor",
+        "EMPTY": "Sin proveedores configurados",
+        "BADGE": {
+          "PLATFORM": "Plataforma",
+          "API_KEY": "API key"
+        },
+        "ACTIONS": {
+          "SYNC_MODELS": "Sync / Seleccionar modelos",
+          "IMPORT_STATIC": "Importar modelos estáticos",
+          "CONFIGURE_MODELS": "Configurar modelos",
+          "EDIT": "Editar proveedor",
+          "VALIDATE": "Verificar conexión",
+          "DELETE": "Eliminar"
+        },
+        "TABLE": {
+          "NAME": "Nombre",
+          "PROVIDER": "Proveedor",
+          "MODEL": "Modelo",
+          "PURPOSE": "Propósito",
+          "AUTH": "Auth",
+          "STATUS": "Estado",
+          "LAST_USED": "Último uso",
+          "ACTIONS": "Acciones"
+        },
+        "FORM": {
+          "NEW_TITLE": "Nuevo proveedor",
+          "EDIT_TITLE": "Editar proveedor",
+          "DESCRIPTION": "Configura el proveedor y los datos de autenticación.",
+          "BADGE": "Proveedor de plataforma",
+          "NAME": "Nombre",
+          "KEY": "Key",
+          "PROVIDER": "Proveedor",
+          "MODEL": "Modelo",
+          "PURPOSE": "Propósito",
+          "AUTH_TYPE": "Tipo de auth",
+          "API_BASE": "URL base de API",
+          "NAME_PLACEHOLDER": "OpenAI producción",
+          "KEY_PLACEHOLDER": "openai.default",
+          "PROVIDER_PLACEHOLDER": "Elige un proveedor",
+          "MODEL_PLACEHOLDER": "Elige un modelo",
+          "PURPOSE_PLACEHOLDER": "ai_provider",
+          "API_BASE_PLACEHOLDER": "https://api.openai.com/v1",
+          "API_KEY": "API key",
+          "API_KEY_PLACEHOLDER": "sk-...",
+          "TOKEN": "Token",
+          "USERNAME": "Usuario",
+          "PASSWORD": "Contraseña",
+          "ACCESS_TOKEN": "Access token",
+          "REFRESH_TOKEN": "Refresh token",
+          "CLIENT_ID": "Client ID",
+          "CLIENT_SECRET": "Client secret",
+          "CUSTOM_JSON": "JSON personalizado",
+          "CANCEL": "Cancelar",
+          "SAVE": "Guardar",
+          "UPDATE": "Actualizar",
+          "EDIT": "Editar",
+          "VALIDATE": "Verificar",
+          "REVOKE": "Revocar",
+          "DELETE": "Eliminar",
+          "SHOW_ADVANCED": "Opciones avanzadas",
+          "HIDE_ADVANCED": "Ocultar opciones avanzadas",
+          "OPTIONAL": "opcional"
+        },
+        "STATUS": {
+          "ACTIVE": "Activo",
+          "INVALID": "Inválido",
+          "EXPIRED": "Expirado",
+          "REVOKED": "Revocado"
+        },
+        "AUTH_TYPES": {
+          "API_KEY": "API key",
+          "BEARER": "Bearer",
+          "BASIC": "Basic auth",
+          "OAUTH2": "OAuth2",
+          "CUSTOM_JSON": "JSON personalizado"
+        },
+        "ALERTS": {
+          "CREATED": "Credencial creada",
+          "UPDATED": "Credencial actualizada",
+          "DELETED": "Credencial eliminada",
+          "VALIDATED": "Credencial verificada",
+          "REVOKED": "Credencial revocada",
+          "ENABLED": "Proveedor activado",
+          "ERROR": "Error al guardar credencial",
+          "INVALID_JSON": "JSON inválido",
+          "SECRET_REQUIRED": "Falta el secreto",
+          "DELETE_CONFIRM": "¿Eliminar esta credencial?",
+          "MODELS_SYNCED": "{count} modelos sincronizados",
+          "MODELS_IMPORTED": "{count} modelos importados"
+        }
+      },
+      "MODELS": {
+        "BACK": "Proveedores",
+        "ACTIVE_COUNT": "modelos activos",
+        "SEARCH_PLACEHOLDER": "Buscar modelo...",
+        "SYNC": "Sync",
+        "ENABLE_ALL": "Activar todos",
+        "DISABLE_ALL": "Desactivar todos",
+        "EMPTY": "Sin modelos. Usa Sync o Importar.",
+        "OBSOLETE": "Obsoleto",
+        "KINDS": {
+          "ALL": "Todos",
+          "CHAT": "Chat",
+          "MULTIMODAL": "Multimodal",
+          "EMBEDDING": "Embedding",
+          "IMAGE": "Imagen",
+          "TTS": "TTS",
+          "TRANSCRIPTION": "Transcripción",
+          "REALTIME": "Realtime",
+          "VIDEO": "Video",
+          "WEB_SEARCH": "Búsqueda web"
+        },
+        "ALERTS": {
+          "LOAD_ERROR": "Error al cargar modelos",
+          "SYNCED": "{count} modelos sincronizados",
+          "SYNC_ERROR": "Fallo de sincronización",
+          "TOGGLE_ERROR": "Fallo al cambiar estado",
+          "UPDATED": "Modelo actualizado",
+          "UPDATE_ERROR": "Fallo al actualizar"
+        },
+        "MODAL": {
+          "EDIT_TITLE": "Editar modelo",
+          "BASIC": "Básico",
+          "SLUG": "Slug del modelo",
+          "DISPLAY_NAME": "Nombre visible",
+          "KIND": "Tipo",
+          "OBSOLETE": "Obsoleto",
+          "CAPABILITIES": "Capacidades adicionales",
+          "CAPABILITIES_HINT": "(además del tipo principal — permiten usar este modelo como default para otros usos)",
+          "DESCRIPTION": "Descripción",
+          "LIMITS_PRICING": "Límites y precios",
+          "CONTEXT_MAX": "Contexto máx.",
+          "OUTPUT_MAX": "Output máx.",
+          "INPUT_PRICE": "$ entrada / 1M tokens",
+          "OUTPUT_PRICE": "$ salida / 1M tokens",
+          "DATA_CUTOFF": "Fecha de datos",
+          "CANCEL": "Cancelar",
+          "SAVE": "Guardar cambios"
+        }
       }
     },
     "SIDEBAR": {
@@ -151,7 +294,7 @@
       "TIER": "Tier WhatsApp",
       "APPROVALS": "Aprobaciones",
       "AUDIT": "Audit log",
-      "CAPTAIN": "Límites Captain"
+      "CAPTAIN": "Proveedores IA"
     }
   }
 }

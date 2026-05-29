@@ -146,6 +146,18 @@
         "DESCRIPTION": "Store and manage provider credentials for Captain and shared integrations.",
         "NEW": "Add provider",
         "EMPTY": "No providers configured",
+        "BADGE": {
+          "PLATFORM": "Platform",
+          "API_KEY": "API key"
+        },
+        "ACTIONS": {
+          "SYNC_MODELS": "Sync / Select models",
+          "IMPORT_STATIC": "Import static models",
+          "CONFIGURE_MODELS": "Configure models",
+          "EDIT": "Edit provider",
+          "VALIDATE": "Verify connection",
+          "DELETE": "Delete"
+        },
         "TABLE": {
           "NAME": "Name",
           "PROVIDER": "Provider",
@@ -191,7 +203,10 @@
           "EDIT": "Edit",
           "VALIDATE": "Validate",
           "REVOKE": "Revoke",
-          "DELETE": "Delete"
+          "DELETE": "Delete",
+          "SHOW_ADVANCED": "Advanced options",
+          "HIDE_ADVANCED": "Hide advanced options",
+          "OPTIONAL": "optional"
         },
         "STATUS": {
           "ACTIVE": "Active",
@@ -212,10 +227,62 @@
           "DELETED": "Credential deleted",
           "VALIDATED": "Credential validated",
           "REVOKED": "Credential revoked",
+          "ENABLED": "Provider enabled",
           "ERROR": "Error saving credential",
           "INVALID_JSON": "Custom JSON is invalid",
           "SECRET_REQUIRED": "Secret value is required",
-          "DELETE_CONFIRM": "Delete this credential?"
+          "DELETE_CONFIRM": "Delete this credential?",
+          "MODELS_SYNCED": "Synced {count} models",
+          "MODELS_IMPORTED": "Imported {count} models"
+        }
+      },
+      "MODELS": {
+        "BACK": "Providers",
+        "ACTIVE_COUNT": "active models",
+        "SEARCH_PLACEHOLDER": "Search model...",
+        "SYNC": "Sync",
+        "ENABLE_ALL": "Enable all",
+        "DISABLE_ALL": "Disable all",
+        "EMPTY": "No models. Use Sync or Import.",
+        "OBSOLETE": "Obsolete",
+        "KINDS": {
+          "ALL": "All",
+          "CHAT": "Chat",
+          "MULTIMODAL": "Multimodal",
+          "EMBEDDING": "Embedding",
+          "IMAGE": "Image",
+          "TTS": "TTS",
+          "TRANSCRIPTION": "Transcription",
+          "REALTIME": "Realtime",
+          "VIDEO": "Video",
+          "WEB_SEARCH": "Web search"
+        },
+        "ALERTS": {
+          "LOAD_ERROR": "Error loading models",
+          "SYNCED": "Synced {count} models",
+          "SYNC_ERROR": "Sync failed",
+          "TOGGLE_ERROR": "Toggle failed",
+          "UPDATED": "Model updated",
+          "UPDATE_ERROR": "Update failed"
+        },
+        "MODAL": {
+          "EDIT_TITLE": "Edit model",
+          "BASIC": "Basic",
+          "SLUG": "Model slug",
+          "DISPLAY_NAME": "Display name",
+          "KIND": "Type",
+          "OBSOLETE": "Obsolete",
+          "CAPABILITIES": "Additional capabilities",
+          "CAPABILITIES_HINT": "(beyond main type — allow using as default for other uses)",
+          "DESCRIPTION": "Description",
+          "LIMITS_PRICING": "Limits and pricing",
+          "CONTEXT_MAX": "Max context",
+          "OUTPUT_MAX": "Max output",
+          "INPUT_PRICE": "Input $/1M tokens",
+          "OUTPUT_PRICE": "Output $/1M tokens",
+          "DATA_CUTOFF": "Data cutoff date",
+          "CANCEL": "Cancel",
+          "SAVE": "Save changes"
         }
       },
       "ALERTS": {

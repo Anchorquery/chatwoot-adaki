@@ -181,7 +181,17 @@ class Captain::BaseTaskService
   end
 
   def system_llm_credential
-    credential = Platform::CredentialManager.fetch_optional(
+    resolved = Platform::Models::Resolver.resolve(
+      account: account,
+      feature: event_name,
+      fallback_model: GPT_MODEL
+    )
+    credential = resolved&.dig(:credential)
+
+    # Backward compatibility: if no enabled model is configured yet, fall
+    # back to the legacy 'openai.default' lookup so existing installs keep
+    # working until the admin enables models in the new UI.
+    credential ||= Platform::CredentialManager.fetch_optional(
       account: account,
       key: Platform::CredentialManager.default_key_for('openai'),
       provider: 'openai',
@@ -190,9 +200,10 @@ class Captain::BaseTaskService
     return nil if credential.blank?
 
     {
-      api_key: credential.secret(:api_key),
+      api_key: credential.respond_to?(:secret) ? credential.secret(:api_key) : credential.payload[:api_key],
       source: :system,
-      metadata: credential.metadata
+      metadata: credential.metadata,
+      resolved_model: resolved&.dig(:model_slug)
     }
   end
 

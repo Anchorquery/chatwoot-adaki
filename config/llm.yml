@@ -1,20 +1,26 @@
 providers:
   openai:
     display_name: 'OpenAI'
+  gemini:
+    display_name: 'Google Gemini'
   anthropic:
     display_name: 'Anthropic'
-  gemini:
-    display_name: 'Gemini'
-  deepseek:
-    display_name: 'DeepSeek'
+  mistral:
+    display_name: 'Mistral'
+  groq:
+    display_name: 'Groq'
+  perplexity:
+    display_name: 'Perplexity'
   openrouter:
     display_name: 'OpenRouter'
   ollama:
-    display_name: 'Ollama'
-  bedrock:
-    display_name: 'Bedrock'
-  firecrawl:
-    display_name: 'Firecrawl'
+    display_name: 'Ollama (local)'
+  azure_openai:
+    display_name: 'Azure OpenAI'
+  tavily:
+    display_name: 'Tavily Search'
+  custom:
+    display_name: 'Custom (OpenAI-compatible)'
 
 models:
   gpt-4.1:

@@ -4,6 +4,8 @@ import AbsencesIndex from './absences/Index.vue';
 import TierIndex from './tier/Index.vue';
 import AuditIndex from './audit/Index.vue';
 import ApprovalsIndex from './approvals/Index.vue';
+import ProvidersIndex from './captain/Index.vue';
+import ProviderModelsPage from './captain/ProviderModelsPage.vue';
 
 const meta = {
   permissions: ['administrator'],
@@ -49,7 +51,20 @@ export default {
           path: 'captain',
           name: 'adaki_captain_settings',
           meta,
-          redirect: to => ({ name: 'captain_providers_index', params: to.params }),
+          redirect: to => ({ name: 'adaki_providers_index', params: to.params }),
+        },
+        {
+          path: 'providers',
+          name: 'adaki_providers_index',
+          meta,
+          component: ProvidersIndex,
+        },
+        {
+          path: 'providers/:credentialId/models',
+          name: 'adaki_provider_models',
+          meta,
+          component: ProviderModelsPage,
+          props: true,
         },
       ],
     },

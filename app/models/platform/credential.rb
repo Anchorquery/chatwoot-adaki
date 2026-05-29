@@ -30,6 +30,7 @@ class Platform::Credential < ApplicationRecord
   belongs_to :created_by, class_name: 'User', optional: true
   belongs_to :updated_by, class_name: 'User', optional: true
   has_many :platform_credential_usages, dependent: :destroy_async, class_name: '::Platform::CredentialUsage'
+  has_many :models, dependent: :destroy, class_name: '::Platform::CredentialModel', foreign_key: :credential_id, inverse_of: :credential
 
   encrypts :encrypted_payload if Chatwoot.encryption_configured?
 

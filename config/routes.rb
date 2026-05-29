@@ -95,6 +95,15 @@ Rails.application.routes.draw do
                   post :revoke
                   get :usages
                 end
+                resources :models, only: [:index, :show, :create, :update, :destroy], controller: '/api/v1/accounts/platform/models' do
+                  member do
+                    post :toggle
+                  end
+                  collection do
+                    post :sync
+                    post :bulk_toggle
+                  end
+                end
               end
             end
             resource :tasks, only: [], controller: 'tasks' do
