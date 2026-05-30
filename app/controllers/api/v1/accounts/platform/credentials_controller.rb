@@ -31,13 +31,18 @@ class Api::V1::Accounts::Platform::CredentialsController < Api::V1::Accounts::Ba
   end
 
   def update
-    return render json: provider_disabled_error, status: :unprocessable_entity unless provider_allowed?(credential_params[:provider])
+    new_provider = credential_params[:provider]
+    provider_changed = new_provider.present? && new_provider != @credential.provider
+
+    if provider_changed && !provider_allowed?(new_provider)
+      return render json: provider_disabled_error, status: :unprocessable_entity
+    end
 
     payload = credential_payload
     metadata = credential_metadata
 
     @credential.update!(
-      provider: credential_params[:provider],
+      provider: new_provider,
       purpose: credential_params[:purpose],
       key: credential_params[:key].presence || @credential.key,
       name: credential_params[:name],

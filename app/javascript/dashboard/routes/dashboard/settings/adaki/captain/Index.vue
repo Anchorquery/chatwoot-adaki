@@ -92,8 +92,9 @@ export default {
 
         if (!this.providerOptions.length) return;
 
-        if (!this.providerOptions.find(option => option.value === this.credentialForm.provider)) {
-          this.credentialForm.provider = this.providerOptions[0].value;
+        const current = this.providerOptions.find(o => o.value === this.credentialForm.provider);
+        if (!current || current.disabled) {
+          this.credentialForm.provider = this.defaultProvider();
         }
       },
     },
