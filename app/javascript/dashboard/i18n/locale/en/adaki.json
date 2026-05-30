@@ -233,8 +233,8 @@
           "INVALID_JSON": "Custom JSON is invalid",
           "SECRET_REQUIRED": "Secret value is required",
           "DELETE_CONFIRM": "Delete this credential?",
-          "MODELS_SYNCED": "Synced {count} models",
-          "MODELS_IMPORTED": "Imported {count} models"
+          "MODELS_SYNCED": "Synced {total} models",
+          "MODELS_IMPORTED": "Imported {total} models"
         }
       },
       "MODELS": {
@@ -260,7 +260,7 @@
         },
         "ALERTS": {
           "LOAD_ERROR": "Error loading models",
-          "SYNCED": "Synced {count} models",
+          "SYNCED": "Synced {total} models",
           "SYNC_ERROR": "Sync failed",
           "TOGGLE_ERROR": "Toggle failed",
           "UPDATED": "Model updated",

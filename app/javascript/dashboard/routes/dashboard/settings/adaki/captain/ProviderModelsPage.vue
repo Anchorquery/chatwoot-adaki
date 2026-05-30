@@ -78,7 +78,7 @@ export default {
       this.isSyncing = true;
       try {
         const { data } = await PlatformCredentialModelsAPI.sync(this.credentialId);
-        useAlert(this.$t('ADAKI.CAPTAIN.MODELS.ALERTS.SYNCED', { count: data.imported }));
+        useAlert(this.$t('ADAKI.CAPTAIN.MODELS.ALERTS.SYNCED', { total: data?.imported ?? 0 }));
         await this.fetchModels();
       } catch (error) {
         const msg = error.response?.data?.error || error.message || this.$t('ADAKI.CAPTAIN.MODELS.ALERTS.SYNC_ERROR');

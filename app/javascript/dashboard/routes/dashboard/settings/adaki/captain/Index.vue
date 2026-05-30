@@ -285,8 +285,7 @@ export default {
     async syncProviderModels(credential) {
       try {
         const { data } = await PlatformCredentialModelsAPI.sync(credential.id);
-        useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.MODELS_SYNCED', { count: data.imported }));
-        this.openProviderModels(credential);
+        useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.MODELS_SYNCED', { total: data?.imported ?? 0 }));
       } catch (error) {
         const msg = error.response?.data?.error || error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR');
         useAlert(msg);

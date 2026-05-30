@@ -236,8 +236,8 @@
           "INVALID_JSON": "JSON inválido",
           "SECRET_REQUIRED": "Falta el secreto",
           "DELETE_CONFIRM": "¿Eliminar esta credencial?",
-          "MODELS_SYNCED": "{count} modelos sincronizados",
-          "MODELS_IMPORTED": "{count} modelos importados"
+          "MODELS_SYNCED": "{total} modelos sincronizados",
+          "MODELS_IMPORTED": "{total} modelos importados"
         }
       },
       "MODELS": {
@@ -263,7 +263,7 @@
         },
         "ALERTS": {
           "LOAD_ERROR": "Error al cargar modelos",
-          "SYNCED": "{count} modelos sincronizados",
+          "SYNCED": "{total} modelos sincronizados",
           "SYNC_ERROR": "Fallo de sincronización",
           "TOGGLE_ERROR": "Fallo al cambiar estado",
           "UPDATED": "Modelo actualizado",
