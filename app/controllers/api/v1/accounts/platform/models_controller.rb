@@ -37,7 +37,7 @@ class Api::V1::Accounts::Platform::ModelsController < Api::V1::Accounts::BaseCon
 
   def sync
     imported = Platform::Models::Importer.new(@credential).sync_remote!
-    render json: { imported: imported.size, models: imported.map { |m| serialize(m) } }
+    render json: { imported: imported.size }
   rescue Platform::Models::Importer::SyncError => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
