@@ -83,7 +83,7 @@ const handleToggle = () => {
           <span
             class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform"
             :class="enabled ? 'translate-x-5' : 'translate-x-1'"
-          />
+          ></span>
         </button>
         <div class="relative">
           <Button
