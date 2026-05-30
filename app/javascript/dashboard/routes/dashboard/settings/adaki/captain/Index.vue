@@ -208,7 +208,16 @@ export default {
 
       try {
         await this.$store.dispatch('adakiCaptainSettings/validateCredential', credential.id);
-        useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.VALIDATED'));
+        const refreshed = this.credentials.find(c => c.id === credential.id);
+        const validation = refreshed?.metadata?.validation;
+
+        if (validation?.status === 'invalid') {
+          const code = validation.error_code || 'unknown';
+          const msg = validation.message ? `${code}: ${validation.message}` : code;
+          useAlert(`${this.$t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.INVALID')} — ${msg}`);
+        } else {
+          useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.VALIDATED'));
+        }
       } catch (error) {
         useAlert(error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR'));
       } finally {
@@ -410,23 +419,6 @@ export default {
         :on-close="closeCredentialModal"
       >
         <form class="w-full p-6" autocomplete="off" @submit.prevent="saveCredential">
-          <div
-            aria-hidden="true"
-            style="position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none;"
-          >
-            <input
-              type="text"
-              name="fake-username"
-              autocomplete="username"
-              tabindex="-1"
-            />
-            <input
-              type="password"
-              name="fake-password"
-              autocomplete="new-password"
-              tabindex="-1"
-            />
-          </div>
           <div class="mb-5 flex items-start justify-between gap-4">
             <div class="space-y-1">
               <h2 class="text-heading-2">{{ credentialModalTitle }}</h2>
