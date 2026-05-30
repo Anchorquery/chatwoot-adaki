@@ -410,22 +410,23 @@ export default {
         :on-close="closeCredentialModal"
       >
         <form class="w-full p-6" autocomplete="off" @submit.prevent="saveCredential">
-          <input
-            type="text"
-            name="fake-username"
-            autocomplete="username"
-            class="hidden"
-            tabindex="-1"
+          <div
             aria-hidden="true"
-          />
-          <input
-            type="password"
-            name="fake-password"
-            autocomplete="new-password"
-            class="hidden"
-            tabindex="-1"
-            aria-hidden="true"
-          />
+            style="position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none;"
+          >
+            <input
+              type="text"
+              name="fake-username"
+              autocomplete="username"
+              tabindex="-1"
+            />
+            <input
+              type="password"
+              name="fake-password"
+              autocomplete="new-password"
+              tabindex="-1"
+            />
+          </div>
           <div class="mb-5 flex items-start justify-between gap-4">
             <div class="space-y-1">
               <h2 class="text-heading-2">{{ credentialModalTitle }}</h2>
