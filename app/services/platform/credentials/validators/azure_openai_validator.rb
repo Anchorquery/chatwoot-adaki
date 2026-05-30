@@ -1,19 +1,18 @@
 module Platform::Credentials::Validators
-  class AnthropicValidator < Base
+  class AzureOpenaiValidator < Base
     private
 
     def perform_remote_check
       api_key = @credential.secret(:api_key)
       return mark_invalid('missing_secret') if api_key.blank?
 
-      base = @credential.metadata['api_base'].presence || 'https://api.anthropic.com'
-      url = "#{base.chomp('/')}/v1/models"
+      base = @credential.metadata['api_base'].presence
+      return mark_invalid('missing_api_base') if base.blank?
 
-      response = HTTParty.get(
-        url,
-        headers: { 'x-api-key' => api_key, 'anthropic-version' => '2023-06-01' },
-        timeout: 10
-      )
+      api_version = @credential.metadata['api_version'].presence || '2024-02-15-preview'
+      url = "#{base.chomp('/')}/openai/deployments?api-version=#{api_version}"
+
+      response = HTTParty.get(url, headers: { 'api-key' => api_key }, timeout: 10)
 
       if response.success?
         mark_active

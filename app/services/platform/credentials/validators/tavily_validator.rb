@@ -1,17 +1,18 @@
 module Platform::Credentials::Validators
-  class AnthropicValidator < Base
+  class TavilyValidator < Base
     private
 
     def perform_remote_check
       api_key = @credential.secret(:api_key)
       return mark_invalid('missing_secret') if api_key.blank?
 
-      base = @credential.metadata['api_base'].presence || 'https://api.anthropic.com'
-      url = "#{base.chomp('/')}/v1/models"
+      base = @credential.metadata['api_base'].presence || 'https://api.tavily.com'
+      url = "#{base.chomp('/')}/search"
 
-      response = HTTParty.get(
+      response = HTTParty.post(
         url,
-        headers: { 'x-api-key' => api_key, 'anthropic-version' => '2023-06-01' },
+        headers: { 'Content-Type' => 'application/json' },
+        body: { api_key: api_key, query: 'ping', max_results: 1 }.to_json,
         timeout: 10
       )
 

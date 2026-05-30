@@ -7,6 +7,17 @@ module Llm::Models
     def features = CONFIG['features']
     def feature_keys = CONFIG['features'].keys
 
+    def enabled_providers
+      CONFIG['providers'].select { |_k, meta| meta['enabled'] != false }
+    end
+
+    def provider_enabled?(provider)
+      meta = CONFIG['providers'][provider.to_s]
+      return false unless meta
+
+      meta['enabled'] != false
+    end
+
     def default_model_for(feature)
       CONFIG.dig('features', feature.to_s, 'default')
     end

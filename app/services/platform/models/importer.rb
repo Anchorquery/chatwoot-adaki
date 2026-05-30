@@ -27,6 +27,10 @@ module Platform::Models
     def fetch_remote
       provider = @credential.provider
 
+      unless Llm::Models.provider_enabled?(provider)
+        raise SyncError, "Provider '#{provider}' is not enabled. Only OpenAI and Google Gemini are currently available."
+      end
+
       return fetch_openai_compatible(OPENAI_COMPATIBLE_DEFAULTS[provider]) if OPENAI_COMPATIBLE_DEFAULTS.key?(provider)
 
       case provider

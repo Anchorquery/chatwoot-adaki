@@ -144,6 +144,10 @@ class Platform::CredentialManager
       when 'firecrawl' then Platform::Credentials::Validators::FirecrawlValidator.new(credential)
       when 'ollama' then Platform::Credentials::Validators::OllamaValidator.new(credential)
       when 'bedrock' then Platform::Credentials::Validators::BedrockValidator.new(credential)
+      when 'azure_openai' then Platform::Credentials::Validators::AzureOpenaiValidator.new(credential)
+      when 'tavily' then Platform::Credentials::Validators::TavilyValidator.new(credential)
+      when 'deepseek', 'mistral', 'groq', 'openrouter', 'perplexity', 'custom'
+        Platform::Credentials::Validators::GenericHttpValidator.new(credential)
       else Platform::Credentials::Validators::GenericHttpValidator.new(credential)
       end
     end

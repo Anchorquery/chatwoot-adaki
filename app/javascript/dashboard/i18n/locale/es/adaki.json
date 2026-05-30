@@ -209,7 +209,8 @@
           "DELETE": "Eliminar",
           "SHOW_ADVANCED": "Opciones avanzadas",
           "HIDE_ADVANCED": "Ocultar opciones avanzadas",
-          "OPTIONAL": "opcional"
+          "OPTIONAL": "opcional",
+          "COMING_SOON": "(próximamente)"
         },
         "STATUS": {
           "ACTIVE": "Activo",

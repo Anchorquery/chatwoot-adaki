@@ -1,26 +1,37 @@
 providers:
   openai:
     display_name: 'OpenAI'
+    enabled: true
   gemini:
     display_name: 'Google Gemini'
+    enabled: true
   anthropic:
     display_name: 'Anthropic'
+    enabled: false
   mistral:
     display_name: 'Mistral'
+    enabled: false
   groq:
     display_name: 'Groq'
+    enabled: false
   perplexity:
     display_name: 'Perplexity'
+    enabled: false
   openrouter:
     display_name: 'OpenRouter'
+    enabled: false
   ollama:
     display_name: 'Ollama (local)'
+    enabled: false
   azure_openai:
     display_name: 'Azure OpenAI'
+    enabled: false
   tavily:
     display_name: 'Tavily Search'
+    enabled: false
   custom:
     display_name: 'Custom (OpenAI-compatible)'
+    enabled: false
 
 models:
   gpt-4.1:

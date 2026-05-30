@@ -64,10 +64,15 @@ export default {
     },
     providerOptions() {
       const providers = this.settings?.providers || {};
-      return Object.entries(providers).map(([value, meta]) => ({
-        value,
-        label: meta.display_name || value,
-      }));
+      return Object.entries(providers).map(([value, meta]) => {
+        const disabled = meta.enabled === false;
+        const label = meta.display_name || value;
+        return {
+          value,
+          label: disabled ? `${label} ${this.$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.COMING_SOON')}` : label,
+          disabled,
+        };
+      });
     },
     isEditingCredential() {
       return Boolean(this.editingCredentialId);
@@ -98,7 +103,8 @@ export default {
   },
   methods: {
     defaultProvider() {
-      return this.providerOptions[0]?.value || 'openai';
+      const firstEnabled = this.providerOptions.find(o => !o.disabled);
+      return firstEnabled?.value || this.providerOptions[0]?.value || 'openai';
     },
     providerLabel(provider) {
       return this.providerOptions.find(option => option.value === provider)?.label || provider || '-';
@@ -452,7 +458,12 @@ export default {
                 <option disabled value="">
                   {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PROVIDER_PLACEHOLDER') }}
                 </option>
-                <option v-for="option in providerOptions" :key="option.value" :value="option.value">
+                <option
+                  v-for="option in providerOptions"
+                  :key="option.value"
+                  :value="option.value"
+                  :disabled="option.disabled"
+                >
                   {{ option.label }}
                 </option>
               </select>

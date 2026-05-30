@@ -206,7 +206,8 @@
           "DELETE": "Delete",
           "SHOW_ADVANCED": "Advanced options",
           "HIDE_ADVANCED": "Hide advanced options",
-          "OPTIONAL": "optional"
+          "OPTIONAL": "optional",
+          "COMING_SOON": "(coming soon)"
         },
         "STATUS": {
           "ACTIVE": "Active",

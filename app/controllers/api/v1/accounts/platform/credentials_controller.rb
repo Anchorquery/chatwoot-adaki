@@ -12,6 +12,8 @@ class Api::V1::Accounts::Platform::CredentialsController < Api::V1::Accounts::Ba
   end
 
   def create
+    return render json: provider_disabled_error, status: :unprocessable_entity unless provider_allowed?(credential_params[:provider])
+
     credential = Platform::CredentialManager.store!(
       account: @current_account,
       provider: credential_params[:provider],
@@ -29,6 +31,8 @@ class Api::V1::Accounts::Platform::CredentialsController < Api::V1::Accounts::Ba
   end
 
   def update
+    return render json: provider_disabled_error, status: :unprocessable_entity unless provider_allowed?(credential_params[:provider])
+
     payload = credential_payload
     metadata = credential_metadata
 
@@ -143,5 +147,15 @@ class Api::V1::Accounts::Platform::CredentialsController < Api::V1::Accounts::Ba
 
   def credential_key
     credential_params[:key].presence || Platform::CredentialManager.default_key_for(credential_params[:provider])
+  end
+
+  def provider_allowed?(provider)
+    Llm::Models.provider_enabled?(provider)
+  end
+
+  def provider_disabled_error
+    {
+      error: "Provider '#{credential_params[:provider]}' is not enabled yet. Only OpenAI and Google Gemini are available."
+    }
   end
 end
