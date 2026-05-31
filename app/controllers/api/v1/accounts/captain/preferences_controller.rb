@@ -17,6 +17,15 @@ class Api::V1::Accounts::Captain::PreferencesController < Api::V1::Accounts::Bas
 
   private
 
+  FEATURE_MODEL_KINDS = {
+    'editor' => %w[chat multimodal],
+    'assistant' => %w[chat multimodal],
+    'copilot' => %w[chat multimodal],
+    'label_suggestion' => %w[chat multimodal],
+    'audio_transcription' => %w[transcription],
+    'help_center_search' => %w[embedding]
+  }.freeze
+
   def preferences_payload
     {
       providers: Llm::Models.providers,
@@ -65,12 +74,40 @@ class Api::V1::Accounts::Captain::PreferencesController < Api::V1::Accounts::Bas
     account_features = preferences[:features] || {}
     account_models = preferences[:models] || {}
 
+    all_platform_models = platform_models_for_captain
+
     Llm::Models.feature_keys.index_with do |feature_key|
       config = Llm::Models.feature_config(feature_key)
+      kinds = FEATURE_MODEL_KINDS[feature_key.to_s] || []
+      yaml_slugs = config[:models].map { |m| m[:id] }
+
+      extra_models = all_platform_models
+        .select { |m| kinds.include?(m.kind) && !yaml_slugs.include?(m.slug) }
+        .map do |m|
+          {
+            id: m.slug,
+            display_name: "#{m.display_name} (#{m.credential.name})",
+            provider: m.credential.provider,
+            coming_soon: false,
+            credit_multiplier: nil
+          }
+        end
+
       config.merge(
+        models: config[:models] + extra_models,
         enabled: account_features[feature_key] == true,
         selected: account_models[feature_key] || config[:default]
       )
     end
+  end
+
+  def platform_models_for_captain
+    Platform::CredentialModel
+      .enabled
+      .joins(:credential)
+      .where(platform_credentials: { account_id: @current_account.id })
+      .merge(Platform::Credential.active)
+      .includes(:credential)
+      .order(:kind, :display_name)
   end
 end
