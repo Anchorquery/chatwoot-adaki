@@ -35,15 +35,44 @@ module Llm::Config
       @initialized = false
     end
 
-    def with_api_key(api_key, api_base: nil)
+    # Providers fully wired for per-credential routing. Add a provider here
+    # once its RubyLLM setters are mapped in #apply_provider_credential.
+    SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini].freeze
+
+    def with_api_key(api_key, api_base: nil, provider: 'openai')
       initialize!
       effective_base = api_base.to_s.presence
+      normalized_provider = provider.to_s.presence || 'openai'
+
       context = RubyLLM.context do |config|
-        config.openai_api_key = api_key
-        config.openai_api_base = effective_base if effective_base
+        apply_provider_credential(config, normalized_provider, api_key, effective_base)
       end
 
       yield context
+    end
+
+    # Maps a credential (provider + key + optional base) onto the right
+    # RubyLLM setters. OpenAI and Google Gemini are supported; any other
+    # provider logs a warning and falls back to the OpenAI-compatible path
+    # so the call still has a chance to work via a custom api_base.
+    def apply_provider_credential(config, provider, api_key, effective_base)
+      case provider
+      when 'gemini'
+        config.gemini_api_key = api_key
+        config.gemini_api_base = effective_base if effective_base
+      when 'openai'
+        config.openai_api_key = api_key
+        config.openai_api_base = effective_base if effective_base
+      else
+        Rails.logger.warn(
+          "[Llm::Config] Provider '#{provider}' is not fully supported yet. " \
+          'Only openai and gemini are wired for per-credential routing. ' \
+          'Falling back to the OpenAI-compatible client; configure a custom ' \
+          'api_base if this provider speaks the OpenAI protocol.'
+        )
+        config.openai_api_key = api_key
+        config.openai_api_base = effective_base if effective_base
+      end
     end
 
     # Returns the list of providers with credentials present. Useful for

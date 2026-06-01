@@ -14,8 +14,12 @@ class Llm::BaseAiService
     setup_temperature
   end
 
+  # When a per-credential context is active (set via #with_llm_credential in
+  # subclasses), build the chat from it so the right provider key/base is used.
+  # Falls back to the global RubyLLM config otherwise.
   def chat(model: @model, temperature: @temperature)
-    RubyLLM.chat(model: model).with_temperature(temperature)
+    client = @llm_context || RubyLLM
+    client.chat(model: model).with_temperature(temperature)
   end
 
   private

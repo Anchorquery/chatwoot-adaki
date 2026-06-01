@@ -31,11 +31,21 @@ class Captain::BaseTaskService
     @conversation ||= account.conversations.find_by(display_id: conversation_display_id)
   end
 
+  def llm_provider
+    credential = llm_credential
+    (credential.is_a?(Hash) ? (credential[:provider] || credential['provider']) : nil).to_s.presence || 'openai'
+  end
+
   def api_base
     credential = llm_credential
     metadata = credential.is_a?(Hash) ? (credential[:metadata] || credential['metadata']) : credential&.metadata
     metadata = metadata.is_a?(Hash) ? metadata : {}
     endpoint = metadata['api_base'].to_s.presence || metadata[:api_base].to_s.presence
+    return endpoint.presence if llm_provider != 'openai'
+
+    # OpenAI (and OpenAI-compatible) path: append /v1 and fall back to the
+    # global endpoint / public OpenAI base. Non-openai providers use their
+    # RubyLLM default base unless an explicit api_base is set on the credential.
     endpoint ||= InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.to_s.presence
     endpoint ||= 'https://api.openai.com/'
     "#{endpoint.chomp('/')}/v1"
@@ -62,7 +72,7 @@ class Captain::BaseTaskService
   def execute_ruby_llm_request(model:, messages:, schema: nil, tools: [])
     credential = llm_credential
 
-    Llm::Config.with_api_key(credential[:api_key], api_base: api_base) do |context|
+    Llm::Config.with_api_key(credential[:api_key], api_base: api_base, provider: llm_provider) do |context|
       chat = build_chat(context, model: model, messages: messages, schema: schema, tools: tools)
 
       conversation_messages = messages.reject { |m| m[:role] == 'system' }
@@ -177,7 +187,7 @@ class Captain::BaseTaskService
 
   def hook_llm_credential
     key = openai_hook&.settings&.dig('api_key').presence
-    { api_key: key, source: :hook } if key
+    { api_key: key, source: :hook, provider: 'openai' } if key
   end
 
   def system_llm_credential
@@ -202,6 +212,7 @@ class Captain::BaseTaskService
     {
       api_key: credential.respond_to?(:secret) ? credential.secret(:api_key) : credential.payload[:api_key],
       source: :system,
+      provider: credential.respond_to?(:provider) ? credential.provider.to_s : 'openai',
       metadata: credential.metadata,
       resolved_model: resolved&.dig(:model_slug)
     }

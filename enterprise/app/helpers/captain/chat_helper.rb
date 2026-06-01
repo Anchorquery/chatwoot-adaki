@@ -4,7 +4,8 @@ module Captain::ChatHelper
   include Captain::ChatGenerationRecorder
 
   def request_chat_completion
-    with_llm_credential do
+    with_llm_credential do |context|
+      @llm_context = context
       log_chat_completion_request
       chat = build_chat
 

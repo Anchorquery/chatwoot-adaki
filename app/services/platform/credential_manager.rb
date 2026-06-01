@@ -99,7 +99,9 @@ class Platform::CredentialManager
 
       raise CustomExceptions::Platform::MissingCredential.new(account: account, key: key, provider: provider, purpose: purpose) if access_token.blank?
 
-      Llm::Config.with_api_key(access_token, api_base: api_base) do |context|
+      effective_provider = (credential.respond_to?(:provider) ? credential.provider : nil).to_s.presence || provider.to_s.presence || 'openai'
+
+      Llm::Config.with_api_key(access_token, api_base: api_base, provider: effective_provider) do |context|
         yield context, credential
       end
     end
