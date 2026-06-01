@@ -64,7 +64,7 @@ RSpec.describe Messages::AudioTranscriptionService, type: :service do
       end
     end
 
-    context 'when the audio exceeds Whisper byte limit' do
+    context 'when the audio exceeds the byte limit' do
       before do
         attachment.file.attach(
           io: File.open(Rails.public_path.join('audio/widget/ding.mp3')),
@@ -72,13 +72,29 @@ RSpec.describe Messages::AudioTranscriptionService, type: :service do
           content_type: 'audio/mpeg'
         )
         allow(service).to receive(:can_transcribe?).and_return(true)
-        allow(attachment.file.blob).to receive(:byte_size).and_return(described_class::WHISPER_BYTE_LIMIT + 1)
+        allow(attachment.file.blob).to receive(:byte_size).and_return(described_class::AUDIO_BYTE_LIMIT + 1)
       end
 
-      it 'returns an error without calling Whisper' do
+      it 'returns an error without transcribing' do
         expect(service).not_to receive(:transcribe_audio)
-        expect(service.perform).to eq({ error: 'Audio too large for Whisper' })
+        expect(service.perform).to eq({ error: 'Audio too large for transcription' })
       end
+    end
+  end
+
+  describe 'provider-aware model resolution' do
+    let(:service) { described_class.new(attachment) }
+
+    it 'defaults to whisper-1 when no transcription/multimodal model is enabled' do
+      expect(service.send(:transcription_model)).to eq('whisper-1')
+    end
+
+    it "uses the account's enabled Gemini multimodal model when available" do
+      credential = create(:platform_credential, :gemini, account: account)
+      create(:platform_credential_model, credential: credential, slug: 'gemini-2.0-flash', kind: 'multimodal', enabled: true)
+
+      expect(service.send(:transcription_model)).to eq('gemini-2.0-flash')
+      expect(service.send(:transcription_context)).to be_present
     end
   end
 
