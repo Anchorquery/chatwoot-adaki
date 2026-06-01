@@ -102,11 +102,37 @@ class Captain::Assistant::AgentRunnerService
 
   def process_agent_result(result)
     Rails.logger.info "[Captain V2] Agent result: #{result.inspect}"
+
+    # The ai-agents runner swallows exceptions into result.error and returns a
+    # nil output, which would otherwise surface as an empty reply. Surface a
+    # clear, actionable message instead (mirrors make_api_call's api_key_missing
+    # in the BaseTaskService flow that already works for Gemini).
+    return llm_error_response(result.error) if result.respond_to?(:error) && result.error.present?
+
     output = result.output
     response = output.is_a?(Hash) ? output.with_indifferent_access : { 'response' => output.to_s, 'reasoning' => 'Processed by agent' }
     response['agent_name'] = result.context&.dig(:current_agent)
     response['handoff_tool_called'] = result.context&.dig(:captain_v2_handoff_tool_called) || false
     response
+  end
+
+  def llm_error_response(error)
+    Rails.logger.error "[Captain V2] LLM error: #{error.class}: #{error.message}"
+
+    reasoning = if error.is_a?(RubyLLM::ConfigurationError)
+                  'El proveedor de IA de esta cuenta no está configurado correctamente ' \
+                    '(falta la API key o la credencial del proveedor). Revisa los modelos/credenciales de Captain. ' \
+                    "Detalle: #{error.message}"
+                else
+                  "Error del proveedor de IA: #{error.message}"
+                end
+
+    {
+      'response' => 'conversation_handoff',
+      'reasoning' => reasoning,
+      'error' => error.message,
+      'handoff_tool_called' => @handoff_tool_called
+    }
   end
 
   def error_response(error_message)
