@@ -78,6 +78,11 @@ class Llm::BaseAiService
     if resolved.present?
       @model = resolved[:model_slug]
       @resolved_credential = resolved[:credential]
+      # Build a per-credential RubyLLM context so #chat routes to the resolved
+      # provider's key/base (e.g. an account's Gemini key) instead of the
+      # global OpenAI config. Nil when the credential carries no usable key,
+      # in which case #chat falls back to the global RubyLLM config.
+      @llm_context = Llm::Config.context_for_credential(@resolved_credential)
       return
     end
 

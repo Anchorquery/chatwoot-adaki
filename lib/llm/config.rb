@@ -40,15 +40,46 @@ module Llm::Config
     SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini].freeze
 
     def with_api_key(api_key, api_base: nil, provider: 'openai')
+      yield context_for(api_key, api_base: api_base, provider: provider)
+    end
+
+    # Builds (and returns) a reusable RubyLLM context scoped to a single
+    # credential. Unlike #with_api_key it does not require a block, so callers
+    # that need to keep the context around (e.g. to inject it into a chat via
+    # RubyLLM::Chat#with_context) can store it. The context dups the global
+    # config and overrides only the resolved provider's key/base.
+    def context_for(api_key, api_base: nil, provider: 'openai')
       initialize!
       effective_base = api_base.to_s.presence
       normalized_provider = provider.to_s.presence || 'openai'
 
-      context = RubyLLM.context do |config|
+      RubyLLM.context do |config|
         apply_provider_credential(config, normalized_provider, api_key, effective_base)
       end
+    end
 
-      yield context
+    # Builds a RubyLLM context from a Platform::Credential (or any object that
+    # responds to #secret/#payload + #provider + #metadata). Returns nil when
+    # the credential is blank or carries no usable api_key, so callers can fall
+    # back to the global RubyLLM config (legacy installs using InstallationConfig).
+    def context_for_credential(credential)
+      return nil if credential.blank?
+
+      api_key = credential_api_key(credential)
+      return nil if api_key.blank?
+
+      metadata = credential.respond_to?(:metadata) && credential.metadata.is_a?(Hash) ? credential.metadata : {}
+      api_base = metadata['api_base'].to_s.presence || metadata[:api_base].to_s.presence
+      provider = (credential.respond_to?(:provider) ? credential.provider : nil).to_s.presence || 'openai'
+
+      context_for(api_key, api_base: api_base, provider: provider)
+    end
+
+    def credential_api_key(credential)
+      return credential.secret(:api_key) if credential.respond_to?(:secret)
+
+      payload = credential.respond_to?(:payload) ? credential.payload : nil
+      payload && (payload[:api_key] || payload['api_key'])
     end
 
     # Maps a credential (provider + key + optional base) onto the right

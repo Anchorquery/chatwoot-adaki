@@ -4,9 +4,12 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
   MAX_CONTEXT_MESSAGES = 10
 
   def initialize(assistant:, conversation:)
-    super()
     @assistant = assistant
     @conversation = conversation
+    # Set ivars before super() so setup_model resolves the account's provider
+    # (resolver_account reads @conversation) instead of falling back to the
+    # OpenAI install key.
+    super()
     @temperature = 0.0
   end
 
@@ -34,6 +37,14 @@ class Captain::Llm::AssistantActionClassifierService < Llm::BaseAiService
   end
 
   private
+
+  def resolver_account
+    @conversation&.account
+  end
+
+  def feature_key
+    'assistant'
+  end
 
   def classification_user_prompt(message_history:, assistant_response:)
     <<~PROMPT

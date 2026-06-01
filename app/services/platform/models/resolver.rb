@@ -84,13 +84,45 @@ module Platform::Models
       credential = @account.platform_credentials.active.first
       return nil unless credential
 
-      slug = if @feature.present?
-               Llm::Models.default_model_for(@feature).presence || @fallback_model
-             else
-               @fallback_model
-             end
+      { credential: credential, model_slug: fallback_slug_for(credential), source: :fallback }
+    end
 
-      { credential: credential, model_slug: slug, source: :fallback }
+    # RubyLLM routes by the model slug, so the fallback slug MUST belong to the
+    # chosen credential's provider — otherwise a Gemini key would be sent to
+    # OpenAI (the slug is gpt-*) and rejected. Precedence:
+    #   1. a model already synced onto this credential (prefer chat kind),
+    #   2. the feature's default/first model that matches the provider,
+    #   3. a provider-appropriate default (the OpenAI-shaped @fallback_model is
+    #      only safe to use when the provider is actually openai).
+    def fallback_slug_for(credential)
+      provider = credential.provider.to_s
+
+      synced = credential.models.where(kind: 'chat').order(:id).first || credential.models.order(:id).first
+      return synced.slug if synced
+
+      feature_slug = feature_slug_for_provider(provider)
+      return feature_slug if feature_slug.present?
+
+      provider_default_slug(provider)
+    end
+
+    # Last-resort slug for a provider with no synced or feature model. The
+    # OpenAI-shaped @fallback_model (gpt-*) is only safe when the provider is
+    # actually OpenAI; for other providers we pick the first registry model that
+    # belongs to them, falling back to @fallback_model only if none exists.
+    def provider_default_slug(provider)
+      return @fallback_model if provider == 'openai'
+
+      Llm::Models.models.find { |_slug, meta| meta['provider'] == provider }&.first || @fallback_model
+    end
+
+    def feature_slug_for_provider(provider)
+      return nil if @feature.blank?
+
+      default = Llm::Models.default_model_for(@feature)
+      return default if default.present? && Llm::Models.models.dig(default, 'provider') == provider
+
+      Llm::Models.models_for(@feature).find { |slug| Llm::Models.models.dig(slug, 'provider') == provider }
     end
 
     def enabled_scope
