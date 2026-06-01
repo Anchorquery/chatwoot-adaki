@@ -41,7 +41,7 @@ RSpec.describe Captain::Tools::SearchDocumentationService do
     context 'when matching responses exist' do
       before do
         response.update(documentable: documentable)
-        allow(Captain::AssistantResponse).to receive(:search).with(question).and_return([response])
+        allow(Captain::AssistantResponse).to receive(:search).with(question, account_id: assistant.account_id).and_return([response])
       end
 
       it 'returns formatted responses for the search query' do
@@ -55,7 +55,7 @@ RSpec.describe Captain::Tools::SearchDocumentationService do
 
     context 'when no matching responses exist' do
       before do
-        allow(Captain::AssistantResponse).to receive(:search).with(question).and_return([])
+        allow(Captain::AssistantResponse).to receive(:search).with(question, account_id: assistant.account_id).and_return([])
       end
 
       it 'returns an empty string' do

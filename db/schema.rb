@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_25_000101) do
+ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -164,7 +164,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_000101) do
     t.vector "embedding", limit: 1536
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "embedding_model"
     t.index ["embedding"], name: "index_article_embeddings_on_embedding", using: :ivfflat
+    t.index ["embedding_model"], name: "index_article_embeddings_on_embedding_model"
   end
 
   create_table "articles", force: :cascade do |t|
@@ -330,10 +332,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_25_000101) do
     t.integer "status", default: 1, null: false
     t.string "documentable_type"
     t.boolean "edited", default: false, null: false
+    t.string "embedding_model"
     t.index ["account_id"], name: "index_captain_assistant_responses_on_account_id"
     t.index ["assistant_id"], name: "index_captain_assistant_responses_on_assistant_id"
     t.index ["documentable_id", "documentable_type"], name: "idx_cap_asst_resp_on_documentable"
     t.index ["embedding"], name: "vector_idx_knowledge_entries_embedding", using: :ivfflat
+    t.index ["embedding_model"], name: "index_captain_assistant_responses_on_embedding_model"
     t.index ["status"], name: "index_captain_assistant_responses_on_status"
   end
 

@@ -47,8 +47,15 @@ class Captain::AssistantResponse < ApplicationRecord
   enum status: { pending: 0, approved: 1 }
 
   def self.search(query, account_id: nil)
-    embedding = Captain::Llm::EmbeddingService.new(account_id: account_id).get_embedding(query)
-    nearest_neighbors(:embedding, embedding, distance: 'cosine').limit(5)
+    account = account_id.present? ? Account.find_by(id: account_id) : nil
+    service = Captain::Llm::EmbeddingService.new(account: account, account_id: account_id, purpose: :search)
+    embedding = service.get_embedding(query)
+
+    # Only compare against vectors produced by the account's active embedding
+    # model — vectors from a different provider live in the same column but are
+    # not comparable.
+    scope = Captain::Embeddings::Manager.scope_to_active(all, account)
+    scope.nearest_neighbors(:embedding, embedding, distance: 'cosine').limit(5)
   end
 
   private
