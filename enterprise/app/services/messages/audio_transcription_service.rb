@@ -1,38 +1,46 @@
-class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
+# Transcribes an audio attachment. Provider-aware: routes to the account's
+# configured transcription model/credential via RubyLLM (OpenAI Whisper or a
+# Gemini multimodal model that transcribes via generateContent). Falls back to
+# OpenAI whisper-1 on the account's OpenAI credential (or the global config) when
+# no transcription/multimodal model is enabled for the account.
+class Messages::AudioTranscriptionService
   include Integrations::LlmInstrumentation
 
-  WHISPER_MODEL = 'whisper-1'.freeze
-  # Whisper's hard limit is 25 MB *decimal* (25_000_000), not binary (25.megabytes
-  # = 26_214_400) — using the binary form leaks the 25.0–26.2 MB range to the API
-  # as 413s. Long audio (~70+ min Opus) keeps the attachment but skips transcription.
-  WHISPER_BYTE_LIMIT = 25_000_000
+  DEFAULT_MODEL = 'whisper-1'.freeze
+  # Whisper's hard limit is 25 MB *decimal* (25_000_000). Kept as a conservative
+  # upper bound across providers (Gemini inline audio is also bounded). Long
+  # audio keeps the attachment but skips transcription.
+  AUDIO_BYTE_LIMIT = 25_000_000
 
   attr_reader :attachment, :message, :account
 
   def initialize(attachment)
-    super()
+    Llm::Config.initialize!
     @attachment = attachment
     @message = attachment.message
-    @account = message.account
+    @account = message&.account
   end
 
   def perform
     return { error: 'Transcription limit exceeded' } unless can_transcribe?
     return { error: 'Message not found' } if message.blank?
-    return { error: 'Audio too large for Whisper' } if audio_too_large?
+    return { error: 'Audio too large for transcription' } if audio_too_large?
 
     transcriptions = transcribe_audio
     Rails.logger.info "Audio transcription successful: #{transcriptions}"
     { success: true, transcriptions: transcriptions }
-  rescue Faraday::UnauthorizedError
-    Rails.logger.warn('Skipping audio transcription: OpenAI configuration is invalid or disabled (401 Unauthorized).')
-    { error: 'OpenAI configuration is invalid or disabled (401)' }
+  rescue RubyLLM::UnauthorizedError, Faraday::UnauthorizedError
+    Rails.logger.warn('Skipping audio transcription: LLM provider configuration is invalid or disabled (401).')
+    { error: 'LLM provider configuration is invalid or disabled (401)' }
+  rescue StandardError => e
+    Rails.logger.error("[AudioTranscription] account=#{account&.id} message=#{message&.id}: #{e.class}: #{e.message}")
+    { error: e.message }
   end
 
   private
 
   def can_transcribe?
-    return false unless account.feature_enabled?('captain_integration')
+    return false unless account&.feature_enabled?('captain_integration')
     return false if account.audio_transcriptions.blank?
 
     account.usage_limits[:captain][:responses][:current_available].positive?
@@ -42,7 +50,7 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
     blob = attachment.file&.blob
     return false unless blob
 
-    blob.byte_size > WHISPER_BYTE_LIMIT
+    blob.byte_size > AUDIO_BYTE_LIMIT
   end
 
   def fetch_audio_file
@@ -72,20 +80,9 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
     return transcribed_text if transcribed_text.present?
 
     temp_file_path = fetch_audio_file
-    transcribed_text = nil
 
-    File.open(temp_file_path, 'rb') do |file|
-      # temperature: 0.0 minimises Whisper's hallucinations on silence /
-      # near-silent audio; non-zero values trigger spiraling repeats like
-      # "Oh, dear. Oh, dear. Oh, dear." — well-documented Whisper behaviour.
-      response = @client.audio.transcribe(
-        parameters: {
-          model: WHISPER_MODEL,
-          file: file,
-          temperature: 0.0
-        }
-      )
-      transcribed_text = response['text']
+    transcribed_text = instrument_llm_call(instrumentation_params(temp_file_path)) do
+      run_transcription(temp_file_path)
     end
 
     update_transcription(transcribed_text)
@@ -94,10 +91,50 @@ class Messages::AudioTranscriptionService< Llm::LegacyBaseOpenAiService
     FileUtils.rm_f(temp_file_path) if temp_file_path.present?
   end
 
+  # temperature: 0.0 minimises Whisper's hallucinations on silence / near-silent
+  # audio; non-zero values trigger spiraling repeats ("Oh, dear. Oh, dear.").
+  def run_transcription(temp_file_path)
+    options = { model: transcription_model, temperature: 0.0 }
+    options[:context] = transcription_context if transcription_context
+
+    RubyLLM.transcribe(temp_file_path, **options).text
+  end
+
+  def resolved_transcription
+    return @resolved_transcription if defined?(@resolved_transcription)
+
+    @resolved_transcription = Platform::Models::CapabilityResolver.resolve(
+      account: account,
+      kinds: %w[transcription multimodal]
+    )
+  end
+
+  def transcription_model
+    resolved_transcription&.model_slug.presence || DEFAULT_MODEL
+  end
+
+  # Per-credential context for the resolved transcription model, or the account's
+  # OpenAI credential context for the whisper-1 default (nil -> global config).
+  def transcription_context
+    return @transcription_context if defined?(@transcription_context)
+
+    @transcription_context = resolved_transcription&.context || openai_fallback_context
+  end
+
+  def openai_fallback_context
+    credential = Platform::CredentialManager.fetch_optional(
+      account: account,
+      key: Platform::CredentialManager.default_key_for('openai'),
+      provider: 'openai',
+      purpose: 'ai_provider'
+    )
+    Llm::Config.context_for_credential(credential)
+  end
+
   def instrumentation_params(file_path)
     {
       span_name: 'llm.messages.audio_transcription',
-      model: WHISPER_MODEL,
+      model: transcription_model,
       account_id: account&.id,
       feature_name: 'audio_transcription',
       file_path: file_path
