@@ -101,10 +101,11 @@ module Captain::Embeddings
                                          .first
       return nil unless gemini_cred
 
-      Target.new(
-        model: 'text-embedding-004',
-        context: Llm::Config.context_for_credential(gemini_cred),
-        provider: 'google'
+      Platform::Models::CapabilityResolver::Result.new(
+        credential: gemini_cred,
+        model_slug: 'text-embedding-004',
+        provider: 'google',
+        context: Llm::Config.context_for_credential(gemini_cred)
       )
     end
 
