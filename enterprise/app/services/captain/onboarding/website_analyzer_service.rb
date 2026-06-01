@@ -1,3 +1,10 @@
+# NOTE (proveedor): este service NO es provider-aware por cuenta a proposito.
+# Corre durante el onboarding, antes de que exista una cuenta con proveedor
+# configurado: el constructor solo recibe `website_url`, no un account. Por eso
+# `resolver_account` queda nil y la resolucion cae al OpenAI install key.
+# El JSON mode SI es provider-aware (usa json_mode_params), asi que si en el
+# futuro se le pasa un account, automaticamente respetaria Gemini/OpenAI.
+# Pendiente: agregar account opcional al constructor para hacerlo provider-aware.
 class Captain::Onboarding::WebsiteAnalyzerService < Llm::BaseAiService
   include Integrations::LlmInstrumentation
 

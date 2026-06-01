@@ -1,3 +1,12 @@
+# NOTE (proveedor): este service es OpenAI-only a proposito; NO se migro a
+# Gemini todavia. Depende de la OpenAI Files API: sube el PDF a OpenAI y lo
+# referencia por `@document.openai_file_id` con bloques `{ type: 'file',
+# file: { file_id: ... } }`. Gemini usa un mecanismo de archivos distinto
+# (Gemini Files API / inline base64), asi que migrarlo NO es un simple swap de
+# credencial: requiere reescribir el flujo de subida y referencia de archivos.
+# Por eso hereda de Llm::LegacyBaseOpenAiService (gem OpenAI directo, no RubyLLM)
+# y mantiene response_format de OpenAI. Pendiente: reescribir para Gemini Files
+# API cuando se aborde la migracion de procesamiento de PDFs.
 class Captain::Llm::PaginatedFaqGeneratorService < Llm::LegacyBaseOpenAiService
   include Integrations::LlmInstrumentation
 
