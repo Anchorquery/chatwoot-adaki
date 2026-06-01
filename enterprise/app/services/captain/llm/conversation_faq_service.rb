@@ -8,6 +8,9 @@ class Captain::Llm::ConversationFaqService < Llm::BaseAiService
     @assistant = assistant
     @conversation = conversation
     @content = conversation.to_llm_text
+    # Re-resolve now that the account is known so the configured provider/model
+    # (e.g. Gemini) is honored instead of the OpenAI install fallback.
+    setup_model
   end
 
   # Generates and deduplicates FAQs from conversation content
@@ -114,6 +117,10 @@ class Captain::Llm::ConversationFaqService < Llm::BaseAiService
   def system_prompt
     account_language = @conversation.account.locale_english_name
     Captain::Llm::SystemPromptsService.conversation_faq_generator(account_language)
+  end
+
+  def resolver_account
+    @conversation&.account
   end
 
   def parse_response(response)

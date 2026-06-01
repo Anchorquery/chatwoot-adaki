@@ -7,6 +7,7 @@ class Captain::Llm::ContactNotesService < Llm::BaseAiService
     @conversation = conversation
     @contact = conversation.contact
     @content = "#Contact\n\n#{@contact.to_llm_text} \n\n#Conversation\n\n#{@conversation.to_llm_text}"
+    setup_model
   end
 
   def generate_and_update_notes
@@ -51,6 +52,10 @@ class Captain::Llm::ContactNotesService < Llm::BaseAiService
   def system_prompt
     account_language = @conversation.account.locale_english_name
     Captain::Llm::SystemPromptsService.notes_generator(account_language)
+  end
+
+  def resolver_account
+    @conversation&.account
   end
 
   def parse_response(response)

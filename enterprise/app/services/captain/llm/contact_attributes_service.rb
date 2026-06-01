@@ -7,6 +7,7 @@ class Captain::Llm::ContactAttributesService < Llm::BaseAiService
     @conversation = conversation
     @contact = conversation.contact
     @content = "#Contact\n\n#{@contact.to_llm_text} \n\n#Conversation\n\n#{@conversation.to_llm_text}"
+    setup_model
   end
 
   def generate_and_update_attributes
@@ -48,6 +49,10 @@ class Captain::Llm::ContactAttributesService < Llm::BaseAiService
 
   def system_prompt
     Captain::Llm::SystemPromptsService.attributes_generator
+  end
+
+  def resolver_account
+    @conversation&.account
   end
 
   def parse_response(content)
