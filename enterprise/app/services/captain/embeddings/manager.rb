@@ -90,7 +90,23 @@ module Captain::Embeddings
     def resolved_embedding(account)
       return nil if account.nil?
 
-      Platform::Models::CapabilityResolver.resolve(account: account, kinds: %w[embedding])
+      result = Platform::Models::CapabilityResolver.resolve(account: account, kinds: %w[embedding])
+      return result if result
+
+      # No explicit embedding CredentialModel — fall back to Gemini's embedding
+      # model when the account has an active Google credential, avoiding the
+      # global OpenAI fallback for accounts that only have Gemini configured.
+      gemini_cred = Platform::Credential.active
+                                         .where(account_id: account.id, provider: 'google')
+                                         .first
+      return nil unless gemini_cred
+
+      Platform::Models::CapabilityResolver::Result.new(
+        credential: gemini_cred,
+        model_slug: 'text-embedding-004',
+        provider: 'google',
+        context: Llm::Config.context_for_credential(gemini_cred)
+      )
     end
 
     def default_target
