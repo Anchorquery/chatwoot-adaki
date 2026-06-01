@@ -191,8 +191,22 @@ RSpec.describe Concerns::Agentable do
   end
 
   describe '#agent_response_schema' do
-    it 'returns Captain::ResponseSchema' do
+    it 'returns Captain::ResponseSchema for non-gemini providers' do
       expect(dummy_instance.send(:agent_response_schema)).to eq(Captain::ResponseSchema)
+    end
+
+    it 'returns nil for gemini (avoids function-calling + JSON mime type conflict)' do
+      account = create(:account)
+      credential = create(:platform_credential, :gemini, account: account)
+      create(:platform_credential_model, credential: credential, slug: 'gemini-3-flash', kind: 'chat', enabled: true)
+
+      account_aware = Class.new(dummy_class) do
+        define_method(:account) { @account }
+      end.new
+      account_aware.instance_variable_set(:@account, account)
+
+      expect(account_aware.send(:agent_provider)).to eq('gemini')
+      expect(account_aware.send(:agent_response_schema)).to be_nil
     end
   end
 

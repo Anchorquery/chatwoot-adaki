@@ -46,11 +46,11 @@ module Concerns::Agentable
   # routes by slug, so this must reflect the account's configured provider/model
   # (e.g. a Gemini slug) — otherwise the playground / Captain V2 runner always
   # talks to OpenAI regardless of the account's credentials. The per-credential
-  # API key is injected separately by AgentRunnerService via on_chat_created.
+  # API key is injected separately by AgentRunnerService (per-thread context).
   # Falls back to the legacy InstallationConfig model for installs that have not
   # enabled any model in the platform UI yet.
   def agent_model
-    resolved_agent_model.presence ||
+    agent_resolution&.dig(:model_slug).presence ||
       InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence ||
       LlmConstants::DEFAULT_MODEL
   end
@@ -61,14 +61,30 @@ module Concerns::Agentable
     'assistant'
   end
 
-  def resolved_agent_model
-    account = try(:account)
-    return nil if account.blank?
-
-    Platform::Models::Resolver.resolve(account: account, feature: agent_feature_key)&.dig(:model_slug)
+  # Provider of the resolved credential/model. Prefers the resolved credential,
+  # then the model registry, defaulting to openai.
+  def agent_provider
+    credential = agent_resolution&.dig(:credential)
+    provider = credential.provider.to_s if credential.respond_to?(:provider)
+    provider.presence || Llm::Models.models.dig(agent_model, 'provider').presence || 'openai'
   end
 
+  def agent_resolution
+    return @agent_resolution if defined?(@agent_resolution)
+
+    account = try(:account)
+    @agent_resolution = account && Platform::Models::Resolver.resolve(account: account, feature: agent_feature_key)
+  end
+
+  # Gemini rejects function calling combined with a JSON response mime type, and
+  # a response_schema forces `responseMimeType: application/json`. Captain agents
+  # rely on tools (handoff/search), so for Gemini we skip the structured schema
+  # and let the agent reply in plain text — AgentRunnerService#process_agent_result
+  # already wraps a plain string output into { response:, reasoning: }, and
+  # handoffs are signalled via the HandoffTool, not the schema.
   def agent_response_schema
+    return nil if agent_provider == 'gemini'
+
     Captain::ResponseSchema
   end
 
