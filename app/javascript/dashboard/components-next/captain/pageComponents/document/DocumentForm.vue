@@ -19,7 +19,7 @@ const props = defineProps({
 
 const emit = defineEmits(['submit', 'cancel']);
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 const { t } = useI18n();
 
@@ -84,7 +84,7 @@ const handleFileChange = event => {
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      // 10MB
+      // 50MB
       useAlert(t('CAPTAIN.DOCUMENTS.FORM.PDF_FILE.TOO_LARGE'));
       event.target.value = '';
       return;

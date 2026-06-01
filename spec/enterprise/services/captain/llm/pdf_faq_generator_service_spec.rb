@@ -17,26 +17,29 @@ RSpec.describe Captain::Llm::PdfFaqGeneratorService do
     chat
   end
 
+  def stub_pdf(byte_size:)
+    pdf_file = double('pdf_file', attached?: true, blob: double('blob', byte_size: byte_size))
+    allow(document).to receive(:pdf_file).and_return(pdf_file)
+  end
+
   context 'when the document has no attached PDF' do
     it 'returns an empty array' do
       expect(described_class.new(document).generate).to eq([])
     end
   end
 
-  context 'with an attached PDF' do
-    let(:service) { described_class.new(document) }
+  context 'with a small PDF (inline path)' do
+    before { stub_pdf(byte_size: 1.megabyte) }
 
-    before do
-      allow(document.pdf_file).to receive(:attached?).and_return(true)
-    end
-
-    it 'parses the faqs array from the JSON response' do
+    it 'sends the PDF inline and parses the faqs' do
       service = described_class.new(document)
-      allow(service).to receive(:chat).and_return(
-        stub_chat_returning('{"faqs": [{"question": "Q1", "answer": "A1"}]}')
-      )
+      chat = stub_chat_returning('{"faqs": [{"question": "Q1", "answer": "A1"}]}')
+      allow(service).to receive(:chat).and_return(chat)
 
-      expect(service.generate).to eq([{ 'question' => 'Q1', 'answer' => 'A1' }])
+      expect(chat).to receive(:ask).with(described_class::USER_PROMPT, with: document.pdf_file)
+                                   .and_return(double(content: '{"faqs": []}'))
+
+      service.generate
     end
 
     it 'returns [] on invalid JSON' do
@@ -44,6 +47,32 @@ RSpec.describe Captain::Llm::PdfFaqGeneratorService do
       allow(service).to receive(:chat).and_return(stub_chat_returning('not json'))
 
       expect(service.generate).to eq([])
+    end
+  end
+
+  context 'with a large PDF (Files API path)' do
+    before do
+      stub_pdf(byte_size: 30.megabytes)
+      backend = instance_double(Captain::Documents::GeminiFileBackend)
+      allow(Captain::Documents::GeminiFileBackend).to receive(:new).and_return(backend)
+      allow(backend).to receive(:file_reference).and_return(
+        { 'uri' => 'https://gen.googleapis.com/v1beta/files/abc', 'mime_type' => 'application/pdf' }
+      )
+    end
+
+    it 'references the uploaded file via a raw file_data part' do
+      service = described_class.new(document)
+      chat = stub_chat_returning('{"faqs": [{"question": "Q", "answer": "A"}]}')
+      allow(service).to receive(:chat).and_return(chat)
+
+      expect(chat).to receive(:ask) do |content|
+        expect(content).to be_a(RubyLLM::Content::Raw)
+        parts = content.value
+        expect(parts.first[:file_data][:file_uri]).to eq('https://gen.googleapis.com/v1beta/files/abc')
+        double(content: '{"faqs": []}')
+      end
+
+      service.generate
     end
   end
 
