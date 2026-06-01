@@ -16,7 +16,10 @@ class Captain::Documents::CrawlJob < ApplicationJob
   include Captain::FirecrawlHelper
 
   def perform_pdf_processing(document)
-    Captain::Llm::PdfProcessingService.new(document).process
+    # Gemini reads the PDF inline during FAQ generation (no Files API upload),
+    # so skip the OpenAI-only upload step for Gemini accounts — instantiating the
+    # legacy OpenAI client would otherwise require an OpenAI key.
+    Captain::Llm::PdfProcessingService.new(document).process unless Captain::Documents::PdfProvider.gemini?(document)
     document.update!(status: :available)
   rescue StandardError => e
     Rails.logger.error I18n.t('captain.documents.pdf_processing_failed', document_id: document.id, error: e.message)
