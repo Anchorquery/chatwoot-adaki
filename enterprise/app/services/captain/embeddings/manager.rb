@@ -46,7 +46,14 @@ module Captain::Embeddings
 
     # Target (model + matching credential context) for the ACTIVE model, used to
     # embed search queries in the same space as the stored vectors.
+    #
+    # When ACTIVE_KEY has never been explicitly set (no ReindexJob has run yet),
+    # we mirror write_target so search stays in the same embedding space as new
+    # writes. This prevents the search path from falling back to global OpenAI on
+    # accounts where write_target already resolved to Gemini.
     def search_target(account)
+      return write_target(account) if account && !account.internal_attributes.key?(ACTIVE_KEY)
+
       model = active_model(account)
       Target.new(model: model, context: context_for_model(account, model), provider: provider_for_model(account, model))
     end
@@ -57,14 +64,19 @@ module Captain::Embeddings
 
     # Scopes a vector relation to the account's active embedding model.
     #
-    # For the OpenAI default model we also include untagged (NULL) rows: legacy
-    # vectors created before tagging — and any OpenAI-only install — are OpenAI
-    # vectors, so behavior is unchanged. For a non-default (e.g. Gemini) active
-    # model we filter strictly so OpenAI vectors are never mixed in.
+    # When ACTIVE_KEY is not set we use write_model to mirror write_target, so
+    # search filters by the same model being written (e.g. Gemini text-embedding-004).
+    # For the OpenAI default we also include NULL rows (legacy untagged vectors).
+    # For any other model we filter strictly to avoid cross-provider comparison.
     def scope_to_active(relation, account)
       return relation if account.nil?
 
-      model = active_model(account)
+      model = if account.internal_attributes.key?(ACTIVE_KEY)
+                active_model(account)
+              else
+                write_model(account)
+              end
+
       if model == DEFAULT_MODEL
         relation.where('embedding_model = ? OR embedding_model IS NULL', model)
       else
