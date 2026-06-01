@@ -161,7 +161,12 @@ module Captain::ChatHelper
     Rails.logger.info("#{self.class.name} Assistant: #{@assistant.id}, requesting completion for #{@messages} with #{@tools&.length || 0} tools")
   end
 
+  # Yields the per-credential RubyLLM context resolved in Llm::BaseAiService#setup_model
+  # (built from the account's enabled credential). request_chat_completion assigns it
+  # to @llm_context so chat() routes to the configured provider's key/base. When nil
+  # (legacy installs with no platform credential), chat() falls back to the global
+  # RubyLLM config. Subclasses no longer need to override this.
   def with_llm_credential
-    yield
+    yield(@llm_context)
   end
 end
