@@ -68,10 +68,18 @@ class Llm::BaseAiService
     nil
   end
 
+  # Override in subclasses to resolve a model by capability kind (e.g. 'chat',
+  # 'embedding', 'transcription') when no feature key applies. Consulted after
+  # feature_key in Platform::Models::Resolver.
+  def resolver_kind
+    nil
+  end
+
   def setup_model
     resolved = Platform::Models::Resolver.resolve(
       account: resolver_account,
       feature: feature_key,
+      kind: resolver_kind,
       fallback_model: DEFAULT_MODEL
     )
 
