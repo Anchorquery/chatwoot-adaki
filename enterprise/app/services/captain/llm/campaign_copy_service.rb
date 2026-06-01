@@ -123,11 +123,10 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
   end
 
   def search_assistant_documents
-    embedding = Captain::Llm::EmbeddingService.new(account_id: account.id).get_embedding(prompt)
+    embedding = Captain::Llm::EmbeddingService.new(account: account, purpose: :search).get_embedding(prompt)
     results = if embedding.present?
-                document_responses_scope
-                  .nearest_neighbors(:embedding, embedding, distance: 'cosine')
-                  .limit(5)
+                scope = Captain::Embeddings::Manager.scope_to_active(document_responses_scope, account)
+                scope.nearest_neighbors(:embedding, embedding, distance: 'cosine').limit(5)
               else
                 fallback_responses
               end
