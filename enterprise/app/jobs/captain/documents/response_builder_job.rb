@@ -11,11 +11,25 @@ class Captain::Documents::ResponseBuilderJob < ApplicationJob
   private
 
   def generate_faqs(document, options)
-    if should_use_pagination?(document)
+    if gemini_pdf?(document)
+      generate_gemini_pdf_faqs(document)
+    elsif should_use_pagination?(document)
       generate_paginated_faqs(document, options)
     else
       generate_standard_faqs(document)
     end
+  end
+
+  def gemini_pdf?(document)
+    document.pdf_document? && Captain::Documents::PdfProvider.gemini?(document)
+  end
+
+  # Gemini reads the PDF inline in a single pass (no Files API / pagination).
+  def generate_gemini_pdf_faqs(document)
+    Captain::Llm::PdfFaqGeneratorService.new(
+      document,
+      language: document.account.locale_english_name
+    ).generate
   end
 
   def generate_paginated_faqs(document, options)
