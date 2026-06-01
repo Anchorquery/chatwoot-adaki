@@ -215,10 +215,34 @@ class Captain::Assistant::AgentRunnerService
     @runner ||= begin
       configured_runner = Agents::Runner.with_agents(*build_and_wire_agents)
       configured_runner = add_usage_metadata_callback(configured_runner)
+      configured_runner = add_llm_credential_callback(configured_runner)
       configured_runner = add_callbacks_to_runner(configured_runner) if @callbacks.any?
       install_instrumentation(configured_runner)
       configured_runner
     end
+  end
+
+  # The ai-agents gem builds every chat from the global RubyLLM config, so by
+  # default Captain V2 always talks to OpenAI. We re-point each chat the runner
+  # creates (initial + after every handoff) at a per-account RubyLLM context
+  # carrying the resolved credential's provider/key/base. No-op when the account
+  # has no platform credential (legacy installs keep using the global config).
+  def add_llm_credential_callback(runner)
+    context = resolved_llm_context
+    return runner if context.nil?
+
+    runner.on_chat_created do |chat, _agent_name, _model, _context_wrapper|
+      chat.with_context(context)
+    end
+    runner
+  end
+
+  def resolved_llm_context
+    return @resolved_llm_context if defined?(@resolved_llm_context)
+
+    account = @assistant&.account
+    resolved = account && Platform::Models::Resolver.resolve(account: account, feature: 'assistant')
+    @resolved_llm_context = Llm::Config.context_for_credential(resolved&.dig(:credential))
   end
 
   def run_payload(message_history)

@@ -2,7 +2,7 @@ class Captain::Llm::PdfProcessingService < Llm::LegacyBaseOpenAiService
   include Integrations::LlmInstrumentation
 
   def initialize(document)
-    super()
+    super(account: document&.account)
     @document = document
   end
 

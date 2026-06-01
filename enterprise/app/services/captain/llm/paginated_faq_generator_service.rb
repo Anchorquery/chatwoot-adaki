@@ -7,6 +7,7 @@
 # Por eso hereda de Llm::LegacyBaseOpenAiService (gem OpenAI directo, no RubyLLM)
 # y mantiene response_format de OpenAI. Pendiente: reescribir para Gemini Files
 # API cuando se aborde la migracion de procesamiento de PDFs.
+# La credencial OpenAI SI se resuelve por cuenta (super account:), no global.
 class Captain::Llm::PaginatedFaqGeneratorService < Llm::LegacyBaseOpenAiService
   include Integrations::LlmInstrumentation
 
@@ -17,7 +18,7 @@ class Captain::Llm::PaginatedFaqGeneratorService < Llm::LegacyBaseOpenAiService
   attr_reader :total_pages_processed, :iterations_completed
 
   def initialize(document, options = {})
-    super()
+    super(account: document&.account)
     @document = document
     @language = options[:language] || 'english'
     @pages_per_chunk = options[:pages_per_chunk] || DEFAULT_PAGES_PER_CHUNK

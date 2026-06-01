@@ -1,16 +1,18 @@
-# NOTE (proveedor): este service NO es provider-aware por cuenta a proposito.
-# Corre durante el onboarding, antes de que exista una cuenta con proveedor
-# configurado: el constructor solo recibe `website_url`, no un account. Por eso
-# `resolver_account` queda nil y la resolucion cae al OpenAI install key.
-# El JSON mode SI es provider-aware (usa json_mode_params), asi que si en el
-# futuro se le pasa un account, automaticamente respetaria Gemini/OpenAI.
-# Pendiente: agregar account opcional al constructor para hacerlo provider-aware.
+# NOTE (proveedor): provider-aware cuando se le pasa `account:`. Durante el
+# onboarding inicial puede no existir aun una cuenta con proveedor configurado;
+# en ese caso `account` queda nil, `resolver_account` devuelve nil y la
+# resolucion cae al OpenAI install key (comportamiento legacy). Si se le pasa la
+# cuenta, setup_model resuelve la credencial/modelo configurados (Gemini/OpenAI)
+# y el JSON mode ya elige el shape correcto via json_mode_params.
 class Captain::Onboarding::WebsiteAnalyzerService < Llm::BaseAiService
   include Integrations::LlmInstrumentation
 
   MAX_CONTENT_LENGTH = 8000
 
-  def initialize(website_url)
+  def initialize(website_url, account: nil)
+    @account = account
+    # Set @account before super() so setup_model can resolve the account's
+    # configured provider/model via resolver_account.
     super()
     @website_url = normalize_url(website_url)
     @website_content = nil
@@ -28,6 +30,14 @@ class Captain::Onboarding::WebsiteAnalyzerService < Llm::BaseAiService
   end
 
   private
+
+  def resolver_account
+    @account
+  end
+
+  def feature_key
+    'assistant'
+  end
 
   def normalize_url(url)
     return url if url.match?(%r{\Ahttps?://})
