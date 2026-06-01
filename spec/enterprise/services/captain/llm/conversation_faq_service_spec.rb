@@ -19,6 +19,8 @@ RSpec.describe Captain::Llm::ConversationFaqService do
   before do
     create(:installation_config, name: 'CAPTAIN_OPEN_AI_API_KEY', value: 'test-key')
     allow(Captain::Llm::EmbeddingService).to receive(:new).and_return(embedding_service)
+    # Passthrough so the existing responses.nearest_neighbors stubs still apply.
+    allow(Captain::Embeddings::Manager).to receive(:scope_to_active) { |relation, _account| relation }
     allow(RubyLLM).to receive(:chat).and_return(mock_chat)
     allow(mock_chat).to receive(:with_temperature).and_return(mock_chat)
     allow(mock_chat).to receive(:with_params).and_return(mock_chat)

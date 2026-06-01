@@ -11,7 +11,9 @@ module Enterprise::Concerns::Article
     add_article_embedding_association
 
     def self.vector_search(params)
-      embedding = Captain::Llm::EmbeddingService.new(account_id: params[:account_id]).get_embedding(params['query'])
+      account = params[:account_id].present? ? Account.find_by(id: params[:account_id]) : nil
+      service = Captain::Llm::EmbeddingService.new(account: account, account_id: params[:account_id], purpose: :search)
+      embedding = service.get_embedding(params['query'])
       records = joins(
         :category
       ).search_by_category_slug(
@@ -19,17 +21,14 @@ module Enterprise::Concerns::Article
       ).search_by_category_locale(params[:locale]).search_by_author(params[:author_id]).search_by_status(params[:status])
       filtered_article_ids = records.pluck(:id)
 
-      # Fetch nearest neighbors and their distances, then filter directly
+      # Only compare against vectors of the account's active embedding model so
+      # OpenAI and Gemini vectors (same column) are never mixed.
+      embeddings = ArticleEmbedding.where(article_id: filtered_article_ids)
+      embeddings = Captain::Embeddings::Manager.scope_to_active(embeddings, account)
 
-      # experimenting with filtering results based on result threshold
-      # distance_threshold = 0.2
-      # if using add the filter block to the below query
-      # .filter { |ae| ae.neighbor_distance <= distance_threshold }
-
-      article_ids = ArticleEmbedding.where(article_id: filtered_article_ids)
-                                    .nearest_neighbors(:embedding, embedding, distance: 'cosine')
-                                    .limit(5)
-                                    .pluck(:article_id)
+      article_ids = embeddings.nearest_neighbors(:embedding, embedding, distance: 'cosine')
+                              .limit(5)
+                              .pluck(:article_id)
 
       # Fetch the articles by the IDs obtained from the nearest neighbors search
       where(id: article_ids)

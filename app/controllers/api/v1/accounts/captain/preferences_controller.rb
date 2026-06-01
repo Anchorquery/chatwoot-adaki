@@ -12,6 +12,8 @@ class Api::V1::Accounts::Captain::PreferencesController < Api::V1::Accounts::Bas
     @current_account.captain_features = params_to_update[:captain_features] if params_to_update[:captain_features]
     @current_account.save!
 
+    reconcile_embeddings
+
     render json: preferences_payload
   end
 
@@ -22,9 +24,19 @@ class Api::V1::Accounts::Captain::PreferencesController < Api::V1::Accounts::Bas
     'assistant' => %w[chat multimodal],
     'copilot' => %w[chat multimodal],
     'label_suggestion' => %w[chat multimodal],
-    'audio_transcription' => %w[transcription],
+    'audio_transcription' => %w[transcription multimodal],
     'help_center_search' => %w[embedding]
   }.freeze
+
+  # When the embedding model selection changes, reconcile re-indexes the
+  # account's vectors and flips the active embedding model pointer.
+  def reconcile_embeddings
+    return unless defined?(Captain::Embeddings::Manager)
+
+    Captain::Embeddings::Manager.reconcile!(@current_account)
+  rescue StandardError => e
+    Rails.logger.error("[Captain::Embeddings] reconcile failed: #{e.message}")
+  end
 
   def preferences_payload
     {

@@ -3,6 +3,9 @@ class Api::V1::Accounts::Platform::ModelsController < Api::V1::Accounts::BaseCon
   before_action :authorize_account_update
   before_action :set_credential
   before_action :set_model, only: %i[show update destroy toggle]
+  # Enabling/disabling an embedding model can change the account's selected
+  # embedding provider; reconcile (re-index if needed) after such changes.
+  after_action :reconcile_embeddings, only: %i[create update destroy toggle bulk_toggle]
 
   def index
     scope = @credential.models
@@ -54,6 +57,14 @@ class Api::V1::Accounts::Platform::ModelsController < Api::V1::Accounts::BaseCon
 
   def authorize_account_update
     authorize @current_account, :update?
+  end
+
+  def reconcile_embeddings
+    return unless defined?(Captain::Embeddings::Manager)
+
+    Captain::Embeddings::Manager.reconcile!(@current_account)
+  rescue StandardError => e
+    Rails.logger.error("[Captain::Embeddings] reconcile failed: #{e.message}")
   end
 
   def set_credential

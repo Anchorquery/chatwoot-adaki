@@ -39,7 +39,7 @@ class Captain::Llm::ConversationFaqService < Llm::BaseAiService
 
     faqs.each do |faq|
       combined_text = "#{faq['question']}: #{faq['answer']}"
-      embedding = Captain::Llm::EmbeddingService.new(account_id: @conversation.account_id).get_embedding(combined_text)
+      embedding = Captain::Llm::EmbeddingService.new(account: @conversation.account, purpose: :search).get_embedding(combined_text)
       similar_faqs = find_similar_faqs(embedding)
 
       if similar_faqs.any?
@@ -53,9 +53,8 @@ class Captain::Llm::ConversationFaqService < Llm::BaseAiService
   end
 
   def find_similar_faqs(embedding)
-    similar_faqs = assistant
-                   .responses
-                   .nearest_neighbors(:embedding, embedding, distance: 'cosine')
+    scope = Captain::Embeddings::Manager.scope_to_active(assistant.responses, @conversation.account)
+    similar_faqs = scope.nearest_neighbors(:embedding, embedding, distance: 'cosine')
     Rails.logger.debug(similar_faqs.map { |faq| [faq.question, faq.neighbor_distance] })
     similar_faqs.select { |record| record.neighbor_distance < DISTANCE_THRESHOLD }
   end

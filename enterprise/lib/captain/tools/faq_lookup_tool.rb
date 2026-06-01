@@ -5,8 +5,9 @@ class Captain::Tools::FaqLookupTool < Captain::Tools::BasePublicTool
   def perform(_tool_context, query:)
     log_tool_usage('searching', { query: query })
 
-    # Use existing vector search on approved responses
-    responses = @assistant.responses.approved.search(query).to_a
+    # Use existing vector search on approved responses. Pass account_id so the
+    # query is embedded with — and filtered to — the account's active embedding model.
+    responses = @assistant.responses.approved.search(query, account_id: @assistant.account_id).to_a
 
     if responses.empty?
       log_tool_usage('no_results', { query: query })
