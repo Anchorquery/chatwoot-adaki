@@ -4,13 +4,12 @@ class Captain::Llm::ConversationFaqService < Llm::BaseAiService
   DISTANCE_THRESHOLD = 0.3
 
   def initialize(assistant, conversation)
-    super()
     @assistant = assistant
     @conversation = conversation
     @content = conversation.to_llm_text
-    # Re-resolve now that the account is known so the configured provider/model
-    # (e.g. Gemini) is honored instead of the OpenAI install fallback.
-    setup_model
+    # Set ivars before super() so setup_model can resolve the account's
+    # configured provider/model (e.g. Gemini) via resolver_account.
+    super()
   end
 
   # Generates and deduplicates FAQs from conversation content

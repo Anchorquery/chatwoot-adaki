@@ -2,12 +2,12 @@ class Captain::Llm::FaqGeneratorService < Llm::BaseAiService
   include Integrations::LlmInstrumentation
 
   def initialize(document:)
-    super()
     @document = document
     @content = document.content
     @language = document.account.locale_english_name
     @account_id = document.account_id
-    setup_model
+    # Set ivars before super() so setup_model resolves the account's provider.
+    super()
   end
 
   def generate

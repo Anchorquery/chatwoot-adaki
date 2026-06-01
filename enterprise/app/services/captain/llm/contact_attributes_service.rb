@@ -2,12 +2,12 @@ class Captain::Llm::ContactAttributesService < Llm::BaseAiService
   include Integrations::LlmInstrumentation
 
   def initialize(assistant, conversation)
-    super()
     @assistant = assistant
     @conversation = conversation
     @contact = conversation.contact
     @content = "#Contact\n\n#{@contact.to_llm_text} \n\n#Conversation\n\n#{@conversation.to_llm_text}"
-    setup_model
+    # Set ivars before super() so setup_model resolves the account's provider.
+    super()
   end
 
   def generate_and_update_attributes
