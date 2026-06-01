@@ -222,6 +222,16 @@ class Captain::BaseTaskService
     @openai_hook ||= account.hooks.find_by(app_id: 'openai', status: 'enabled')
   end
 
+  # Model to use for generation. Prefers the model from the resolved
+  # credential (e.g. an enabled Gemini model) so the configured provider is
+  # honored, then the legacy OpenAI install model, then the default.
+  # Subclasses can override but should call super or replicate this precedence.
+  def resolved_generator_model
+    llm_credential&.dig(:resolved_model).presence ||
+      InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence ||
+      GPT_MODEL
+  end
+
   def system_api_key
     @system_api_key ||= llm_credential&.secret(:api_key)
   end

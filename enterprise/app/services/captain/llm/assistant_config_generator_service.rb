@@ -150,7 +150,7 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
   end
 
   def generator_model
-    InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence || GPT_MODEL
+    resolved_generator_model
   end
 
   def event_name
