@@ -8,7 +8,8 @@ RSpec.describe Captain::Documents::GeminiFileBackend do
   let(:client) { instance_double(Captain::Llm::Gemini::FilesClient) }
 
   before do
-    create(:platform_credential, :gemini, account: account)
+    credential = create(:platform_credential, :gemini, account: account)
+    allow(Platform::Models::CapabilityResolver).to receive(:resolve).and_return(double(credential: credential))
     allow(Captain::Llm::Gemini::FilesClient).to receive(:new).and_return(client)
   end
 

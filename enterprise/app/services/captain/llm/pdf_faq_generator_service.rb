@@ -1,8 +1,10 @@
-# Generates FAQs from a PDF document using a provider that reads files inline
-# (Gemini). The PDF (capped at 10 MB) is sent inline via RubyLLM rather than
-# through the OpenAI Files API, so no upload/file_id step is needed. Gemini's
-# large context lets us process the whole document in a single pass instead of
-# the page-chunked flow OpenAI uses (Captain::Llm::PaginatedFaqGeneratorService).
+# Generates FAQs from a PDF document for Gemini accounts in a single pass
+# (Gemini's large context avoids the page-chunked flow OpenAI uses in
+# Captain::Llm::PaginatedFaqGeneratorService).
+#
+# Small PDFs are sent inline (base64) via RubyLLM. PDFs larger than the inline
+# request ceiling are uploaded once to the Gemini Files API and referenced by
+# file_uri (see INLINE_MAX_BYTES / Captain::Documents::GeminiFileBackend).
 #
 # Provider-aware via Llm::BaseAiService: resolves the account's multimodal model
 # + credential context. Selected by Captain::Documents::PdfProvider.
