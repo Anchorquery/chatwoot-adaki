@@ -42,6 +42,12 @@ module Captain::ChatHelper
   def json_response_params
     case llm_request_provider
     when 'gemini'
+      # Gemini rejects function calling combined with responseMimeType:
+      # application/json. The assistant/copilot prompts already instruct JSON
+      # output and parse_json_response strips fences + parses it, so when tools
+      # are in play we drop the hint instead of breaking the request.
+      return {} if @tools.present?
+
       { generationConfig: { responseMimeType: 'application/json' } }
     when 'openai'
       { response_format: { type: 'json_object' } }
