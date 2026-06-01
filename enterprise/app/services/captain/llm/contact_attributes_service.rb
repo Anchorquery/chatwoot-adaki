@@ -21,7 +21,7 @@ class Captain::Llm::ContactAttributesService < Llm::BaseAiService
   def generate_attributes
     response = instrument_llm_call(instrumentation_params) do
       chat
-        .with_params(response_format: { type: 'json_object' })
+        .with_params(**json_mode_params)
         .with_instructions(system_prompt)
         .ask(@content)
     end

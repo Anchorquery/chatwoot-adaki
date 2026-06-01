@@ -32,6 +32,29 @@ class Llm::BaseAiService
     response.strip.sub(/\A```(?:\w*)\s*\n?/, '').sub(/\n?\s*```\s*\z/, '').strip
   end
 
+  # Provider-aware JSON mode params. OpenAI uses a top-level `response_format`;
+  # Gemini expects `generationConfig.responseMimeType`. Sending OpenAI's shape
+  # to Gemini makes the Google API reject the request. `extra` lets callers add
+  # provider-agnostic params (e.g. max_tokens) that are merged in.
+  def json_mode_params(extra = {})
+    base = case llm_request_provider
+           when 'gemini' then { generationConfig: { responseMimeType: 'application/json' } }
+           when 'openai' then { response_format: { type: 'json_object' } }
+           else {}
+           end
+    base.merge(extra)
+  end
+
+  # Resolves the provider for the model/credential currently in use.
+  # Prefers the credential resolved in #setup_model, then the model registry,
+  # then falls back to OpenAI.
+  def llm_request_provider
+    provider = nil
+    provider ||= @resolved_credential.provider if @resolved_credential.respond_to?(:provider)
+    provider ||= Llm::Models.models[@model]&.fetch('provider', nil) if @model && defined?(Llm::Models)
+    provider.to_s.presence || 'openai'
+  end
+
   # Override in subclasses to specify the feature key (e.g. 'assistant', 'copilot',
   # 'editor', 'label_suggestion'). Returning nil falls back to InstallationConfig
   # for backward compatibility with installs that have not migrated to

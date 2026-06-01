@@ -7,12 +7,13 @@ class Captain::Llm::FaqGeneratorService < Llm::BaseAiService
     @content = document.content
     @language = document.account.locale_english_name
     @account_id = document.account_id
+    setup_model
   end
 
   def generate
     response = instrument_llm_call(instrumentation_params) do
       chat
-        .with_params(response_format: { type: 'json_object' })
+        .with_params(**json_mode_params)
         .with_instructions(system_prompt)
         .ask(@content)
     end
@@ -29,6 +30,10 @@ class Captain::Llm::FaqGeneratorService < Llm::BaseAiService
 
   def system_prompt
     Captain::Llm::SystemPromptsService.faq_generator(language)
+  end
+
+  def resolver_account
+    @document&.account
   end
 
   def instrumentation_params
