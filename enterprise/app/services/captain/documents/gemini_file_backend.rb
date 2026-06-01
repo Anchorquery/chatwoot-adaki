@@ -64,11 +64,13 @@ class Captain::Documents::GeminiFileBackend
     @client ||= Captain::Llm::Gemini::FilesClient.new(api_key: api_key, api_base: api_base)
   end
 
+  # Must be the SAME credential the chat (generateContent) resolves to: Gemini
+  # Files API uploads are scoped to the API key/project, so a file uploaded with
+  # one key is not visible to another.
   def credential
-    @credential ||= @account.platform_credentials
-                            .where(provider: 'gemini')
-                            .merge(Platform::Credential.active)
-                            .first
+    @credential ||= Platform::Models::CapabilityResolver
+                    .resolve(account: @account, kinds: %w[multimodal chat])
+                    &.credential
   end
 
   def api_key
