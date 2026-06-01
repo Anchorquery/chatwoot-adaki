@@ -27,11 +27,36 @@ module Captain::ChatHelper
 
   def build_chat
     llm_chat = chat(model: @model, temperature: temperature)
-    llm_chat = llm_chat.with_params(response_format: { type: 'json_object' })
+    json_params = json_response_params
+    llm_chat = llm_chat.with_params(**json_params) if json_params.present?
 
     llm_chat = setup_tools(llm_chat)
     llm_chat = setup_system_instructions(llm_chat)
     setup_event_handlers(llm_chat)
+  end
+
+  # JSON-mode parameters differ per provider. OpenAI uses a top-level
+  # `response_format`; Gemini expects `generationConfig.responseMimeType`.
+  # Sending OpenAI's shape to Gemini makes the Google API reject the request,
+  # so we pick the right shape based on the resolved credential's provider.
+  def json_response_params
+    case llm_request_provider
+    when 'gemini'
+      { generationConfig: { responseMimeType: 'application/json' } }
+    when 'openai'
+      { response_format: { type: 'json_object' } }
+    else
+      # Unknown/other providers: skip the provider-specific JSON hint rather
+      # than send an OpenAI-only param that could break the request.
+      {}
+    end
+  end
+
+  def llm_request_provider
+    provider = nil
+    provider ||= @resolved_credential.provider if @resolved_credential.respond_to?(:provider)
+    provider ||= Llm::Models.models[@model]&.fetch('provider', nil) if defined?(Llm::Models)
+    provider.to_s.presence || 'openai'
   end
 
   def setup_tools(llm_chat)
