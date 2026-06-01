@@ -29,7 +29,13 @@ class Captain::Assistant::AgentRunnerService
 
   def generate_response(message_history: [])
     message_to_process, context = run_payload(message_history)
-    result = runner.run(message_to_process, context: context, max_turns: 100)
+    # The ai-agents gem builds its chats from the global RubyLLM config and
+    # validates the credential eagerly in Chat.new. Publish the account's
+    # resolved credential as the per-thread context so those chats route to the
+    # configured provider (e.g. Gemini) instead of always hitting OpenAI.
+    result = RubyLLM.with_thread_context(resolved_llm_context) do
+      runner.run(message_to_process, context: context, max_turns: 100)
+    end
 
     process_agent_result(result)
   rescue StandardError => e
@@ -215,28 +221,17 @@ class Captain::Assistant::AgentRunnerService
     @runner ||= begin
       configured_runner = Agents::Runner.with_agents(*build_and_wire_agents)
       configured_runner = add_usage_metadata_callback(configured_runner)
-      configured_runner = add_llm_credential_callback(configured_runner)
       configured_runner = add_callbacks_to_runner(configured_runner) if @callbacks.any?
       install_instrumentation(configured_runner)
       configured_runner
     end
   end
 
-  # The ai-agents gem builds every chat from the global RubyLLM config, so by
-  # default Captain V2 always talks to OpenAI. We re-point each chat the runner
-  # creates (initial + after every handoff) at a per-account RubyLLM context
-  # carrying the resolved credential's provider/key/base. No-op when the account
-  # has no platform credential (legacy installs keep using the global config).
-  def add_llm_credential_callback(runner)
-    context = resolved_llm_context
-    return runner if context.nil?
-
-    runner.on_chat_created do |chat, _agent_name, _model, _context_wrapper|
-      chat.with_context(context)
-    end
-    runner
-  end
-
+  # RubyLLM context carrying the account's resolved credential (provider + key +
+  # api_base). Published as the per-thread default around the runner execution so
+  # the ai-agents chats route to the configured provider. Nil when the account
+  # has no platform credential, in which case the runner keeps using the global
+  # RubyLLM config (legacy installs).
   def resolved_llm_context
     return @resolved_llm_context if defined?(@resolved_llm_context)
 
