@@ -57,7 +57,7 @@ class Captain::Llm::EmbeddingService
   # call untouched (no dimensions param) to preserve existing behavior exactly.
   def embed_options(model)
     options = { model: model }
-    options[:dimensions] = Captain::Embeddings::Manager::DIMENSIONS if @embedding_provider == 'gemini'
+    options[:dimensions] = Captain::Embeddings::Manager::DIMENSIONS if %w[gemini google].include?(@embedding_provider)
     options
   end
 
