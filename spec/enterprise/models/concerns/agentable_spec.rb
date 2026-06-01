@@ -175,6 +175,19 @@ RSpec.describe Concerns::Agentable do
 
       expect(dummy_instance.send(:agent_model)).to eq('gpt-4.1')
     end
+
+    it "resolves the account's configured provider model when present" do
+      account = create(:account)
+      credential = create(:platform_credential, :gemini, account: account)
+      create(:platform_credential_model, credential: credential, slug: 'gemini-3-flash', kind: 'chat', enabled: true)
+
+      account_aware = Class.new(dummy_class) do
+        define_method(:account) { @account }
+      end.new
+      account_aware.instance_variable_set(:@account, account)
+
+      expect(account_aware.send(:agent_model)).to eq('gemini-3-flash')
+    end
   end
 
   describe '#agent_response_schema' do
