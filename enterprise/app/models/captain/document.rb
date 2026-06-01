@@ -37,7 +37,12 @@ class Captain::Document < ApplicationRecord
   belongs_to :account
   has_one_attached :pdf_file
   store_accessor :metadata, :content_fingerprint, :last_sync_error_code, :sync_step, :openai_file_id,
-                 :crawl_mode, :crawl_root_url, :crawl_depth
+                 :crawl_mode, :crawl_root_url, :crawl_depth, :gemini_file
+
+  # Default PDF size cap (MB). Overridable via the CAPTAIN_PDF_MAX_SIZE_MB
+  # installation config — OpenAI (Files API) and Gemini (Files API) both handle
+  # large PDFs, so the cap is provider-agnostic.
+  DEFAULT_MAX_PDF_SIZE_MB = 50
 
   validates :external_link, presence: true, unless: -> { pdf_file.attached? }
   validates :external_link, uniqueness: { scope: :assistant_id }, allow_blank: true
@@ -192,12 +197,16 @@ class Captain::Document < ApplicationRecord
     errors.add(:pdf_file, I18n.t('captain.documents.pdf_format_error')) unless pdf_file.blob.content_type == 'application/pdf'
   end
 
+  def self.max_pdf_size_mb
+    (InstallationConfig.find_by(name: 'CAPTAIN_PDF_MAX_SIZE_MB')&.value.presence || DEFAULT_MAX_PDF_SIZE_MB).to_i
+  end
+
   def validate_file_attachment
     return unless pdf_file.attached?
 
-    return unless pdf_file.blob.byte_size > 10.megabytes
+    return unless pdf_file.blob.byte_size > self.class.max_pdf_size_mb.megabytes
 
-    errors.add(:pdf_file, I18n.t('captain.documents.pdf_size_error'))
+    errors.add(:pdf_file, I18n.t('captain.documents.pdf_size_error', size: self.class.max_pdf_size_mb))
   end
 
   def validate_external_link_url

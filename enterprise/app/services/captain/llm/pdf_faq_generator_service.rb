@@ -11,6 +11,11 @@ class Captain::Llm::PdfFaqGeneratorService < Llm::BaseAiService
 
   USER_PROMPT = 'Read the attached PDF document in full and generate the FAQs as instructed.'.freeze
 
+  # Below this raw size the PDF is sent inline (base64). base64 inflates ~33%, so
+  # 7 MB stays well under Gemini's ~20 MB request ceiling. Larger PDFs are uploaded
+  # once via the Gemini Files API and referenced by file_uri (up to 2 GB).
+  INLINE_MAX_BYTES = 7.megabytes
+
   def initialize(document, options = {})
     @document = document
     @language = options[:language].presence || document&.account&.locale_english_name || 'english'
@@ -22,10 +27,7 @@ class Captain::Llm::PdfFaqGeneratorService < Llm::BaseAiService
     return [] if @document.blank? || !@document.pdf_file.attached?
 
     response = instrument_llm_call(instrumentation_params) do
-      chat
-        .with_params(**json_mode_params)
-        .with_instructions(system_prompt)
-        .ask(USER_PROMPT, with: @document.pdf_file)
+      ask(chat.with_params(**json_mode_params).with_instructions(system_prompt))
     end
 
     parse_faqs(response.content)
@@ -35,6 +37,28 @@ class Captain::Llm::PdfFaqGeneratorService < Llm::BaseAiService
   end
 
   private
+
+  # Inline for small PDFs; Files API (file_uri) for large ones beyond the inline limit.
+  def ask(prepared_chat)
+    if inline?
+      prepared_chat.ask(USER_PROMPT, with: @document.pdf_file)
+    else
+      prepared_chat.ask(RubyLLM::Content::Raw.new(file_data_parts))
+    end
+  end
+
+  def inline?
+    @document.pdf_file.blob.byte_size.to_i <= INLINE_MAX_BYTES
+  end
+
+  # Raw Gemini parts referencing the uploaded file (bypasses RubyLLM inline encoding).
+  def file_data_parts
+    reference = Captain::Documents::GeminiFileBackend.new(@document).file_reference
+    [
+      { file_data: { mime_type: reference['mime_type'], file_uri: reference['uri'] } },
+      { text: USER_PROMPT }
+    ]
+  end
 
   def resolver_account
     @document&.account
