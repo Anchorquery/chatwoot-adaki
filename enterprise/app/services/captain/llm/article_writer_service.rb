@@ -93,7 +93,7 @@ class Captain::Llm::ArticleWriterService < Captain::BaseTaskService
   end
 
   def writer_model
-    'gpt-5.2'
+    resolved_generator_model
   end
 
   def build_follow_up_context?

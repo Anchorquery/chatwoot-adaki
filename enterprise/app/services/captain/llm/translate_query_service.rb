@@ -1,6 +1,4 @@
 class Captain::Llm::TranslateQueryService < Captain::BaseTaskService
-  MODEL = 'gpt-4.1-nano'.freeze
-
   pattr_initialize [:account!]
 
   def translate(query, target_language:)
