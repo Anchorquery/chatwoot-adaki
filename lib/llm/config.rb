@@ -88,7 +88,7 @@ module Llm::Config
     # so the call still has a chance to work via a custom api_base.
     def apply_provider_credential(config, provider, api_key, effective_base)
       case provider
-      when 'gemini'
+      when 'gemini', 'google'
         config.gemini_api_key = api_key
         config.gemini_api_base = effective_base if effective_base
       when 'openai'
