@@ -9,7 +9,9 @@ RSpec.describe Captain::Documents::GeminiFileBackend do
 
   before do
     credential = create(:platform_credential, :gemini, account: account)
-    allow(Platform::Models::CapabilityResolver).to receive(:resolve).and_return(double(credential: credential))
+    # The Files upload must use the same credential the generation path resolves,
+    # exposed via PdfProvider.resolved_credential.
+    allow(Captain::Documents::PdfProvider).to receive(:resolved_credential).and_return(credential)
     allow(Captain::Llm::Gemini::FilesClient).to receive(:new).and_return(client)
   end
 

@@ -66,11 +66,12 @@ class Captain::Documents::GeminiFileBackend
 
   # Must be the SAME credential the chat (generateContent) resolves to: Gemini
   # Files API uploads are scoped to the API key/project, so a file uploaded with
-  # one key is not visible to another.
+  # one key is not visible to another. PdfProvider.resolved_credential mirrors the
+  # generation path's resolution (Platform::Models::Resolver), so the upload key
+  # and the generateContent key always match — including accounts that only have a
+  # Gemini key with no per-model toggles enabled.
   def credential
-    @credential ||= Platform::Models::CapabilityResolver
-                    .resolve(account: @account, kinds: %w[multimodal chat])
-                    &.credential
+    @credential ||= Captain::Documents::PdfProvider.resolved_credential(@document)
   end
 
   def api_key

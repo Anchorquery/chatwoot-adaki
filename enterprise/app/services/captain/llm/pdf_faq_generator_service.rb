@@ -62,13 +62,17 @@ class Captain::Llm::PdfFaqGeneratorService < Llm::BaseAiService
     ]
   end
 
-  def resolver_account
-    @document&.account
-  end
+  # Resolve the exact model/credential the dispatcher picked for this document
+  # (honoring the admin's Captain settings choice), so the gemini? routing, the
+  # Files upload, and this generation call all use the same model. Falls back to
+  # BaseAiService's own resolution when the account has no usable credential.
+  def setup_model
+    resolution = Captain::Documents::PdfProvider.resolution(@document)
+    return super if resolution.blank?
 
-  # PDF understanding needs a vision/multimodal model.
-  def resolver_kind
-    'multimodal'
+    @model = resolution[:model_slug]
+    @resolved_credential = resolution[:credential]
+    @llm_context = Llm::Config.context_for_credential(@resolved_credential)
   end
 
   def system_prompt

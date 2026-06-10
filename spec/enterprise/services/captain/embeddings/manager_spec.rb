@@ -15,6 +15,15 @@ RSpec.describe Captain::Embeddings::Manager do
       expect(described_class.write_model(account)).to eq('gemini-embedding-001')
       expect(described_class.write_target(account).provider).to eq('gemini')
     end
+
+    it "falls back to Gemini's embedding model when only a gemini credential exists (no embedding CredentialModel)" do
+      create(:platform_credential, :gemini, account: account)
+
+      target = described_class.write_target(account)
+
+      expect(target.model).to eq('text-embedding-004')
+      expect(target.provider).to eq('gemini')
+    end
   end
 
   describe '.active_model / .set_active!' do

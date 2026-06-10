@@ -407,6 +407,10 @@
       "COPILOT": {
         "TITLE": "Copilot",
         "DESCRIPTION": "Ofrece sugerencias contextuales en tiempo real, recomendaciones de la base de conocimientos e información proactiva durante las conversaciones."
+      },
+      "DOCUMENT_FAQ": {
+        "TITLE": "Procesamiento de documentos",
+        "DESCRIPTION": "Modelo usado para leer los PDF subidos y generar preguntas frecuentes a partir de ellos. Elige un modelo de OpenAI o de Google según el proveedor que hayas configurado."
       }
     },
     "FEATURES": {

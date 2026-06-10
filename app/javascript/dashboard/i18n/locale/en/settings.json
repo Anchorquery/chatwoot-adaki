@@ -415,6 +415,10 @@
       "COPILOT": {
         "TITLE": "Co-pilot",
         "DESCRIPTION": "Provides real-time contextual suggestions, knowledge base recommendations, and proactive insights during conversations."
+      },
+      "DOCUMENT_FAQ": {
+        "TITLE": "Document processing",
+        "DESCRIPTION": "Model used to read uploaded PDF documents and generate FAQs from them. Pick an OpenAI or Google model depending on the provider you configured."
       }
     },
     "FEATURES": {

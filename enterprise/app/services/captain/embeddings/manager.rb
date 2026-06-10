@@ -108,15 +108,17 @@ module Captain::Embeddings
       # No explicit embedding CredentialModel — fall back to Gemini's embedding
       # model when the account has an active Google credential, avoiding the
       # global OpenAI fallback for accounts that only have Gemini configured.
+      # Credentials created from the UI store provider 'gemini' (llm.yml key);
+      # older rows may carry 'google', so match both.
       gemini_cred = Platform::Credential.active
-                                         .where(account_id: account.id, provider: 'google')
+                                         .where(account_id: account.id, provider: %w[google gemini])
                                          .first
       return nil unless gemini_cred
 
       Platform::Models::CapabilityResolver::Result.new(
         credential: gemini_cred,
         model_slug: 'text-embedding-004',
-        provider: 'google',
+        provider: gemini_cred.provider,
         context: Llm::Config.context_for_credential(gemini_cred)
       )
     end
