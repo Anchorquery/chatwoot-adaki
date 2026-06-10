@@ -324,9 +324,9 @@
   "ONBOARDING": {
     "TITLE": "Hola 👋, ¡Bienvenido a {installationName}!",
     "DESCRIPTION": "Gracias por registrarse. Queremos que saque el máximo provecho de {installationName}. Aquí hay algunas cosas que puede hacer en {installationName} para hacer que la experiencia sea agradable.",
-    "GREETING_MORNING": "👋 Buenos días, {name}. Bienvenido a  {installationName}.",
-    "GREETING_AFTERNOON": "👋 Buenas tardes, {name}. Bienvenido a  {installationName}.",
-    "GREETING_EVENING": "👋 Buenas noches, {name}. Bienvenido a  {installationName}.",
+    "GREETING_MORNING": "👋 Buenos días, {name}.",
+    "GREETING_AFTERNOON": "👋 Buenas tardes, {name}.",
+    "GREETING_EVENING": "👋 Buenas noches, {name}.",
     "READ_LATEST_UPDATES": "Leer nuestras últimas actualizaciones",
     "ALL_CONVERSATION": {
       "TITLE": "Todas sus conversaciones en un solo lugar",
