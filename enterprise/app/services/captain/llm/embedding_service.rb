@@ -57,7 +57,15 @@ class Captain::Llm::EmbeddingService
   # call untouched (no dimensions param) to preserve existing behavior exactly.
   def embed_options(model)
     options = { model: model }
-    options[:dimensions] = Captain::Embeddings::Manager::DIMENSIONS if %w[gemini google].include?(@embedding_provider)
+    if %w[gemini google].include?(@embedding_provider)
+      options[:dimensions] = Captain::Embeddings::Manager::DIMENSIONS
+      # Force the Gemini (generativelanguage) provider. Gemini embedding slugs
+      # (e.g. gemini-embedding-001) also exist under 'vertexai' in RubyLLM's
+      # registry; without an explicit provider it may route to VertexAI, which
+      # needs GCP project/location we don't have (we authenticate with an api key).
+      options[:provider] = 'gemini'
+      options[:assume_model_exists] = true
+    end
     options
   end
 

@@ -21,7 +21,19 @@ RSpec.describe Captain::Embeddings::Manager do
 
       target = described_class.write_target(account)
 
-      expect(target.model).to eq('text-embedding-004')
+      expect(target.model).to eq('gemini-embedding-001')
+      expect(target.provider).to eq('gemini')
+    end
+
+    it 'resolves a context+provider for the gemini fallback model on the search path' do
+      create(:platform_credential, :gemini, account: account)
+
+      # After a reindex flips ACTIVE_KEY to the fallback model, search must still
+      # resolve the gemini credential context (not nil -> global OpenAI config).
+      described_class.set_active!(account, 'gemini-embedding-001')
+      target = described_class.search_target(account.reload)
+
+      expect(target.model).to eq('gemini-embedding-001')
       expect(target.provider).to eq('gemini')
     end
   end
