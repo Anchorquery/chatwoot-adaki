@@ -2,6 +2,10 @@ class Api::V1::Accounts::Platform::CredentialsController < Api::V1::Accounts::Ba
   before_action :current_account
   before_action :set_credential, only: %i[show update destroy validate rotate revoke usages]
   before_action :authorize_account_update
+  # Adding/removing/revoking a credential can change the account's resolved
+  # embedding provider (e.g. the Gemini fallback kicks in once a gemini
+  # credential exists); reconcile so vectors get re-indexed to match.
+  after_action :reconcile_embeddings, only: %i[create update destroy revoke]
 
   def index
     render json: credentials.map { |credential| serialize_credential(credential) }
@@ -94,6 +98,14 @@ class Api::V1::Accounts::Platform::CredentialsController < Api::V1::Accounts::Ba
   end
 
   private
+
+  def reconcile_embeddings
+    return unless defined?(Captain::Embeddings::Manager)
+
+    Captain::Embeddings::Manager.reconcile!(@current_account)
+  rescue StandardError => e
+    Rails.logger.error("[Captain::Embeddings] reconcile failed: #{e.message}")
+  end
 
   def authorize_account_update
     authorize @current_account, :update?

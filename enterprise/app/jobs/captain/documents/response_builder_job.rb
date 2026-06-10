@@ -48,8 +48,17 @@ class Captain::Documents::ResponseBuilderJob < ApplicationJob
       document,
       pages_per_chunk: options[:pages_per_chunk],
       max_pages: options[:max_pages],
-      language: document.account.locale_english_name
+      language: document.account.locale_english_name,
+      model: openai_pdf_model(document)
     )
+  end
+
+  # Selected OpenAI model for PDF FAQ generation (document_faq). Only applies on
+  # the OpenAI path; nil lets the service use its historical default.
+  def openai_pdf_model(document)
+    return nil unless Captain::Documents::PdfProvider.provider_for(document) == 'openai'
+
+    Captain::Documents::PdfProvider.resolved_model(document)
   end
 
   def store_paginated_metadata(document, service)

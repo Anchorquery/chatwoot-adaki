@@ -142,3 +142,14 @@ features:
   help_center_search:
     models: [text-embedding-3-small]
     default: text-embedding-3-small
+  document_faq:
+    models:
+      [
+        gpt-4.1-mini,
+        gpt-4.1,
+        gpt-5-mini,
+        gpt-5.1,
+        gemini-3-flash,
+        gemini-3-pro,
+      ]
+    default: gpt-4.1-mini

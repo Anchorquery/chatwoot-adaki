@@ -46,6 +46,12 @@ const modelFeatures = computed(() => [
     description: t('CAPTAIN_SETTINGS.MODEL_CONFIG.COPILOT.DESCRIPTION'),
     enterprise: true,
   },
+  {
+    key: 'document_faq',
+    title: t('CAPTAIN_SETTINGS.MODEL_CONFIG.DOCUMENT_FAQ.TITLE'),
+    description: t('CAPTAIN_SETTINGS.MODEL_CONFIG.DOCUMENT_FAQ.DESCRIPTION'),
+    enterprise: true,
+  },
 ]);
 
 const featureToggles = computed(() => [

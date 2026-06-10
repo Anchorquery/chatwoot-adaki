@@ -84,7 +84,18 @@ RSpec.describe Captain::Llm::PdfFaqGeneratorService do
       service = described_class.new(document)
 
       expect(service.instance_variable_get(:@model)).to eq('gemini-2.0-flash')
-      expect(service.send(:resolver_kind)).to eq('multimodal')
+      expect(service.instance_variable_get(:@resolved_credential)).to eq(credential)
+    end
+
+    it 'honors the model explicitly selected in Captain settings' do
+      credential = create(:platform_credential, :gemini, account: account)
+      create(:platform_credential_model, credential: credential, slug: 'gemini-2.5-pro', kind: 'multimodal', enabled: true)
+      create(:platform_credential_model, credential: credential, slug: 'gemini-2.0-flash', kind: 'multimodal', enabled: true)
+      account.update!(captain_models: { 'document_faq' => 'gemini-2.5-pro' })
+
+      service = described_class.new(document)
+
+      expect(service.instance_variable_get(:@model)).to eq('gemini-2.5-pro')
     end
   end
 end

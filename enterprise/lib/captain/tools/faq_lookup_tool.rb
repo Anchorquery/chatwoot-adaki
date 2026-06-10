@@ -16,6 +16,11 @@ class Captain::Tools::FaqLookupTool < Captain::Tools::BasePublicTool
       log_tool_usage('found_results', { query: query, count: responses.size })
       format_responses(responses)
     end
+  rescue Captain::Llm::EmbeddingService::EmbeddingsError => e
+    # Degrade gracefully: an embedding/provider failure should not kill the
+    # whole agent turn — let the model answer without FAQ context or hand off.
+    log_tool_usage('embedding_error', { query: query, error: e.message })
+    'FAQ search is temporarily unavailable. Answer from the conversation context or hand off to a human agent if needed.'
   end
 
   private

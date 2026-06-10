@@ -11,6 +11,15 @@ class Captain::Tools::BasePublicTool < Agents::Tool
     true
   end
 
+  # Scenario instructions and prompts reference tools by their short id
+  # (e.g. tool://add_label_to_conversation), so expose that same short name
+  # to the LLM instead of RubyLLM's namespaced default
+  # ("captain--tools--add_label_to_conversation"). Models follow the prompt
+  # text literally and fail with "unavailable tool" when the names diverge.
+  def name
+    self.class.name.demodulize.underscore.delete_suffix('_tool')
+  end
+
   def permissions
     # Override in subclasses to specify required permissions
     # Returns empty array for public tools (no permissions required)
