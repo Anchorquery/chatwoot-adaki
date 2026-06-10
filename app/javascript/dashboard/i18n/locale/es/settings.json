@@ -422,7 +422,9 @@
       },
       "HELP_CENTER_SEARCH": {
         "TITLE": "Indexación de búsqueda del centro de ayuda",
-        "DESCRIPTION": "Usa IA para realizar búsquedas con contexto dentro de los artículos de tu centro de ayuda."
+        "DESCRIPTION": "Usa IA para realizar búsquedas con contexto dentro de los artículos de tu centro de ayuda.",
+        "MODEL_TITLE": "Modelo de embeddings",
+        "MODEL_DESCRIPTION": "Modelo usado para vectorizar las FAQs y las consultas de búsqueda. Elige un modelo del proveedor que configuraste (ej. gemini-embedding-001 para Google)."
       },
       "LABEL_SUGGESTION": {
         "TITLE": "Sugerencia de etiquetas",

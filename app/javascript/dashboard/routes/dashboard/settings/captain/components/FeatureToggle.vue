@@ -31,12 +31,16 @@ const isEnabled = ref(false);
 
 const featureConfig = computed(() => features.value[props.featureKey]);
 
-const hasMultipleModels = computed(() => {
-  return availableModels.value && availableModels.value.length > 1;
+const hasModels = computed(() => {
+  return availableModels.value && availableModels.value.length >= 1;
 });
 
+// Show the model picker whenever the feature has at least one model. We don't
+// gate on isEnabled: for embeddings the chosen model is used regardless of the
+// toggle (FAQ vector search), so admins must be able to see/pick it even with a
+// single provider option (e.g. only gemini-embedding-001 on a Gemini account).
 const showModelSelector = computed(() => {
-  return isEnabled.value && hasMultipleModels.value;
+  return hasModels.value;
 });
 
 const title = computed(() => {

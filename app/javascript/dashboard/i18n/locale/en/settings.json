@@ -430,7 +430,9 @@
       },
       "HELP_CENTER_SEARCH": {
         "TITLE": "Help Center Search Indexing",
-        "DESCRIPTION": "Use AI for context aware search inside your help center articles."
+        "DESCRIPTION": "Use AI for context aware search inside your help center articles.",
+        "MODEL_TITLE": "Embedding Model",
+        "MODEL_DESCRIPTION": "Model used to vectorize FAQs and search queries. Pick a model from the provider you configured (e.g. gemini-embedding-001 for Google)."
       },
       "LABEL_SUGGESTION": {
         "TITLE": "Label Suggestion",
