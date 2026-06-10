@@ -108,25 +108,62 @@ module Captain::Embeddings
     def resolved_embedding(account)
       return nil if account.nil?
 
+      # 1. The model the admin explicitly picked in Captain settings wins.
+      explicit = explicit_embedding_target(account)
+      return explicit if explicit
+
+      # 2. An enabled embedding CredentialModel (synced + toggled in the UI).
       result = Platform::Models::CapabilityResolver.resolve(account: account, kinds: %w[embedding])
       return result if result
 
-      # No explicit embedding CredentialModel — fall back to Gemini's embedding
-      # model when the account has an active Google credential, avoiding the
-      # global OpenAI fallback for accounts that only have Gemini configured.
+      # 3. No explicit model — fall back to Gemini's embedding model when the
+      # account has an active Google credential, avoiding the global OpenAI
+      # fallback for accounts that only have Gemini configured.
+      gemini_fallback_target(account)
+    end
+
+    # Honors captain_models['help_center_search']. Reads the raw stored value
+    # (not the YAML-default-filled accessor) so the default stays "auto" until an
+    # admin picks one. Resolves the credential by enabled CredentialModel first,
+    # then by the model's provider — so a catalog option like gemini-embedding-001
+    # works even before the model is synced/enabled.
+    def explicit_embedding_target(account)
+      models = account.try(:captain_models)
+      selected = models.is_a?(Hash) ? models['help_center_search'].presence : nil
+      return nil unless selected
+
+      credential_model = credential_model_for(account, selected)
+      return embedding_result(credential_model.credential, credential_model.slug) if credential_model
+
+      provider = Llm::Models.models.dig(selected, 'provider').to_s.presence
+      return nil if provider.blank? || provider == 'openai' # OpenAI default uses the global config downstream.
+
+      credential = Platform::Credential.active
+                                       .where(account_id: account.id, provider: provider_aliases(provider))
+                                       .first
+      credential && embedding_result(credential, selected)
+    end
+
+    def gemini_fallback_target(account)
       # Credentials created from the UI store provider 'gemini' (llm.yml key);
       # older rows may carry 'google', so match both.
       gemini_cred = Platform::Credential.active
                                          .where(account_id: account.id, provider: %w[google gemini])
                                          .first
-      return nil unless gemini_cred
+      gemini_cred && embedding_result(gemini_cred, GEMINI_FALLBACK_MODEL)
+    end
 
+    def embedding_result(credential, model_slug)
       Platform::Models::CapabilityResolver::Result.new(
-        credential: gemini_cred,
-        model_slug: GEMINI_FALLBACK_MODEL,
-        provider: gemini_cred.provider,
-        context: Llm::Config.context_for_credential(gemini_cred)
+        credential: credential,
+        model_slug: model_slug,
+        provider: credential.provider.to_s,
+        context: Llm::Config.context_for_credential(credential)
       )
+    end
+
+    def provider_aliases(provider)
+      %w[google gemini].include?(provider) ? %w[google gemini] : [provider]
     end
 
     def default_target

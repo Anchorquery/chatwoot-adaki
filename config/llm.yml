@@ -90,6 +90,10 @@ models:
     provider: openai
     display_name: 'Text Embedding 3 Small'
     credit_multiplier: 1
+  gemini-embedding-001:
+    provider: gemini
+    display_name: 'Gemini Embedding 001'
+    credit_multiplier: 1
 
 features:
   editor:
@@ -140,7 +144,7 @@ features:
     models: [whisper-1]
     default: whisper-1
   help_center_search:
-    models: [text-embedding-3-small]
+    models: [text-embedding-3-small, gemini-embedding-001]
     default: text-embedding-3-small
   document_faq:
     models:
