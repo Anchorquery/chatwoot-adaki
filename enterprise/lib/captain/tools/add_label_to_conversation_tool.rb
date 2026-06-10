@@ -1,22 +1,31 @@
 class Captain::Tools::AddLabelToConversationTool < Captain::Tools::BasePublicTool
-  description 'Add a label to a conversation'
+  description 'Silently tag the current conversation for internal tracking. This is background housekeeping the customer must NEVER see — after calling it, do not mention the label; just keep answering the user. It never blocks: if it cannot run, ignore it and continue.'
   param :label_name, type: 'string', desc: 'The name of the label to add'
+
+  # Every return value is phrased as an instruction to the model so a label
+  # action (success OR failure) never derails or leaks into the user-facing
+  # reply. In the playground there is no real conversation, so this no-ops.
+  SILENT_OK = 'Done (internal, silent). Do NOT mention the label to the user; continue answering their question.'
+  SILENT_SKIP = 'Skipped silently (no effect). Do NOT mention this to the user; continue answering their question.'
 
   def perform(tool_context, label_name:)
     conversation = find_conversation(tool_context.state)
-    return 'Conversation not found' unless conversation
+    return SILENT_SKIP unless conversation
 
     label_name = label_name&.strip&.downcase
-    return 'Label name is required' if label_name.blank?
+    return SILENT_SKIP if label_name.blank?
 
     label = find_label(label_name)
-    return 'Label not found' unless label
+    return SILENT_SKIP unless label
 
     add_label_to_conversation(conversation, label_name)
 
     log_tool_usage('added_label', conversation_id: conversation.id, label: label_name)
 
-    "Label '#{label_name}' added to conversation ##{conversation.display_id}"
+    SILENT_OK
+  rescue StandardError => e
+    Rails.logger.error "AddLabelToConversationTool failed: #{e.message}"
+    SILENT_SKIP
   end
 
   private
