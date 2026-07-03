@@ -73,6 +73,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.integer "status", default: 0
     t.jsonb "internal_attributes", default: {}, null: false
     t.jsonb "settings", default: {}
+    t.integer "adaki_captain_monthly_limit"
+    t.bigint "feature_flags_2", default: 0, null: false
     t.index ["status"], name: "index_accounts_on_status"
   end
 
@@ -111,6 +113,89 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "adaki_absences", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.bigint "coverage_user_id"
+    t.datetime "start_at", null: false
+    t.datetime "end_at", null: false
+    t.string "reason"
+    t.string "status", default: "scheduled", null: false
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "start_at", "end_at"], name: "index_adaki_absences_on_account_id_and_start_at_and_end_at"
+    t.index ["account_id"], name: "index_adaki_absences_on_account_id"
+    t.index ["coverage_user_id"], name: "index_adaki_absences_on_coverage_user_id"
+    t.index ["user_id", "status"], name: "index_adaki_absences_on_user_id_and_status"
+    t.index ["user_id"], name: "index_adaki_absences_on_user_id"
+  end
+
+  create_table "adaki_audit_log_entries", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id"
+    t.string "action", null: false
+    t.string "auditable_type"
+    t.bigint "auditable_id"
+    t.jsonb "payload", default: {}, null: false
+    t.string "previous_hash"
+    t.string "hash_chain", null: false
+    t.datetime "recorded_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "recorded_at"], name: "index_adaki_audit_log_entries_on_account_id_and_recorded_at"
+    t.index ["account_id"], name: "index_adaki_audit_log_entries_on_account_id"
+    t.index ["auditable_type", "auditable_id"], name: "idx_on_auditable_type_auditable_id_46a363c23f"
+    t.index ["hash_chain"], name: "index_adaki_audit_log_entries_on_hash_chain", unique: true
+    t.index ["user_id"], name: "index_adaki_audit_log_entries_on_user_id"
+  end
+
+  create_table "adaki_campaign_approvals", force: :cascade do |t|
+    t.bigint "campaign_id", null: false
+    t.bigint "account_id", null: false
+    t.bigint "requested_by_id", null: false
+    t.bigint "approved_by_id"
+    t.string "status", default: "pending", null: false
+    t.datetime "requested_at", null: false
+    t.datetime "decided_at"
+    t.text "decision_note"
+    t.integer "recipient_count"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_adaki_campaign_approvals_on_account_id"
+    t.index ["approved_by_id"], name: "index_adaki_campaign_approvals_on_approved_by_id"
+    t.index ["campaign_id", "status"], name: "index_adaki_campaign_approvals_on_campaign_id_and_status"
+    t.index ["campaign_id"], name: "index_adaki_campaign_approvals_on_campaign_id"
+    t.index ["requested_by_id"], name: "index_adaki_campaign_approvals_on_requested_by_id"
+  end
+
+  create_table "adaki_captain_usages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.date "period", null: false
+    t.integer "request_count", default: 0, null: false
+    t.integer "input_tokens", default: 0, null: false
+    t.integer "output_tokens", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "period"], name: "index_adaki_captain_usages_on_account_id_and_period", unique: true
+    t.index ["account_id"], name: "index_adaki_captain_usages_on_account_id"
+  end
+
+  create_table "adaki_whatsapp_tier_snapshots", force: :cascade do |t|
+    t.bigint "channel_whatsapp_id", null: false
+    t.integer "messaging_limit_tier"
+    t.integer "max_daily_conversations"
+    t.integer "conversations_sent_24h"
+    t.string "quality_rating"
+    t.string "status"
+    t.jsonb "raw_payload", default: {}
+    t.datetime "captured_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["channel_whatsapp_id", "captured_at"], name: "idx_adaki_tier_snapshots_on_channel_captured"
+    t.index ["channel_whatsapp_id"], name: "index_adaki_whatsapp_tier_snapshots_on_channel_whatsapp_id"
   end
 
   create_table "agent_bot_inboxes", force: :cascade do |t|
@@ -305,6 +390,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.datetime "scheduled_at", precision: nil
     t.boolean "trigger_only_during_business_hours", default: false
     t.jsonb "template_params"
+    t.boolean "requires_approval", default: false, null: false
+    t.string "approval_status", default: "not_required"
     t.index ["account_id"], name: "index_campaigns_on_account_id"
     t.index ["campaign_status"], name: "index_campaigns_on_campaign_status"
     t.index ["campaign_type"], name: "index_campaigns_on_campaign_type"
@@ -372,30 +459,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.index ["account_id"], name: "index_captain_custom_tools_on_account_id"
   end
 
-  create_table "captain_mcp_servers", force: :cascade do |t|
-    t.bigint "account_id", null: false
-    t.bigint "platform_credential_id"
-    t.string "name", null: false
-    t.string "slug", null: false
-    t.text "description"
-    t.string "transport_type", default: "streamable_http", null: false
-    t.text "endpoint_url"
-    t.text "command"
-    t.jsonb "command_args", default: [], null: false
-    t.boolean "enabled", default: true, null: false
-    t.integer "timeout_seconds", default: 20, null: false
-    t.jsonb "tools_cache", default: [], null: false
-    t.jsonb "metadata", default: {}, null: false
-    t.text "last_error"
-    t.datetime "last_discovered_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["account_id", "enabled"], name: "index_captain_mcp_servers_on_account_id_and_enabled"
-    t.index ["account_id", "slug"], name: "index_captain_mcp_servers_on_account_id_and_slug", unique: true
-    t.index ["account_id"], name: "index_captain_mcp_servers_on_account_id"
-    t.index ["platform_credential_id"], name: "index_captain_mcp_servers_on_platform_credential_id"
-  end
-
   create_table "captain_documents", force: :cascade do |t|
     t.string "name"
     t.string "external_link", null: false
@@ -422,9 +485,34 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.bigint "inbox_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "settings", default: {}, null: false
     t.index ["captain_assistant_id", "inbox_id"], name: "index_captain_inboxes_on_captain_assistant_id_and_inbox_id", unique: true
     t.index ["captain_assistant_id"], name: "index_captain_inboxes_on_captain_assistant_id"
     t.index ["inbox_id"], name: "index_captain_inboxes_on_inbox_id"
+  end
+
+  create_table "captain_mcp_servers", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "platform_credential_id"
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.text "description"
+    t.string "transport_type", default: "streamable_http", null: false
+    t.text "endpoint_url"
+    t.text "command"
+    t.jsonb "command_args", default: [], null: false
+    t.boolean "enabled", default: true, null: false
+    t.integer "timeout_seconds", default: 20, null: false
+    t.jsonb "tools_cache", default: [], null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.text "last_error"
+    t.datetime "last_discovered_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "enabled"], name: "index_captain_mcp_servers_on_account_id_and_enabled"
+    t.index ["account_id", "slug"], name: "index_captain_mcp_servers_on_account_id_and_slug", unique: true
+    t.index ["account_id"], name: "index_captain_mcp_servers_on_account_id"
+    t.index ["platform_credential_id"], name: "index_captain_mcp_servers_on_platform_credential_id"
   end
 
   create_table "captain_scenarios", force: :cascade do |t|
@@ -631,6 +719,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.datetime "updated_at", null: false
     t.jsonb "message_templates", default: {}
     t.datetime "message_templates_last_updated", precision: nil
+    t.integer "messaging_tier"
+    t.string "quality_rating"
+    t.integer "daily_conversation_limit"
+    t.datetime "tier_checked_at"
+    t.boolean "tier_locked", default: false, null: false
+    t.string "tier_lock_reason"
     t.index ["phone_number"], name: "index_channel_whatsapp_on_phone_number", unique: true
   end
 
@@ -1120,6 +1214,38 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "platform_banners", force: :cascade do |t|
+    t.text "banner_message", null: false
+    t.integer "banner_type", default: 0, null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "platform_credential_models", force: :cascade do |t|
+    t.bigint "credential_id", null: false
+    t.string "slug", null: false
+    t.string "display_name", null: false
+    t.string "kind", default: "chat", null: false
+    t.jsonb "capabilities", default: [], null: false
+    t.integer "context_window"
+    t.integer "max_output_tokens"
+    t.decimal "input_price_per_million", precision: 12, scale: 4
+    t.decimal "output_price_per_million", precision: 12, scale: 4
+    t.date "data_cutoff_at"
+    t.text "description"
+    t.boolean "obsolete", default: false, null: false
+    t.boolean "enabled", default: false, null: false
+    t.jsonb "raw_metadata", default: {}, null: false
+    t.datetime "synced_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["credential_id", "slug"], name: "index_platform_credential_models_on_credential_id_and_slug", unique: true
+    t.index ["credential_id"], name: "index_platform_credential_models_on_credential_id"
+    t.index ["enabled"], name: "index_platform_credential_models_on_enabled"
+    t.index ["kind"], name: "index_platform_credential_models_on_kind"
+  end
+
   create_table "platform_credential_usages", force: :cascade do |t|
     t.bigint "account_id"
     t.bigint "platform_credential_id", null: false
@@ -1162,14 +1288,6 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.index ["expires_at"], name: "index_platform_credentials_on_expires_at"
     t.index ["owner_type", "owner_id"], name: "index_platform_credentials_on_owner_type_and_owner_id"
     t.index ["status"], name: "index_platform_credentials_on_status"
-  end
-
-  create_table "platform_banners", force: :cascade do |t|
-    t.text "banner_message", null: false
-    t.integer "banner_type", default: 0, null: false
-    t.boolean "active", default: true, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
   end
 
   create_table "portals", force: :cascade do |t|
@@ -1395,12 +1513,24 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "adaki_absences", "accounts"
+  add_foreign_key "adaki_absences", "users"
+  add_foreign_key "adaki_absences", "users", column: "coverage_user_id"
+  add_foreign_key "adaki_audit_log_entries", "accounts"
+  add_foreign_key "adaki_audit_log_entries", "users", on_delete: :nullify
+  add_foreign_key "adaki_campaign_approvals", "accounts"
+  add_foreign_key "adaki_campaign_approvals", "campaigns"
+  add_foreign_key "adaki_campaign_approvals", "users", column: "approved_by_id"
+  add_foreign_key "adaki_campaign_approvals", "users", column: "requested_by_id"
+  add_foreign_key "adaki_captain_usages", "accounts"
+  add_foreign_key "adaki_whatsapp_tier_snapshots", "channel_whatsapp"
+  add_foreign_key "captain_mcp_servers", "accounts"
+  add_foreign_key "captain_mcp_servers", "platform_credentials"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "platform_credential_models", "platform_credentials", column: "credential_id", on_delete: :cascade
   add_foreign_key "platform_credential_usages", "accounts"
   add_foreign_key "platform_credential_usages", "platform_credentials"
   add_foreign_key "platform_credentials", "accounts"
-  add_foreign_key "captain_mcp_servers", "accounts"
-  add_foreign_key "captain_mcp_servers", "platform_credentials"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).
