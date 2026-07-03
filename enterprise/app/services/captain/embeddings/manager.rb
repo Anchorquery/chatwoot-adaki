@@ -61,7 +61,18 @@ module Captain::Embeddings
       return write_target(account) if account && !account.internal_attributes.key?(ACTIVE_KEY)
 
       model = active_model(account)
-      Target.new(model: model, context: context_for_model(account, model), provider: provider_for_model(account, model))
+      credential_model = credential_model_for(account, model)
+      # Resolved once and shared by context/provider lookups below, instead of
+      # each re-running the full resolved_embedding fallback chain (and its
+      # credential queries) independently.
+      fallback = credential_model.nil? && model != DEFAULT_MODEL ? resolved_embedding(account) : nil
+      fallback = nil if fallback && fallback.model_slug != model
+
+      Target.new(
+        model: model,
+        context: model_context(account, model, credential_model, fallback),
+        provider: model_provider(model, credential_model, fallback)
+      )
     end
 
     def set_active!(account, model)
@@ -98,7 +109,14 @@ module Captain::Embeddings
       return if account.nil?
 
       target = write_model(account)
-      return if target == active_model(account)
+      current = active_model(account)
+      return if target == current
+
+      # Pin ACTIVE_KEY to the pre-switch model before enqueuing the reindex. If
+      # it were left unset, scope_to_active/search_target would immediately
+      # mirror write_model (the new provider) and search would go blank on
+      # vectors that haven't been reindexed yet.
+      set_active!(account, current) unless account.internal_attributes.key?(ACTIVE_KEY)
 
       Captain::Embeddings::ReindexJob.perform_later(account.id, target)
     end
@@ -136,7 +154,11 @@ module Captain::Embeddings
       return embedding_result(credential_model.credential, credential_model.slug) if credential_model
 
       provider = Llm::Models.models.dig(selected, 'provider').to_s.presence
-      return nil if provider.blank? || provider == 'openai' # OpenAI default uses the global config downstream.
+      # An explicit OpenAI pick must win outright — return a Result-shaped
+      # default instead of nil, otherwise resolved_embedding falls through to
+      # CapabilityResolver/gemini_fallback_target and a stale Gemini
+      # CredentialModel silently overrides the admin's OpenAI choice.
+      return default_result if provider.blank? || provider == 'openai'
 
       credential = Platform::Credential.active
                                        .where(account_id: account.id, provider: provider_aliases(provider))
@@ -166,34 +188,37 @@ module Captain::Embeddings
       %w[google gemini].include?(provider) ? %w[google gemini] : [provider]
     end
 
+    # Result-shaped (model_slug/provider/context) equivalent of default_target,
+    # for early-returning out of resolved_embedding's fallback chain.
+    def default_result
+      Platform::Models::CapabilityResolver::Result.new(credential: nil, model_slug: DEFAULT_MODEL, provider: 'openai', context: nil)
+    end
+
     def default_target
       Target.new(model: DEFAULT_MODEL, context: nil, provider: 'openai')
     end
 
     # Context for an arbitrary model slug (even if its CredentialModel was since
     # disabled — relevant for the lagging active model during a switch). The
-    # OpenAI default uses the global RubyLLM config (nil context).
-    def context_for_model(account, model)
+    # OpenAI default uses the global RubyLLM config (nil context). credential_model
+    # and fallback are pre-resolved once by the caller (search_target) to avoid
+    # re-running the resolved_embedding chain per accessor.
+    def model_context(account, model, credential_model, fallback)
       return nil if account.nil? || model == DEFAULT_MODEL
-
-      credential_model = credential_model_for(account, model)
       return Llm::Config.context_for_credential(credential_model.credential) if credential_model
 
       # Fallback embedding model (no explicit CredentialModel): reuse the same
       # Gemini-credential context the write path resolved, so the search query
       # embeds with the same key/provider the stored vectors were written with.
-      fallback = resolved_embedding(account)
-      fallback&.model_slug == model ? fallback.context : nil
+      fallback&.context
     end
 
-    def provider_for_model(account, model)
+    def model_provider(model, credential_model, fallback)
       return 'openai' if model == DEFAULT_MODEL
 
-      cm_provider = credential_model_for(account, model)&.credential&.provider.to_s.presence
+      cm_provider = credential_model&.credential&.provider.to_s.presence
       return cm_provider if cm_provider
-
-      fallback = resolved_embedding(account)
-      return fallback.provider.to_s if fallback&.model_slug == model
+      return fallback.provider.to_s if fallback
 
       Llm::Models.models.dig(model, 'provider').presence || 'openai'
     end
