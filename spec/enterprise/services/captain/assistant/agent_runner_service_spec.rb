@@ -170,6 +170,104 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       expect(result).to eq({ 'response' => 'Test response', 'agent_name' => nil, 'handoff_tool_called' => false })
     end
 
+    context 'when the agent replies with only a promise and calls no content tool' do
+      let(:promise_result) do
+        instance_double(Agents::RunResult, output: { 'response' => 'Let me check that for you' }, context: {})
+      end
+      let(:retry_result) do
+        instance_double(Agents::RunResult, output: { 'response' => 'Here is the answer: 42' }, context: {})
+      end
+
+      before do
+        allow(mock_runner).to receive(:run).and_return(promise_result, retry_result)
+      end
+
+      it 'retries once and uses the retry reply' do
+        result = service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).twice
+        expect(result['response']).to eq('Here is the answer: 42')
+      end
+
+      it 'replays with the internal nudge and the first run context' do
+        service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).with(
+          described_class::RETRY_NUDGE, context: promise_result.context, max_turns: 100
+        )
+      end
+
+      context 'when the retry is also a promise-only reply' do
+        let(:retry_result) do
+          instance_double(Agents::RunResult, output: { 'response' => 'Let me check that for you' }, context: {})
+        end
+
+        it 'keeps the original reply instead of the still-unhelpful retry' do
+          result = service.generate_response(message_history: message_history)
+
+          expect(result['response']).to eq('Let me check that for you')
+        end
+      end
+
+      context 'when the retry echoes the internal nudge marker' do
+        let(:retry_result) do
+          instance_double(Agents::RunResult, output: { 'response' => "#{described_class::RETRY_NUDGE_MARKER} here you go" }, context: {})
+        end
+
+        it 'discards the retry so the internal marker never reaches the customer' do
+          result = service.generate_response(message_history: message_history)
+
+          expect(result['response']).to eq('Let me check that for you')
+        end
+      end
+
+      context 'when the retry comes back blank' do
+        let(:retry_result) { instance_double(Agents::RunResult, output: { 'response' => '' }, context: {}) }
+
+        it 'keeps the original reply' do
+          result = service.generate_response(message_history: message_history)
+
+          expect(result['response']).to eq('Let me check that for you')
+        end
+      end
+    end
+
+    context 'when a content tool already ran during the turn' do
+      let(:mock_result) do
+        instance_double(
+          Agents::RunResult, output: { 'response' => 'Let me check that for you' }, context: { captain_v2_content_tool_calls: 1 }
+        )
+      end
+
+      it 'does not retry, even if the text looks like a promise' do
+        service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).once
+      end
+    end
+
+    context 'when the handoff tool already fired during the turn' do
+      let(:mock_result) do
+        instance_double(
+          Agents::RunResult, output: { 'response' => 'Let me check that for you' }, context: { captain_v2_handoff_tool_called: true }
+        )
+      end
+
+      it 'does not retry' do
+        service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).once
+      end
+    end
+
+    context 'when the reply is a genuine answer' do
+      it 'does not retry' do
+        service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).once
+      end
+    end
+
     context 'when handoff tool was called during agent execution' do
       let(:runner_context) { { captain_v2_handoff_tool_called: true } }
       let(:mock_result) do
@@ -285,6 +383,45 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
                                })
         end
       end
+    end
+  end
+
+  describe '#promise_only_text?' do
+    subject(:service) { described_class.new(assistant: assistant, conversation: conversation) }
+
+    it 'matches english promise-only replies' do
+      expect(service.send(:promise_only_text?, 'Let me check that for you')).to be true
+      expect(service.send(:promise_only_text?, 'Give me a moment')).to be true
+      expect(service.send(:promise_only_text?, "I'll look that up")).to be true
+    end
+
+    it 'matches spanish promise-only replies' do
+      expect(service.send(:promise_only_text?, 'Déjame revisar eso')).to be true
+      expect(service.send(:promise_only_text?, 'Permíteme buscar la información')).to be true
+      expect(service.send(:promise_only_text?, 'Voy a revisar tu cuenta')).to be true
+    end
+
+    it 'matches portuguese and french promise-only replies' do
+      expect(service.send(:promise_only_text?, 'Vou verificar isso para você')).to be true
+      expect(service.send(:promise_only_text?, 'Je vais vérifier ça')).to be true
+    end
+
+    it 'does not match a real answer' do
+      expect(service.send(:promise_only_text?, 'Your order ships in 3-5 business days.')).to be false
+    end
+
+    it 'does not match a clarifying question even if it starts similarly' do
+      expect(service.send(:promise_only_text?, 'Let me check — could you confirm your order number?')).to be false
+    end
+
+    it 'does not match long replies even if they contain a promise-like phrase' do
+      long_text = "Let me check that. #{'a' * 300}"
+      expect(service.send(:promise_only_text?, long_text)).to be false
+    end
+
+    it 'does not match blank text' do
+      expect(service.send(:promise_only_text?, '')).to be false
+      expect(service.send(:promise_only_text?, nil)).to be false
     end
   end
 
@@ -555,6 +692,30 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       expect(runner).not_to receive(:on_run_complete)
 
       service.send(:add_usage_metadata_callback, runner)
+    end
+
+    it 'counts content tool calls but ignores housekeeping and handoff tools' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      runner = instance_double(Agents::AgentRunner)
+      tool_complete_callback = nil
+
+      allow(ChatwootApp).to receive(:otel_enabled?).and_return(false)
+      allow(runner).to receive(:on_tool_complete) do |&block|
+        tool_complete_callback = block
+        runner
+      end
+
+      service.send(:add_usage_metadata_callback, runner)
+
+      context_wrapper = Struct.new(:context).new({})
+      tool_complete_callback.call('search_documentation', 'ok', context_wrapper)
+      tool_complete_callback.call('faq_lookup', 'ok', context_wrapper)
+      tool_complete_callback.call('add_label_to_conversation', 'ok', context_wrapper)
+      tool_complete_callback.call('add_contact_note', 'ok', context_wrapper)
+      tool_complete_callback.call('handoff_to_billing', 'ok', context_wrapper)
+      tool_complete_callback.call(Captain::Tools::HandoffTool.new(assistant).name, 'ok', context_wrapper)
+
+      expect(context_wrapper.context[:captain_v2_content_tool_calls]).to eq(2)
     end
 
     it 'sets credit_used=true when handoff tool is not used' do
