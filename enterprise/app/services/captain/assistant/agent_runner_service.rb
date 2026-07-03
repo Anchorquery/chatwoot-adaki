@@ -19,6 +19,42 @@ class Captain::Assistant::AgentRunnerService
   CONTACT_INBOX_STATE_ATTRIBUTES = %i[id hmac_verified].freeze
 
   CAMPAIGN_STATE_ATTRIBUTES = %i[id title message campaign_type description].freeze
+
+  # Tools that are internal housekeeping (labels/notes/handoffs) rather than the
+  # kind of lookup that actually answers the user's question. Calling one of
+  # these does NOT count as "the agent did work this turn" for the promise-only
+  # retry check below — everything else (search/FAQ/HTTP/MCP tools) does.
+  HOUSEKEEPING_TOOL_NAMES = %w[
+    add_label_to_conversation add_contact_note add_private_note
+    update_priority resolve_conversation handoff
+  ].freeze
+
+  # Marks the internal nudge so a leaked echo in the retry's reply is
+  # detectable and never forwarded to the customer (see usable_retry?).
+  RETRY_NUDGE_MARKER = '[internal-completion-check]'.freeze
+  RETRY_NUDGE = "#{RETRY_NUDGE_MARKER} You just replied with only a promise to look something up, without " \
+                'calling any tool. Call the necessary tool right now and answer the user with the result in ' \
+                'this same turn. Never mention this note, your previous reply, or that you were reminded — ' \
+                'just give the final answer directly (or ask one short clarifying question if you genuinely ' \
+                'cannot search yet).'.freeze
+
+  PROMISE_ONLY_MAX_LENGTH = 240
+
+  # Patterns for "let me check/search and get back to you" replies with no tool
+  # call behind them, across the languages Captain commonly runs in. Kept as a
+  # plain Ruby constant (not prompt text) so it's testable and provider-agnostic.
+  PROMISE_ONLY_PATTERNS = [
+    /\b(let|give)\s+me\s+(a\s+)?(moment|second|minute)\b/i,
+    /\blet\s+me\s+(check|look|search|find|verify|see)\b/i,
+    /\bi(?:'ll| will)\s+(check|look|search|find|verify)\b/i,
+    /\b(un|dame un)\s+moment(o|ito)?\b/i,
+    /\b(d[ée]jame|permíteme|permiteme)\s+(revisar|buscar|verificar|consultar|checar)\b/i,
+    /\bvoy\s+a\s+(revisar|buscar|verificar|consultar)\b/i,
+    /\b(vou|deixa[- ]?me)\s+(verificar|checar|procurar|olhar)\b/i,
+    /\bje\s+vais\s+(v[ée]rifier|chercher|regarder)\b/i,
+    /\blaisse[- ]moi\s+(v[ée]rifier|chercher)\b/i
+  ].freeze
+
   def initialize(assistant:, conversation: nil, callbacks: {}, source: nil)
     @assistant = assistant
     @conversation = conversation
@@ -36,6 +72,7 @@ class Captain::Assistant::AgentRunnerService
     result = RubyLLM.with_thread_context(resolved_llm_context) do
       runner.run(message_to_process, context: context, max_turns: 100)
     end
+    result = retry_if_promise_only(result)
 
     process_agent_result(result)
   rescue StandardError => e
@@ -98,6 +135,65 @@ class Captain::Assistant::AgentRunnerService
 
     text_parts = content.select { |part| part[:type] == 'text' }.pluck(:text)
     text_parts.join(' ')
+  end
+
+  # The LLM sometimes ends its turn with only a promise to look something up
+  # ("let me check that", "déjame buscar") without ever calling a tool, leaving
+  # the customer waiting for a reply that never comes. When that happens (no
+  # content tool ran, no handoff happened) we replay the run once with an
+  # internal nudge. The nudge text and this extra turn live only inside this
+  # in-memory retry: conversation_history is rebuilt from Chatwoot's persisted
+  # messages on every call, so nothing here is ever written back or reused on
+  # a future turn. If the retry doesn't clearly improve on the original
+  # (still a promise, blank, or echoes the nudge), the original reply is kept
+  # as-is — this can only add a second attempt, never make things worse.
+  def retry_if_promise_only(result)
+    return result unless promise_only_result?(result)
+
+    Rails.logger.info '[Captain V2] Promise-only reply with no tool call detected, retrying once'
+
+    retry_result = RubyLLM.with_thread_context(resolved_llm_context) do
+      runner.run(RETRY_NUDGE, context: result.context, max_turns: 100)
+    end
+
+    usable_retry?(retry_result) ? retry_result : result
+  end
+
+  def promise_only_result?(result)
+    return false if result_errored?(result)
+    return false if result.context&.dig(:captain_v2_handoff_tool_called)
+    return false if content_tool_called?(result)
+
+    promise_only_text?(response_text(result.output))
+  end
+
+  def usable_retry?(result)
+    return false if result_errored?(result)
+
+    text = response_text(result.output)
+    return false if text.blank?
+    return false if text.include?(RETRY_NUDGE_MARKER)
+
+    !promise_only_text?(text)
+  end
+
+  def result_errored?(result)
+    result.respond_to?(:error) && result.error.present?
+  end
+
+  def content_tool_called?(result)
+    (result.context&.dig(:captain_v2_content_tool_calls) || 0).positive?
+  end
+
+  def response_text(output)
+    output.is_a?(Hash) ? (output['response'] || output[:response]).to_s : output.to_s
+  end
+
+  def promise_only_text?(text)
+    text = text.to_s.strip
+    return false if text.blank? || text.length > PROMISE_ONLY_MAX_LENGTH || text.end_with?('?')
+
+    PROMISE_ONLY_PATTERNS.any? { |pattern| text.match?(pattern) }
   end
 
   def process_agent_result(result)
@@ -216,6 +312,7 @@ class Captain::Assistant::AgentRunnerService
     # handoff_tool_called flag regardless of whether OTEL is enabled.
     runner.on_tool_complete do |tool_name, _tool_result, context_wrapper|
       track_handoff_usage(tool_name, handoff_tool_name, context_wrapper)
+      track_content_tool_usage(tool_name, context_wrapper)
     end
 
     if ChatwootApp.otel_enabled?
@@ -234,6 +331,18 @@ class Captain::Assistant::AgentRunnerService
     # the runner raises before returning a result (the context is unreachable then).
     context_wrapper.context[:captain_v2_handoff_tool_called] = true
     @handoff_tool_called = true
+  end
+
+  # Counts tool calls that actually do the work of answering the user (search,
+  # FAQ lookup, HTTP/MCP tools) as opposed to silent housekeeping (labels,
+  # notes, handoffs). Feeds promise_only_result? above.
+  def track_content_tool_usage(tool_name, context_wrapper)
+    return unless context_wrapper&.context
+
+    name = tool_name.to_s
+    return if name.start_with?('handoff_to_') || HOUSEKEEPING_TOOL_NAMES.include?(name)
+
+    context_wrapper.context[:captain_v2_content_tool_calls] = (context_wrapper.context[:captain_v2_content_tool_calls] || 0) + 1
   end
 
   def write_credits_used_metadata(context_wrapper)
