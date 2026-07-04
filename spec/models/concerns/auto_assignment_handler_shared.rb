@@ -30,7 +30,11 @@ shared_examples_for 'auto_assignment_handler' do
       # can't distinguish "explicitly disabled" from "never set" and always falls
       # back to the YAML default (separately flagged as its own bug). Stubbing the
       # inbox method directly sidesteps that broken toggle for this test.
+      # rubocop:disable RSpec/AnyInstance -- the Conversation callback resolves its
+      # own `inbox` association internally; there's no handle to the exact instance
+      # to stub before the after_save callback fires.
       allow_any_instance_of(Inbox).to receive(:auto_assignment_v2_enabled?).and_return(false)
+      # rubocop:enable RSpec/AnyInstance
       create(:inbox_member, inbox: inbox, user: agent)
       allow(Redis::Alfred).to receive(:rpoplpush).and_return(agent.id)
     end

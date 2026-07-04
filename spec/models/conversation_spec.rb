@@ -998,16 +998,6 @@ RSpec.describe Conversation do
   describe 'reply time calculation flows' do
     include ActiveJob::TestHelper
 
-    # conversation_start_time and the *.ago timestamps used throughout this
-    # block are otherwise each evaluated at a slightly different real wall-clock
-    # moment (DB writes/callbacks take real time), so their differences drift
-    # a few seconds past the exact hour boundaries the assertions check for.
-    # Freezing time for the whole example (before hook included) makes every
-    # relative timestamp resolve against the same fixed "now".
-    around do |example|
-      travel_to(Time.current) { example.run }
-    end
-
     let(:account) { create(:account) }
     let(:inbox) { create(:inbox, account: account) }
     let(:contact) { create(:contact, account: account) }
@@ -1055,21 +1045,27 @@ RSpec.describe Conversation do
     end
 
     it 'correctly tracks waiting_since and creates first response time events' do
-      create_customer_message(conversation, created_at: conversation_start_time)
-      conversation.reload
-      expect(conversation.waiting_since).to be_within(1.second).of(conversation_start_time)
+      # conversation_start_time and agent_reply1_time are each independently
+      # evaluated *.ago calls; without freezing, the real time elapsed by DB
+      # writes/callbacks between them drifts the computed reply time a few
+      # seconds past the exact 1-hour boundary this test asserts on.
+      travel_to(Time.current) do
+        create_customer_message(conversation, created_at: conversation_start_time)
+        conversation.reload
+        expect(conversation.waiting_since).to be_within(1.second).of(conversation_start_time)
 
-      # Agent replies - this should create first response event
-      agent_reply1_time = 4.hours.ago
-      create_agent_message(conversation, created_at: agent_reply1_time)
+        # Agent replies - this should create first response event
+        agent_reply1_time = 4.hours.ago
+        create_agent_message(conversation, created_at: agent_reply1_time)
 
-      first_response_events = account.reporting_events.where(name: 'first_response', conversation_id: conversation.id)
-      expect(first_response_events.count).to eq(1)
-      expect(first_response_events.first.value).to be_within(1.second).of(1.hour)
+        first_response_events = account.reporting_events.where(name: 'first_response', conversation_id: conversation.id)
+        expect(first_response_events.count).to eq(1)
+        expect(first_response_events.first.value).to be_within(1.second).of(1.hour)
 
-      # the first response should also clear the waiting_since
-      conversation.reload
-      expect(conversation.waiting_since).to be_nil
+        # the first response should also clear the waiting_since
+        conversation.reload
+        expect(conversation.waiting_since).to be_nil
+      end
     end
 
     it 'does not reset waiting_since if customer sends another message' do
@@ -1083,17 +1079,20 @@ RSpec.describe Conversation do
     end
 
     it 'records the correct reply_time for subsequent messages' do
-      create_customer_message(conversation, created_at: conversation_start_time)
-      create_agent_message(conversation, created_at: 4.hours.ago)
-      create_customer_message(conversation, created_at: 3.hours.ago)
+      # See the frozen-time note on the first-response test above — same drift risk.
+      travel_to(Time.current) do
+        create_customer_message(conversation, created_at: conversation_start_time)
+        create_agent_message(conversation, created_at: 4.hours.ago)
+        create_customer_message(conversation, created_at: 3.hours.ago)
 
-      create_agent_message(conversation, created_at: 2.hours.ago)
-      reply_events = account.reporting_events.where(name: 'reply_time', conversation_id: conversation.id)
-      expect(reply_events.count).to eq(1)
-      expect(reply_events.first.value).to be_within(1.second).of(1.hour)
+        create_agent_message(conversation, created_at: 2.hours.ago)
+        reply_events = account.reporting_events.where(name: 'reply_time', conversation_id: conversation.id)
+        expect(reply_events.count).to eq(1)
+        expect(reply_events.first.value).to be_within(1.second).of(1.hour)
 
-      conversation.reload
-      expect(conversation.waiting_since).to be_nil
+        conversation.reload
+        expect(conversation.waiting_since).to be_nil
+      end
     end
 
     it 'records zero reply time if an agent sends a message after resolution' do
