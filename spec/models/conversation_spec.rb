@@ -3,6 +3,7 @@
 require 'rails_helper'
 require Rails.root.join 'spec/models/concerns/assignment_handler_shared.rb'
 require Rails.root.join 'spec/models/concerns/auto_assignment_handler_shared.rb'
+require Rails.root.join 'spec/models/concerns/auto_assignment_handler_v2_shared.rb'
 
 RSpec.describe Conversation do
   after do
@@ -23,6 +24,7 @@ RSpec.describe Conversation do
   describe 'concerns' do
     it_behaves_like 'assignment_handler'
     it_behaves_like 'auto_assignment_handler'
+    it_behaves_like 'auto_assignment_handler_v2'
   end
 
   describe '.before_create' do

@@ -29,6 +29,53 @@ module Featurable
     FEATURES_SECONDARY.transform_keys { |k| k + MAX_BITS_PER_COLUMN }
   ).freeze
 
+  # FlagShihTzu's bit-column only stores true/false: it cannot represent
+  # "never touched" vs "explicitly set to false", so `feature_enabled?`
+  # could not tell apart an account that never set a flag from one that
+  # explicitly disabled it. This module tracks, per bit, whether it was
+  # ever written, in a parallel bitmask column (feature_overrides /
+  # feature_overrides_2 mirror feature_flags / feature_flags_2 bit-for-bit).
+  # `enable_flag`/`disable_flag` are FlagShihTzu's only two primitives that
+  # ever mutate a flag bit (the generated `feature_x=` setter, `enable_flag`/
+  # `disable_flag` bang methods, and `select_all_flags`/`unselect_all_flags`
+  # all funnel through them), so hooking these two catches every write path,
+  # including the super-admin `selected_feature_flags=` bulk form submit.
+  module OverrideTracker
+    def enable_flag(flag, colmn = nil)
+      mark_feature_overridden(flag, colmn)
+      super
+    end
+
+    def disable_flag(flag, colmn = nil)
+      mark_feature_overridden(flag, colmn)
+      super
+    end
+
+    def feature_overridden?(name)
+      flag_name = "feature_#{name}".to_sym
+      colmn = self.class.determine_flag_colmn_for(flag_name)
+      bit = self.class.flag_mapping[colmn][flag_name]
+      send(override_attribute_for(colmn)).anybits?(bit)
+    rescue FlagShihTzu::NoSuchFlagException
+      false
+    end
+
+    private
+
+    def mark_feature_overridden(flag, colmn)
+      colmn ||= self.class.determine_flag_colmn_for(flag)
+      return unless colmn.to_s.start_with?('feature_flags')
+
+      bit = self.class.flag_mapping[colmn][flag]
+      override_attr = override_attribute_for(colmn)
+      send("#{override_attr}=", send(override_attr) | bit)
+    end
+
+    def override_attribute_for(colmn)
+      colmn == 'feature_flags_2' ? :feature_overrides_2 : :feature_overrides
+    end
+  end
+
   # flag_shih_tzu define `selected_feature_flags` y `selected_feature_flags=`
   # directamente sobre la clase incluyente via class_eval, por lo que metodos
   # definidos en el module body de Featurable quedan en el ancestor chain por
@@ -63,6 +110,7 @@ module Featurable
     has_flags FEATURES_SECONDARY.merge(column: 'feature_flags_2').merge(QUERY_MODE) if FEATURES_SECONDARY.any?
 
     prepend SelectedFlagsRouter
+    prepend OverrideTracker
 
     before_create :enable_default_features
   end
@@ -99,7 +147,7 @@ module Featurable
     flag_method = "feature_#{name}?"
     return false unless respond_to?(flag_method)
 
-    return true if send(flag_method)
+    return send(flag_method) if feature_overridden?(name)
 
     feature_default_enabled?(name)
   end

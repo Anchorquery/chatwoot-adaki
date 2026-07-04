@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_04_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_04_130000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -482,6 +482,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_04_120000) do
     t.index ["assistant_id", "external_link"], name: "index_captain_documents_on_assistant_id_and_external_link", unique: true
     t.index ["assistant_id"], name: "index_captain_documents_on_assistant_id"
     t.index ["status"], name: "index_captain_documents_on_status"
+  end
+
+  create_table "captain_inbox_audiences", force: :cascade do |t|
+    t.bigint "inbox_id", null: false
+    t.bigint "captain_assistant_id", null: false
+    t.jsonb "group_jids", default: [], null: false
+    t.jsonb "label_titles", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["captain_assistant_id"], name: "index_captain_inbox_audiences_on_captain_assistant_id"
+    t.index ["inbox_id"], name: "index_captain_inbox_audiences_on_inbox_id"
   end
 
   create_table "captain_inboxes", force: :cascade do |t|
