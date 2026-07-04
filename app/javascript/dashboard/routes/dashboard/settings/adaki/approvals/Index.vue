@@ -33,6 +33,7 @@ export default {
     ...mapGetters({
       campaigns: 'campaigns/getAllCampaigns',
       uiFlags: 'adakiApprovals/getUIFlags',
+      currentUser: 'getCurrentUser',
     }),
     pendingCampaigns() {
       return this.campaigns.filter(
@@ -57,6 +58,9 @@ export default {
       return (
         { pending: 'amber', approved: 'teal', rejected: 'ruby' }[s] || 'slate'
       );
+    },
+    isOwnRequest(campaign) {
+      return campaign.sender?.id === this.currentUser.id;
     },
     open(campaign, type) {
       this.selected = campaign;
@@ -121,16 +125,25 @@ export default {
                 />
               </BaseTableCell>
               <BaseTableCell align="end">
-                <div class="flex justify-end gap-1">
+                <div
+                  class="flex justify-end gap-1"
+                  :title="
+                    isOwnRequest(c)
+                      ? $t('ADAKI.APPROVALS.CANNOT_SELF_APPROVE')
+                      : undefined
+                  "
+                >
                   <NextButton
                     :label="$t('ADAKI.APPROVALS.APPROVE')"
                     sm
+                    :disabled="isOwnRequest(c)"
                     @click="open(c, 'approve')"
                   />
                   <NextButton
                     :label="$t('ADAKI.APPROVALS.REJECT')"
                     sm
                     ruby
+                    :disabled="isOwnRequest(c)"
                     @click="open(c, 'reject')"
                   />
                 </div>

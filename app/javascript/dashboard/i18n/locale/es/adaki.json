@@ -115,6 +115,7 @@
       },
       "APPROVE": "Aprobar",
       "REJECT": "Rechazar",
+      "CANNOT_SELF_APPROVE": "No puedes aprobar ni rechazar tu propia solicitud de campaña",
       "MODAL": {
         "TITLE_APPROVE": "Aprobar campaña",
         "TITLE_REJECT": "Rechazar campaña",
