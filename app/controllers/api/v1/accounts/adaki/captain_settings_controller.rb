@@ -6,7 +6,10 @@ class Api::V1::Accounts::Adaki::CaptainSettingsController < Api::V1::Accounts::B
   end
 
   def update
-    limit = params.require(:adaki_captain_monthly_limit)
+    # params.require rejects blank values too (not just a missing key), so an
+    # intentional '' (clear the limit) would 422 before reaching .presence
+    # below. fetch only enforces that the key is present.
+    limit = params.fetch(:adaki_captain_monthly_limit)
     Current.account.update!(adaki_captain_monthly_limit: limit.presence&.to_i)
 
     Adaki::AuditLogger.log(
