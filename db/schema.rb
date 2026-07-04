@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_04_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -75,6 +75,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.jsonb "settings", default: {}
     t.integer "adaki_captain_monthly_limit"
     t.bigint "feature_flags_2", default: 0, null: false
+    t.bigint "feature_overrides", default: 0, null: false
+    t.bigint "feature_overrides_2", default: 0, null: false
     t.index ["status"], name: "index_accounts_on_status"
   end
 
@@ -392,6 +394,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_30_000001) do
     t.jsonb "template_params"
     t.boolean "requires_approval", default: false, null: false
     t.string "approval_status", default: "not_required"
+    t.jsonb "delivery_settings", default: {}
+    t.jsonb "delivery_state", default: {}
     t.index ["account_id"], name: "index_campaigns_on_account_id"
     t.index ["campaign_status"], name: "index_campaigns_on_campaign_status"
     t.index ["campaign_type"], name: "index_campaigns_on_campaign_type"
