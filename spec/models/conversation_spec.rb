@@ -630,11 +630,18 @@ RSpec.describe Conversation do
         updated_at: conversation.updated_at.to_f,
         waiting_since: conversation.waiting_since.to_i,
         priority: nil,
-        unread_count: 0,
-        applied_sla: nil,
-        sla_events: [],
-        sla_policy_id: nil
-      }
+        unread_count: 0
+      }.merge(sla_expected_data)
+    end
+
+    # applied_sla/sla_events/sla_policy_id are only added when the enterprise
+    # presenter module is loaded (Enterprise::Conversations::EventDataPresenter,
+    # prepended via prepend_mod_with) — absent in the CE-only test run, which
+    # strips enterprise/ entirely (see .github/workflows/run_foss_spec.yml).
+    def sla_expected_data
+      return {} unless defined?(Enterprise::Conversations::EventDataPresenter)
+
+      { applied_sla: nil, sla_events: [], sla_policy_id: nil }
     end
 
     it 'returns push event payload' do
@@ -1197,57 +1204,66 @@ RSpec.describe Conversation do
       expect(conversation.bot_mentioned?('/ask something')).to be(true)
     end
 
-    context 'with a captain assistant that has a long name' do
-      let(:assistant) do
-        create(:captain_assistant, account: inbox.account, name: 'Asistente Virtual Adaki Soporte',
-                                   config: { 'group_trigger' => 'adaki' })
+    # Captain::Assistant is enterprise-only. This spec file (spec/models/) runs
+    # in the CE-only suite too, which strips enterprise/ entirely (see
+    # .github/workflows/run_foss_spec.yml) — the base bot_mentioned? behavior
+    # above is still exercised there. A plain Ruby `if` (not RSpec `:if`
+    # metadata, which this repo doesn't configure to filter) keeps these
+    # contexts from being defined at all when enterprise/ isn't loaded, so
+    # referencing the :captain_assistant factory never raises NameError.
+    if ChatwootApp.enterprise?
+      context 'with a captain assistant that has a long name' do
+        let(:assistant) do
+          create(:captain_assistant, account: inbox.account, name: 'Asistente Virtual Adaki Soporte',
+                                     config: { 'group_trigger' => 'adaki' })
+        end
+
+        before { create(:captain_inbox, inbox: inbox, captain_assistant: assistant) }
+
+        it 'matches the configured short alias written as @alias or /alias' do
+          expect(conversation.bot_mentioned?('hola @adaki cómo estás')).to be(true)
+          expect(conversation.bot_mentioned?('/adaki ayúdame')).to be(true)
+          expect(conversation.bot_mentioned?('@Adaki')).to be(true)
+        end
+
+        it 'falls back to the first word of the name when no alias is configured' do
+          assistant.update!(config: assistant.config.except('group_trigger'))
+          expect(conversation.bot_mentioned?('@asistente hola')).to be(true)
+        end
+
+        it 'does not match a plain mention of the full name without @ or /' do
+          expect(conversation.bot_mentioned?('hablé con el Asistente Virtual Adaki ayer')).to be(false)
+        end
+
+        it 'does not match when the alias is only part of a longer word' do
+          expect(conversation.bot_mentioned?('mira esta @adakiweb cosa')).to be(false)
+          expect(conversation.bot_mentioned?('escribe a soporte@adaki.com')).to be(false)
+        end
+
+        it 'does not match unrelated messages' do
+          expect(conversation.bot_mentioned?('mañana hablamos del tema')).to be(false)
+        end
       end
 
-      before { create(:captain_inbox, inbox: inbox, captain_assistant: assistant) }
+      context 'with a configured WhatsApp number (native mention)' do
+        let(:assistant) do
+          create(:captain_assistant, account: inbox.account, name: 'Adaki',
+                                     config: { 'whatsapp_number' => '+54 9 351 123 4567' })
+        end
 
-      it 'matches the configured short alias written as @alias or /alias' do
-        expect(conversation.bot_mentioned?('hola @adaki cómo estás')).to be(true)
-        expect(conversation.bot_mentioned?('/adaki ayúdame')).to be(true)
-        expect(conversation.bot_mentioned?('@Adaki')).to be(true)
-      end
+        before { create(:captain_inbox, inbox: inbox, captain_assistant: assistant) }
 
-      it 'falls back to the first word of the name when no alias is configured' do
-        assistant.update!(config: assistant.config.except('group_trigger'))
-        expect(conversation.bot_mentioned?('@asistente hola')).to be(true)
-      end
+        it 'matches a native @mention delivered as the bot number in the text' do
+          expect(conversation.bot_mentioned?('@5493511234567 hola bot')).to be(true)
+        end
 
-      it 'does not match a plain mention of the full name without @ or /' do
-        expect(conversation.bot_mentioned?('hablé con el Asistente Virtual Adaki ayer')).to be(false)
-      end
+        it 'does not match a different number mentioned in the group' do
+          expect(conversation.bot_mentioned?('@5499990000000 hola')).to be(false)
+        end
 
-      it 'does not match when the alias is only part of a longer word' do
-        expect(conversation.bot_mentioned?('mira esta @adakiweb cosa')).to be(false)
-        expect(conversation.bot_mentioned?('escribe a soporte@adaki.com')).to be(false)
-      end
-
-      it 'does not match unrelated messages' do
-        expect(conversation.bot_mentioned?('mañana hablamos del tema')).to be(false)
-      end
-    end
-
-    context 'with a configured WhatsApp number (native mention)' do
-      let(:assistant) do
-        create(:captain_assistant, account: inbox.account, name: 'Adaki',
-                                   config: { 'whatsapp_number' => '+54 9 351 123 4567' })
-      end
-
-      before { create(:captain_inbox, inbox: inbox, captain_assistant: assistant) }
-
-      it 'matches a native @mention delivered as the bot number in the text' do
-        expect(conversation.bot_mentioned?('@5493511234567 hola bot')).to be(true)
-      end
-
-      it 'does not match a different number mentioned in the group' do
-        expect(conversation.bot_mentioned?('@5499990000000 hola')).to be(false)
-      end
-
-      it 'does not match the number when it appears without an @ mention' do
-        expect(conversation.bot_mentioned?('mi numero es 5493511234567')).to be(false)
+        it 'does not match the number when it appears without an @ mention' do
+          expect(conversation.bot_mentioned?('mi numero es 5493511234567')).to be(false)
+        end
       end
     end
   end

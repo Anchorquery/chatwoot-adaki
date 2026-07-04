@@ -4,8 +4,12 @@ RSpec.describe 'Adaki Whatsapp Channels API', type: :request do
   let(:account) { create(:account) }
   let(:admin) { create(:user, account: account, role: :administrator) }
   let(:agent) { create(:user, account: account, role: :agent) }
+  # The :channel_whatsapp factory already creates its own inbox via an
+  # after(:create) hook — creating a second one here for the same channel
+  # made Channel::Whatsapp.joins(:inbox) return the channel twice (once per
+  # matching inbox row).
   let(:channel) { create(:channel_whatsapp, account: account, validate_provider_config: false, sync_templates: false) }
-  let(:inbox) { create(:inbox, account: account, channel: channel) }
+  let(:inbox) { channel.inbox }
 
   let(:base_path) { "/api/v1/accounts/#{account.id}/adaki/whatsapp_channels" }
 
@@ -51,6 +55,10 @@ RSpec.describe 'Adaki Whatsapp Channels API', type: :request do
 
   describe 'POST unlock_tier' do
     it 'unlocks + audit entry' do
+      # fetch_channel re-fetches the channel from the DB, a fresh Ruby object
+      # without the factory's validate_provider_config: false singleton
+      # override — its update! re-triggers the real 360dialog callback.
+      stub_request(:post, 'https://waba.360dialog.io/v1/configs/webhook')
       channel.update!(tier_locked: true, tier_lock_reason: 'over_limit')
 
       expect do
