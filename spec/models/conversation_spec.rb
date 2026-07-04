@@ -1049,7 +1049,7 @@ RSpec.describe Conversation do
       # evaluated *.ago calls; without freezing, the real time elapsed by DB
       # writes/callbacks between them drifts the computed reply time a few
       # seconds past the exact 1-hour boundary this test asserts on.
-      travel_to(Time.current) do
+      freeze_time do
         create_customer_message(conversation, created_at: conversation_start_time)
         conversation.reload
         expect(conversation.waiting_since).to be_within(1.second).of(conversation_start_time)
@@ -1080,7 +1080,7 @@ RSpec.describe Conversation do
 
     it 'records the correct reply_time for subsequent messages' do
       # See the frozen-time note on the first-response test above — same drift risk.
-      travel_to(Time.current) do
+      freeze_time do
         create_customer_message(conversation, created_at: conversation_start_time)
         create_agent_message(conversation, created_at: 4.hours.ago)
         create_customer_message(conversation, created_at: 3.hours.ago)
