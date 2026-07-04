@@ -640,7 +640,12 @@ RSpec.describe ConversationReplyMailer do
       end
 
       it 'renders the reply to email' do
-        expect(mail.reply_to).to eq([message&.conversation&.assignee&.email])
+        # inbound_emails is unconditionally enabled (config/features.yml
+        # "inbound_emails" graduated to enabled: true) and the account has a
+        # domain + support_email by default, so should_use_conversation_email_address?
+        # is true here — same as the message_id/in_reply_to assertions below,
+        # which already assume the tracked reply+UUID address is in play.
+        expect(mail.reply_to).to eq(["reply+#{conversation.uuid}@#{domain}"])
       end
 
       it 'sets the correct custom message id' do
@@ -658,9 +663,14 @@ RSpec.describe ConversationReplyMailer do
       let!(:message) { create(:message, conversation: conversation, account: account) }
       let(:mail) { described_class.reply_with_summary(message.conversation, message.id).deliver_now }
 
-      it 'set reply to email address as inbox email address' do
-        expect(mail.from).to eq([inbox.email_address])
-        expect(mail.reply_to).to eq([inbox.email_address])
+      it 'uses the account-level tracked address rather than the inbox email address' do
+        # inbound_emails is unconditionally enabled (config/features.yml
+        # "inbound_emails" graduated to enabled: true) and this account has a
+        # domain + support_email by default, so should_use_conversation_email_address?
+        # is true — from_email/reply_email both take that branch over
+        # inbox.email_address, regardless of the inbox having one set.
+        expect(mail.from).to eq([account.support_email])
+        expect(mail.reply_to).to eq(["reply+#{conversation.uuid}@#{account.inbound_email_domain}"])
       end
     end
 
