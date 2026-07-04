@@ -666,7 +666,24 @@
             "CREATE": "Create",
             "CANCEL": "Cancel",
             "PLACEHOLDER": "Type in another guardrail...",
-            "TEST_ALL": "Test all"
+            "TEST_ALL": "Test all",
+            "FORM": {
+              "TITLE": {
+                "LABEL": "Title",
+                "PLACEHOLDER": "Enter a short title for this rule",
+                "ERROR": "Title is required"
+              },
+              "DESCRIPTION": {
+                "LABEL": "Description",
+                "PLACEHOLDER": "Describe when and how this rule applies",
+                "ERROR": "Description is required"
+              },
+              "INSTRUCTION": {
+                "LABEL": "Instruction",
+                "PLACEHOLDER": "Describe what the assistant should do",
+                "ERROR": "Instruction is required"
+              }
+            }
           }
         },
         "LIST": {

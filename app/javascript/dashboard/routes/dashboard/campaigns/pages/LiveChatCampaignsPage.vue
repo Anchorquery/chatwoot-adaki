@@ -54,7 +54,6 @@ const handleDelete = campaign => {
     :header-title="t('CAMPAIGN.LIVE_CHAT.HEADER_TITLE')"
     :button-label="t('CAMPAIGN.LIVE_CHAT.NEW_CAMPAIGN')"
     @click="toggleLiveChatCampaignDialog()"
-    @close="toggleLiveChatCampaignDialog(false)"
   >
     <template #action>
       <LiveChatCampaignDialog

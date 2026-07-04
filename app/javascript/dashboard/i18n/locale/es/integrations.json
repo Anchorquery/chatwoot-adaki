@@ -666,7 +666,24 @@
             "CREATE": "Crear",
             "CANCEL": "Cancelar",
             "PLACEHOLDER": "Escribe otro límite...",
-            "TEST_ALL": "Probar todos"
+            "TEST_ALL": "Probar todos",
+            "FORM": {
+              "TITLE": {
+                "LABEL": "Título",
+                "PLACEHOLDER": "Ingresa un título breve para esta regla",
+                "ERROR": "El título es obligatorio"
+              },
+              "DESCRIPTION": {
+                "LABEL": "Descripción",
+                "PLACEHOLDER": "Describe cuándo y cómo aplica esta regla",
+                "ERROR": "La descripción es obligatoria"
+              },
+              "INSTRUCTION": {
+                "LABEL": "Instrucción",
+                "PLACEHOLDER": "Describe qué debe hacer el asistente",
+                "ERROR": "La instrucción es obligatoria"
+              }
+            }
           }
         },
         "LIST": {

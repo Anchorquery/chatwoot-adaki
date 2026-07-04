@@ -84,7 +84,6 @@ const handleEditDialogClose = () => {
     :header-title="t('CAMPAIGN.WHATSAPP.HEADER_TITLE')"
     :button-label="t('CAMPAIGN.WHATSAPP.NEW_CAMPAIGN')"
     @click="toggleWhatsAppCampaignDialog()"
-    @close="toggleWhatsAppCampaignDialog(false)"
   >
     <template #action>
       <WhatsAppCampaignDialog

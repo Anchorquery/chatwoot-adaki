@@ -86,7 +86,6 @@ const handleDialogClose = () => {
     :header-title="t('CAMPAIGN.API.HEADER_TITLE')"
     :button-label="t('CAMPAIGN.API.NEW_CAMPAIGN')"
     @click="handleCreate"
-    @close="toggleAPICampaignDialog(false)"
   >
     <template #action>
       <APICampaignDialog

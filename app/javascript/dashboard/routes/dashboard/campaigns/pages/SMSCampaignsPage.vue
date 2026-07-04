@@ -84,7 +84,6 @@ const handleEditDialogClose = () => {
     :header-title="t('CAMPAIGN.SMS.HEADER_TITLE')"
     :button-label="t('CAMPAIGN.SMS.NEW_CAMPAIGN')"
     @click="toggleSMSCampaignDialog()"
-    @close="toggleSMSCampaignDialog(false)"
   >
     <template #action>
       <SMSCampaignDialog
