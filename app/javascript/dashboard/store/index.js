@@ -53,6 +53,7 @@ import captainAssistants from './captain/assistant';
 import captainDocuments from './captain/document';
 import captainResponses from './captain/response';
 import captainInboxes from './captain/inboxes';
+import captainInboxAudiences from './captain/inboxAudiences';
 import captainBulkActions from './captain/bulkActions';
 import copilotThreads from './captain/copilotThreads';
 import copilotMessages from './captain/copilotMessages';
@@ -123,6 +124,7 @@ export default createStore({
     captainDocuments,
     captainResponses,
     captainInboxes,
+    captainInboxAudiences,
     captainBulkActions,
     copilotThreads,
     copilotMessages,

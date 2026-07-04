@@ -76,6 +76,25 @@ Requiere las TRES condiciones simultáneamente:
 Si falla cualquiera de las tres → `HookExecutionService#trigger_templates`
 ejecuta `perform_handoff` (mensaje de transferencia, no silencio).
 
+**Audiencias**: si el inbox tiene `captain_inbox_audiences` (grupo de WhatsApp
+o label específico → assistant distinto), el assistant real que aplica no es
+`inbox.captain_assistant` sino `conversation.resolved_captain_assistant`
+([conversation.rb](../../app/models/conversation.rb) — busca la primera
+`CaptainInboxAudience` cuyo `group_jid`/labels matcheen, y si ninguna
+matchea cae al default del inbox). El default sigue siendo opcional: sin
+audiencia que matchee y sin default, no responde ningún Captain. La condición
+2 (autopilot) y 3 (cuota) se evalúan sobre ESE assistant resuelto, no sobre
+el default ciego — ver `Conversation#resolved_captain_active?`.
+
+**Limitaciones conocidas (no audience-aware)**:
+- `Captain::InboxPendingConversationsResolutionJob` (auto-resolución masiva de
+  conversaciones pending) — usa `inbox.captain_assistant` para todas las
+  conversaciones pending del inbox, sin importar su audiencia.
+- `Inbox#continue_bot_after_assignment?` ([inbox.rb](../../app/models/inbox.rb))
+  — no recibe la conversación como argumento, así que compara contra el
+  assistant default del inbox, no contra el que realmente resolvió/respondió
+  vía audiencia.
+
 ## Diagrama de decisión por mensaje entrante
 
 ```
@@ -141,10 +160,13 @@ account.adaki_captain_monthly_limit
 Adaki::CaptainUsage.current_for(account).request_count
 
 # Capa 3
-inbox.captain_active?
+inbox.captain_active?               # solo el default del inbox, sin audiencias
 inbox.captain_assistant&.autopilot_enabled?
 
-# Forzar el job para ver el error real
 conv = inbox.conversations.last
-Captain::Conversation::ResponseBuilderJob.new.perform(conv, inbox.captain_assistant)
+conv.resolved_captain_assistant      # audience-aware: el que realmente responde
+conv.resolved_captain_active?
+
+# Forzar el job para ver el error real
+Captain::Conversation::ResponseBuilderJob.new.perform(conv, conv.resolved_captain_assistant)
 ```

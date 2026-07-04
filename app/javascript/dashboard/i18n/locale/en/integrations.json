@@ -1219,6 +1219,12 @@
       "OPTIONS": {
         "DISCONNECT": "Disconnect"
       },
+      "AUDIENCES": {
+        "HINT": "Assign this assistant to a specific WhatsApp group or label instead of the whole inbox. A conversation that matches none of these falls back to the default assistant above.",
+        "GROUP_JIDS_PLACEHOLDER": "WhatsApp group id, e.g. 1203630000000",
+        "LABELS_PLACEHOLDER": "Select labels",
+        "ADD": "Add audience"
+      },
       "DELETE": {
         "TITLE": "Are you sure to disconnect the inbox?",
         "DESCRIPTION": "",

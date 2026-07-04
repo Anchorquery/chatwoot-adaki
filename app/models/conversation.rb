@@ -212,19 +212,46 @@ class Conversation < ApplicationRecord
     # the contact identifier/phone, or anywhere inside the conversation/contact
     # additional_attributes, so we scan all of them. "@g.us" (with the "@") is used to
     # avoid false positives with domains such as "img.us".
-    return true if group_jid_present?
-
-    # Fallback for bridges that strip the "@g.us" suffix and store only the raw group id:
-    # WhatsApp group ids are structurally distinct from individual phone numbers.
-    return true if group_structured_identifier?
+    return true if group_jid.present?
 
     # Explicit group markers set by Telegram, Evolution and other integrations, on either
-    # the conversation or the contact (snake_case and camelCase variants).
+    # the conversation or the contact (snake_case and camelCase variants). These don't carry
+    # a clean, reusable JID (see #group_jid), only a boolean signal that this is a group.
     return true if group_attributes.any? { |attrs| %w[chat_type type].any? { |k| attrs[k].to_s.downcase.include?('group') } }
     return true if group_attributes.any? { |attrs| %w[group_id groupId].any? { |k| attrs[k].present? } }
     return true if group_attributes.any? { |attrs| %w[is_group isGroup].any? { |k| ActiveModel::Type::Boolean.new.cast(attrs[k]) } }
 
     false
+  end
+
+  # The normalized WhatsApp group id for this conversation (e.g. "1203630..." or
+  # "12345-67890"), or nil if this isn't a recognizable WhatsApp group conversation.
+  # Used to match a conversation against a Captain audience's configured group_jids.
+  def group_jid
+    return @group_jid if defined?(@group_jid)
+
+    @group_jid = matched_group_jid || matched_structured_group_id
+  end
+
+  def self.normalize_group_jid(raw)
+    raw.to_s.split('@').first.presence
+  end
+
+  # The Captain assistant that should handle this conversation: the first
+  # CaptainInboxAudience whose group_jids/label_titles match it, or the inbox's
+  # default assistant (captain_inboxes) if no audience matches. Either side of
+  # that fallback can be absent, in which case this returns nil (no Captain
+  # responds — handled manually).
+  def resolved_captain_assistant
+    return @resolved_captain_assistant if defined?(@resolved_captain_assistant)
+
+    @resolved_captain_assistant = matching_captain_audience&.captain_assistant || inbox_captain_assistant
+  end
+
+  def resolved_captain_active?
+    assistant = resolved_captain_assistant
+    assistant.present? && assistant.autopilot_enabled? &&
+      inbox.respond_to?(:captain_responses_available?) && inbox.captain_responses_available?
   end
 
   # Generic commands that always summon the bot, regardless of its name.
@@ -255,10 +282,21 @@ class Conversation < ApplicationRecord
 
   private
 
+  def matching_captain_audience
+    return nil unless inbox.respond_to?(:captain_inbox_audiences)
+
+    inbox.captain_inbox_audiences.ordered.detect { |audience| audience.matches?(self) }
+  end
+
+  def inbox_captain_assistant
+    inbox.respond_to?(:captain_assistant) ? inbox.captain_assistant : nil
+  end
+
   WHATSAPP_GROUP_JID_MARKER = '@g.us'.freeze
 
-  def group_jid_present?
-    group_jid_candidates.any? { |value| value.to_s.include?(WHATSAPP_GROUP_JID_MARKER) }
+  def matched_group_jid
+    raw = group_jid_candidates.find { |value| value.to_s.include?(WHATSAPP_GROUP_JID_MARKER) }
+    self.class.normalize_group_jid(raw)
   end
 
   def group_jid_candidates
@@ -292,17 +330,20 @@ class Conversation < ApplicationRecord
   #   - legacy groups look like "<digits>-<digits>" (e.g. 12345-67890); phone numbers never
   #     contain a hyphen,
   #   - modern groups are ~18-digit numbers, well beyond the 15-digit E.164 phone maximum.
-  def group_structured_identifier?
-    [contact_inbox&.source_id, contact&.identifier].any? do |raw|
-      local_part = raw.to_s.split('@').first.to_s
-      next false if local_part.blank?
-      # WhatsApp JIDs are 100% numeric (modern) or "<digits>-<digits>" (legacy). Anything
-      # with letters (UUIDs from API channel source_ids, slugs, etc.) is NOT a group id.
-      next false if local_part.match?(/[a-z]/i)
-      next true if local_part.match?(/\A\+?\d{3,}-\d{3,}\z/)
+  def matched_structured_group_id
+    raw = [contact_inbox&.source_id, contact&.identifier].find { |value| structured_group_identifier?(value) }
+    self.class.normalize_group_jid(raw)
+  end
 
-      local_part.gsub(/\D/, '').length > 15
-    end
+  def structured_group_identifier?(raw)
+    local_part = raw.to_s.split('@').first.to_s
+    return false if local_part.blank?
+    # WhatsApp JIDs are 100% numeric (modern) or "<digits>-<digits>" (legacy). Anything
+    # with letters (UUIDs from API channel source_ids, slugs, etc.) is NOT a group id.
+    return false if local_part.match?(/[a-z]/i)
+    return true if local_part.match?(/\A\+?\d{3,}-\d{3,}\z/)
+
+    local_part.gsub(/\D/, '').length > 15
   end
 
   # Tokens that summon the bot in a group when written as "@token" or "/token".
@@ -315,8 +356,8 @@ class Conversation < ApplicationRecord
   def bot_trigger_aliases
     aliases = []
 
-    if inbox.respond_to?(:captain_assistant) && inbox.captain_assistant.present?
-      assistant = inbox.captain_assistant
+    if resolved_captain_assistant.present?
+      assistant = resolved_captain_assistant
       aliases << assistant.config['group_trigger'] if assistant.config.is_a?(Hash)
       aliases << assistant.name
     end
@@ -337,9 +378,9 @@ class Conversation < ApplicationRecord
   end
 
   def configured_bot_whatsapp_number
-    return unless inbox.respond_to?(:captain_assistant) && inbox.captain_assistant.present?
+    return if resolved_captain_assistant.blank?
 
-    config = inbox.captain_assistant.config
+    config = resolved_captain_assistant.config
     return unless config.is_a?(Hash)
 
     config['whatsapp_number'].to_s.gsub(/\D/, '').presence

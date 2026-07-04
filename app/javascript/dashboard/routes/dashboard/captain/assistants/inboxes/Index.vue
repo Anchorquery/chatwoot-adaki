@@ -21,6 +21,9 @@ const isFetchingAssistant = computed(() => assistantUiFlags.value.fetchingItem);
 const isFetching = computed(() => uiFlags.value.fetchingList);
 
 const captainInboxes = useMapGetter('captainInboxes/getRecords');
+const captainInboxAudiences = useMapGetter('captainInboxAudiences/getRecords');
+const audiencesForInbox = inboxId =>
+  captainInboxAudiences.value.filter(audience => audience.inbox_id === inboxId);
 
 const selectedInbox = ref(null);
 const disconnectInboxDialog = ref(null);
@@ -55,9 +58,14 @@ watch(
     store.dispatch('captainInboxes/get', {
       assistantId: newId,
     });
+    store.dispatch('captainInboxAudiences/get', {
+      assistantId: newId,
+    });
   },
   { immediate: true }
 );
+
+store.dispatch('labels/get');
 </script>
 
 <template>
@@ -83,6 +91,7 @@ watch(
           :id="captainInbox.id"
           :key="captainInbox.id"
           :inbox="captainInbox"
+          :audiences="audiencesForInbox(captainInbox.id)"
           @action="handleAction"
         />
       </div>

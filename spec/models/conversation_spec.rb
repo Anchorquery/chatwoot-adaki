@@ -1269,4 +1269,87 @@ RSpec.describe Conversation do
       end
     end
   end
+
+  describe '#group_jid' do
+    let(:inbox) { create(:inbox) }
+    let(:contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: '1203630000000@g.us') }
+    let(:conversation) { create(:conversation, inbox: inbox, contact_inbox: contact_inbox) }
+
+    it 'extracts the normalized jid when the @g.us marker is present' do
+      expect(conversation.group_jid).to eq('1203630000000')
+    end
+
+    it 'returns nil for a regular contact' do
+      normal_conversation = create(:conversation, inbox: inbox)
+      expect(normal_conversation.group_jid).to be_nil
+    end
+  end
+
+  # CaptainInboxAudience/Captain::Assistant are enterprise-only — same CE/CI
+  # constraint as the #bot_mentioned? captain contexts above.
+  if ChatwootApp.enterprise?
+    describe '#resolved_captain_assistant and #resolved_captain_active?' do
+      let(:account) { create(:account) }
+      let(:inbox) { create(:inbox, account: account) }
+      let(:default_assistant) { create(:captain_assistant, account: account) }
+      let(:audience_assistant) { create(:captain_assistant, account: account) }
+
+      context 'with no audiences configured' do
+        before { create(:captain_inbox, inbox: inbox, captain_assistant: default_assistant) }
+
+        it 'falls back to the inbox default assistant' do
+          conversation = create(:conversation, inbox: inbox)
+          expect(conversation.resolved_captain_assistant).to eq(default_assistant)
+        end
+      end
+
+      context 'with a matching group audience' do
+        let(:contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: '1203630000000@g.us') }
+        let(:conversation) { create(:conversation, inbox: inbox, contact_inbox: contact_inbox) }
+
+        before do
+          create(:captain_inbox, inbox: inbox, captain_assistant: default_assistant)
+          create(:captain_inbox_audience, inbox: inbox, captain_assistant: audience_assistant,
+                                          group_jids: ['1203630000000'], label_titles: [])
+        end
+
+        it 'resolves to the audience assistant instead of the default' do
+          expect(conversation.resolved_captain_assistant).to eq(audience_assistant)
+        end
+      end
+
+      context 'with a matching label audience' do
+        let(:conversation) { create(:conversation, inbox: inbox) }
+
+        before do
+          conversation.update!(label_list: ['vip'])
+          create(:captain_inbox_audience, inbox: inbox, captain_assistant: audience_assistant,
+                                          group_jids: [], label_titles: ['vip'])
+        end
+
+        it 'resolves to the audience assistant' do
+          expect(conversation.resolved_captain_assistant).to eq(audience_assistant)
+        end
+      end
+
+      context 'with no matching audience and no default' do
+        it 'resolves to nil' do
+          conversation = create(:conversation, inbox: inbox)
+          expect(conversation.resolved_captain_assistant).to be_nil
+          expect(conversation.resolved_captain_active?).to be(false)
+        end
+      end
+
+      context 'when the resolved assistant has autopilot enabled and quota available' do
+        it 'is captain active' do
+          autopilot_assistant = create(:captain_assistant, account: account, config: { 'autopilot_enabled' => true })
+          create(:captain_inbox, inbox: inbox, captain_assistant: autopilot_assistant)
+          conversation = create(:conversation, inbox: inbox)
+          allow(conversation.inbox).to receive(:captain_responses_available?).and_return(true)
+
+          expect(conversation.resolved_captain_active?).to be(true)
+        end
+      end
+    end
+  end
 end

@@ -175,6 +175,12 @@ class Inbox < ApplicationRecord
                                             status: 'enabled').count.positive?
   end
 
+  # KNOWN LIMITATION: checks the inbox's default assistant (captain_inbox),
+  # not the audience-resolved one (Conversation#resolved_captain_assistant).
+  # Takes no conversation argument to compare against a CaptainInboxAudience,
+  # so a per-audience assistant with different autopilot/takeover settings
+  # than the default won't be reflected here. Same class of gap as
+  # Captain::InboxPendingConversationsResolutionJob.
   def continue_bot_after_assignment?
     if respond_to?(:captain_inbox) && captain_inbox.present? && captain_inbox.captain_assistant&.autopilot_enabled? && captain_inbox.continue_after_human_takeover?
       return true

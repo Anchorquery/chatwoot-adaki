@@ -2,7 +2,7 @@ module Enterprise::Api::V1::Accounts::ConversationsController
   extend ActiveSupport::Concern
 
   def inbox_assistant
-    assistant = @conversation.inbox.captain_assistant
+    assistant = @conversation.resolved_captain_assistant
 
     if assistant
       render json: { assistant: { id: assistant.id, name: assistant.name } }

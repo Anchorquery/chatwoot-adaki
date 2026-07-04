@@ -18,7 +18,7 @@ module Enterprise::Captain::ReplySuggestionService
   end
 
   def build_search_tool
-    assistant = conversation&.inbox&.captain_assistant
+    assistant = conversation&.resolved_captain_assistant
     Captain::Tools::SearchReplyDocumentationService.new(account: account, assistant: assistant)
   end
 end

@@ -32,6 +32,9 @@ class Captain::Assistant < ApplicationRecord
            dependent: :destroy_async
   has_many :inboxes,
            through: :captain_inboxes
+  has_many :captain_inbox_audiences,
+           foreign_key: :captain_assistant_id,
+           dependent: :destroy_async
   has_many :messages, as: :sender, dependent: :nullify
   has_many :copilot_threads, dependent: :destroy_async
   has_many :scenarios, class_name: 'Captain::Scenario', dependent: :destroy_async

@@ -1,4 +1,11 @@
 class Captain::InboxPendingConversationsResolutionJob < ApplicationJob
+  # KNOWN LIMITATION: this bulk auto-resolve/handoff job always uses the inbox's
+  # default assistant (inbox.captain_assistant), not CaptainInboxAudience-aware
+  # resolution (see Conversation#resolved_captain_assistant). If an inbox has
+  # per-audience assistants (specific WhatsApp groups/labels), their pending
+  # conversations are still resolved/handed off in the name of the inbox default
+  # (or not at all, if there is no default). Left out of scope intentionally —
+  # this job resolves conversations in bulk per inbox, not the live chat responder.
   CAPTAIN_INFERENCE_RESOLVE_ACTIVITY_REASON = 'no outstanding questions'.freeze
   CAPTAIN_INFERENCE_HANDOFF_ACTIVITY_REASON = 'pending clarification from customer'.freeze
 

@@ -4,7 +4,7 @@ module Enterprise::MessageTemplates::HookExecutionService
   def trigger_templates
     super
     return unless should_process_captain_response?
-    return perform_handoff unless inbox.captain_active?
+    return perform_handoff unless conversation.resolved_captain_active?
 
     schedule_captain_response
   end
@@ -30,7 +30,7 @@ module Enterprise::MessageTemplates::HookExecutionService
   private
 
   def schedule_captain_response
-    job_args = [conversation, conversation.inbox.captain_assistant]
+    job_args = [conversation, conversation.resolved_captain_assistant]
 
     if message.attachments.blank?
       Captain::Conversation::ResponseBuilderJob.perform_later(*job_args)
@@ -80,9 +80,8 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   def captain_autopilot_enabled?
-    inbox.respond_to?(:captain_assistant) &&
-      inbox.captain_assistant.present? &&
-      inbox.captain_assistant.autopilot_enabled?
+    conversation.resolved_captain_assistant.present? &&
+      conversation.resolved_captain_assistant.autopilot_enabled?
   end
 
   def conversation_captain_controllable?

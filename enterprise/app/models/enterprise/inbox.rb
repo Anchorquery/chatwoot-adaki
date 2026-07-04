@@ -13,14 +13,14 @@ module Enterprise::Inbox
   end
 
   def captain_active?
-    captain_assistant.present? && captain_assistant.autopilot_enabled? && more_responses?
+    captain_assistant.present? && captain_assistant.autopilot_enabled? && captain_responses_available?
+  end
+
+  def captain_responses_available?
+    account.usage_limits[:captain][:responses][:current_available].positive?
   end
 
   private
-
-  def more_responses?
-    account.usage_limits[:captain][:responses][:current_available].positive?
-  end
 
   def get_agent_ids_over_assignment_limit(limit)
     conversations

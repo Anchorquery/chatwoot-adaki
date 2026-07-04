@@ -2,13 +2,15 @@
 import { computed, ref, watch } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
-import { useStore } from 'dashboard/composables/store';
+import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useRoute } from 'vue-router';
 
 import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Policy from 'dashboard/components/policy.vue';
+import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
+import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 import { INBOX_TYPES, getInboxIconByType } from 'dashboard/helper/inbox';
 
 const props = defineProps({
@@ -19,6 +21,10 @@ const props = defineProps({
   inbox: {
     type: Object,
     required: true,
+  },
+  audiences: {
+    type: Array,
+    default: () => [],
   },
 });
 
@@ -140,6 +146,46 @@ const clearOverride = async key => {
   } finally {
     saving.value = false;
   }
+};
+
+// Audiences: per-inbox Captain assignment by WhatsApp group JID and/or
+// conversation label, resolved by Conversation#resolved_captain_assistant.
+// A conversation that doesn't match any audience here falls back to this
+// inbox's default assistant above (or to no assistant, if none is set).
+const labelRecords = useMapGetter('labels/getLabels');
+const labelOptions = computed(() =>
+  labelRecords.value.map(label => ({ value: label.title, label: label.title }))
+);
+
+const newGroupJids = ref([]);
+const newLabelTitles = ref([]);
+const addingAudience = ref(false);
+const canAddAudience = computed(
+  () => newGroupJids.value.length > 0 || newLabelTitles.value.length > 0
+);
+
+const addAudience = async () => {
+  if (!canAddAudience.value) return;
+  addingAudience.value = true;
+  try {
+    await store.dispatch('captainInboxAudiences/create', {
+      assistantId: assistantId.value,
+      inboxId: props.id,
+      groupJids: newGroupJids.value,
+      labelTitles: newLabelTitles.value,
+    });
+    newGroupJids.value = [];
+    newLabelTitles.value = [];
+  } finally {
+    addingAudience.value = false;
+  }
+};
+
+const removeAudience = audienceId => {
+  store.dispatch('captainInboxAudiences/delete', {
+    assistantId: assistantId.value,
+    id: audienceId,
+  });
 };
 </script>
 
@@ -392,6 +438,66 @@ const clearOverride = async key => {
                 ? saveOverride({ auto_resolve_hours: Number(localHours) })
                 : clearOverride('auto_resolve_hours')
             "
+          />
+        </div>
+      </div>
+
+      <!-- audiences -->
+      <div class="pt-4 border-t border-n-weak flex flex-col gap-3">
+        <p class="text-xs text-n-slate-11">
+          {{ t('CAPTAIN.INBOXES.AUDIENCES.HINT') }}
+        </p>
+
+        <div
+          v-for="audience in audiences"
+          :key="audience.id"
+          class="flex items-start justify-between gap-3 rounded-md border border-n-weak p-2"
+        >
+          <div class="flex-1 flex flex-wrap gap-1 text-xs text-n-slate-12">
+            <span
+              v-for="jid in audience.group_jids"
+              :key="`jid-${jid}`"
+              class="rounded bg-n-alpha-2 px-1.5 py-0.5"
+            >
+              {{ jid }}
+            </span>
+            <span
+              v-for="title in audience.label_titles"
+              :key="`label-${title}`"
+              class="rounded bg-n-alpha-2 px-1.5 py-0.5"
+            >
+              {{ `#${title}` }}
+            </span>
+          </div>
+          <Button
+            icon="i-lucide-trash"
+            color="slate"
+            size="xs"
+            class="rounded-md"
+            @click="removeAudience(audience.id)"
+          />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <TagInput
+            v-model="newGroupJids"
+            type="text"
+            allow-create
+            :show-dropdown="false"
+            :placeholder="t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_PLACEHOLDER')"
+          />
+          <TagMultiSelectComboBox
+            v-model="newLabelTitles"
+            :options="labelOptions"
+            :placeholder="t('CAPTAIN.INBOXES.AUDIENCES.LABELS_PLACEHOLDER')"
+          />
+          <Button
+            :label="t('CAPTAIN.INBOXES.AUDIENCES.ADD')"
+            size="xs"
+            class="rounded-md self-start"
+            :disabled="!canAddAudience || addingAudience"
+            :is-loading="addingAudience"
+            @click="addAudience"
           />
         </div>
       </div>
