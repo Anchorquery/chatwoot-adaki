@@ -107,7 +107,11 @@ jobs:
         # layouts (entrypoints/portal.js) failed with "can't find entrypoints in
         # the manifests" even though the same build succeeds standalone. Building
         # explicitly up front avoids relying on that in-request autoBuild path.
+        # --max-old-space-size: this build OOMs at Node's default V8 heap ceiling
+        # on the standard runner even though it fits comfortably locally.
         run: RAILS_ENV=test bin/vite build --mode=test
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Strip enterprise code
         run: |
