@@ -2,6 +2,8 @@ class DeviseOverrides::OmniauthCallbacksController < DeviseTokenAuth::OmniauthCa
   include EmailHelper
 
   def omniauth_success
+    return redirect_to login_page_url(error: 'no-account-found') if auth_hash.dig('info', 'email').blank?
+
     get_resource_from_auth_hash
 
     @resource.present? ? sign_in_user : sign_up_user
