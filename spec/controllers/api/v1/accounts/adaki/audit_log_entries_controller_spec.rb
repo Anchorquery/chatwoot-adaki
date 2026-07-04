@@ -56,7 +56,10 @@ RSpec.describe 'Adaki Audit Log API', type: :request do
 
     it 'returns invalid when tampered' do
       entry = Adaki::AuditLogEntry.for_account(account).first
-      entry.update_columns(payload: { tampered: true })
+      # update_columns is blocked by the model's own readonly? guard (append-only
+      # by design). Simulate an attacker tampering with the row directly in the
+      # DB, bypassing the ActiveRecord instance entirely.
+      Adaki::AuditLogEntry.where(id: entry.id).update_all(payload: { tampered: true }) # rubocop:disable Rails/SkipsModelValidations
 
       get "#{base_path}/verify", headers: admin.create_new_auth_token, as: :json
       expect(response).to have_http_status(:unprocessable_entity)

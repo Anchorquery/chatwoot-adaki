@@ -14,6 +14,13 @@ RSpec.describe 'Devise::Mailer' do
       # to verify the token in email
       confirmable_user.update!(confirmed_at: nil)
       confirmable_user.send(:generate_confirmation_token)
+
+      # BRAND_NAME is read through GlobalConfig, which caches in $alfred
+      # (MockRedis in test — process-wide, not reset between spec files).
+      # Pin it explicitly instead of relying on whatever an earlier-run
+      # mailer spec happened to leave cached.
+      create(:installation_config, name: 'BRAND_NAME', value: 'Adaki')
+      GlobalConfig.clear_cache
     end
 
     it 'has the correct header data' do
