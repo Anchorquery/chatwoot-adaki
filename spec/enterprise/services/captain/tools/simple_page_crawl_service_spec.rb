@@ -79,13 +79,14 @@ RSpec.describe Captain::Tools::SimplePageCrawlService do
         stub_request(:get, base_url).to_return(body: html_content)
       end
 
-      it 'extracts and absolutizes all links' do
+      it 'extracts, absolutizes, and same-origin-filters links, stripping fragments' do
         links = service.page_links
-        expect(links).to include(
-          'https://example.com/relative',
-          'https://external.com',
-          'https://example.com#anchor'
-        )
+        # same_origin? drops the external link, and normalize_link strips the
+        # fragment from the anchor link — leaving it identical to base_url,
+        # i.e. not a new page to crawl. Both exclusions are intentional
+        # (see Captain::Tools::SimplePageCrawlService#same_origin?/normalize_link).
+        expect(links).to include('https://example.com/relative')
+        expect(links).not_to include('https://external.com', 'https://example.com#anchor')
       end
     end
 

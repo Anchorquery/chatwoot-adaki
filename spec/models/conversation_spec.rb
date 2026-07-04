@@ -630,7 +630,10 @@ RSpec.describe Conversation do
         updated_at: conversation.updated_at.to_f,
         waiting_since: conversation.waiting_since.to_i,
         priority: nil,
-        unread_count: 0
+        unread_count: 0,
+        applied_sla: nil,
+        sla_events: [],
+        sla_policy_id: nil
       }
     end
 
@@ -994,6 +997,16 @@ RSpec.describe Conversation do
 
   describe 'reply time calculation flows' do
     include ActiveJob::TestHelper
+
+    # conversation_start_time and the *.ago timestamps used throughout this
+    # block are otherwise each evaluated at a slightly different real wall-clock
+    # moment (DB writes/callbacks take real time), so their differences drift
+    # a few seconds past the exact hour boundaries the assertions check for.
+    # Freezing time for the whole example (before hook included) makes every
+    # relative timestamp resolve against the same fixed "now".
+    around do |example|
+      travel_to(Time.current) { example.run }
+    end
 
     let(:account) { create(:account) }
     let(:inbox) { create(:inbox, account: account) }

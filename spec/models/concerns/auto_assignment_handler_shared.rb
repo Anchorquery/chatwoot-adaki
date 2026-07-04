@@ -18,6 +18,19 @@ shared_examples_for 'auto_assignment_handler' do
     end
 
     before do
+      # This shared example covers the legacy (v1) synchronous assignment path,
+      # which is what it stubs (Redis::Alfred.rpoplpush) and asserts on
+      # synchronously via conversation.reload. assignment_v2 defaults to
+      # enabled (config/features.yml) and dispatches through an async
+      # AutoAssignment::AssignmentJob instead — that path has no dedicated
+      # coverage yet (see spawned follow-up task).
+      #
+      # account.disable_features!('assignment_v2') does NOT work here: for any
+      # feature with `enabled: true` in config/features.yml, Featurable#feature_enabled?
+      # can't distinguish "explicitly disabled" from "never set" and always falls
+      # back to the YAML default (separately flagged as its own bug). Stubbing the
+      # inbox method directly sidesteps that broken toggle for this test.
+      allow_any_instance_of(Inbox).to receive(:auto_assignment_v2_enabled?).and_return(false)
       create(:inbox_member, inbox: inbox, user: agent)
       allow(Redis::Alfred).to receive(:rpoplpush).and_return(agent.id)
     end

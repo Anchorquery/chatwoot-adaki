@@ -8,6 +8,14 @@ RSpec.describe Adaki::CampaignApprovalService do
     create(:campaign, :whatsapp, account: account).tap { |c| c.update!(requires_approval: true) }
   end
 
+  before do
+    # The :whatsapp campaign trait creates a channel_whatsapp, whose
+    # validate_provider_config/sync_templates callbacks hit the real 360dialog
+    # API unless stubbed.
+    stub_request(:post, 'https://waba.360dialog.io/v1/configs/webhook')
+    stub_request(:get, 'https://waba.360dialog.io/v1/configs/templates')
+  end
+
   it 'requests approval and marks campaign pending' do
     described_class.new(campaign).request_approval!(requested_by: requester, recipient_count: 50)
     expect(campaign.reload.approval_status).to eq('pending')

@@ -26,7 +26,10 @@ RSpec.describe Adaki::AuditLogger do
     it 'detects tampering' do
       e1 = described_class.log(account: account, action: 'one')
       described_class.log(account: account, action: 'two')
-      e1.update_columns(payload: { tampered: true })
+      # update_columns is blocked by the model's own readonly? guard (by design —
+      # see Adaki::AuditLogEntry). Simulate an attacker who tampers with the row
+      # directly in the DB, bypassing the ActiveRecord instance entirely.
+      Adaki::AuditLogEntry.where(id: e1.id).update_all(payload: { tampered: true }) # rubocop:disable Rails/SkipsModelValidations
       expect { Adaki::AuditLogEntry.verify_chain!(account) }.to raise_error(/Tampered/)
     end
 
