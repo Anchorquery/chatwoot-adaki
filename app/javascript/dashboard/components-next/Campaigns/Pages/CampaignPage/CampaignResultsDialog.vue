@@ -1,7 +1,9 @@
 <script setup>
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import CampaignsAPI from 'dashboard/api/campaigns';
 
 const props = defineProps({
@@ -10,6 +12,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 const { t } = useI18n();
+const retryConfirmDialogRef = ref(null);
 
 // ── state ────────────────────────────────────────────────────────────────────
 const loading = ref(false);
@@ -101,27 +104,23 @@ function goPage(p) {
 }
 
 // ── retry ─────────────────────────────────────────────────────────────────────
-async function retryFailed() {
-  // TODO: swap for the app's ConfirmationModal (see
-  // dashboard/components/widgets/modal/ConfirmationModal.vue) instead of the
-  // native browser dialog; needs its own UX pass.
-  const confirmed =
-    // eslint-disable-next-line no-restricted-globals
-    confirm(
-      t('CAMPAIGN.RESULTS.RETRY_CONFIRM', { count: stats.value.failed_count })
-    );
-  if (!confirmed) return;
+function retryFailed() {
+  retryConfirmDialogRef.value?.open();
+}
+
+async function confirmRetryFailed() {
   retrying.value = true;
   try {
     const { data } = await CampaignsAPI.retryFailed(props.campaign.id);
-    alert(t('CAMPAIGN.RESULTS.RETRY_SUCCESS', { count: data.retry_count }));
+    useAlert(t('CAMPAIGN.RESULTS.RETRY_SUCCESS', { count: data.retry_count }));
     currentPage.value = 1;
     await fetchResults();
     startPolling();
   } catch {
-    alert(t('CAMPAIGN.RESULTS.RETRY_ERROR'));
+    useAlert(t('CAMPAIGN.RESULTS.RETRY_ERROR'));
   } finally {
     retrying.value = false;
+    retryConfirmDialogRef.value?.close();
   }
 }
 
@@ -284,6 +283,20 @@ onUnmounted(() => {
           />
         </div>
       </div>
+
+      <Dialog
+        ref="retryConfirmDialogRef"
+        type="alert"
+        :title="t('CAMPAIGN.RESULTS.RETRY_CONFIRM_TITLE')"
+        :description="
+          t('CAMPAIGN.RESULTS.RETRY_CONFIRM', {
+            count: stats.failed_count,
+          })
+        "
+        :confirm-button-label="t('CAMPAIGN.RESULTS.RETRY_FAILED')"
+        :is-loading="retrying"
+        @confirm="confirmRetryFailed"
+      />
 
       <div class="p-4 flex flex-col gap-4 overflow-y-auto">
         <!-- Stats row -->

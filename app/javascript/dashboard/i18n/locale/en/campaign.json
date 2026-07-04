@@ -413,6 +413,7 @@
       "COMPLETED_AT": "Completed",
       "VIEW_CONVERSATION": "View conversation",
       "RETRY_FAILED": "Retry failed",
+      "RETRY_CONFIRM_TITLE": "Retry failed sends?",
       "RETRY_CONFIRM": "Retry {count} failed sends?",
       "RETRY_SUCCESS": "Retry started for {count} contacts",
       "RETRY_ERROR": "Error retrying. Please try again.",

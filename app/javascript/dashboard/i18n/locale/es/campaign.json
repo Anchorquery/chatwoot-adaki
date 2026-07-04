@@ -396,6 +396,7 @@
       "COMPLETED_AT": "Fin",
       "VIEW_CONVERSATION": "Ver conversación",
       "RETRY_FAILED": "Reintentar fallidos",
+      "RETRY_CONFIRM_TITLE": "¿Reintentar envíos fallidos?",
       "RETRY_CONFIRM": "¿Reintentar los {count} envíos fallidos?",
       "RETRY_SUCCESS": "Reintento iniciado para {count} contactos",
       "RETRY_ERROR": "Error al reintentar. Inténtalo de nuevo.",
