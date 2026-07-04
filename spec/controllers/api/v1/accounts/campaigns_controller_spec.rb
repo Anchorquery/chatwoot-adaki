@@ -33,7 +33,7 @@ RSpec.describe 'Campaigns API', type: :request do
 
         expect(response).to have_http_status(:success)
         body = JSON.parse(response.body, symbolize_names: true)
-        expect(body.first[:id]).to eq(campaign.display_id)
+        expect(body[:payload].first[:id]).to eq(campaign.display_id)
       end
     end
   end

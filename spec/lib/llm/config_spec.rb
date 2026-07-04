@@ -43,7 +43,11 @@ RSpec.describe Llm::Config do
     end
 
     it 'returns nil when the credential carries no api key' do
-      credential = create(:platform_credential, account: account, payload: {})
+      # payload: {} is rejected outright by the model's `presence: true`
+      # validation on encrypted_payload (an empty Hash is blank). A payload
+      # with unrelated content but no api_key key is what actually exercises
+      # this nil-fallback path.
+      credential = create(:platform_credential, account: account, payload: { 'other' => 'x' })
 
       expect(described_class.context_for_credential(credential)).to be_nil
     end
