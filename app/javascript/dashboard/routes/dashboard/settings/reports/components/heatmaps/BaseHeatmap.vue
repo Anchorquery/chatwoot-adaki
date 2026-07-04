@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue';
 import { useMemoize } from '@vueuse/core';
 

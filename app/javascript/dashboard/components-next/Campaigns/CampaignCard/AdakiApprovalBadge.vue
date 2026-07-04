@@ -22,17 +22,23 @@ const colorClass = computed(() => ({
   'bg-n-ruby-2 text-n-ruby-11': props.approvalStatus === 'rejected',
 }));
 
-const icon = computed(() => ({
-  pending: 'i-lucide-clock',
-  approved: 'i-lucide-check-circle',
-  rejected: 'i-lucide-x-circle',
-}[props.approvalStatus] || 'i-lucide-shield'));
+const icon = computed(
+  () =>
+    ({
+      pending: 'i-lucide-clock',
+      approved: 'i-lucide-check-circle',
+      rejected: 'i-lucide-x-circle',
+    })[props.approvalStatus] || 'i-lucide-shield'
+);
 
-const labelKey = computed(() => ({
-  pending: 'ADAKI.APPROVALS.STATUS.PENDING',
-  approved: 'ADAKI.APPROVALS.STATUS.APPROVED',
-  rejected: 'ADAKI.APPROVALS.STATUS.REJECTED',
-}[props.approvalStatus] || 'ADAKI.APPROVALS.STATUS.UNKNOWN'));
+const labelKey = computed(
+  () =>
+    ({
+      pending: 'ADAKI.APPROVALS.STATUS.PENDING',
+      approved: 'ADAKI.APPROVALS.STATUS.APPROVED',
+      rejected: 'ADAKI.APPROVALS.STATUS.REJECTED',
+    })[props.approvalStatus] || 'ADAKI.APPROVALS.STATUS.UNKNOWN'
+);
 </script>
 
 <template>

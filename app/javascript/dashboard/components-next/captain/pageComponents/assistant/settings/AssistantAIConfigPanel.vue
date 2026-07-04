@@ -50,7 +50,9 @@ const generateConfig = async () => {
 </script>
 
 <template>
-  <div class="rounded-2xl border border-n-strong bg-n-alpha-2 p-4 flex flex-col gap-4">
+  <div
+    class="rounded-2xl border border-n-strong bg-n-alpha-2 p-4 flex flex-col gap-4"
+  >
     <div>
       <p class="text-sm font-medium text-n-slate-12">
         {{ t('CAPTAIN.ASSISTANTS.SETTINGS.AI_CONFIG_PANEL.TITLE') }}

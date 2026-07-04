@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import CategoryCard from './CategoryCard.vue';
 const categories = [
   {

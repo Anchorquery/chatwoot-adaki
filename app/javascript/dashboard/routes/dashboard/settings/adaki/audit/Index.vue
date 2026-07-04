@@ -45,8 +45,13 @@ export default {
     },
     filtered() {
       return this.records.filter(r => {
-        if (this.actionFilter && !r.action.includes(this.actionFilter)) return false;
-        if (this.auditableTypeFilter && r.auditable_type !== this.auditableTypeFilter) return false;
+        if (this.actionFilter && !r.action.includes(this.actionFilter))
+          return false;
+        if (
+          this.auditableTypeFilter &&
+          r.auditable_type !== this.auditableTypeFilter
+        )
+          return false;
         return true;
       });
     },
@@ -71,7 +76,9 @@ export default {
       if (result?.valid) {
         useAlert(this.$t('ADAKI.AUDIT.VERIFY_OK'));
       } else {
-        useAlert(`${this.$t('ADAKI.AUDIT.VERIFY_FAIL')}: ${result?.error || ''}`);
+        useAlert(
+          `${this.$t('ADAKI.AUDIT.VERIFY_FAIL')}: ${result?.error || ''}`
+        );
       }
     },
   },
@@ -79,7 +86,10 @@ export default {
 </script>
 
 <template>
-  <SettingsLayout :is-loading="uiFlags.isFetching" :loading-message="$t('ADAKI.AUDIT.HEADER')">
+  <SettingsLayout
+    :is-loading="uiFlags.isFetching"
+    :loading-message="$t('ADAKI.AUDIT.HEADER')"
+  >
     <template #header>
       <BaseSettingsHeader
         :title="$t('ADAKI.AUDIT.HEADER')"
@@ -88,7 +98,11 @@ export default {
       >
         <template #actions>
           <NextButton
-            :label="uiFlags.isVerifying ? $t('ADAKI.AUDIT.VERIFYING') : $t('ADAKI.AUDIT.VERIFY')"
+            :label="
+              uiFlags.isVerifying
+                ? $t('ADAKI.AUDIT.VERIFYING')
+                : $t('ADAKI.AUDIT.VERIFY')
+            "
             sm
             :is-loading="uiFlags.isVerifying"
             @click="verify"
@@ -100,10 +114,20 @@ export default {
       <div
         v-if="verifyResult"
         class="mb-4 p-3 rounded border"
-        :class="verifyResult.valid ? 'border-n-teal-7 bg-n-teal-2' : 'border-n-ruby-7 bg-n-ruby-2'"
+        :class="
+          verifyResult.valid
+            ? 'border-n-teal-7 bg-n-teal-2'
+            : 'border-n-ruby-7 bg-n-ruby-2'
+        "
       >
-        <strong>{{ verifyResult.valid ? $t('ADAKI.AUDIT.VERIFY_OK') : $t('ADAKI.AUDIT.VERIFY_FAIL') }}</strong>
-        <div v-if="!verifyResult.valid" class="text-body-main mt-1">{{ verifyResult.error }}</div>
+        <strong>{{
+          verifyResult.valid
+            ? $t('ADAKI.AUDIT.VERIFY_OK')
+            : $t('ADAKI.AUDIT.VERIFY_FAIL')
+        }}</strong>
+        <div v-if="!verifyResult.valid" class="text-body-main mt-1">
+          {{ verifyResult.error }}
+        </div>
       </div>
 
       <div class="flex gap-3 mb-4">
@@ -114,25 +138,39 @@ export default {
         />
         <select v-model="auditableTypeFilter" class="form-input">
           <option value="">{{ $t('ADAKI.AUDIT.FILTER_TYPE_ALL') }}</option>
-          <option v-for="t in auditableTypes" :key="t" :value="t">{{ t }}</option>
+          <option v-for="t in auditableTypes" :key="t" :value="t">
+            {{ t }}
+          </option>
         </select>
       </div>
 
-      <BaseTable :headers="headers" :items="filtered" :no-data-message="$t('ADAKI.AUDIT.EMPTY')">
+      <BaseTable
+        :headers="headers"
+        :items="filtered"
+        :no-data-message="$t('ADAKI.AUDIT.EMPTY')"
+      >
         <template #row="{ items }">
           <BaseTableRow v-for="e in items" :key="e.id" :item="e">
             <template #default>
               <BaseTableCell>{{ fmt(e.recorded_at) }}</BaseTableCell>
-              <BaseTableCell>{{ e.user_email || e.user_id || 'sistema' }}</BaseTableCell>
+              <BaseTableCell>
+                {{ e.user_email || e.user_id || 'sistema' }}
+              </BaseTableCell>
               <BaseTableCell>
                 <WootLabel :label="e.action" color="slate" compact />
               </BaseTableCell>
-              <BaseTableCell>{{ e.auditable_type }} #{{ e.auditable_id }}</BaseTableCell>
               <BaseTableCell>
-                <code class="text-xs">{{ JSON.stringify(e.payload).slice(0, 60) }}</code>
+                {{ e.auditable_type }} #{{ e.auditable_id }}
               </BaseTableCell>
               <BaseTableCell>
-                <code v-tooltip="e.hash_chain" class="text-xs">{{ short(e.hash_chain) }}</code>
+                <code class="text-xs">{{
+                  JSON.stringify(e.payload).slice(0, 60)
+                }}</code>
+              </BaseTableCell>
+              <BaseTableCell>
+                <code v-tooltip="e.hash_chain" class="text-xs">{{
+                  short(e.hash_chain)
+                }}</code>
               </BaseTableCell>
             </template>
           </BaseTableRow>

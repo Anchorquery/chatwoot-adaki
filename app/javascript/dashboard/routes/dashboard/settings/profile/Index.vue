@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { mapGetters } from 'vuex';
 import { useAlert } from 'dashboard/composables';
 import { useUISettings } from 'dashboard/composables/useUISettings';

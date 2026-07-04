@@ -116,8 +116,7 @@ const inboxIcon = computed(() => {
 const showEditButton = computed(() => props.status !== STATUS_COMPLETED);
 const hasDeliveryResults = computed(
   () =>
-    props.deliveryState?.sent_count > 0 ||
-    props.deliveryState?.failed_count > 0
+    props.deliveryState?.sent_count > 0 || props.deliveryState?.failed_count > 0
 );
 </script>
 

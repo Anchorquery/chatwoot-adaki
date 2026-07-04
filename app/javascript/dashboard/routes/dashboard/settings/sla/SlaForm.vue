@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { mapGetters } from 'vuex';
 import { convertSecondsToTimeUnit } from '@chatwoot/utils';
 import validations from './validations';

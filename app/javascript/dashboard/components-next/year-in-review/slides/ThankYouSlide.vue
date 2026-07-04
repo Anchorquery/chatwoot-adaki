@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { useI18n } from 'vue-i18n';
 
 defineProps({

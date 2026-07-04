@@ -249,6 +249,10 @@
         "DISABLE_ALL": "Desactivar todos",
         "EMPTY": "Sin modelos. Usa Sync o Importar.",
         "OBSOLETE": "Obsoleto",
+        "CONTEXT_WINDOW_LABEL": "{tokens}k ctx",
+        "MAX_OUTPUT_LABEL": "{tokens}k salida",
+        "INPUT_PRICE_LABEL": "{price} entrada",
+        "OUTPUT_PRICE_LABEL": "{price} salida",
         "KINDS": {
           "ALL": "Todos",
           "CHAT": "Chat",

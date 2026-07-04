@@ -1,4 +1,4 @@
-﻿export const contactData = {
+export const contactData = {
   id: 370,
   name: 'John Doe',
   email: 'johndoe@chatwoot.com',

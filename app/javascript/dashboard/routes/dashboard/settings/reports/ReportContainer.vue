@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { mapGetters } from 'vuex';
 import { useReportMetrics } from 'dashboard/composables/useReportMetrics';
 import { GROUP_BY_FILTER, METRIC_CHART } from './constants';

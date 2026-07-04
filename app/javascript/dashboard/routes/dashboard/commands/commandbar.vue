@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import '@chatwoot/ninja-keys';
 import { ref, computed, watchEffect, onMounted } from 'vue';
 import { useStore } from 'dashboard/composables/store';

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref } from 'vue';
 import Copilot from './Copilot.vue';
 

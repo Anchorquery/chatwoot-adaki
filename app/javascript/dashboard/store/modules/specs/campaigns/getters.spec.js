@@ -63,9 +63,7 @@ describe('#getters', () => {
     const mockGetters = {
       getCampaigns: getters.getCampaigns(state),
     };
-    expect(getters.getAPICampaigns(state, mockGetters)).toEqual([
-      campaigns[5],
-    ]);
+    expect(getters.getAPICampaigns(state, mockGetters)).toEqual([campaigns[5]]);
   });
 
   it('get Live Chat campaigns', () => {

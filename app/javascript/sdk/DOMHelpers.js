@@ -1,4 +1,4 @@
-﻿import { SDK_CSS } from './sdk.js';
+import { SDK_CSS } from './sdk.js';
 import { IFrameHelper } from './IFrameHelper';
 
 export const loadCSS = () => {

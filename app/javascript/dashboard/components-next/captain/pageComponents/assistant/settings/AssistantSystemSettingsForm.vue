@@ -74,7 +74,9 @@ const updateStateFromAssistant = assistant => {
       : !!config.continue_after_human_takeover;
   state.autoHandoffEnabled = !!config.auto_handoff_enabled;
   state.autoResolveHours = Number(config.auto_resolve_hours) || 24;
-  state.humanTakeoverMode = HUMAN_TAKEOVER_MODES.includes(config.human_takeover_mode)
+  state.humanTakeoverMode = HUMAN_TAKEOVER_MODES.includes(
+    config.human_takeover_mode
+  )
     ? config.human_takeover_mode
     : 'after_window';
   state.humanTakeoverWindowMinutes =
@@ -132,7 +134,9 @@ watch(
   <div class="flex flex-col gap-6">
     <div class="rounded-2xl border border-n-weak bg-n-alpha-black2 p-4">
       <p class="text-sm font-medium text-n-slate-12">
-        {{ t('CAPTAIN.ASSISTANTS.SETTINGS.SYSTEM_SETTINGS.ADVANCED_HINT.TITLE') }}
+        {{
+          t('CAPTAIN.ASSISTANTS.SETTINGS.SYSTEM_SETTINGS.ADVANCED_HINT.TITLE')
+        }}
       </p>
       <p class="mt-1 text-sm leading-6 text-n-slate-11">
         {{
@@ -219,7 +223,9 @@ watch(
         </option>
         <option value="after_window">
           {{
-            t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.AFTER_WINDOW')
+            t(
+              'CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.AFTER_WINDOW'
+            )
           }}
         </option>
         <option value="never">

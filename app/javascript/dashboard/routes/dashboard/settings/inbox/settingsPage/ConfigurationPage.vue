@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { useAlert } from 'dashboard/composables';
 import inboxMixin from 'shared/mixins/inboxMixin';
 import SettingsFieldSection from 'dashboard/components-next/Settings/SettingsFieldSection.vue';

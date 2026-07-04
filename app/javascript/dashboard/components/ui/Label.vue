@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { getContrastingTextColor } from '@chatwoot/utils';
 
 export default {

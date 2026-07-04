@@ -1,4 +1,4 @@
-﻿export const twilioTemplates = [
+export const twilioTemplates = [
   {
     body: 'Introducing our latest release  the {{1}}! Available now for just {{2}}. Be among the first to own this style. Limited stock available!',
     types: {

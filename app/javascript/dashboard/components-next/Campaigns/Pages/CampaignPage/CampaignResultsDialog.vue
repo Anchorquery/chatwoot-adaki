@@ -61,6 +61,13 @@ async function fetchResults() {
   }
 }
 
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
 function startPolling() {
   if (pollTimer) return;
   pollTimer = setInterval(() => {
@@ -70,13 +77,6 @@ function startPolling() {
     }
     fetchResults();
   }, 5000);
-}
-
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-  }
 }
 
 // ── search debounce ───────────────────────────────────────────────────────────
@@ -102,7 +102,15 @@ function goPage(p) {
 
 // ── retry ─────────────────────────────────────────────────────────────────────
 async function retryFailed() {
-  if (!confirm(t('CAMPAIGN.RESULTS.RETRY_CONFIRM', { count: stats.value.failed_count }))) return;
+  // TODO: swap for the app's ConfirmationModal (see
+  // dashboard/components/widgets/modal/ConfirmationModal.vue) instead of the
+  // native browser dialog; needs its own UX pass.
+  const confirmed =
+    // eslint-disable-next-line no-restricted-globals
+    confirm(
+      t('CAMPAIGN.RESULTS.RETRY_CONFIRM', { count: stats.value.failed_count })
+    );
+  if (!confirmed) return;
   retrying.value = true;
   try {
     const { data } = await CampaignsAPI.retryFailed(props.campaign.id);
@@ -126,10 +134,17 @@ async function exportCSV() {
     let page = 1;
     let totalPages = 1;
     do {
-      const { data } = await CampaignsAPI.results(props.campaign.id, { page, status: '', q: '' });
+      // Each page's existence depends on totalPages from the previous
+      // response, so this can't be parallelized.
+      // eslint-disable-next-line no-await-in-loop
+      const { data } = await CampaignsAPI.results(props.campaign.id, {
+        page,
+        status: '',
+        q: '',
+      });
       allContacts.push(...data.contacts);
       totalPages = data.meta.total_pages;
-      page++;
+      page += 1;
     } while (page <= totalPages);
 
     const rows = [
@@ -154,7 +169,9 @@ async function exportCSV() {
     ];
 
     const csv = rows
-      .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      .map(r =>
+        r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
+      )
       .join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -188,12 +205,14 @@ function statusLabel(s) {
 }
 
 function statusClass(s) {
-  return {
-    sent: 'text-n-teal-10 bg-n-teal-3',
-    failed: 'text-n-ruby-10 bg-n-ruby-3',
-    skipped: 'text-n-amber-10 bg-n-amber-3',
-    pending: 'text-n-slate-10 bg-n-alpha-2',
-  }[s] || 'text-n-slate-10 bg-n-alpha-2';
+  return (
+    {
+      sent: 'text-n-teal-10 bg-n-teal-3',
+      failed: 'text-n-ruby-10 bg-n-ruby-3',
+      skipped: 'text-n-amber-10 bg-n-amber-3',
+      pending: 'text-n-slate-10 bg-n-alpha-2',
+    }[s] || 'text-n-slate-10 bg-n-alpha-2'
+  );
 }
 
 function conversationUrl(conversationId) {
@@ -232,7 +251,9 @@ onUnmounted(() => {
           <h3 class="text-base font-semibold text-n-slate-12">
             {{ t('CAMPAIGN.RESULTS.TITLE') }}
           </h3>
-          <p class="text-xs text-n-slate-10 mt-0.5 truncate">{{ campaign?.title }}</p>
+          <p class="text-xs text-n-slate-10 mt-0.5 truncate">
+            {{ campaign?.title }}
+          </p>
         </div>
         <div class="flex items-center gap-2 ml-3 flex-shrink-0">
           <Button
@@ -267,23 +288,45 @@ onUnmounted(() => {
       <div class="p-4 flex flex-col gap-4 overflow-y-auto">
         <!-- Stats row -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="rounded-xl bg-n-alpha-2 p-3 flex flex-col items-center gap-1">
-            <span class="text-2xl font-bold text-n-slate-12">{{ stats.total_contacts ?? 0 }}</span>
-            <span class="text-xs text-n-slate-10">{{ t('CAMPAIGN.RESULTS.TOTAL') }}</span>
+          <div
+            class="rounded-xl bg-n-alpha-2 p-3 flex flex-col items-center gap-1"
+          >
+            <span class="text-2xl font-bold text-n-slate-12">{{
+              stats.total_contacts ?? 0
+            }}</span>
+            <span class="text-xs text-n-slate-10">{{
+              t('CAMPAIGN.RESULTS.TOTAL')
+            }}</span>
           </div>
-          <div class="rounded-xl bg-n-teal-3 p-3 flex flex-col items-center gap-1">
-            <span class="text-2xl font-bold text-n-teal-11">{{ stats.sent_count ?? 0 }}</span>
-            <span class="text-xs text-n-teal-10">{{ t('CAMPAIGN.RESULTS.SENT') }}</span>
+          <div
+            class="rounded-xl bg-n-teal-3 p-3 flex flex-col items-center gap-1"
+          >
+            <span class="text-2xl font-bold text-n-teal-11">{{
+              stats.sent_count ?? 0
+            }}</span>
+            <span class="text-xs text-n-teal-10">{{
+              t('CAMPAIGN.RESULTS.SENT')
+            }}</span>
           </div>
-          <div class="rounded-xl bg-n-ruby-3 p-3 flex flex-col items-center gap-1">
-            <span class="text-2xl font-bold text-n-ruby-11">{{ stats.failed_count ?? 0 }}</span>
-            <span class="text-xs text-n-ruby-10">{{ t('CAMPAIGN.RESULTS.FAILED') }}</span>
+          <div
+            class="rounded-xl bg-n-ruby-3 p-3 flex flex-col items-center gap-1"
+          >
+            <span class="text-2xl font-bold text-n-ruby-11">{{
+              stats.failed_count ?? 0
+            }}</span>
+            <span class="text-xs text-n-ruby-10">{{
+              t('CAMPAIGN.RESULTS.FAILED')
+            }}</span>
           </div>
-          <div class="rounded-xl bg-n-alpha-2 p-3 flex flex-col items-center gap-1">
+          <div
+            class="rounded-xl bg-n-alpha-2 p-3 flex flex-col items-center gap-1"
+          >
             <span class="text-2xl font-bold text-n-slate-12">
               {{ stats.success_rate != null ? `${stats.success_rate}%` : '—' }}
             </span>
-            <span class="text-xs text-n-slate-10">{{ t('CAMPAIGN.RESULTS.SUCCESS_RATE') }}</span>
+            <span class="text-xs text-n-slate-10">{{
+              t('CAMPAIGN.RESULTS.SUCCESS_RATE')
+            }}</span>
           </div>
         </div>
 
@@ -307,27 +350,38 @@ onUnmounted(() => {
           class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-n-slate-10"
         >
           <span>
-            <span class="font-medium text-n-slate-11">{{ t('CAMPAIGN.RESULTS.STARTED_AT') }}:</span>
+            <span class="font-medium text-n-slate-11"
+              >{{ t('CAMPAIGN.RESULTS.STARTED_AT') }}:</span
+            >
             {{ formatTs(stats.started_at) }}
           </span>
           <span v-if="stats.completed_at">
-            <span class="font-medium text-n-slate-11">{{ t('CAMPAIGN.RESULTS.COMPLETED_AT') }}:</span>
+            <span class="font-medium text-n-slate-11"
+              >{{ t('CAMPAIGN.RESULTS.COMPLETED_AT') }}:</span
+            >
             {{ formatTs(stats.completed_at) }}
           </span>
           <span v-if="durationLabel">
-            <span class="font-medium text-n-slate-11">{{ t('CAMPAIGN.RESULTS.DURATION') }}:</span>
+            <span class="font-medium text-n-slate-11"
+              >{{ t('CAMPAIGN.RESULTS.DURATION') }}:</span
+            >
             {{ durationLabel }}
           </span>
           <span v-if="stats.throughput_per_minute">
-            <span class="font-medium text-n-slate-11">{{ t('CAMPAIGN.RESULTS.THROUGHPUT') }}:</span>
-            {{ stats.throughput_per_minute }} {{ t('CAMPAIGN.RESULTS.MSGS_PER_MIN') }}
+            <span class="font-medium text-n-slate-11"
+              >{{ t('CAMPAIGN.RESULTS.THROUGHPUT') }}:</span
+            >
+            {{ stats.throughput_per_minute }}
+            {{ t('CAMPAIGN.RESULTS.MSGS_PER_MIN') }}
           </span>
         </div>
 
         <!-- Search + filter -->
         <div class="flex flex-col sm:flex-row gap-2">
           <div class="relative flex-1">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 i-lucide-search w-3.5 h-3.5 text-n-slate-9" />
+            <span
+              class="absolute left-3 top-1/2 -translate-y-1/2 i-lucide-search w-3.5 h-3.5 text-n-slate-9"
+            />
             <input
               class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-n-alpha-2 border border-n-weak text-n-slate-12 placeholder:text-n-slate-9 focus:outline-none focus:ring-1 focus:ring-n-teal-7"
               :placeholder="t('CAMPAIGN.RESULTS.SEARCH_PLACEHOLDER')"
@@ -336,12 +390,18 @@ onUnmounted(() => {
           </div>
           <div class="flex gap-1">
             <button
-              v-for="f in [{ key: '', label: t('CAMPAIGN.RESULTS.FILTER_ALL') }, { key: 'sent', label: t('CAMPAIGN.RESULTS.FILTER_SENT') }, { key: 'failed', label: t('CAMPAIGN.RESULTS.FILTER_FAILED') }]"
+              v-for="f in [
+                { key: '', label: t('CAMPAIGN.RESULTS.FILTER_ALL') },
+                { key: 'sent', label: t('CAMPAIGN.RESULTS.FILTER_SENT') },
+                { key: 'failed', label: t('CAMPAIGN.RESULTS.FILTER_FAILED') },
+              ]"
               :key="f.key"
               class="text-xs px-3 py-1.5 rounded-lg border transition-colors"
-              :class="activeFilter === f.key
-                ? 'bg-n-teal-9 text-white border-n-teal-9'
-                : 'bg-n-alpha-2 text-n-slate-10 border-n-weak hover:text-n-slate-12'"
+              :class="
+                activeFilter === f.key
+                  ? 'bg-n-teal-9 text-white border-n-teal-9'
+                  : 'bg-n-alpha-2 text-n-slate-10 border-n-weak hover:text-n-slate-12'
+              "
               @click="setFilter(f.key)"
             >
               {{ f.label }}
@@ -369,10 +429,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Rows -->
-          <div
-            v-else
-            class="flex flex-col gap-1"
-          >
+          <div v-else class="flex flex-col gap-1">
             <div
               v-for="c in contacts"
               :key="c.id"
@@ -382,7 +439,12 @@ onUnmounted(() => {
               <div
                 class="w-7 h-7 rounded-full bg-n-alpha-3 flex-shrink-0 flex items-center justify-center text-xs font-medium text-n-slate-11 overflow-hidden"
               >
-                <img v-if="c.avatar_url" :src="c.avatar_url" class="w-full h-full object-cover" alt="" />
+                <img
+                  v-if="c.avatar_url"
+                  :src="c.avatar_url"
+                  class="w-full h-full object-cover"
+                  alt=""
+                />
                 <span v-else>{{ (c.name || '?')[0].toUpperCase() }}</span>
               </div>
 
@@ -412,7 +474,9 @@ onUnmounted(() => {
               </span>
 
               <!-- Sent at -->
-              <span class="text-xs text-n-slate-9 flex-shrink-0 hidden sm:block whitespace-nowrap">
+              <span
+                class="text-xs text-n-slate-9 flex-shrink-0 hidden sm:block whitespace-nowrap"
+              >
                 {{ formatTs(c.sent_at || c.failed_at || c.skipped_at) }}
               </span>
 
@@ -421,6 +485,7 @@ onUnmounted(() => {
                 v-if="c.conversation_id"
                 :href="conversationUrl(c.conversation_id)"
                 target="_blank"
+                rel="noopener noreferrer"
                 class="i-lucide-external-link w-3.5 h-3.5 text-n-slate-9 hover:text-n-teal-9 flex-shrink-0"
                 :title="t('CAMPAIGN.RESULTS.VIEW_CONVERSATION')"
               />
@@ -434,14 +499,17 @@ onUnmounted(() => {
           v-if="meta.total_pages > 1"
           class="flex items-center justify-between text-xs text-n-slate-10"
         >
-          <span>{{ meta.total }} {{ t('CAMPAIGN.RESULTS.TOTAL').toLowerCase() }}</span>
+          <span
+            >{{ meta.total }}
+            {{ t('CAMPAIGN.RESULTS.TOTAL').toLowerCase() }}</span
+          >
           <div class="flex gap-1 items-center">
             <button
               class="px-2 py-1 rounded bg-n-alpha-2 hover:bg-n-alpha-3 disabled:opacity-40"
               :disabled="currentPage <= 1"
               @click="goPage(currentPage - 1)"
             >
-              ‹
+              <span class="i-lucide-chevron-left w-3 h-3" />
             </button>
             <span class="px-2">{{ currentPage }} / {{ meta.total_pages }}</span>
             <button
@@ -449,7 +517,7 @@ onUnmounted(() => {
               :disabled="currentPage >= meta.total_pages"
               @click="goPage(currentPage + 1)"
             >
-              ›
+              <span class="i-lucide-chevron-right w-3 h-3" />
             </button>
           </div>
         </div>

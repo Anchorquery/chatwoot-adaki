@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { onMounted, computed, ref, reactive, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';

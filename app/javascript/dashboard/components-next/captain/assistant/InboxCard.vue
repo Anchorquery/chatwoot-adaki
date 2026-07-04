@@ -155,7 +155,9 @@ const clearOverride = async key => {
       <div class="flex items-center gap-2">
         <Button
           :icon="
-            showOverrides ? 'i-lucide-chevron-up' : 'i-lucide-sliders-horizontal'
+            showOverrides
+              ? 'i-lucide-chevron-up'
+              : 'i-lucide-sliders-horizontal'
           "
           color="slate"
           size="xs"
@@ -217,13 +219,20 @@ const clearOverride = async key => {
               $event.target.value === 'inherit'
                 ? clearOverride('continue_after_human_takeover')
                 : saveOverride({
-                    continue_after_human_takeover: $event.target.value === 'true',
+                    continue_after_human_takeover:
+                      $event.target.value === 'true',
                   })
             "
           >
-            <option value="inherit">{{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}</option>
-            <option value="true">{{ t('CAPTAIN.INBOXES.OVERRIDES.ON') }}</option>
-            <option value="false">{{ t('CAPTAIN.INBOXES.OVERRIDES.OFF') }}</option>
+            <option value="inherit">
+              {{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}
+            </option>
+            <option value="true">
+              {{ t('CAPTAIN.INBOXES.OVERRIDES.ON') }}
+            </option>
+            <option value="false">
+              {{ t('CAPTAIN.INBOXES.OVERRIDES.OFF') }}
+            </option>
           </select>
         </div>
       </div>
@@ -246,7 +255,9 @@ const clearOverride = async key => {
         </div>
         <div class="flex items-center gap-2">
           <select
-            :value="localAutoHandoff === null ? 'inherit' : String(localAutoHandoff)"
+            :value="
+              localAutoHandoff === null ? 'inherit' : String(localAutoHandoff)
+            "
             :disabled="saving"
             class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
             @change="
@@ -257,9 +268,15 @@ const clearOverride = async key => {
                   })
             "
           >
-            <option value="inherit">{{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}</option>
-            <option value="true">{{ t('CAPTAIN.INBOXES.OVERRIDES.ON') }}</option>
-            <option value="false">{{ t('CAPTAIN.INBOXES.OVERRIDES.OFF') }}</option>
+            <option value="inherit">
+              {{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}
+            </option>
+            <option value="true">
+              {{ t('CAPTAIN.INBOXES.OVERRIDES.ON') }}
+            </option>
+            <option value="false">
+              {{ t('CAPTAIN.INBOXES.OVERRIDES.OFF') }}
+            </option>
           </select>
         </div>
       </div>
@@ -289,10 +306,26 @@ const clearOverride = async key => {
                 : saveOverride({ human_takeover_mode: $event.target.value })
             "
           >
-            <option value="inherit">{{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}</option>
-            <option value="always">{{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.ALWAYS') }}</option>
-            <option value="after_window">{{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.AFTER_WINDOW') }}</option>
-            <option value="never">{{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.NEVER') }}</option>
+            <option value="inherit">
+              {{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}
+            </option>
+            <option value="always">
+              {{
+                t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.ALWAYS')
+              }}
+            </option>
+            <option value="after_window">
+              {{
+                t(
+                  'CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.AFTER_WINDOW'
+                )
+              }}
+            </option>
+            <option value="never">
+              {{
+                t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_MODE.OPTIONS.NEVER')
+              }}
+            </option>
           </select>
         </div>
       </div>
@@ -322,7 +355,9 @@ const clearOverride = async key => {
             class="w-24 text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
             @change="
               localTakeoverWindow
-                ? saveOverride({ human_takeover_window_minutes: Number(localTakeoverWindow) })
+                ? saveOverride({
+                    human_takeover_window_minutes: Number(localTakeoverWindow),
+                  })
                 : clearOverride('human_takeover_window_minutes')
             "
           />

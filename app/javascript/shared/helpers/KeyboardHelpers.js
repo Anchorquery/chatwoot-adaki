@@ -1,4 +1,4 @@
-﻿import { isApple } from './platform';
+import { isApple } from './platform';
 
 export const isEnter = e => {
   return e.key === 'Enter';

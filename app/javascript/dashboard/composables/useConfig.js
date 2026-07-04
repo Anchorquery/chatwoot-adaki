@@ -1,4 +1,4 @@
-﻿/**
+/**
  * A function that provides access to various configuration values.
  * @returns {Object} An object containing configuration values.
  */

@@ -16,7 +16,8 @@ export const state = {
 
 export const getters = {
   getChannels: _state => _state.channels,
-  getSnapshots: _state => channelId => _state.snapshotsByChannel[channelId] || [],
+  getSnapshots: _state => channelId =>
+    _state.snapshotsByChannel[channelId] || [],
   getUIFlags: _state => _state.uiFlags,
 };
 
@@ -50,7 +51,10 @@ export const actions = {
   unlockTier: async ({ commit }, { channelId, reason }) => {
     commit(types.SET_ADAKI_TIER_UI_FLAG, { isUnlocking: true });
     try {
-      const { data } = await AdakiWhatsappChannelsAPI.unlockTier(channelId, reason);
+      const { data } = await AdakiWhatsappChannelsAPI.unlockTier(
+        channelId,
+        reason
+      );
       commit(types.EDIT_ADAKI_TIER_CHANNEL, data);
       return data;
     } catch (error) {
@@ -81,7 +85,10 @@ export const mutations = {
   [types.SET_ADAKI_TIER_CHANNELS]: MutationHelpers.set,
   [types.EDIT_ADAKI_TIER_CHANNEL]: MutationHelpers.update,
   [types.SET_ADAKI_TIER_SNAPSHOTS](_state, { channelId, snapshots }) {
-    _state.snapshotsByChannel = { ..._state.snapshotsByChannel, [channelId]: snapshots };
+    _state.snapshotsByChannel = {
+      ..._state.snapshotsByChannel,
+      [channelId]: snapshots,
+    };
   },
 };
 

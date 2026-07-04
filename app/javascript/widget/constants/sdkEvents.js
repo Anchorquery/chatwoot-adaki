@@ -1,4 +1,4 @@
-﻿export const CHATWOOT_ERROR = 'Adaki:error';
+export const CHATWOOT_ERROR = 'Adaki:error';
 export const CHATWOOT_ON_MESSAGE = 'Adaki:on-message';
 export const CHATWOOT_ON_START_CONVERSATION = 'Adaki:on-start-conversation';
 export const CHATWOOT_POSTBACK = 'Adaki:postback';

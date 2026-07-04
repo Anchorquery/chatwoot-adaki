@@ -1,4 +1,4 @@
-﻿export const ONGOING_CAMPAIGN_EMPTY_STATE_CONTENT = [
+export const ONGOING_CAMPAIGN_EMPTY_STATE_CONTENT = [
   {
     id: 1,
     title: 'Chatbot Assistance',

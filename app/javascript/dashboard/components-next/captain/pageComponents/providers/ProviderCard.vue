@@ -68,8 +68,12 @@ const handleToggle = () => {
   <CardLayout class="relative">
     <div class="flex items-start justify-between w-full gap-3">
       <div class="min-w-0">
-        <div class="text-base font-medium text-n-slate-12 truncate">{{ name }}</div>
-        <div class="mt-0.5 text-sm text-n-slate-11 truncate">{{ providerLabel || provider }}</div>
+        <div class="text-base font-medium text-n-slate-12 truncate">
+          {{ name }}
+        </div>
+        <div class="mt-0.5 text-sm text-n-slate-11 truncate">
+          {{ providerLabel || provider }}
+        </div>
       </div>
 
       <div class="flex items-center gap-2 shrink-0">
@@ -77,13 +81,17 @@ const handleToggle = () => {
           type="button"
           class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
           :class="enabled ? 'bg-n-teal-9' : 'bg-n-slate-6'"
-          :title="enabled ? t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.ACTIVE') : t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.REVOKED')"
+          :title="
+            enabled
+              ? t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.ACTIVE')
+              : t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.REVOKED')
+          "
           @click="handleToggle"
         >
           <span
             class="inline-block h-5 w-5 transform rounded-full bg-white transition-transform"
             :class="enabled ? 'translate-x-5' : 'translate-x-1'"
-          ></span>
+          />
         </button>
         <div class="relative">
           <Button
@@ -106,11 +114,17 @@ const handleToggle = () => {
     <div class="mt-3 flex flex-wrap items-center gap-2">
       <span
         class="inline-flex items-center px-2 py-0.5 text-xs rounded-md"
-        :class="enabled ? 'bg-n-teal-2 text-n-teal-11' : 'bg-n-slate-3 text-n-slate-11'"
+        :class="
+          enabled
+            ? 'bg-n-teal-2 text-n-teal-11'
+            : 'bg-n-slate-3 text-n-slate-11'
+        "
       >
         {{ t('ADAKI.CAPTAIN.CREDENTIALS.BADGE.PLATFORM') }}
       </span>
-      <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-md bg-n-slate-3 text-n-slate-11">
+      <span
+        class="inline-flex items-center px-2 py-0.5 text-xs rounded-md bg-n-slate-3 text-n-slate-11"
+      >
         {{ t('ADAKI.CAPTAIN.CREDENTIALS.BADGE.API_KEY') }}
       </span>
       <span

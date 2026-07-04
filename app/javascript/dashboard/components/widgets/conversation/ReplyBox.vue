@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { defineAsyncComponent, useTemplateRef } from 'vue';
 import { mapGetters } from 'vuex';
 import { useAlert } from 'dashboard/composables';

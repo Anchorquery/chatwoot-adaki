@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import StackedChangelogCard from './StackedChangelogCard.vue';
 
 const imageCards = {

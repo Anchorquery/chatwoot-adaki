@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { debounce } from '@chatwoot/utils';
 import { useAlert } from 'dashboard/composables';
 import { mapGetters } from 'vuex';

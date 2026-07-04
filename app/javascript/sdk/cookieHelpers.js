@@ -1,4 +1,4 @@
-﻿import md5 from 'md5';
+import md5 from 'md5';
 import Cookies from 'js-cookie';
 
 const REQUIRED_USER_KEYS = ['avatar_url', 'email', 'name'];

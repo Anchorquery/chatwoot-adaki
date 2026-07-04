@@ -175,10 +175,7 @@ class ActionCableConnector extends BaseActionCableConnector {
       currentAccount?.features?.[FEATURE_FLAGS.CONVERSATION_UNREAD_COUNTS] ===
       true;
 
-    return (
-      isOnChatwootCloud &&
-      isFeatureEnabled
-    );
+    return isOnChatwootCloud && isFeatureEnabled;
   };
 
   onTypingOn = ({ conversation, user }) => {

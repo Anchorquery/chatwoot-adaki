@@ -48,8 +48,8 @@ const domainError = computed(() =>
   v$.value.domain.$error ? v$.value.domain.$errors[0]?.$message : ''
 );
 
-const domainMessage = computed(() =>
-  domainError.value || t('COMPANIES.CREATE.FIELDS.DOMAIN.MESSAGE')
+const domainMessage = computed(
+  () => domainError.value || t('COMPANIES.CREATE.FIELDS.DOMAIN.MESSAGE')
 );
 
 const isFormInvalid = computed(() => v$.value.$invalid);

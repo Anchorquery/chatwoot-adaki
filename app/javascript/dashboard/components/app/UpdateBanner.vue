@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import Banner from 'dashboard/components/ui/Banner.vue';
 import { LOCAL_STORAGE_KEYS } from 'dashboard/constants/localStorage';
 import { LocalStorage } from 'shared/helpers/localStorage';

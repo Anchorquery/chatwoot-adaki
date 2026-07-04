@@ -60,7 +60,11 @@ export default {
     }),
     usagePct() {
       if (!this.settings?.adaki_captain_monthly_limit) return null;
-      return Math.round((this.settings.request_count / this.settings.adaki_captain_monthly_limit) * 100);
+      return Math.round(
+        (this.settings.request_count /
+          this.settings.adaki_captain_monthly_limit) *
+          100
+      );
     },
     providerOptions() {
       const providers = this.settings?.providers || {};
@@ -69,7 +73,9 @@ export default {
         const label = meta.display_name || value;
         return {
           value,
-          label: disabled ? `${label} ${this.$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.COMING_SOON')}` : label,
+          label: disabled
+            ? `${label} ${this.$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.COMING_SOON')}`
+            : label,
           disabled,
         };
       });
@@ -92,7 +98,9 @@ export default {
 
         if (!this.providerOptions.length) return;
 
-        const current = this.providerOptions.find(o => o.value === this.credentialForm.provider);
+        const current = this.providerOptions.find(
+          o => o.value === this.credentialForm.provider
+        );
         if (!current || current.disabled) {
           this.credentialForm.provider = this.defaultProvider();
         }
@@ -108,11 +116,16 @@ export default {
       return firstEnabled?.value || this.providerOptions[0]?.value || 'openai';
     },
     providerLabel(provider) {
-      return this.providerOptions.find(option => option.value === provider)?.label || provider || '-';
+      return (
+        this.providerOptions.find(option => option.value === provider)?.label ||
+        provider ||
+        '-'
+      );
     },
     async save() {
       try {
-        const value = this.limit === '' || this.limit === null ? null : Number(this.limit);
+        const value =
+          this.limit === '' || this.limit === null ? null : Number(this.limit);
         await this.$store.dispatch('adakiCaptainSettings/update', {
           adaki_captain_monthly_limit: value,
         });
@@ -198,13 +211,18 @@ export default {
           });
           useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.UPDATED'));
         } else {
-          await this.$store.dispatch('adakiCaptainSettings/createCredential', credential);
+          await this.$store.dispatch(
+            'adakiCaptainSettings/createCredential',
+            credential
+          );
           useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.CREATED'));
         }
 
         this.closeCredentialModal();
       } catch (error) {
-        useAlert(error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR'));
+        useAlert(
+          error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR')
+        );
       }
     },
     async validateCredential(credential) {
@@ -214,19 +232,28 @@ export default {
       };
 
       try {
-        await this.$store.dispatch('adakiCaptainSettings/validateCredential', credential.id);
+        await this.$store.dispatch(
+          'adakiCaptainSettings/validateCredential',
+          credential.id
+        );
         const refreshed = this.credentials.find(c => c.id === credential.id);
         const validation = refreshed?.metadata?.validation;
 
         if (validation?.status === 'invalid') {
           const code = validation.error_code || 'unknown';
-          const msg = validation.message ? `${code}: ${validation.message}` : code;
-          useAlert(`${this.$t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.INVALID')} — ${msg}`);
+          const msg = validation.message
+            ? `${code}: ${validation.message}`
+            : code;
+          useAlert(
+            `${this.$t('ADAKI.CAPTAIN.CREDENTIALS.STATUS.INVALID')} — ${msg}`
+          );
         } else {
           useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.VALIDATED'));
         }
       } catch (error) {
-        useAlert(error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR'));
+        useAlert(
+          error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR')
+        );
       } finally {
         this.credentialActionLoading = {
           ...this.credentialActionLoading,
@@ -241,10 +268,15 @@ export default {
       };
 
       try {
-        await this.$store.dispatch('adakiCaptainSettings/revokeCredential', credential.id);
+        await this.$store.dispatch(
+          'adakiCaptainSettings/revokeCredential',
+          credential.id
+        );
         useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.REVOKED'));
       } catch (error) {
-        useAlert(error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR'));
+        useAlert(
+          error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR')
+        );
       } finally {
         this.credentialActionLoading = {
           ...this.credentialActionLoading,
@@ -253,7 +285,9 @@ export default {
       }
     },
     async destroyCredential(credential) {
-      const confirmed = window.confirm(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.DELETE_CONFIRM'));
+      const confirmed = window.confirm(
+        this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.DELETE_CONFIRM')
+      );
       if (!confirmed) return;
 
       this.credentialActionLoading = {
@@ -262,10 +296,15 @@ export default {
       };
 
       try {
-        await this.$store.dispatch('adakiCaptainSettings/destroyCredential', credential.id);
+        await this.$store.dispatch(
+          'adakiCaptainSettings/destroyCredential',
+          credential.id
+        );
         useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.DELETED'));
       } catch (error) {
-        useAlert(error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR'));
+        useAlert(
+          error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR')
+        );
       } finally {
         this.credentialActionLoading = {
           ...this.credentialActionLoading,
@@ -285,32 +324,64 @@ export default {
     async syncProviderModels(credential) {
       try {
         const { data } = await PlatformCredentialModelsAPI.sync(credential.id);
-        useAlert(this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.MODELS_SYNCED', { total: data?.imported ?? 0 }));
+        useAlert(
+          this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.MODELS_SYNCED', {
+            total: data?.imported ?? 0,
+          })
+        );
       } catch (error) {
-        const msg = error.response?.data?.error || error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR');
+        const msg =
+          error.response?.data?.error ||
+          error.message ||
+          this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR');
         useAlert(msg);
       }
     },
     async toggleProviderEnabled(credential, enabled) {
       try {
         if (enabled) {
-          await this.$store.dispatch('adakiCaptainSettings/validateCredential', credential.id);
+          await this.$store.dispatch(
+            'adakiCaptainSettings/validateCredential',
+            credential.id
+          );
         } else {
-          await this.$store.dispatch('adakiCaptainSettings/revokeCredential', credential.id);
+          await this.$store.dispatch(
+            'adakiCaptainSettings/revokeCredential',
+            credential.id
+          );
         }
-        useAlert(this.$t(enabled ? 'ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ENABLED' : 'ADAKI.CAPTAIN.CREDENTIALS.ALERTS.REVOKED'));
+        useAlert(
+          this.$t(
+            enabled
+              ? 'ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ENABLED'
+              : 'ADAKI.CAPTAIN.CREDENTIALS.ALERTS.REVOKED'
+          )
+        );
       } catch (error) {
-        useAlert(error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR'));
+        useAlert(
+          error.message || this.$t('ADAKI.CAPTAIN.CREDENTIALS.ALERTS.ERROR')
+        );
       }
     },
     handleProviderAction({ action }, credential) {
       switch (action) {
-        case 'sync_models': this.syncProviderModels(credential); break;
-        case 'configure_models': this.openProviderModels(credential); break;
-        case 'edit': this.openEditCredential(credential); break;
-        case 'validate': this.validateCredential(credential); break;
-        case 'delete': this.destroyCredential(credential); break;
-        default: break;
+        case 'sync_models':
+          this.syncProviderModels(credential);
+          break;
+        case 'configure_models':
+          this.openProviderModels(credential);
+          break;
+        case 'edit':
+          this.openEditCredential(credential);
+          break;
+        case 'validate':
+          this.validateCredential(credential);
+          break;
+        case 'delete':
+          this.destroyCredential(credential);
+          break;
+        default:
+          break;
       }
     },
     handleProviderToggle({ enabled }, credential) {
@@ -321,7 +392,10 @@ export default {
 </script>
 
 <template>
-  <SettingsLayout :is-loading="uiFlags.isFetching" :loading-message="$t('ADAKI.CAPTAIN.LOADING')">
+  <SettingsLayout
+    :is-loading="uiFlags.isFetching"
+    :loading-message="$t('ADAKI.CAPTAIN.LOADING')"
+  >
     <template #header>
       <BaseSettingsHeader
         :title="$t('ADAKI.CAPTAIN.HEADER')"
@@ -332,10 +406,16 @@ export default {
     <template #body>
       <div class="flex max-w-5xl flex-col gap-6">
         <section class="rounded-lg border border-n-weak p-4">
-          <h3 class="mb-2 text-heading-3">{{ $t('ADAKI.CAPTAIN.LIMIT_TITLE') }}</h3>
-          <p class="mb-3 text-body-main text-n-slate-11">{{ $t('ADAKI.CAPTAIN.LIMIT_HINT') }}</p>
+          <h3 class="mb-2 text-heading-3">
+            {{ $t('ADAKI.CAPTAIN.LIMIT_TITLE') }}
+          </h3>
+          <p class="mb-3 text-body-main text-n-slate-11">
+            {{ $t('ADAKI.CAPTAIN.LIMIT_HINT') }}
+          </p>
           <label class="flex flex-col gap-1">
-            <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.LIMIT_LABEL') }}</span>
+            <span class="text-body-main">{{
+              $t('ADAKI.CAPTAIN.LIMIT_LABEL')
+            }}</span>
             <input
               v-model="limit"
               type="number"
@@ -355,7 +435,9 @@ export default {
         </section>
 
         <section class="rounded-lg border border-n-weak p-4">
-          <h3 class="mb-2 text-heading-3">{{ $t('ADAKI.CAPTAIN.USAGE_TITLE') }}</h3>
+          <h3 class="mb-2 text-heading-3">
+            {{ $t('ADAKI.CAPTAIN.USAGE_TITLE') }}
+          </h3>
           <div v-if="settings" class="flex flex-col gap-2">
             <div class="flex justify-between gap-4">
               <span>{{ $t('ADAKI.CAPTAIN.USAGE_PERIOD') }}</span>
@@ -384,7 +466,9 @@ export default {
         <section class="rounded-lg border border-n-weak p-4">
           <div class="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 class="text-heading-3">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.HEADER') }}</h3>
+              <h3 class="text-heading-3">
+                {{ $t('ADAKI.CAPTAIN.CREDENTIALS.HEADER') }}
+              </h3>
               <p class="text-body-main text-n-slate-11">
                 {{ $t('ADAKI.CAPTAIN.CREDENTIALS.DESCRIPTION') }}
               </p>
@@ -403,11 +487,14 @@ export default {
             {{ $t('ADAKI.CAPTAIN.CREDENTIALS.EMPTY') }}
           </div>
 
-          <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div
+            v-else
+            class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+          >
             <ProviderCard
               v-for="credential in credentials"
-              :key="credential.id"
               :id="credential.id"
+              :key="credential.id"
               :name="credential.name"
               :provider="credential.provider"
               :provider-label="providerLabel(credential.provider)"
@@ -424,7 +511,11 @@ export default {
         size="medium"
         :on-close="closeCredentialModal"
       >
-        <form class="w-full p-6" autocomplete="off" @submit.prevent="saveCredential">
+        <form
+          class="w-full p-6"
+          autocomplete="off"
+          @submit.prevent="saveCredential"
+        >
           <div class="mb-5 flex items-start justify-between gap-4">
             <div class="space-y-1">
               <h2 class="text-heading-2">{{ credentialModalTitle }}</h2>
@@ -441,22 +532,30 @@ export default {
 
           <div class="grid grid-cols-1 gap-4">
             <label class="flex flex-col gap-1">
-              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.NAME') }}</span>
+              <span class="text-body-main">{{
+                $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.NAME')
+              }}</span>
               <input
                 v-model="credentialForm.name"
                 class="form-input"
                 type="text"
                 name="credential_name"
                 autocomplete="off"
-                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.NAME_PLACEHOLDER')"
+                :placeholder="
+                  $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.NAME_PLACEHOLDER')
+                "
               />
             </label>
 
             <label class="flex flex-col gap-1">
-              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PROVIDER') }}</span>
+              <span class="text-body-main">{{
+                $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PROVIDER')
+              }}</span>
               <select v-model="credentialForm.provider" class="form-input">
                 <option disabled value="">
-                  {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PROVIDER_PLACEHOLDER') }}
+                  {{
+                    $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.PROVIDER_PLACEHOLDER')
+                  }}
                 </option>
                 <option
                   v-for="option in providerOptions"
@@ -472,7 +571,9 @@ export default {
             <label class="flex flex-col gap-1">
               <span class="text-body-main">
                 {{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_BASE') }}
-                <span class="text-n-slate-10">({{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.OPTIONAL') }})</span>
+                <span class="text-n-slate-10"
+                  >({{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.OPTIONAL') }})</span
+                >
               </span>
               <input
                 v-model="credentialForm.metadata.api_base"
@@ -481,19 +582,25 @@ export default {
                 name="credential_api_base_url"
                 autocomplete="off"
                 inputmode="url"
-                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_BASE_PLACEHOLDER')"
+                :placeholder="
+                  $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_BASE_PLACEHOLDER')
+                "
               />
             </label>
 
             <label class="flex flex-col gap-1">
-              <span class="text-body-main">{{ $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY') }}</span>
+              <span class="text-body-main">{{
+                $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY')
+              }}</span>
               <input
                 v-model="credentialForm.secrets.api_key"
                 class="form-input"
                 type="password"
                 name="credential_api_key"
                 autocomplete="new-password"
-                :placeholder="$t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY_PLACEHOLDER')"
+                :placeholder="
+                  $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.API_KEY_PLACEHOLDER')
+                "
               />
             </label>
           </div>
@@ -508,9 +615,11 @@ export default {
             />
             <NextButton
               type="submit"
-              :label="isEditingCredential
-                ? $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.UPDATE')
-                : $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.SAVE')"
+              :label="
+                isEditingCredential
+                  ? $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.UPDATE')
+                  : $t('ADAKI.CAPTAIN.CREDENTIALS.FORM.SAVE')
+              "
               sm
               :is-loading="uiFlags.isSavingCredential"
               @click="saveCredential"

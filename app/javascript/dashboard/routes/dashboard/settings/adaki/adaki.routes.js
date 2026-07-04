@@ -51,7 +51,10 @@ export default {
           path: 'captain',
           name: 'adaki_captain_settings',
           meta,
-          redirect: to => ({ name: 'adaki_providers_index', params: to.params }),
+          redirect: to => ({
+            name: 'adaki_providers_index',
+            params: to.params,
+          }),
         },
         {
           path: 'providers',

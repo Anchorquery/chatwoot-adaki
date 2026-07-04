@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import PortalSwitcher from './PortalSwitcher.vue';
 
 const portals = [

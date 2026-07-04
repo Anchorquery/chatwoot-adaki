@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import FeatureSpotlight from './FeatureSpotlight.vue';
 </script>
 

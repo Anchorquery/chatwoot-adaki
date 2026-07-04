@@ -21,7 +21,9 @@ const onClick = () => {
   <div
     class="mb-6 rounded-2xl border border-n-weak bg-gradient-to-br from-n-slate-2 via-n-slate-1 to-n-slate-3 p-5"
   >
-    <p class="m-0 text-xs font-semibold uppercase tracking-[0.2em] text-n-slate-11">
+    <p
+      class="m-0 text-xs font-semibold uppercase tracking-[0.2em] text-n-slate-11"
+    >
       {{ $t('CAPTAIN.DOCUMENTS.EMPTY_STATE.KNOWLEDGE_PANEL.TITLE') }}
     </p>
     <div class="mt-4 grid gap-3 md:grid-cols-3">
@@ -30,7 +32,9 @@ const onClick = () => {
           {{ $t('CAPTAIN.DOCUMENTS.EMPTY_STATE.KNOWLEDGE_PANEL.PDFS.TITLE') }}
         </p>
         <p class="mt-1 mb-0 text-sm text-n-slate-11">
-          {{ $t('CAPTAIN.DOCUMENTS.EMPTY_STATE.KNOWLEDGE_PANEL.PDFS.SUBTITLE') }}
+          {{
+            $t('CAPTAIN.DOCUMENTS.EMPTY_STATE.KNOWLEDGE_PANEL.PDFS.SUBTITLE')
+          }}
         </p>
       </div>
       <div class="rounded-xl border border-n-weak bg-n-alpha-2 p-4">
@@ -46,7 +50,9 @@ const onClick = () => {
           {{ $t('CAPTAIN.DOCUMENTS.EMPTY_STATE.KNOWLEDGE_PANEL.SYNC.TITLE') }}
         </p>
         <p class="mt-1 mb-0 text-sm text-n-slate-11">
-          {{ $t('CAPTAIN.DOCUMENTS.EMPTY_STATE.KNOWLEDGE_PANEL.SYNC.SUBTITLE') }}
+          {{
+            $t('CAPTAIN.DOCUMENTS.EMPTY_STATE.KNOWLEDGE_PANEL.SYNC.SUBTITLE')
+          }}
         </p>
       </div>
     </div>

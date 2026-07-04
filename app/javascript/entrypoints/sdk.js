@@ -1,4 +1,4 @@
-﻿import Cookies from 'js-cookie';
+import Cookies from 'js-cookie';
 import { IFrameHelper } from '../sdk/IFrameHelper';
 import {
   getBubbleView,

@@ -59,7 +59,14 @@ export default {
       return a ? a.name : `#${id}`;
     },
     statusColor(s) {
-      return { active: 'teal', scheduled: 'amber', ended: 'slate', cancelled: 'ruby' }[s] || 'slate';
+      return (
+        {
+          active: 'teal',
+          scheduled: 'amber',
+          ended: 'slate',
+          cancelled: 'ruby',
+        }[s] || 'slate'
+      );
     },
     fmt(d) {
       return d ? new Date(d).toLocaleString() : '-';
@@ -84,7 +91,9 @@ export default {
       this.$store
         .dispatch('adakiAbsences/delete', this.selected.id)
         .then(() => useAlert(this.$t('ADAKI.ABSENCES.ALERTS.CANCELLED')))
-        .catch(e => useAlert(e.message || this.$t('ADAKI.ABSENCES.ALERTS.ERROR')))
+        .catch(e =>
+          useAlert(e.message || this.$t('ADAKI.ABSENCES.ALERTS.ERROR'))
+        )
         .finally(() => {
           this.showDeletePopup = false;
           this.selected = null;
@@ -95,7 +104,10 @@ export default {
 </script>
 
 <template>
-  <SettingsLayout :is-loading="uiFlags.isFetching" :loading-message="$t('ADAKI.ABSENCES.LOADING')">
+  <SettingsLayout
+    :is-loading="uiFlags.isFetching"
+    :loading-message="$t('ADAKI.ABSENCES.LOADING')"
+  >
     <template #header>
       <BaseSettingsHeader
         :title="$t('ADAKI.ABSENCES.HEADER')"
@@ -103,7 +115,11 @@ export default {
         :show-back-button="false"
       >
         <template #actions>
-          <NextButton :label="$t('ADAKI.ABSENCES.ADD_ACTION')" size="sm" @click="openAdd" />
+          <NextButton
+            :label="$t('ADAKI.ABSENCES.ADD_ACTION')"
+            size="sm"
+            @click="openAdd"
+          />
         </template>
       </BaseSettingsHeader>
     </template>
@@ -117,16 +133,27 @@ export default {
           <BaseTableRow v-for="a in items" :key="a.id" :item="a">
             <template #default>
               <BaseTableCell>{{ userName(a.user_id) }}</BaseTableCell>
-              <BaseTableCell>{{ a.coverage_user_id ? userName(a.coverage_user_id) : '—' }}</BaseTableCell>
+              <BaseTableCell>
+                {{ a.coverage_user_id ? userName(a.coverage_user_id) : '—' }}
+              </BaseTableCell>
               <BaseTableCell>{{ fmt(a.start_at) }}</BaseTableCell>
               <BaseTableCell>{{ fmt(a.end_at) }}</BaseTableCell>
               <BaseTableCell>
-                <WootLabel :label="a.status" :color="statusColor(a.status)" compact />
+                <WootLabel
+                  :label="a.status"
+                  :color="statusColor(a.status)"
+                  compact
+                />
               </BaseTableCell>
               <BaseTableCell>{{ a.reason || '—' }}</BaseTableCell>
               <BaseTableCell align="end">
                 <div class="flex justify-end gap-1">
-                  <NextButton icon="i-lucide-pencil" slate sm @click="openEdit(a)" />
+                  <NextButton
+                    icon="i-lucide-pencil"
+                    slate
+                    sm
+                    @click="openEdit(a)"
+                  />
                   <NextButton
                     v-if="a.status !== 'cancelled'"
                     icon="i-woot-bin"

@@ -143,7 +143,9 @@ onMounted(() => {
         class="md:col-span-2"
         :label="$t('CAPTAIN.MCP.FORM.ENDPOINT_URL')"
         :message="
-          v$.endpoint_url.$error ? $t('CAPTAIN.MCP.FORM.ERRORS.ENDPOINT_URL') : ''
+          v$.endpoint_url.$error
+            ? $t('CAPTAIN.MCP.FORM.ERRORS.ENDPOINT_URL')
+            : ''
         "
         :message-type="v$.endpoint_url.$error ? 'error' : 'info'"
       />
@@ -156,7 +158,10 @@ onMounted(() => {
           :options="credentialOptions"
           :placeholder="$t('CAPTAIN.MCP.FORM.CREDENTIAL_PLACEHOLDER')"
         />
-        <div v-if="!credentials.length" class="flex flex-wrap items-center gap-2">
+        <div
+          v-if="!credentials.length"
+          class="flex flex-wrap items-center gap-2"
+        >
           <p class="text-xs text-n-slate-11">
             {{ $t('CAPTAIN.MCP.FORM.NO_CREDENTIAL_HELP') }}
           </p>
@@ -193,7 +198,11 @@ onMounted(() => {
         type="submit"
         color="blue"
         :is-loading="false"
-        :label="mode === 'edit' ? $t('CAPTAIN.MCP.FORM.SAVE') : $t('CAPTAIN.MCP.FORM.CREATE')"
+        :label="
+          mode === 'edit'
+            ? $t('CAPTAIN.MCP.FORM.SAVE')
+            : $t('CAPTAIN.MCP.FORM.CREATE')
+        "
       />
     </div>
   </form>

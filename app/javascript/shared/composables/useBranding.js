@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Composable for branding-related utilities
  * Provides methods to customize text with installation-specific branding
  */
@@ -18,7 +18,8 @@ export function useBranding() {
   const replaceInstallationName = text => {
     if (!text) return text;
 
-    const installationName = globalConfig.value?.installationName || DEFAULT_BRAND;
+    const installationName =
+      globalConfig.value?.installationName || DEFAULT_BRAND;
     if (!installationName) return text;
 
     return text.replace(BRAND_REGEX, installationName);

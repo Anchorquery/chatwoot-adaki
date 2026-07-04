@@ -14,6 +14,7 @@ export function usePolicy() {
   const user = useMapGetter('getCurrentUser');
   const isFeatureEnabled = useMapGetter('accounts/isFeatureEnabledonAccount');
   const isOnChatwootCloud = useMapGetter('globalConfig/isOnChatwootCloud');
+  // eslint-disable-next-line no-unused-vars -- kept for reference, see shouldShowPaywall below
   const isACustomBrandedInstance = useMapGetter(
     'globalConfig/isACustomBrandedInstance'
   );
@@ -50,11 +51,13 @@ export function usePolicy() {
     return true;
   };
 
+  // eslint-disable-next-line no-unused-vars -- kept for reference, see shouldShowPaywall below
   const isPremiumFeature = featureFlag => {
     if (!featureFlag) return true;
     return PREMIUM_FEATURES.includes(featureFlag);
   };
 
+  // eslint-disable-next-line no-unused-vars -- kept for reference, see shouldShowPaywall below
   const hasPremiumEnterprise = computed(() => {
     if (isEnterprise) return enterprisePlanName !== 'community';
 

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue';
 import Auth from 'dashboard/api/auth';
 import { useMapGetter } from 'dashboard/composables/store';

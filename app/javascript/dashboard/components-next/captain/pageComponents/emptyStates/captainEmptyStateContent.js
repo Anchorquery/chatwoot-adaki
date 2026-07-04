@@ -1,4 +1,4 @@
-﻿import { INBOX_TYPES } from 'dashboard/helper/inbox';
+import { INBOX_TYPES } from 'dashboard/helper/inbox';
 
 export const assistantsList = [
   {
@@ -109,8 +109,7 @@ export const documentsList = [
   {
     account_id: 5,
     assistant: { id: 5, name: 'TicketBot' },
-    content:
-      'How to efficiently create, manage, and resolve tickets in Adaki.',
+    content: 'How to efficiently create, manage, and resolve tickets in Adaki.',
     created_at: 1736143276,
     external_link:
       'https://www.chatwoot.com/hc/user-guide/articles/1677688230-managing-tickets',

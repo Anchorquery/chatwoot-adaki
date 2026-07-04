@@ -1,4 +1,4 @@
-﻿import {
+import {
   SET_BUBBLE_VISIBILITY,
   SET_COLOR_SCHEME,
   SET_REFERRER_HOST,

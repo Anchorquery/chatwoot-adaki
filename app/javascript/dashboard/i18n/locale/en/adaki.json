@@ -246,6 +246,10 @@
         "DISABLE_ALL": "Disable all",
         "EMPTY": "No models. Use Sync or Import.",
         "OBSOLETE": "Obsolete",
+        "CONTEXT_WINDOW_LABEL": "{tokens}k ctx",
+        "MAX_OUTPUT_LABEL": "{tokens}k out",
+        "INPUT_PRICE_LABEL": "{price} in",
+        "OUTPUT_PRICE_LABEL": "{price} out",
         "KINDS": {
           "ALL": "All",
           "CHAT": "Chat",

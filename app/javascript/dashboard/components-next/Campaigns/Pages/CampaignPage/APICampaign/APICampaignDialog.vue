@@ -32,7 +32,9 @@ const apiCampaignFormRef = ref(null);
 const uiFlags = useMapGetter('campaigns/getUIFlags');
 const isUpdatingCampaign = computed(() => uiFlags.value.isUpdating);
 const isCreatingCampaign = computed(() => uiFlags.value.isCreating);
-const isBusy = computed(() => isUpdatingCampaign.value || isCreatingCampaign.value);
+const isBusy = computed(
+  () => isUpdatingCampaign.value || isCreatingCampaign.value
+);
 
 const isInvalidForm = computed(
   () => apiCampaignFormRef.value?.isSubmitDisabled ?? true

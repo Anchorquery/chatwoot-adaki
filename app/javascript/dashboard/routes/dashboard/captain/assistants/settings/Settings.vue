@@ -85,8 +85,7 @@ const handleGenerated = async data => {
   // spread del config entero descartaba keys ausentes en Vuex (e.g.
   // autopilot_enabled = undefined) y silenciaba el bot.
   const configUpdate = {};
-  if (data.handoff_message)
-    configUpdate.handoff_message = data.handoff_message;
+  if (data.handoff_message) configUpdate.handoff_message = data.handoff_message;
   if (data.resolution_message)
     configUpdate.resolution_message = data.resolution_message;
   if (Object.keys(configUpdate).length) {
@@ -97,9 +96,7 @@ const handleGenerated = async data => {
     try {
       await store.dispatch('captainAssistants/update', updatePayload);
     } catch (error) {
-      useAlert(
-        error?.message || t('CAPTAIN.ASSISTANTS.EDIT.ERROR_MESSAGE')
-      );
+      useAlert(error?.message || t('CAPTAIN.ASSISTANTS.EDIT.ERROR_MESSAGE'));
     }
   }
 };

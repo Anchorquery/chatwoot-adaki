@@ -1,4 +1,4 @@
-﻿import types from '../../mutation-types';
+import types from '../../mutation-types';
 import ConversationApi from '../../../api/inbox/conversation';
 import MessageApi from '../../../api/inbox/message';
 import { MESSAGE_STATUS, MESSAGE_TYPE } from 'shared/constants/messages';

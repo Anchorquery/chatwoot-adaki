@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';

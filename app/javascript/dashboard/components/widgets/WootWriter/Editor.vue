@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 // TODO This is a huge component, we should split this up into separate composables
 // like `useSignature`, `useImageHandling`, `useFileUpload`, `useSpecialContent``
 import {

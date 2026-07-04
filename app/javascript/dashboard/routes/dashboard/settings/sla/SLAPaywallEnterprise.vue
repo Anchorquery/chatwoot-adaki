@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import BasePaywallModal from 'dashboard/routes/dashboard/settings/components/BasePaywallModal.vue';
 
 const props = defineProps({

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, computed, watch, onMounted, useTemplateRef } from 'vue';
 
 import {

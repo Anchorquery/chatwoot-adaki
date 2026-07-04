@@ -1,4 +1,4 @@
-﻿import {
+import {
   ANALYTICS_IDENTITY,
   CHATWOOT_RESET,
   CHATWOOT_SET_USER,

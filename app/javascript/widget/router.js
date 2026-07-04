@@ -1,4 +1,4 @@
-﻿import { createRouter, createWebHashHistory } from 'vue-router';
+import { createRouter, createWebHashHistory } from 'vue-router';
 import ViewWithHeader from './components/layouts/ViewWithHeader.vue';
 import store from './store';
 

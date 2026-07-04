@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { useRouter } from 'vue-router';
 import { useMapGetter } from 'dashboard/composables/store';
 import BasePaywallModal from 'dashboard/routes/dashboard/settings/components/BasePaywallModal.vue';

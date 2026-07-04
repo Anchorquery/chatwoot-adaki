@@ -13,10 +13,9 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['deleted']);
 const { t } = useI18n();
 const store = useStore();
-const emit = defineEmits(['deleted']);
-
 const dialogRef = ref(null);
 
 const deleteCampaign = async id => {

@@ -98,7 +98,10 @@ const handleDialogClose = () => {
     </template>
 
     <template #filters>
-      <CampaignFilterBar :model-value="filters" @update:model-value="onFilterChange" />
+      <CampaignFilterBar
+        :model-value="filters"
+        @update:model-value="onFilterChange"
+      />
     </template>
 
     <div

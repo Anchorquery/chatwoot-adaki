@@ -99,12 +99,22 @@ const handleAction = ({ action, value }) => {
     <div class="flex items-start justify-between w-full gap-3">
       <div class="min-w-0">
         <div class="flex items-center gap-2">
-          <span class="text-base font-medium text-n-slate-12 truncate">{{ name }}</span>
+          <span class="text-base font-medium text-n-slate-12 truncate">{{
+            name
+          }}</span>
           <span
             class="inline-flex items-center px-2 py-0.5 text-xs rounded-md"
-            :class="enabled ? 'bg-n-teal-2 text-n-teal-11' : 'bg-n-weak text-n-slate-11'"
+            :class="
+              enabled
+                ? 'bg-n-teal-2 text-n-teal-11'
+                : 'bg-n-weak text-n-slate-11'
+            "
           >
-            {{ enabled ? t('CAPTAIN.MCP.STATUS.ENABLED') : t('CAPTAIN.MCP.STATUS.DISABLED') }}
+            {{
+              enabled
+                ? t('CAPTAIN.MCP.STATUS.ENABLED')
+                : t('CAPTAIN.MCP.STATUS.DISABLED')
+            }}
           </span>
         </div>
         <p class="mt-1 text-sm text-n-slate-11 line-clamp-2">

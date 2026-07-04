@@ -37,7 +37,10 @@ export const actions = {
       commit(types.SET_ADAKI_AUDIT_VERIFY, data);
       return data;
     } catch (error) {
-      commit(types.SET_ADAKI_AUDIT_VERIFY, { valid: false, error: error.message });
+      commit(types.SET_ADAKI_AUDIT_VERIFY, {
+        valid: false,
+        error: error.message,
+      });
     } finally {
       commit(types.SET_ADAKI_AUDIT_UI_FLAG, { isVerifying: false });
     }

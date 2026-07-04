@@ -114,7 +114,10 @@ const prepareDocumentDetails = () => {
     formData.append('document[name]', state.name || normalizedUrl);
     formData.append('document[metadata][crawl_mode]', 'website');
     formData.append('document[metadata][crawl_root_url]', normalizedUrl);
-    formData.append('document[metadata][crawl_depth]', String(state.crawlDepth));
+    formData.append(
+      'document[metadata][crawl_depth]',
+      String(state.crawlDepth)
+    );
   } else {
     formData.append('document[pdf_file]', state.pdfFile);
     formData.append(
@@ -149,8 +152,11 @@ const handleSubmit = async () => {
         {{ t('CAPTAIN.DOCUMENTS.FORM.HELP_PANEL.SUBTITLE') }}
       </p>
       <div class="mt-4 grid gap-2 sm:grid-cols-3">
+        <!-- eslint-disable vue/no-bare-strings-in-template -- ordinal digits, not translatable text -->
         <div class="rounded-lg bg-n-alpha-2 px-3 py-2">
-          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11">
+          <p
+            class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11"
+          >
             01
           </p>
           <p class="mt-1 mb-0 text-sm text-n-slate-12">
@@ -158,7 +164,9 @@ const handleSubmit = async () => {
           </p>
         </div>
         <div class="rounded-lg bg-n-alpha-2 px-3 py-2">
-          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11">
+          <p
+            class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11"
+          >
             02
           </p>
           <p class="mt-1 mb-0 text-sm text-n-slate-12">
@@ -166,13 +174,16 @@ const handleSubmit = async () => {
           </p>
         </div>
         <div class="rounded-lg bg-n-alpha-2 px-3 py-2">
-          <p class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11">
+          <p
+            class="m-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-n-slate-11"
+          >
             03
           </p>
           <p class="mt-1 mb-0 text-sm text-n-slate-12">
             {{ t('CAPTAIN.DOCUMENTS.FORM.HELP_PANEL.STEP_THREE') }}
           </p>
         </div>
+        <!-- eslint-enable vue/no-bare-strings-in-template -->
       </div>
     </div>
 

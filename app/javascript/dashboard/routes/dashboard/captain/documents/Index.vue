@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed, onUnmounted, ref, nextTick, watch } from 'vue';
 import { useTimeoutPoll } from '@vueuse/core';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
@@ -442,10 +442,16 @@ onUnmounted(() => {
     <template #body>
       <LimitBanner class="mb-5" />
 
-      <div class="mb-5 rounded-2xl border border-n-weak bg-gradient-to-br from-n-slate-2 via-n-slate-1 to-n-slate-3 p-5">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div
+        class="mb-5 rounded-2xl border border-n-weak bg-gradient-to-br from-n-slate-2 via-n-slate-1 to-n-slate-3 p-5"
+      >
+        <div
+          class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+        >
           <div class="max-w-2xl">
-            <p class="m-0 text-xs font-semibold uppercase tracking-[0.2em] text-n-slate-11">
+            <p
+              class="m-0 text-xs font-semibold uppercase tracking-[0.2em] text-n-slate-11"
+            >
               {{ $t('CAPTAIN.DOCUMENTS.OVERVIEW.KICKER') }}
             </p>
             <h2 class="mt-2 text-xl font-semibold text-n-slate-12">
@@ -455,13 +461,17 @@ onUnmounted(() => {
               {{ $t('CAPTAIN.DOCUMENTS.OVERVIEW.SUBTITLE') }}
             </p>
           </div>
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 lg:min-w-[42rem]">
+          <div
+            class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 lg:min-w-[42rem]"
+          >
             <div
               v-for="stat in knowledgeStats"
               :key="stat.label"
               class="rounded-xl border border-n-weak bg-n-alpha-2 px-4 py-3"
             >
-              <p class="m-0 text-xs font-medium uppercase tracking-wide text-n-slate-11">
+              <p
+                class="m-0 text-xs font-medium uppercase tracking-wide text-n-slate-11"
+              >
                 {{ stat.label }}
               </p>
               <p

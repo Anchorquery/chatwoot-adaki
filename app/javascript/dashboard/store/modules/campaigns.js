@@ -72,7 +72,12 @@ export const actions = {
   ) {
     commit(types.SET_CAMPAIGN_UI_FLAG, { isFetching: true });
     try {
-      const response = await CampaignsAPI.list({ page, status, channelTypes, q });
+      const response = await CampaignsAPI.list({
+        page,
+        status,
+        channelTypes,
+        q,
+      });
       const { payload, meta } = response.data;
       if (payload !== undefined) {
         // paginated response

@@ -33,10 +33,11 @@ export default {
     ...mapGetters({
       campaigns: 'campaigns/getAllCampaigns',
       uiFlags: 'adakiApprovals/getUIFlags',
-      currentUser: 'getCurrentUser',
     }),
     pendingCampaigns() {
-      return this.campaigns.filter(c => c.requires_approval && c.approval_status === 'pending');
+      return this.campaigns.filter(
+        c => c.requires_approval && c.approval_status === 'pending'
+      );
     },
     headers() {
       return [
@@ -53,7 +54,9 @@ export default {
   },
   methods: {
     statusColor(s) {
-      return { pending: 'amber', approved: 'teal', rejected: 'ruby' }[s] || 'slate';
+      return (
+        { pending: 'amber', approved: 'teal', rejected: 'ruby' }[s] || 'slate'
+      );
     },
     open(campaign, type) {
       this.selected = campaign;
@@ -62,7 +65,10 @@ export default {
       this.showActionModal = true;
     },
     async submit() {
-      const action = this.actionType === 'approve' ? 'adakiApprovals/approve' : 'adakiApprovals/reject';
+      const action =
+        this.actionType === 'approve'
+          ? 'adakiApprovals/approve'
+          : 'adakiApprovals/reject';
       try {
         await this.$store.dispatch(action, {
           campaignId: this.selected.display_id || this.selected.id,
@@ -94,20 +100,39 @@ export default {
       />
     </template>
     <template #body>
-      <BaseTable :headers="headers" :items="pendingCampaigns" :no-data-message="$t('ADAKI.APPROVALS.EMPTY')">
+      <BaseTable
+        :headers="headers"
+        :items="pendingCampaigns"
+        :no-data-message="$t('ADAKI.APPROVALS.EMPTY')"
+      >
         <template #row="{ items }">
           <BaseTableRow v-for="c in items" :key="c.id" :item="c">
             <template #default>
               <BaseTableCell>{{ c.title }}</BaseTableCell>
               <BaseTableCell>{{ c.inbox?.name || '—' }}</BaseTableCell>
-              <BaseTableCell>{{ c.sender?.name || c.sender?.email || '—' }}</BaseTableCell>
               <BaseTableCell>
-                <WootLabel :label="c.approval_status" :color="statusColor(c.approval_status)" compact />
+                {{ c.sender?.name || c.sender?.email || '—' }}
+              </BaseTableCell>
+              <BaseTableCell>
+                <WootLabel
+                  :label="c.approval_status"
+                  :color="statusColor(c.approval_status)"
+                  compact
+                />
               </BaseTableCell>
               <BaseTableCell align="end">
                 <div class="flex justify-end gap-1">
-                  <NextButton :label="$t('ADAKI.APPROVALS.APPROVE')" sm @click="open(c, 'approve')" />
-                  <NextButton :label="$t('ADAKI.APPROVALS.REJECT')" sm ruby @click="open(c, 'reject')" />
+                  <NextButton
+                    :label="$t('ADAKI.APPROVALS.APPROVE')"
+                    sm
+                    @click="open(c, 'approve')"
+                  />
+                  <NextButton
+                    :label="$t('ADAKI.APPROVALS.REJECT')"
+                    sm
+                    ruby
+                    @click="open(c, 'reject')"
+                  />
                 </div>
               </BaseTableCell>
             </template>
@@ -115,20 +140,38 @@ export default {
         </template>
       </BaseTable>
 
-      <woot-modal v-model:show="showActionModal" :on-close="() => (showActionModal = false)">
+      <woot-modal
+        v-model:show="showActionModal"
+        :on-close="() => (showActionModal = false)"
+      >
         <div class="p-6 w-[420px]">
           <h2 class="text-heading-2 mb-3">
-            {{ actionType === 'approve' ? $t('ADAKI.APPROVALS.MODAL.TITLE_APPROVE') : $t('ADAKI.APPROVALS.MODAL.TITLE_REJECT') }}
+            {{
+              actionType === 'approve'
+                ? $t('ADAKI.APPROVALS.MODAL.TITLE_APPROVE')
+                : $t('ADAKI.APPROVALS.MODAL.TITLE_REJECT')
+            }}
           </h2>
           <p class="text-body-main mb-3">{{ selected?.title }}</p>
           <label class="flex flex-col gap-1 mb-3">
-            <span class="text-body-main">{{ $t('ADAKI.APPROVALS.MODAL.NOTE_LABEL') }}</span>
+            <span class="text-body-main">{{
+              $t('ADAKI.APPROVALS.MODAL.NOTE_LABEL')
+            }}</span>
             <textarea v-model="note" rows="3" class="form-input" />
           </label>
           <div class="flex justify-end gap-2">
-            <NextButton :label="$t('ADAKI.APPROVALS.MODAL.CANCEL')" slate sm @click="showActionModal = false" />
             <NextButton
-              :label="actionType === 'approve' ? $t('ADAKI.APPROVALS.APPROVE') : $t('ADAKI.APPROVALS.REJECT')"
+              :label="$t('ADAKI.APPROVALS.MODAL.CANCEL')"
+              slate
+              sm
+              @click="showActionModal = false"
+            />
+            <NextButton
+              :label="
+                actionType === 'approve'
+                  ? $t('ADAKI.APPROVALS.APPROVE')
+                  : $t('ADAKI.APPROVALS.REJECT')
+              "
               sm
               :ruby="actionType === 'reject'"
               :is-loading="uiFlags.isApproving || uiFlags.isRejecting"

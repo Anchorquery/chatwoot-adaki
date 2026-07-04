@@ -1,4 +1,4 @@
-﻿import MessageFormatter from '../helpers/MessageFormatter';
+import MessageFormatter from '../helpers/MessageFormatter';
 
 /**
  * A composable providing utility functions for message formatting.

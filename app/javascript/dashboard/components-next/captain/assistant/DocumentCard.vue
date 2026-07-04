@@ -173,9 +173,7 @@ const displayLink = computed(() =>
 const linkIcon = computed(() =>
   isPdf.value ? 'i-ph-file-pdf' : 'i-ph-link-simple'
 );
-const isWebsiteCrawl = computed(
-  () => props.metadata?.crawl_mode === 'website'
-);
+const isWebsiteCrawl = computed(() => props.metadata?.crawl_mode === 'website');
 const hasCrawlProgress = computed(
   () =>
     isWebsiteCrawl.value &&
@@ -190,13 +188,13 @@ const crawlProgressPercent = computed(() => {
 
   return Math.min(Math.max(value, 0), 100);
 });
-const sourceLabel = computed(() =>
-  isWebsiteCrawl.value
-    ? t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.WEBSITE_CRAWL')
-    : isPdf.value
-    ? t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.PDF')
-    : t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.WEB')
-);
+const sourceLabel = computed(() => {
+  if (isWebsiteCrawl.value) {
+    return t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.WEBSITE_CRAWL');
+  }
+  if (isPdf.value) return t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.PDF');
+  return t('CAPTAIN.DOCUMENTS.SOURCE_LABELS.WEB');
+});
 
 const handleAction = ({ action, value }) => {
   toggleDropdown(false);
@@ -306,7 +304,9 @@ const handleRetry = () => {
       v-if="hasCrawlProgress"
       class="flex flex-col gap-1 rounded-lg border border-n-weak bg-n-slate-2/60 px-3 py-2"
     >
-      <div class="flex items-center justify-between gap-3 text-xs text-n-slate-11">
+      <div
+        class="flex items-center justify-between gap-3 text-xs text-n-slate-11"
+      >
         <span>
           {{
             t('CAPTAIN.DOCUMENTS.CRAWL_PROGRESS', {
@@ -315,9 +315,7 @@ const handleRetry = () => {
             })
           }}
         </span>
-        <span class="tabular-nums">
-          {{ crawlProgressPercent }}%
-        </span>
+        <span class="tabular-nums"> {{ crawlProgressPercent }}% </span>
       </div>
       <progress
         class="h-1.5 w-full overflow-hidden rounded-full bg-n-slate-3 [&::-webkit-progress-bar]:bg-n-slate-3 [&::-webkit-progress-value]:bg-n-brand-10 [&::-moz-progress-bar]:bg-n-brand-10"

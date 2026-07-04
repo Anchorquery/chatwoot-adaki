@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref } from 'vue';
 import Dialog from './Dialog.vue';
 import Button from 'dashboard/components-next/button/Button.vue';

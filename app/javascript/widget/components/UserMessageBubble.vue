@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { getContrastingTextColor } from '@chatwoot/utils';
 

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getFileInfo } from '@chatwoot/utils';

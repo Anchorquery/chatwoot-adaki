@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue';
 import 'highlight.js/styles/default.css';
 import 'highlight.js/lib/common';

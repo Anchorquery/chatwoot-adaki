@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, reactive, watch, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore, useMapGetter } from 'dashboard/composables/store';

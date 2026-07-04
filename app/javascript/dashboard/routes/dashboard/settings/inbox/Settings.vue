@@ -1131,7 +1131,9 @@ export default {
                       @input="handleFeatureFlag"
                     />
                     <label for="continue_bot_after_assignment">
-                      {{ $t('INBOX_MGMT.FEATURES.CONTINUE_BOT_AFTER_ASSIGNMENT') }}
+                      {{
+                        $t('INBOX_MGMT.FEATURES.CONTINUE_BOT_AFTER_ASSIGNMENT')
+                      }}
                     </label>
                   </div>
                   <div class="flex gap-2 py-0.5">
@@ -1142,7 +1144,11 @@ export default {
                       @input="handleFeatureFlag"
                     />
                     <label for="show_assignment_handoff_message">
-                      {{ $t('INBOX_MGMT.FEATURES.SHOW_ASSIGNMENT_HANDOFF_MESSAGE') }}
+                      {{
+                        $t(
+                          'INBOX_MGMT.FEATURES.SHOW_ASSIGNMENT_HANDOFF_MESSAGE'
+                        )
+                      }}
                     </label>
                   </div>
                 </div>
@@ -1222,7 +1228,6 @@ export default {
                   isContinuityDisabled ? 'cursor-not-allowed opacity-50' : ''
                 "
               />
-
             </SettingsAccordion>
 
             <div class="w-full flex justify-end items-center py-4 mt-2">

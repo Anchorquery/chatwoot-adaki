@@ -41,7 +41,9 @@ const handleSubmit = async serverDetails => {
     useAlert(t(`${i18nKey.value}.SUCCESS_MESSAGE`));
     dialogRef.value.close();
   } catch (error) {
-    useAlert(parseAPIErrorResponse(error) || t(`${i18nKey.value}.ERROR_MESSAGE`));
+    useAlert(
+      parseAPIErrorResponse(error) || t(`${i18nKey.value}.ERROR_MESSAGE`)
+    );
   }
 };
 

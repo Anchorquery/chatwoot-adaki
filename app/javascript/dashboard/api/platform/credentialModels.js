@@ -41,7 +41,10 @@ class PlatformCredentialModelsAPI extends ApiClient {
   }
 
   bulkToggle(credentialId, { enabled, kind } = {}) {
-    return axios.post(`${this.modelsUrl(credentialId)}/bulk_toggle`, { enabled, kind });
+    return axios.post(`${this.modelsUrl(credentialId)}/bulk_toggle`, {
+      enabled,
+      kind,
+    });
   }
 }
 

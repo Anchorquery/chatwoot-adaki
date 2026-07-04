@@ -11,6 +11,9 @@ import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Editor from 'dashboard/components-next/Editor/Editor.vue';
 
 defineProps({
+  // Callers pass this but the Editor field below uses its own hardcoded
+  // i18n placeholder instead; needs a look (see spawned follow-up task).
+  // eslint-disable-next-line vue/no-unused-properties
   placeholder: {
     type: String,
     default: '',
@@ -121,9 +124,7 @@ const onClickCancel = () => {
             v-model="state.title"
             :label="t('CAPTAIN.ASSISTANTS.GUARDRAILS.ADD.NEW.FORM.TITLE.LABEL')"
             :placeholder="
-              t(
-                'CAPTAIN.ASSISTANTS.GUARDRAILS.ADD.NEW.FORM.TITLE.PLACEHOLDER'
-              )
+              t('CAPTAIN.ASSISTANTS.GUARDRAILS.ADD.NEW.FORM.TITLE.PLACEHOLDER')
             "
             :message="titleError"
             :message-type="titleError ? 'error' : 'info'"
@@ -171,11 +172,7 @@ const onClickCancel = () => {
           type="button"
           @click="onClickCancel"
         />
-        <Button
-          :label="confirmLabel"
-          type="button"
-          @click="onClickAdd"
-        />
+        <Button :label="confirmLabel" type="button" @click="onClickAdd" />
       </div>
     </Dialog>
   </div>

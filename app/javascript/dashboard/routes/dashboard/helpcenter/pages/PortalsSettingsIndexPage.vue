@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useUISettings } from 'dashboard/composables/useUISettings';

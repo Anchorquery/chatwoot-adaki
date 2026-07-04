@@ -12,7 +12,7 @@ defineProps({
   },
 });
 
-const emit = defineEmits(['click', 'close']);
+const emit = defineEmits(['click']);
 
 const handleButtonClick = () => {
   emit('click');

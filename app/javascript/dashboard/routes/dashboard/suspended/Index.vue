@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
 import { onMounted } from 'vue';
 

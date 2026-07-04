@@ -116,10 +116,18 @@ const currentDateTime = computed(() => {
 
 const formErrors = computed(() => ({
   title: v$.value.title.$error ? t('CAMPAIGN.API.CREATE.FORM.TITLE.ERROR') : '',
-  message: v$.value.message.$error ? t('CAMPAIGN.API.CREATE.FORM.MESSAGE.ERROR') : '',
-  inbox: v$.value.inboxId.$error ? t('CAMPAIGN.API.CREATE.FORM.INBOX.ERROR') : '',
-  scheduledAt: v$.value.scheduledAt.$error ? t('CAMPAIGN.API.CREATE.FORM.SCHEDULED_AT.ERROR') : '',
-  audience: v$.value.selectedAudience.$error ? t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.ERROR') : '',
+  message: v$.value.message.$error
+    ? t('CAMPAIGN.API.CREATE.FORM.MESSAGE.ERROR')
+    : '',
+  inbox: v$.value.inboxId.$error
+    ? t('CAMPAIGN.API.CREATE.FORM.INBOX.ERROR')
+    : '',
+  scheduledAt: v$.value.scheduledAt.$error
+    ? t('CAMPAIGN.API.CREATE.FORM.SCHEDULED_AT.ERROR')
+    : '',
+  audience: v$.value.selectedAudience.$error
+    ? t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.ERROR')
+    : '',
 }));
 
 const resetState = () => Object.assign(state, defaultState());
@@ -285,12 +293,16 @@ const renderWAMarkdown = text =>
     .replace(/\*((?!\s)[\s\S]*?(?<!\s))\*/g, '<strong>$1</strong>')
     .replace(/_((?!\s)[\s\S]*?(?<!\s))_/g, '<em>$1</em>')
     .replace(/~((?!\s)[\s\S]*?(?<!\s))~/g, '<del>$1</del>')
-    .replace(/`([^`]+)`/g, '<code class="bg-n-alpha-3 px-1 rounded text-xs">$1</code>')
+    .replace(
+      /`([^`]+)`/g,
+      '<code class="bg-n-alpha-3 px-1 rounded text-xs">$1</code>'
+    )
     .replace(/\n/g, '<br>');
 
 const waPreviewHtml = computed(() => renderWAMarkdown(state.message));
 
-const formatToUTCString = value => (value ? new Date(value).toISOString() : null);
+const formatToUTCString = value =>
+  value ? new Date(value).toISOString() : null;
 
 const buildFormData = () => {
   const formData = new FormData();
@@ -298,7 +310,10 @@ const buildFormData = () => {
   formData.append('campaign[title]', state.title);
   formData.append('campaign[message]', state.message);
   formData.append('campaign[inbox_id]', state.inboxId);
-  formData.append('campaign[scheduled_at]', formatToUTCString(state.scheduledAt));
+  formData.append(
+    'campaign[scheduled_at]',
+    formatToUTCString(state.scheduledAt)
+  );
 
   state.selectedAudience.forEach(id => {
     formData.append('campaign[audience][][id]', id);
@@ -313,7 +328,10 @@ const buildFormData = () => {
       .map(text => ({ text })),
   };
 
-  formData.append('campaign[delivery_settings]', JSON.stringify(deliverySettings));
+  formData.append(
+    'campaign[delivery_settings]',
+    JSON.stringify(deliverySettings)
+  );
 
   state.removedExistingAttachmentIds.forEach(id => {
     formData.append('campaign[attachment_ids_to_remove][]', id);
@@ -372,7 +390,11 @@ defineExpose({
         :key="tab"
         type="button"
         class="flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors"
-        :class="activeTab === tab ? 'bg-n-solid-blue text-white' : 'text-n-slate-11 hover:text-n-slate-12'"
+        :class="
+          activeTab === tab
+            ? 'bg-n-solid-blue text-white'
+            : 'text-n-slate-11 hover:text-n-slate-12'
+        "
         @click="activeTab = tab"
       >
         {{ t(`CAMPAIGN.API.TABS.${tab}`) }}
@@ -386,7 +408,9 @@ defineExpose({
         </div>
       </div>
 
-      <div class="flex flex-col gap-2 rounded-xl border border-n-weak bg-n-alpha-2 p-3">
+      <div
+        class="flex flex-col gap-2 rounded-xl border border-n-weak bg-n-alpha-2 p-3"
+      >
         <label class="text-sm font-medium text-n-slate-12">
           {{ t('CAMPAIGN.API.CREATE.FORM.AI.PROMPT_LABEL') }}
         </label>
@@ -403,7 +427,12 @@ defineExpose({
             </label>
             <ComboBox
               v-model="state.aiTone"
-              :options="AI_TONES.map(tone => ({ value: tone, label: t(`CAMPAIGN.API.CREATE.FORM.AI.TONES.${tone}`) }))"
+              :options="
+                AI_TONES.map(tone => ({
+                  value: tone,
+                  label: t(`CAMPAIGN.API.CREATE.FORM.AI.TONES.${tone}`),
+                }))
+              "
               :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.TONE_PLACEHOLDER')"
             />
           </div>
@@ -413,7 +442,12 @@ defineExpose({
             </label>
             <ComboBox
               v-model="state.aiGoal"
-              :options="AI_GOALS.map(goal => ({ value: goal, label: t(`CAMPAIGN.API.CREATE.FORM.AI.GOALS.${goal}`) }))"
+              :options="
+                AI_GOALS.map(goal => ({
+                  value: goal,
+                  label: t(`CAMPAIGN.API.CREATE.FORM.AI.GOALS.${goal}`),
+                }))
+              "
               :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.GOAL_PLACEHOLDER')"
             />
           </div>
@@ -424,7 +458,9 @@ defineExpose({
             <ComboBox
               v-model="state.aiAssistantId"
               :options="assistantOptions"
-              :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_PLACEHOLDER')"
+              :placeholder="
+                t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_PLACEHOLDER')
+              "
             />
           </div>
           <div class="flex flex-col gap-1">
@@ -433,18 +469,33 @@ defineExpose({
             </label>
             <ComboBox
               v-model="state.aiStyle"
-              :options="AI_STYLES.map(s => ({ value: s, label: t(`CAMPAIGN.API.CREATE.FORM.AI.STYLES.${s}`) }))"
+              :options="
+                AI_STYLES.map(s => ({
+                  value: s,
+                  label: t(`CAMPAIGN.API.CREATE.FORM.AI.STYLES.${s}`),
+                }))
+              "
               :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.STYLE_PLACEHOLDER')"
             />
           </div>
-          <div v-if="state.aiAssistantId" class="flex flex-col gap-1 sm:col-span-2">
+          <div
+            v-if="state.aiAssistantId"
+            class="flex flex-col gap-1 sm:col-span-2"
+          >
             <label class="text-xs font-medium text-n-slate-12">
               {{ t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_LABEL') }}
             </label>
             <ComboBox
               v-model="state.aiContextSource"
-              :options="AI_CONTEXT_SOURCES.map(s => ({ value: s, label: t(`CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCES.${s}`) }))"
-              :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_PLACEHOLDER')"
+              :options="
+                AI_CONTEXT_SOURCES.map(s => ({
+                  value: s,
+                  label: t(`CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCES.${s}`),
+                }))
+              "
+              :placeholder="
+                t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_PLACEHOLDER')
+              "
             />
           </div>
         </div>
@@ -487,8 +538,8 @@ defineExpose({
         show-character-count
         :max-length="1000"
         auto-height
-        :min-height="'6rem'"
-        :max-height="'20rem'"
+        min-height="6rem"
+        max-height="20rem"
         :message="formErrors.message"
         :message-type="formErrors.message ? 'error' : 'info'"
       />
@@ -561,9 +612,14 @@ defineExpose({
             v-model="variant.text"
             class="flex-1"
             auto-height
-            :min-height="'4rem'"
-            :max-height="'16rem'"
-            :placeholder="t('CAMPAIGN.API.CREATE.FORM.VARIANTS.PLACEHOLDER').replace('{num}', index + 1)"
+            min-height="4rem"
+            max-height="16rem"
+            :placeholder="
+              t('CAMPAIGN.API.CREATE.FORM.VARIANTS.PLACEHOLDER').replace(
+                '{num}',
+                index + 1
+              )
+            "
           />
           <Button
             type="button"
@@ -575,11 +631,11 @@ defineExpose({
         </div>
       </div>
 
-        <Button
-          type="button"
-          variant="faded"
-          color="slate"
-          :label="t('CAMPAIGN.API.CREATE.FORM.VARIANTS.ADD_BUTTON')"
+      <Button
+        type="button"
+        variant="faded"
+        color="slate"
+        :label="t('CAMPAIGN.API.CREATE.FORM.VARIANTS.ADD_BUTTON')"
         class="self-start"
         @click="addVariant"
       />
@@ -588,7 +644,9 @@ defineExpose({
     <section v-else-if="activeTab === 'FILES'" class="flex flex-col gap-4">
       <div
         class="rounded-xl border border-dashed border-n-weak p-5 text-center transition-colors"
-        :class="isDragging ? 'border-n-blue-9 bg-n-blue-3' : 'hover:border-n-blue-7'"
+        :class="
+          isDragging ? 'border-n-blue-9 bg-n-blue-3' : 'hover:border-n-blue-7'
+        "
         @dragover.prevent="isDragging = true"
         @dragleave="isDragging = false"
         @drop.prevent="onDrop"
@@ -676,31 +734,51 @@ defineExpose({
           <span class="text-xs font-medium text-n-slate-12">
             {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.DELAY_MESSAGES') }}
           </span>
-          <Input v-model="state.delivery.delay_between_messages_seconds" type="number" min="0" />
+          <Input
+            v-model="state.delivery.delay_between_messages_seconds"
+            type="number"
+            min="0"
+          />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-xs font-medium text-n-slate-12">
             {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.DELAY_BATCHES') }}
           </span>
-          <Input v-model="state.delivery.delay_between_batches_seconds" type="number" min="0" />
+          <Input
+            v-model="state.delivery.delay_between_batches_seconds"
+            type="number"
+            min="0"
+          />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-xs font-medium text-n-slate-12">
             {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_PER_MINUTE') }}
           </span>
-          <Input v-model="state.delivery.max_messages_per_minute" type="number" min="1" />
+          <Input
+            v-model="state.delivery.max_messages_per_minute"
+            type="number"
+            min="1"
+          />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-xs font-medium text-n-slate-12">
             {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_DAILY') }}
           </span>
-          <Input v-model="state.delivery.max_daily_messages" type="number" min="1" />
+          <Input
+            v-model="state.delivery.max_daily_messages"
+            type="number"
+            min="1"
+          />
         </label>
         <label class="flex flex-col gap-1">
           <span class="text-xs font-medium text-n-slate-12">
             {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_FAILURES') }}
           </span>
-          <Input v-model="state.delivery.max_failures_before_pause" type="number" min="1" />
+          <Input
+            v-model="state.delivery.max_failures_before_pause"
+            type="number"
+            min="1"
+          />
         </label>
       </div>
 
@@ -711,10 +789,14 @@ defineExpose({
 
       <label class="flex items-center gap-2 text-sm text-n-slate-11">
         <input v-model="state.delivery.business_hours_only" type="checkbox" />
-        <span>{{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.BUSINESS_HOURS_ONLY') }}</span>
+        <span>{{
+          t('CAMPAIGN.API.CREATE.FORM.DELIVERY.BUSINESS_HOURS_ONLY')
+        }}</span>
       </label>
 
-      <div class="rounded-xl border border-n-weak bg-n-alpha-2 p-3 flex flex-col gap-2">
+      <div
+        class="rounded-xl border border-n-weak bg-n-alpha-2 p-3 flex flex-col gap-2"
+      >
         <label class="flex items-start gap-3 cursor-pointer">
           <input
             v-model="state.delivery.immediate_dispatch"
@@ -726,14 +808,19 @@ defineExpose({
               {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH') }}
             </span>
             <span class="text-xs text-n-slate-10">
-              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH_HELP') }}
+              {{
+                t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH_HELP')
+              }}
             </span>
           </div>
         </label>
       </div>
     </section>
 
-    <div v-if="showActionButtons" class="flex items-center justify-between w-full gap-3">
+    <div
+      v-if="showActionButtons"
+      class="flex items-center justify-between w-full gap-3"
+    >
       <Button
         variant="faded"
         color="slate"
@@ -743,7 +830,11 @@ defineExpose({
         @click="handleCancel"
       />
       <Button
-        :label="t(`CAMPAIGN.API.CREATE.FORM.BUTTONS.${mode === 'edit' ? 'UPDATE' : 'CREATE'}`)"
+        :label="
+          t(
+            `CAMPAIGN.API.CREATE.FORM.BUTTONS.${mode === 'edit' ? 'UPDATE' : 'CREATE'}`
+          )
+        "
         class="w-full"
         type="button"
         :is-loading="isCreating || isUpdating || aiLoading"

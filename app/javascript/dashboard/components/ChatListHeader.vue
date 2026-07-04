@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { formatNumber } from '@chatwoot/utils';

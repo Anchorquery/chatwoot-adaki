@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { useVuelidate } from '@vuelidate/core';
 import { useI18n } from 'vue-i18n';

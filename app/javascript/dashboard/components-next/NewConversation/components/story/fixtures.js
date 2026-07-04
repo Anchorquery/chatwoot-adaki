@@ -1,4 +1,4 @@
-﻿export const contacts = [
+export const contacts = [
   {
     additionalAttributes: {
       city: 'kerala',

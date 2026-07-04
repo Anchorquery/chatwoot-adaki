@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import { mapActions } from 'vuex';
 import { useRouter } from 'vue-router';
 import PreChatForm from '../components/PreChat/Form.vue';

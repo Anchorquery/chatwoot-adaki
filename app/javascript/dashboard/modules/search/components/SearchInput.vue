@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, useTemplateRef, onMounted, onUnmounted } from 'vue';
 import { debounce } from '@chatwoot/utils';
 import RecentSearches from './RecentSearches.vue';

@@ -1,4 +1,3 @@
-/* global axios */
 import ApiClient from '../ApiClient';
 
 class AdakiAbsencesAPI extends ApiClient {

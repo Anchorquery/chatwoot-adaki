@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, onMounted } from 'vue';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import Button from 'dashboard/components-next/button/Button.vue';

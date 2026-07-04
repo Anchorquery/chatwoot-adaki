@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 import AddSLA from './AddSLA.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import BaseSettingsHeader from 'dashboard/routes/dashboard/settings/components/BaseSettingsHeader.vue';

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import CategoriesPage from './CategoriesPage.vue';
 
 const categories = [

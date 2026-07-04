@@ -92,7 +92,10 @@ export default {
 </script>
 
 <template>
-  <SettingsLayout :is-loading="uiFlags.isFetching" :loading-message="$t('ADAKI.TIER.LOADING')">
+  <SettingsLayout
+    :is-loading="uiFlags.isFetching"
+    :loading-message="$t('ADAKI.TIER.LOADING')"
+  >
     <template #header>
       <BaseSettingsHeader
         :title="$t('ADAKI.TIER.HEADER')"
@@ -101,7 +104,11 @@ export default {
       />
     </template>
     <template #body>
-      <BaseTable :headers="headers" :items="channels" :no-data-message="$t('ADAKI.TIER.EMPTY')">
+      <BaseTable
+        :headers="headers"
+        :items="channels"
+        :no-data-message="$t('ADAKI.TIER.EMPTY')"
+      >
         <template #row="{ items }">
           <BaseTableRow v-for="c in items" :key="c.id" :item="c">
             <template #default>
@@ -117,11 +124,17 @@ export default {
                 />
                 <span v-else>—</span>
               </BaseTableCell>
-              <BaseTableCell>{{ c.daily_conversation_limit || '—' }}</BaseTableCell>
+              <BaseTableCell>
+                {{ c.daily_conversation_limit || '—' }}
+              </BaseTableCell>
               <BaseTableCell>{{ fmt(c.tier_checked_at) }}</BaseTableCell>
               <BaseTableCell>
                 <WootLabel
-                  :label="c.tier_locked ? $t('ADAKI.TIER.STATE_LOCKED') : $t('ADAKI.TIER.STATE_OK')"
+                  :label="
+                    c.tier_locked
+                      ? $t('ADAKI.TIER.STATE_LOCKED')
+                      : $t('ADAKI.TIER.STATE_OK')
+                  "
                   :color="c.tier_locked ? 'ruby' : 'teal'"
                   compact
                 />
@@ -149,20 +162,44 @@ export default {
         </template>
       </BaseTable>
 
-      <woot-modal v-model:show="showUnlockModal" :on-close="() => (showUnlockModal = false)">
+      <woot-modal
+        v-model:show="showUnlockModal"
+        :on-close="() => (showUnlockModal = false)"
+      >
         <div class="p-6 w-[420px]">
-          <h2 class="text-heading-2 mb-2">{{ $t('ADAKI.TIER.UNLOCK_MODAL.TITLE') }}</h2>
+          <h2 class="text-heading-2 mb-2">
+            {{ $t('ADAKI.TIER.UNLOCK_MODAL.TITLE') }}
+          </h2>
           <p class="text-body-main mb-3">
-            {{ $t('ADAKI.TIER.UNLOCK_MODAL.CHANNEL') }} {{ selectedChannel?.phone_number }}.
-            {{ $t('ADAKI.TIER.UNLOCK_MODAL.REASON') }}: <strong>{{ selectedChannel?.tier_lock_reason }}</strong>
+            {{ $t('ADAKI.TIER.UNLOCK_MODAL.CHANNEL') }}
+            {{ selectedChannel?.phone_number }}.
+            {{ $t('ADAKI.TIER.UNLOCK_MODAL.REASON') }}:
+            <strong>{{ selectedChannel?.tier_lock_reason }}</strong>
           </p>
           <label class="flex flex-col gap-1 mb-3">
-            <span class="text-body-main">{{ $t('ADAKI.TIER.UNLOCK_MODAL.JUSTIFICATION_LABEL') }}</span>
-            <textarea v-model="unlockReason" rows="3" class="form-input" required />
+            <span class="text-body-main">{{
+              $t('ADAKI.TIER.UNLOCK_MODAL.JUSTIFICATION_LABEL')
+            }}</span>
+            <textarea
+              v-model="unlockReason"
+              rows="3"
+              class="form-input"
+              required
+            />
           </label>
           <div class="flex justify-end gap-2">
-            <NextButton :label="$t('ADAKI.TIER.UNLOCK_MODAL.CANCEL')" slate sm @click="showUnlockModal = false" />
-            <NextButton :label="$t('ADAKI.TIER.UNLOCK_MODAL.CONFIRM')" ruby sm @click="confirmUnlock" />
+            <NextButton
+              :label="$t('ADAKI.TIER.UNLOCK_MODAL.CANCEL')"
+              slate
+              sm
+              @click="showUnlockModal = false"
+            />
+            <NextButton
+              :label="$t('ADAKI.TIER.UNLOCK_MODAL.CONFIRM')"
+              ruby
+              sm
+              @click="confirmUnlock"
+            />
           </div>
         </div>
       </woot-modal>
