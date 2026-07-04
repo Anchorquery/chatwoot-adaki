@@ -13,7 +13,7 @@ class Adaki::CaptainUsageTracker
     raise LimitExceeded, "Captain monthly limit (#{limit}) reached for account #{account.id}"
   end
 
-  def self.record!(account:, user: nil, feature:, input_tokens: 0, output_tokens: 0, assistant_id: nil)
+  def self.record!(account:, feature:, user: nil, input_tokens: 0, output_tokens: 0, assistant_id: nil)
     return if account.nil?
 
     Adaki::CaptainUsage.transaction do

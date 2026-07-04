@@ -7,16 +7,16 @@ module Llm::Config
   # provider. Add a row here + a matching entry in installation_config.yml
   # to expose a new provider in the Super Admin UI.
   PROVIDER_KEYS = {
-    'CAPTAIN_OPEN_AI_API_KEY'      => :openai_api_key,
-    'CAPTAIN_OPEN_AI_ENDPOINT'     => :openai_api_base,
-    'CAPTAIN_ANTHROPIC_API_KEY'    => :anthropic_api_key,
-    'CAPTAIN_GEMINI_API_KEY'       => :gemini_api_key,
-    'CAPTAIN_DEEPSEEK_API_KEY'     => :deepseek_api_key,
-    'CAPTAIN_OPENROUTER_API_KEY'   => :openrouter_api_key,
-    'CAPTAIN_OLLAMA_API_BASE'      => :ollama_api_base,
-    'CAPTAIN_BEDROCK_API_KEY'      => :bedrock_api_key,
-    'CAPTAIN_BEDROCK_SECRET_KEY'   => :bedrock_secret_key,
-    'CAPTAIN_BEDROCK_REGION'       => :bedrock_region
+    'CAPTAIN_OPEN_AI_API_KEY' => :openai_api_key,
+    'CAPTAIN_OPEN_AI_ENDPOINT' => :openai_api_base,
+    'CAPTAIN_ANTHROPIC_API_KEY' => :anthropic_api_key,
+    'CAPTAIN_GEMINI_API_KEY' => :gemini_api_key,
+    'CAPTAIN_DEEPSEEK_API_KEY' => :deepseek_api_key,
+    'CAPTAIN_OPENROUTER_API_KEY' => :openrouter_api_key,
+    'CAPTAIN_OLLAMA_API_BASE' => :ollama_api_base,
+    'CAPTAIN_BEDROCK_API_KEY' => :bedrock_api_key,
+    'CAPTAIN_BEDROCK_SECRET_KEY' => :bedrock_secret_key,
+    'CAPTAIN_BEDROCK_REGION' => :bedrock_region
   }.freeze
 
   class << self
@@ -138,6 +138,7 @@ module Llm::Config
       RubyLLM.configure do |config|
         provider_values.each do |setter, value|
           next unless value.present?
+
           # Some RubyLLM versions may not expose every setter; skip silently.
           config.public_send("#{setter}=", value) if config.respond_to?("#{setter}=")
         end

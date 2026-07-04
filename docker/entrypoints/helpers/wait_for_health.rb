@@ -10,9 +10,7 @@ sleep_seconds = Integer(ENV.fetch('WAIT_FOR_HEALTH_SLEEP', '5'))
 attempts.times do
   begin
     response = Net::HTTP.get_response(url)
-    if response.is_a?(Net::HTTPSuccess)
-      exit 0
-    end
+    exit 0 if response.is_a?(Net::HTTPSuccess)
   rescue StandardError
     # Keep waiting until the service is ready.
   end

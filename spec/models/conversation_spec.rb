@@ -1188,7 +1188,7 @@ RSpec.describe Conversation do
     context 'with a captain assistant that has a long name' do
       let(:assistant) do
         create(:captain_assistant, account: inbox.account, name: 'Asistente Virtual Adaki Soporte',
-                                    config: { 'group_trigger' => 'adaki' })
+                                   config: { 'group_trigger' => 'adaki' })
       end
 
       before { create(:captain_inbox, inbox: inbox, captain_assistant: assistant) }
@@ -1221,7 +1221,7 @@ RSpec.describe Conversation do
     context 'with a configured WhatsApp number (native mention)' do
       let(:assistant) do
         create(:captain_assistant, account: inbox.account, name: 'Adaki',
-                                    config: { 'whatsapp_number' => '+54 9 351 123 4567' })
+                                   config: { 'whatsapp_number' => '+54 9 351 123 4567' })
       end
 
       before { create(:captain_inbox, inbox: inbox, captain_assistant: assistant) }

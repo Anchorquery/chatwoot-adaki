@@ -60,10 +60,11 @@ class NotificationListener < BaseListener
   def create_assignment_handoff_message(conversation, account)
     return unless conversation.inbox.show_assignment_handoff_message?
     return unless conversation.inbox.respond_to?(:captain_active?) && conversation.inbox.captain_active?
+
     assignment_handoff_exists = conversation.messages.outgoing
-                                          .where(private: false)
-                                          .where("additional_attributes ->> 'handoff_type' = ?", 'assignment')
-                                          .exists?
+                                            .where(private: false)
+                                            .where("additional_attributes ->> 'handoff_type' = ?", 'assignment')
+                                            .exists?
     return if assignment_handoff_exists
 
     assistant = conversation.inbox.respond_to?(:captain_assistant) ? conversation.inbox.captain_assistant : nil

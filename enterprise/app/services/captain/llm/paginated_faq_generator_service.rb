@@ -1,4 +1,4 @@
-# NOTE (proveedor): este es el backend de PDF->FAQ para OpenAI (por diseno).
+# NOTE: (proveedor): este es el backend de PDF->FAQ para OpenAI (por diseno).
 # Usa la OpenAI Files API: el PDF se sube una vez (`@document.openai_file_id`) y
 # se referencia con bloques `{ type: 'file', file: { file_id: ... } }` a traves de
 # varias llamadas paginadas. Hereda de Llm::LegacyBaseOpenAiService (gem OpenAI

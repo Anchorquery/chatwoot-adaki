@@ -37,7 +37,7 @@ RSpec.describe Captain::Embeddings::Manager do
       expect(target.provider).to eq('gemini')
     end
 
-    it "honors the model explicitly selected in Captain settings (help_center_search)" do
+    it 'honors the model explicitly selected in Captain settings (help_center_search)' do
       create(:platform_credential, :gemini, account: account)
       account.update!(captain_models: { 'help_center_search' => 'gemini-embedding-001' })
 

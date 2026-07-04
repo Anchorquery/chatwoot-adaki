@@ -4,11 +4,11 @@ module Platform::Models
 
     # Providers handled via OpenAI-compatible /v1/models endpoint
     OPENAI_COMPATIBLE_DEFAULTS = {
-      'openai'     => 'https://api.openai.com/v1',
-      'deepseek'   => 'https://api.deepseek.com/v1',
+      'openai' => 'https://api.openai.com/v1',
+      'deepseek' => 'https://api.deepseek.com/v1',
       'openrouter' => 'https://openrouter.ai/api/v1',
-      'mistral'    => 'https://api.mistral.ai/v1',
-      'groq'       => 'https://api.groq.com/openai/v1'
+      'mistral' => 'https://api.mistral.ai/v1',
+      'groq' => 'https://api.groq.com/openai/v1'
     }.freeze
 
     def initialize(credential)
@@ -253,6 +253,7 @@ module Platform::Models
       return 'video' if s.include?('sora') || s.include?('veo')
       return 'realtime' if s.include?('realtime')
       return 'multimodal' if s.match?(/-4o(\b|-)/) || s.include?('gemini') || s.include?('claude') || s.include?('vision') || s.include?('llava')
+
       'chat'
     end
   end

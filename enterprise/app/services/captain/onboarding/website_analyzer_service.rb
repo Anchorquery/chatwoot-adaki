@@ -1,4 +1,4 @@
-# NOTE (proveedor): provider-aware cuando se le pasa `account:`. Durante el
+# NOTE: (proveedor): provider-aware cuando se le pasa `account:`. Durante el
 # onboarding inicial puede no existir aun una cuenta con proveedor configurado;
 # en ese caso `account` queda nil, `resolver_account` devuelve nil y la
 # resolucion cae al OpenAI install key (comportamiento legacy). Si se le pasa la

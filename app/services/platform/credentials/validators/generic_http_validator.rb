@@ -26,9 +26,9 @@ module Platform::Credentials::Validators
 
     def provider_default_base
       {
-        'deepseek'   => 'https://api.deepseek.com/v1',
-        'mistral'    => 'https://api.mistral.ai/v1',
-        'groq'       => 'https://api.groq.com/openai/v1',
+        'deepseek' => 'https://api.deepseek.com/v1',
+        'mistral' => 'https://api.mistral.ai/v1',
+        'groq' => 'https://api.groq.com/openai/v1',
         'openrouter' => 'https://openrouter.ai/api/v1',
         'perplexity' => 'https://api.perplexity.ai'
       }[@credential.provider]

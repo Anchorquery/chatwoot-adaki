@@ -170,8 +170,8 @@ module Captain::Embeddings
       # Credentials created from the UI store provider 'gemini' (llm.yml key);
       # older rows may carry 'google', so match both.
       gemini_cred = Platform::Credential.active
-                                         .where(account_id: account.id, provider: %w[google gemini])
-                                         .first
+                                        .where(account_id: account.id, provider: %w[google gemini])
+                                        .first
       gemini_cred && embedding_result(gemini_cred, GEMINI_FALLBACK_MODEL)
     end
 

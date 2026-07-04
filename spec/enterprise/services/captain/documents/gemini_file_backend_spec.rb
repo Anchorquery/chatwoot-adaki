@@ -19,7 +19,7 @@ RSpec.describe Captain::Documents::GeminiFileBackend do
     context 'when a non-expired reference is cached' do
       before do
         allow(document).to receive(:gemini_file).and_return(
-          { 'uri' => 'cached-uri', 'mime_type' => 'application/pdf', 'expires_at' => (Time.current + 5.hours).iso8601 }
+          { 'uri' => 'cached-uri', 'mime_type' => 'application/pdf', 'expires_at' => (5.hours.from_now).iso8601 }
         )
       end
 
@@ -39,7 +39,7 @@ RSpec.describe Captain::Documents::GeminiFileBackend do
         allow(client).to receive(:upload).and_return('name' => 'files/abc')
         allow(client).to receive(:wait_until_active).with('files/abc').and_return(
           'uri' => 'https://gen/files/abc', 'mimeType' => 'application/pdf',
-          'name' => 'files/abc', 'expirationTime' => (Time.current + 2.days).iso8601
+          'name' => 'files/abc', 'expirationTime' => (2.days.from_now).iso8601
         )
       end
 
@@ -57,12 +57,12 @@ RSpec.describe Captain::Documents::GeminiFileBackend do
     context 'when the cached reference is expired' do
       before do
         allow(document).to receive(:gemini_file).and_return(
-          { 'uri' => 'old-uri', 'mime_type' => 'application/pdf', 'expires_at' => (Time.current - 1.hour).iso8601 }
+          { 'uri' => 'old-uri', 'mime_type' => 'application/pdf', 'expires_at' => (1.hour.ago).iso8601 }
         )
         allow(blob).to receive(:open).and_yield(StringIO.new('bytes'))
         allow(client).to receive(:upload).and_return('name' => 'files/new')
         allow(client).to receive(:wait_until_active).and_return(
-          'uri' => 'https://gen/files/new', 'mimeType' => 'application/pdf', 'expirationTime' => (Time.current + 2.days).iso8601
+          'uri' => 'https://gen/files/new', 'mimeType' => 'application/pdf', 'expirationTime' => (2.days.from_now).iso8601
         )
         allow(document).to receive(:update!)
       end

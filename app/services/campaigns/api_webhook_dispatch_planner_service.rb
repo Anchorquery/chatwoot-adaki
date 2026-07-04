@@ -53,7 +53,7 @@ class Campaigns::ApiWebhookDispatchPlannerService
     end
 
     if window_sent_count >= max_per_minute
-      window_started_at = window_started_at + 60.seconds
+      window_started_at += 60.seconds
       window_sent_count = 0
       dispatch_at = window_started_at
     end

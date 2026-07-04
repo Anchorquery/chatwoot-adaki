@@ -10,7 +10,7 @@ class Adaki::WhatsappTierSnapshot < ApplicationRecord
     6 => { name: 'UNLIMITED',  daily: Float::INFINITY }
   }.freeze
 
-  belongs_to :channel_whatsapp, class_name: 'Channel::Whatsapp', foreign_key: :channel_whatsapp_id
+  belongs_to :channel_whatsapp, class_name: 'Channel::Whatsapp'
 
   validates :captured_at, presence: true
 

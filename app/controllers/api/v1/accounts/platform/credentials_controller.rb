@@ -38,9 +38,7 @@ class Api::V1::Accounts::Platform::CredentialsController < Api::V1::Accounts::Ba
     new_provider = credential_params[:provider]
     provider_changed = new_provider.present? && new_provider != @credential.provider
 
-    if provider_changed && !provider_allowed?(new_provider)
-      return render json: provider_disabled_error, status: :unprocessable_entity
-    end
+    return render json: provider_disabled_error, status: :unprocessable_entity if provider_changed && !provider_allowed?(new_provider)
 
     payload = credential_payload
     metadata = credential_metadata

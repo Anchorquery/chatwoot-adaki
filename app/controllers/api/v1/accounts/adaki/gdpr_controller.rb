@@ -6,7 +6,7 @@ class Api::V1::Accounts::Adaki::GdprController < Api::V1::Accounts::BaseControll
     contact = Current.account.contacts.find(contact_id)
 
     pseudo_id = SecureRandom.hex(8)
-    original_snapshot = {
+    {
       name: contact.name,
       email: contact.email,
       phone_number: contact.phone_number,

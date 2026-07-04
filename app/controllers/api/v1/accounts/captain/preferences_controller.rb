@@ -98,16 +98,16 @@ class Api::V1::Accounts::Captain::PreferencesController < Api::V1::Accounts::Bas
       yaml_slugs = config[:models].map { |m| m[:id] }
 
       extra_models = all_platform_models
-        .select { |m| kinds.include?(m.kind) && !yaml_slugs.include?(m.slug) }
-        .map do |m|
-          {
-            id: m.slug,
-            display_name: "#{m.display_name} (#{m.credential.name})",
-            provider: m.credential.provider,
-            coming_soon: false,
-            credit_multiplier: nil
-          }
-        end
+                     .select { |m| kinds.include?(m.kind) && !yaml_slugs.include?(m.slug) }
+                     .map do |m|
+        {
+          id: m.slug,
+          display_name: "#{m.display_name} (#{m.credential.name})",
+          provider: m.credential.provider,
+          coming_soon: false,
+          credit_multiplier: nil
+        }
+      end
 
       # When the account has its own provider credentials, hide catalog (YAML)
       # models from providers the account has not configured — they would fail

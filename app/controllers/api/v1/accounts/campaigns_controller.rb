@@ -100,12 +100,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     started_at = state[:started_at]
     completed_at = state[:completed_at]
 
-    duration_seconds = if started_at && completed_at
-                         (Time.parse(completed_at) - Time.parse(started_at)).round
-                       end
-    throughput = if duration_seconds&.positive? && sent_count.positive?
-                   (sent_count.to_f / (duration_seconds / 60.0)).round(1)
-                 end
+    duration_seconds = ((Time.parse(completed_at) - Time.parse(started_at)).round if started_at && completed_at)
+    throughput = ((sent_count.to_f / (duration_seconds / 60.0)).round(1) if duration_seconds&.positive? && sent_count.positive?)
     success_rate = total_contacts.positive? ? (sent_count.to_f / total_contacts * 100).round(1) : nil
 
     render json: {
@@ -283,5 +279,4 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
       attachments: []
     )
   end
-
 end

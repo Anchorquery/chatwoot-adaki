@@ -319,7 +319,7 @@ describe MessageTemplates::HookExecutionService do
       # Simulate 3 previous requests to trigger rate limit on the 4th
       Redis::Alfred.set(redis_key, 3)
 
-      message = create(:message, conversation: conversation, account: conversation.account, sender: contact, content: '!bot tell me a joke')
+      create(:message, conversation: conversation, account: conversation.account, sender: contact, content: '!bot tell me a joke')
 
       expect(MessageTemplates::Template::Greeting).not_to have_received(:new)
       expect(conversation.messages.outgoing.last.content).to include('⚠️ Por favor, evita el spam.')

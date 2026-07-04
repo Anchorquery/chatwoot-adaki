@@ -356,7 +356,7 @@ class Conversation < ApplicationRecord
     return false if alias_token.blank?
 
     # Match "@token" or "/token" as a whole token, anywhere in the message, case-insensitive.
-    pattern = /(?:\A|\s|[[:punct:]])[@\/]#{Regexp.escape(alias_token)}(?![[:alnum:]])/i
+    pattern = %r{(?:\A|\s|[[:punct:]])[@/]#{Regexp.escape(alias_token)}(?![[:alnum:]])}i
     content.match?(pattern)
   end
 

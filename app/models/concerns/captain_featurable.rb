@@ -36,8 +36,8 @@ module CaptainFeaturable
     Llm::Models.feature_keys.each_with_object({}) do |feature_key, result|
       stored_value = stored_models[feature_key]
       result[feature_key] = if stored_value.present? &&
-                                (Llm::Models.valid_model_for?(feature_key, stored_value) ||
-                                  (enabled_slugs ||= fetch_enabled_platform_slugs).include?(stored_value.to_s))
+                               (Llm::Models.valid_model_for?(feature_key, stored_value) ||
+                                 (enabled_slugs ||= fetch_enabled_platform_slugs).include?(stored_value.to_s))
                               stored_value
                             else
                               Llm::Models.default_model_for(feature_key)

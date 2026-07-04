@@ -14,9 +14,8 @@ SLOW_AI_ROUTES = [
 module RackTimeoutSkipSlowRoutes
   def call(env)
     path = env['PATH_INFO'].to_s
-    if SLOW_AI_ROUTES.any? { |pattern| pattern.match?(path) }
-      return @app.call(env)
-    end
+    return @app.call(env) if SLOW_AI_ROUTES.any? { |pattern| pattern.match?(path) }
+
     super
   end
 end

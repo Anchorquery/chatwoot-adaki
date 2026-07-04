@@ -55,7 +55,7 @@ class Captain::Llm::ScenarioGeneratorService < Captain::BaseTaskService
       "Assistant name: #{assistant.name}",
       ("Assistant description: #{assistant.description}" if assistant.description.present?),
       '',
-      "Generate a scenario for the following situation:",
+      'Generate a scenario for the following situation:',
       prompt
     ].compact
     parts.join("\n")

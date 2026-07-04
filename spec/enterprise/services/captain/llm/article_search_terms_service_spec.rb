@@ -22,7 +22,7 @@ RSpec.describe Captain::Llm::ArticleSearchTermsService do
     service = described_class.new(article)
     allow(service).to receive(:chat).and_return(stub_chat_returning('{"search_terms": ["refund", "money back"]}'))
 
-    expect(service.generate).to eq(%w[refund money\ back])
+    expect(service.generate).to eq(['refund', 'money back'])
   end
 
   it 'tolerates fenced JSON' do

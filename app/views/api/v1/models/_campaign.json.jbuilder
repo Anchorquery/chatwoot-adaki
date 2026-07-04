@@ -15,7 +15,7 @@ json.enabled resource.enabled
 json.campaign_type resource.campaign_type
 json.delivery_settings resource.delivery_settings || {}
 json.delivery_state resource.delivery_state || {}
-json.attachments resource.attachments.map { |attachment|
+json.attachments(resource.attachments.map do |attachment|
   {
     id: attachment.id,
     filename: attachment.filename.to_s,
@@ -23,7 +23,7 @@ json.attachments resource.attachments.map { |attachment|
     byte_size: attachment.byte_size,
     signed_id: attachment.blob.signed_id
   }
-}
+end)
 if resource.campaign_type == 'one_off'
   json.scheduled_at resource.scheduled_at.to_i
   json.audience resource.audience

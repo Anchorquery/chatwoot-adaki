@@ -55,10 +55,10 @@ class Campaigns::ProcessBatchJob < ApplicationJob
         )
 
         ::Messages::MessageBuilder.new(campaign.sender, conversation, {
-          content: message_content,
-          campaign_id: campaign.id,
-          attachments: campaign.attachments.map { |attachment| attachment.blob.signed_id }
-        }).perform
+                                         content: message_content,
+                                         campaign_id: campaign.id,
+                                         attachments: campaign.attachments.map { |attachment| attachment.blob.signed_id }
+                                       }).perform
 
         state = increment_state(campaign, sent_count: 1, consecutive_failures: 0, processed_index: idx + 1,
                                           recipient: { contact_id: contact_id, status: 'sent',
@@ -76,7 +76,8 @@ class Campaigns::ProcessBatchJob < ApplicationJob
 
         if state[:consecutive_failures].to_i >= 5
           campaign.paused!
-          persist_state(campaign, errors: Array(state[:errors]) + [{ system: 'Campaign auto-paused because of repeated failures', time: Time.current }])
+          persist_state(campaign,
+                        errors: Array(state[:errors]) + [{ system: 'Campaign auto-paused because of repeated failures', time: Time.current }])
           return
         end
       end

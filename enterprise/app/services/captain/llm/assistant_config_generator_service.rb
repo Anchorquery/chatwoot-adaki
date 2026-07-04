@@ -28,12 +28,8 @@ class Captain::Llm::AssistantConfigGeneratorService < Captain::BaseTaskService
     if requested?('description') && parsed['description'].present?
       result[:description] = truncate_with_ellipsis(parsed['description'], DESCRIPTION_MAX)
     end
-    if requested?('response_guidelines')
-      result[:response_guidelines] = clean_array(parsed['response_guidelines'], max_per_item: GUIDELINE_ITEM_MAX)
-    end
-    if requested?('guardrails')
-      result[:guardrails] = clean_array(parsed['guardrails'], max_per_item: GUARDRAIL_ITEM_MAX)
-    end
+    result[:response_guidelines] = clean_array(parsed['response_guidelines'], max_per_item: GUIDELINE_ITEM_MAX) if requested?('response_guidelines')
+    result[:guardrails] = clean_array(parsed['guardrails'], max_per_item: GUARDRAIL_ITEM_MAX) if requested?('guardrails')
     if requested?('handoff_message') && parsed['handoff_message'].present?
       result[:handoff_message] = truncate_with_ellipsis(parsed['handoff_message'], MESSAGE_MAX)
     end

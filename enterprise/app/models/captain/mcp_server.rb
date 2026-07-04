@@ -58,7 +58,7 @@ class Captain::McpServer < ApplicationRecord
     return prefixed if prefixed.length <= 64
 
     digest = Digest::SHA1.hexdigest(tool_name.to_s)[0, 6]
-    available_length = [64 - "mcp_".length - slug.length - digest.length - 2, 0].max
+    available_length = [64 - 'mcp_'.length - slug.length - digest.length - 2, 0].max
     truncated_tool = tool_name.to_s.parameterize(separator: '_')[0, available_length].to_s.sub(/_+\z/, '')
     "mcp_#{slug}_#{truncated_tool}_#{digest}"
   end

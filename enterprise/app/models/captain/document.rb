@@ -132,9 +132,9 @@ class Captain::Document < ApplicationRecord
     return nil unless website_crawl?
 
     @crawl_pages_count ||= assistant.documents
-                                   .where("captain_documents.metadata ->> 'crawl_mode' = ?", 'website')
-                                   .where("captain_documents.metadata ->> 'crawl_root_url' = ?", crawl_root_url)
-                                   .count
+                                    .where("captain_documents.metadata ->> 'crawl_mode' = ?", 'website')
+                                    .where("captain_documents.metadata ->> 'crawl_root_url' = ?", crawl_root_url)
+                                    .count
   end
 
   def crawl_progress_percent
