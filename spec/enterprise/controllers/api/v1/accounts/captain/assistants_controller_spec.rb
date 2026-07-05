@@ -277,6 +277,10 @@ RSpec.describe 'Api::V1::Accounts::Captain::Assistants', type: :request do
     end
 
     context 'when captain v2 is disabled' do
+      before do
+        account.disable_features('captain_integration_v2')
+      end
+
       it 'generates a response with the legacy assistant chat service' do
         allow(Captain::Llm::AssistantChatService).to receive(:new).with(
           assistant: assistant,

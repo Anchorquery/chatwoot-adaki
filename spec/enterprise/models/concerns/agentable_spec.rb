@@ -36,6 +36,12 @@ RSpec.describe Concerns::Agentable do
 
   before do
     allow(Agents::Agent).to receive(:new).and_return(mock_agents_agent)
+    # `create(:account)` in a couple of examples below triggers
+    # Featurable#enable_default_features, which does its own unrelated
+    # InstallationConfig.find_by(name: 'ACCOUNT_LEVEL_FEATURE_DEFAULTS') call —
+    # fall through to the real implementation for any name other than the one
+    # this spec actually cares about.
+    allow(InstallationConfig).to receive(:find_by).and_call_original
     allow(InstallationConfig).to receive(:find_by).with(name: 'CAPTAIN_OPEN_AI_MODEL').and_return(mock_installation_config)
     allow(Captain::PromptRenderer).to receive(:render).and_return('rendered_template')
   end
