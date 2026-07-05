@@ -17,6 +17,20 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
     JSON.parse(response.body, symbolize_names: true)
   end
 
+  def meta_with_zeroed_counts(page:, total_count:, web_count: 0)
+    {
+      page: page,
+      total_count: total_count,
+      web_count: web_count,
+      pdf_count: 0,
+      syncing_count: 0,
+      failed_count: 0,
+      stale_count: 0,
+      website_crawl_pages_count: 0,
+      website_crawl_count: 0
+    }
+  end
+
   describe 'GET /api/v1/accounts/:account_id/captain/documents' do
     context 'when it is an un-authenticated user' do
       before do
@@ -39,7 +53,7 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
 
           expect(response).to have_http_status(:ok)
           expect(json_response[:payload].length).to eq(25)
-          expect(json_response[:meta]).to eq({ page: 1, total_count: 30 })
+          expect(json_response[:meta]).to eq(meta_with_zeroed_counts(page: 1, total_count: 30, web_count: 30))
         end
 
         it 'returns the second page of documents' do
@@ -49,7 +63,7 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
 
           expect(response).to have_http_status(:ok)
           expect(json_response[:payload].length).to eq(5)
-          expect(json_response[:meta]).to eq({ page: 2, total_count: 30 })
+          expect(json_response[:meta]).to eq(meta_with_zeroed_counts(page: 2, total_count: 30, web_count: 30))
         end
       end
 
@@ -109,7 +123,7 @@ RSpec.describe 'Api::V1::Accounts::Captain::Documents', type: :request do
           expect(response).to have_http_status(:ok)
           expect(json_response[:payload].length).to eq(5)
           expect(json_response[:payload][0][:assistant][:id]).to eq(assistant.id)
-          expect(json_response[:meta]).to eq({ page: 2, total_count: 30 })
+          expect(json_response[:meta]).to eq(meta_with_zeroed_counts(page: 2, total_count: 30, web_count: 30))
         end
       end
     end
