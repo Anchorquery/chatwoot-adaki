@@ -60,13 +60,13 @@ RSpec.describe Captain::Document, type: :model do
       it 'validates PDF file size' do
         doc = build(:captain_document, assistant: assistant, account: account)
         doc.pdf_file.attach(
-          io: StringIO.new('x' * 11.megabytes),
+          io: StringIO.new('x' * (described_class.max_pdf_size_mb + 1).megabytes),
           filename: 'large.pdf',
           content_type: 'application/pdf'
         )
         doc.external_link = nil
         expect(doc).not_to be_valid
-        expect(doc.errors[:pdf_file]).to include(I18n.t('captain.documents.pdf_size_error'))
+        expect(doc.errors[:pdf_file]).to include(I18n.t('captain.documents.pdf_size_error', size: described_class.max_pdf_size_mb))
       end
     end
 

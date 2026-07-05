@@ -9,7 +9,10 @@ RSpec.describe Internal::ReconcilePlanConfigService do
         allow(ChatwootHub).to receive(:pricing_plan).and_return('community')
       end
 
-      it 'disables the premium features for accounts' do
+      # Adaki's enterprise/config/premium_features.yml is deliberately emptied
+      # ("all premium features unlocked for self-hosted/internal use"), so
+      # community-plan reconciliation has nothing left to disable here.
+      it 'does not disable any features (premium_features.yml is empty on this fork)' do
         account = create(:account)
         account.enable_features!('disable_branding', 'audit_logs', 'captain_integration')
         account_with_captain = create(:account)
@@ -17,9 +20,9 @@ RSpec.describe Internal::ReconcilePlanConfigService do
         disable_branding_account = create(:account)
         disable_branding_account.enable_features!('disable_branding')
         service.perform
-        expect(account.reload.enabled_features.keys).not_to include('captain_integration', 'disable_branding', 'audit_logs')
-        expect(account_with_captain.reload.enabled_features.keys).not_to include('captain_integration')
-        expect(disable_branding_account.reload.enabled_features.keys).not_to include('disable_branding')
+        expect(account.reload.enabled_features.keys).to include('captain_integration', 'disable_branding', 'audit_logs')
+        expect(account_with_captain.reload.enabled_features.keys).to include('captain_integration')
+        expect(disable_branding_account.reload.enabled_features.keys).to include('disable_branding')
       end
 
       it 'creates a premium config reset warning if config was modified' do

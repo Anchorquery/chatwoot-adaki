@@ -32,7 +32,10 @@ RSpec.describe 'Firecrawl Webhooks', type: :request do
           expect(Captain::Tools::FirecrawlParserJob).to receive(:perform_later)
             .with(
               assistant_id: assistant.id,
-              payload: payload_data
+              payload: payload_data,
+              root_url: nil,
+              crawl_mode: 'website',
+              crawl_depth: nil
             )
 
           post(

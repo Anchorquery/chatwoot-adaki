@@ -11,6 +11,11 @@ RSpec.describe Conversations::EventDataPresenter do
   describe '#push_data' do
     it 'returns push event payload with applied sla & sla events if the feature is enabled' do
       conversation.account.enable_features!('sla')
+      # sla_event is created via SlaEvent.create(conversation: conversation, ...)
+      # rather than through conversation.sla_events, so the has_many cache on
+      # this conversation instance (already touched by the applied_sla/sla_event
+      # setup above) doesn't pick it up without an explicit reload.
+      conversation.reload
 
       expect(presenter.push_data).to include(
         {

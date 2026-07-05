@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Messages::AudioTranscriptionService, type: :service do
   let(:account) { create(:account, audio_transcriptions: true) }
   let(:conversation) { create(:conversation, account: account) }
-  let(:message) { create(:message, conversation: conversation) }
+  let(:message) { create(:message, conversation: conversation, account: account) }
   let(:attachment) { message.attachments.create!(account: account, file_type: :audio) }
 
   before do
