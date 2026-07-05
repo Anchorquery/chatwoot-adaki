@@ -10,6 +10,11 @@ RSpec.describe Captain::Documents::CrawlJob, type: :job do
       let(:firecrawl_service) { instance_double(Captain::Tools::FirecrawlService) }
       let(:account) { document.account }
       let(:token) { Digest::SHA256.hexdigest("-key#{document.assistant_id}#{document.account_id}") }
+      let(:encoded_root_url) { URI.encode_www_form_component(document.external_link) }
+
+      def webhook_url_for(crawl_limit)
+        "#{webhook_url}?assistant_id=#{assistant_id}&token=#{token}&root_url=#{encoded_root_url}&crawl_depth=#{crawl_limit}"
+      end
 
       before do
         allow(Captain::Tools::FirecrawlService).to receive(:new).and_return(firecrawl_service)
@@ -25,7 +30,7 @@ RSpec.describe Captain::Documents::CrawlJob, type: :job do
         it 'uses FirecrawlService with the correct crawl limit' do
           expect(firecrawl_service).to receive(:perform).with(
             document.external_link,
-            "#{webhook_url}?assistant_id=#{assistant_id}&token=#{token}",
+            webhook_url_for(20),
             20
           )
 
@@ -41,7 +46,7 @@ RSpec.describe Captain::Documents::CrawlJob, type: :job do
         it 'caps the crawl limit at 500' do
           expect(firecrawl_service).to receive(:perform).with(
             document.external_link,
-            "#{webhook_url}?assistant_id=#{assistant_id}&token=#{token}",
+            webhook_url_for(500),
             500
           )
 
@@ -54,12 +59,8 @@ RSpec.describe Captain::Documents::CrawlJob, type: :job do
           allow(account).to receive(:usage_limits).and_return({})
         end
 
-        it 'uses default crawl limit of 10' do
-          expect(firecrawl_service).to receive(:perform).with(
-            document.external_link,
-            "#{webhook_url}?assistant_id=#{assistant_id}&token=#{token}",
-            10
-          )
+        it 'does not crawl (fails closed when there is no available limit to read)' do
+          expect(firecrawl_service).not_to receive(:perform)
 
           described_class.perform_now(document)
         end
@@ -85,7 +86,10 @@ RSpec.describe Captain::Documents::CrawlJob, type: :job do
             .to receive(:perform_later)
             .with(
               assistant_id: assistant_id,
-              page_link: link
+              page_link: link,
+              crawl_root_url: document.external_link,
+              crawl_mode: 'website',
+              crawl_depth: page_links.size
             )
         end
 
@@ -94,7 +98,10 @@ RSpec.describe Captain::Documents::CrawlJob, type: :job do
           .to receive(:perform_later)
           .with(
             assistant_id: assistant_id,
-            page_link: document.external_link
+            page_link: document.external_link,
+            crawl_root_url: document.external_link,
+            crawl_mode: 'website',
+            crawl_depth: page_links.size
           )
 
         described_class.perform_now(document)
