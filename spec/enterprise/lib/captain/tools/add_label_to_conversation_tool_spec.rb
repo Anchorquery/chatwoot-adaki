@@ -13,7 +13,7 @@ RSpec.describe Captain::Tools::AddLabelToConversationTool, type: :model do
 
   describe '#description' do
     it 'returns the correct description' do
-      expect(tool.description).to eq('Add a label to a conversation')
+      expect(tool.description).to include('Silently tag the current conversation')
     end
   end
 
@@ -33,7 +33,7 @@ RSpec.describe Captain::Tools::AddLabelToConversationTool, type: :model do
 
         it 'adds label to conversation and returns success message' do
           result = tool.perform(tool_context, label_name: 'urgent')
-          expect(result).to eq("Label 'urgent' added to conversation ##{conversation.display_id}")
+          expect(result).to eq(described_class::SILENT_OK)
 
           expect(conversation.reload.label_list).to include('urgent')
         end
@@ -49,19 +49,19 @@ RSpec.describe Captain::Tools::AddLabelToConversationTool, type: :model do
 
         it 'handles case insensitive label names' do
           result = tool.perform(tool_context, label_name: 'URGENT')
-          expect(result).to eq("Label 'urgent' added to conversation ##{conversation.display_id}")
+          expect(result).to eq(described_class::SILENT_OK)
         end
 
         it 'strips whitespace from label names' do
           result = tool.perform(tool_context, label_name: '  urgent  ')
-          expect(result).to eq("Label 'urgent' added to conversation ##{conversation.display_id}")
+          expect(result).to eq(described_class::SILENT_OK)
         end
       end
 
       context 'with label that does not exist' do
-        it 'returns error message' do
+        it 'returns silent skip message' do
           result = tool.perform(tool_context, label_name: 'nonexistent')
-          expect(result).to eq('Label not found')
+          expect(result).to eq(described_class::SILENT_SKIP)
         end
 
         it 'does not add any labels to conversation' do
@@ -72,19 +72,19 @@ RSpec.describe Captain::Tools::AddLabelToConversationTool, type: :model do
       end
 
       context 'with blank label name' do
-        it 'returns error message for empty string' do
+        it 'returns silent skip message for empty string' do
           result = tool.perform(tool_context, label_name: '')
-          expect(result).to eq('Label name is required')
+          expect(result).to eq(described_class::SILENT_SKIP)
         end
 
-        it 'returns error message for nil' do
+        it 'returns silent skip message for nil' do
           result = tool.perform(tool_context, label_name: nil)
-          expect(result).to eq('Label name is required')
+          expect(result).to eq(described_class::SILENT_SKIP)
         end
 
-        it 'returns error message for whitespace only' do
+        it 'returns silent skip message for whitespace only' do
           result = tool.perform(tool_context, label_name: '   ')
-          expect(result).to eq('Label name is required')
+          expect(result).to eq(described_class::SILENT_SKIP)
         end
       end
     end
@@ -92,27 +92,27 @@ RSpec.describe Captain::Tools::AddLabelToConversationTool, type: :model do
     context 'when conversation does not exist' do
       let(:tool_context) { Struct.new(:state).new({ conversation: { id: 999_999 } }) }
 
-      it 'returns error message' do
+      it 'returns silent skip message' do
         result = tool.perform(tool_context, label_name: 'urgent')
-        expect(result).to eq('Conversation not found')
+        expect(result).to eq(described_class::SILENT_SKIP)
       end
     end
 
     context 'when conversation state is missing' do
       let(:tool_context) { Struct.new(:state).new({}) }
 
-      it 'returns error message' do
+      it 'returns silent skip message' do
         result = tool.perform(tool_context, label_name: 'urgent')
-        expect(result).to eq('Conversation not found')
+        expect(result).to eq(described_class::SILENT_SKIP)
       end
     end
 
     context 'when conversation id is nil' do
       let(:tool_context) { Struct.new(:state).new({ conversation: { id: nil } }) }
 
-      it 'returns error message' do
+      it 'returns silent skip message' do
         result = tool.perform(tool_context, label_name: 'urgent')
-        expect(result).to eq('Conversation not found')
+        expect(result).to eq(described_class::SILENT_SKIP)
       end
     end
   end

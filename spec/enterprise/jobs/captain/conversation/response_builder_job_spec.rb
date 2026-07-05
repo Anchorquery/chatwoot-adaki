@@ -166,9 +166,10 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
           expect(account.reload.usage_limits[:captain][:responses][:consumed]).to eq(1)
         end
 
-        it 'skips the classifier when the conversation is no longer pending after response generation' do
+        it 'skips the classifier when a human takes over during response generation' do
+          agent = create(:user, account: account)
           allow(mock_llm_chat_service).to receive(:generate_response) do
-            conversation.open!
+            conversation.update!(assignee: agent)
             { 'response' => 'Hey, welcome to Captain Specs' }
           end
 
@@ -181,8 +182,9 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         end
       end
 
-      it 'does not send a response when the conversation is no longer pending' do
-        conversation.open!
+      it 'does not send a response when assigned to a human agent' do
+        agent = create(:user, account: account)
+        conversation.update!(assignee: agent)
 
         expect(mock_llm_chat_service).not_to receive(:generate_response)
         expect do
@@ -363,6 +365,8 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
       let(:image_attachment) { message_with_image.attachments.create!(account: account, file_type: :image, external_url: 'https://example.com/error.jpg') }
 
       before do
+        allow(account).to receive(:feature_enabled?).and_return(false)
+        allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(false)
         image_attachment
       end
 
@@ -390,6 +394,8 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
     let(:mock_message_builder) { instance_double(Captain::OpenAiMessageBuilderService) }
 
     before do
+      allow(account).to receive(:feature_enabled?).and_return(false)
+      allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(false)
       create(:message, conversation: conversation, content: 'Hello with image', message_type: :incoming)
       allow(Captain::Llm::AssistantChatService).to receive(:new).and_return(mock_llm_chat_service)
       allow(Captain::OpenAiMessageBuilderService).to receive(:new).with(message: anything).and_return(mock_message_builder)
