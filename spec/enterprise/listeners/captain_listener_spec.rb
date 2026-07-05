@@ -5,7 +5,7 @@ describe CaptainListener do
   let(:account) { create(:account) }
   let(:inbox) { create(:inbox, account: account) }
   let(:user) { create(:user, account: account) }
-  let(:assistant) { create(:captain_assistant, account: account, config: { feature_memory: true, feature_faq: true }) }
+  let(:assistant) { create(:captain_assistant, account: account, config: { autopilot_enabled: true, feature_memory: true, feature_faq: true }) }
 
   describe '#conversation_resolved' do
     let(:conversation) { create(:conversation, account: account, inbox: inbox, assignee: user) }

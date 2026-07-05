@@ -72,7 +72,11 @@ module Captain
 
     def last_human_response_older_than_window?
       ts = last_human_response_at
-      return true if ts.blank?
+      # ts blank here means an agent is assigned but hasn't replied yet (the
+      # `assignee_present? || human_response_exists?` guard in #human_takeover?
+      # already ruled out the "no signal at all" case). Treat that as freshly
+      # taken over rather than stale, so a bare assignment silences the bot.
+      return false if ts.blank?
 
       ts < window_minutes.minutes.ago
     end

@@ -170,3 +170,40 @@ conv.resolved_captain_active?
 # Forzar el job para ver el error real
 Captain::Conversation::ResponseBuilderJob.new.perform(conv, conv.resolved_captain_assistant)
 ```
+
+## Gap conocido: `spec/enterprise/` nunca corre en CI
+
+`.github/workflows/run_foss_spec.yml` (el único CI de specs backend) hace
+`rm -rf enterprise spec/enterprise` antes de correr rspec (paso "Strip
+enterprise code"). No existe ningún otro workflow que corra `spec/enterprise/`
+— no hay `run_ee_spec.yml` ni equivalente. Resultado: todo lo que vive bajo
+`spec/enterprise/` (incluidos los specs de Captain, listeners, jobs de
+resolución automática, etc.) puede romperse silenciosamente sin que ningún
+PR lo detecte.
+
+Confirmado el 2026-07-04: `spec/enterprise/services/enterprise/message_templates/hook_execution_service_spec.rb`,
+`spec/enterprise/listeners/captain_listener_spec.rb` y
+`spec/enterprise/jobs/captain/inbox_pending_conversations_resolution_job_spec.rb`
+tenían 24 fallos reproducibles en una DB de test limpia (`schema:load` puro),
+preexistentes desde antes de esta sesión — nunca detectados por CI. Causas
+(ya corregidas en este commit):
+
+- La factory `spec/factories/captain/assistant.rb` no seteaba
+  `config: { autopilot_enabled: true }`, así que cualquier assistant creado
+  sin config explícito quedaba con autopilot apagado por default
+  (`Captain::Assistant#autopilot_enabled?` lee `config['autopilot_enabled']`,
+  que es falsy si la key no existe) — el bot nunca se agendaba a responder.
+- `inbox_pending_conversations_resolution_job_spec.rb` asumía que el feature
+  `captain_tasks` estaba deshabilitado por default, pero `config/features.yml`
+  lo trae `enabled: true` — el contexto "when captain_tasks is disabled" no
+  tenía ningún stub que lo deshabilitara.
+- Varios tests de ese mismo spec pisaban `captain_assistant.config` entero
+  (`update!(config: { ... })`) en vez de mergear, perdiendo `auto_handoff_enabled`/
+  `auto_resolve_hours` seteados en el `before` global.
+
+**Mientras no exista CI para `spec/enterprise/`**, cualquier cambio en
+`enterprise/` debe correrse manualmente en local antes de mergear:
+
+```bash
+RAILS_ENV=test bundle exec rspec spec/enterprise
+```
