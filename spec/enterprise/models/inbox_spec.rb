@@ -12,6 +12,7 @@ RSpec.describe Inbox do
     let!(:inbox_member_4) { create(:inbox_member, inbox: inbox) }
 
     before do
+      inbox.account.disable_features('assignment_v2')
       create(:conversation, inbox: inbox, assignee: inbox_member_1.user)
       # to test conversations in other inboxes won't impact
       create_list(:conversation, 3, assignee: inbox_member_1.user)
@@ -105,6 +106,7 @@ RSpec.describe Inbox do
     context 'when advanced_assignment is disabled (downgraded account with stale policies)' do
       before do
         account.enable_features('assignment_v2')
+        account.disable_features('advanced_assignment')
         account.save!
 
         create(:inbox_capacity_limit, agent_capacity_policy: agent_capacity_policy, inbox: v2_inbox, conversation_limit: 1)
@@ -121,6 +123,7 @@ RSpec.describe Inbox do
 
     context 'when assignment_v2 is disabled (V1 path)' do
       before do
+        account.disable_features('assignment_v2')
         v2_inbox.update(auto_assignment_config: { max_assignment_limit: 2 })
       end
 
