@@ -35,13 +35,35 @@ RSpec.describe Conversations::EventDataPresenter do
         updated_at: conversation.updated_at.to_f,
         waiting_since: conversation.waiting_since.to_i,
         priority: nil,
-        unread_count: 0
+        unread_count: 0,
+        is_group: false,
+        is_whatsapp_channel: false
       }
     end
 
     it 'returns push event payload' do
       # the exceptions are the values that would be added in enterprise edition.
       expect(presenter.push_data.except(:applied_sla, :sla_events)).to include(expected_data)
+    end
+
+    context 'when the conversation is a WhatsApp group' do
+      let(:inbox) { create(:inbox) }
+      let(:contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: '1203630000000@g.us') }
+      let(:conversation) { create(:conversation, inbox: inbox, contact_inbox: contact_inbox) }
+
+      it 'flags is_group and not is_whatsapp_channel' do
+        expect(presenter.push_data).to include(is_group: true, is_whatsapp_channel: false)
+      end
+    end
+
+    context 'when the conversation is a WhatsApp channel (newsletter)' do
+      let(:inbox) { create(:inbox) }
+      let(:contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: '120363000000000000@newsletter') }
+      let(:conversation) { create(:conversation, inbox: inbox, contact_inbox: contact_inbox) }
+
+      it 'flags is_whatsapp_channel and not is_group' do
+        expect(presenter.push_data).to include(is_group: false, is_whatsapp_channel: true)
+      end
     end
   end
 

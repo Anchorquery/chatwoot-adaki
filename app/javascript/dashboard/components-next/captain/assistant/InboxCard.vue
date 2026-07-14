@@ -459,27 +459,30 @@ const removeAudience = audienceId => {
           :key="audience.id"
           class="flex items-start justify-between gap-3 rounded-md border border-n-weak p-2"
         >
-          <div class="flex-1 flex flex-wrap gap-1 text-xs text-n-slate-12">
+          <div class="flex-1 flex flex-wrap gap-1.5 text-xs text-n-slate-12">
             <span
               v-for="jid in audience.group_jids"
               :key="`jid-${jid}`"
-              class="rounded bg-n-alpha-2 px-1.5 py-0.5"
+              class="flex items-center gap-1 rounded bg-n-alpha-2 px-1.5 py-0.5"
             >
+              <span class="i-lucide-users size-3 text-n-slate-11" />
               {{ jid }}
             </span>
             <span
               v-for="jid in audience.channel_jids"
               :key="`channel-jid-${jid}`"
-              class="rounded bg-n-alpha-2 px-1.5 py-0.5"
+              class="flex items-center gap-1 rounded bg-n-alpha-2 px-1.5 py-0.5"
             >
+              <span class="i-lucide-radio size-3 text-n-slate-11" />
               {{ jid }}
             </span>
             <span
               v-for="title in audience.label_titles"
               :key="`label-${title}`"
-              class="rounded bg-n-alpha-2 px-1.5 py-0.5"
+              class="flex items-center gap-1 rounded bg-n-alpha-2 px-1.5 py-0.5"
             >
-              {{ `#${title}` }}
+              <span class="i-lucide-tag size-3 text-n-slate-11" />
+              {{ title }}
             </span>
           </div>
           <Button
@@ -491,28 +494,54 @@ const removeAudience = audienceId => {
           />
         </div>
 
-        <div class="flex flex-col gap-2">
-          <TagInput
-            v-model="newGroupJids"
-            type="text"
-            allow-create
-            :show-dropdown="false"
-            :placeholder="t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_PLACEHOLDER')"
-          />
-          <TagInput
-            v-model="newChannelJids"
-            type="text"
-            allow-create
-            :show-dropdown="false"
-            :placeholder="
-              t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_PLACEHOLDER')
-            "
-          />
-          <TagMultiSelectComboBox
-            v-model="newLabelTitles"
-            :options="labelOptions"
-            :placeholder="t('CAPTAIN.INBOXES.AUDIENCES.LABELS_PLACEHOLDER')"
-          />
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-1">
+            <label
+              class="flex items-center gap-1.5 text-xs font-medium text-n-slate-11"
+            >
+              <span class="i-lucide-users size-3.5" />
+              {{ t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_LABEL') }}
+            </label>
+            <TagInput
+              v-model="newGroupJids"
+              type="text"
+              allow-create
+              :show-dropdown="false"
+              :placeholder="
+                t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_PLACEHOLDER')
+              "
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label
+              class="flex items-center gap-1.5 text-xs font-medium text-n-slate-11"
+            >
+              <span class="i-lucide-radio size-3.5" />
+              {{ t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_LABEL') }}
+            </label>
+            <TagInput
+              v-model="newChannelJids"
+              type="text"
+              allow-create
+              :show-dropdown="false"
+              :placeholder="
+                t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_PLACEHOLDER')
+              "
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label
+              class="flex items-center gap-1.5 text-xs font-medium text-n-slate-11"
+            >
+              <span class="i-lucide-tag size-3.5" />
+              {{ t('CAPTAIN.INBOXES.AUDIENCES.LABELS_LABEL') }}
+            </label>
+            <TagMultiSelectComboBox
+              v-model="newLabelTitles"
+              :options="labelOptions"
+              :placeholder="t('CAPTAIN.INBOXES.AUDIENCES.LABELS_PLACEHOLDER')"
+            />
+          </div>
           <Button
             :label="t('CAPTAIN.INBOXES.AUDIENCES.ADD')"
             size="xs"

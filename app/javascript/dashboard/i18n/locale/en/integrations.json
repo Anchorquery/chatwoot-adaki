@@ -1221,8 +1221,11 @@
       },
       "AUDIENCES": {
         "HINT": "Assign this assistant to a specific WhatsApp group, channel or label instead of the whole inbox. A conversation that matches none of these falls back to the default assistant above.",
+        "GROUP_JIDS_LABEL": "WhatsApp groups",
         "GROUP_JIDS_PLACEHOLDER": "WhatsApp group id, e.g. 1203630000000",
+        "CHANNEL_JIDS_LABEL": "WhatsApp channels",
         "CHANNEL_JIDS_PLACEHOLDER": "WhatsApp channel id, e.g. 120363000000000000",
+        "LABELS_LABEL": "Labels",
         "LABELS_PLACEHOLDER": "Select labels",
         "ADD": "Add audience"
       },

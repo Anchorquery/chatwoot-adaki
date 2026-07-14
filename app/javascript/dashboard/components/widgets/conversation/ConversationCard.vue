@@ -7,6 +7,7 @@ import InboxName from '../InboxName.vue';
 import TimeAgo from 'dashboard/components/ui/TimeAgo.vue';
 import CardLabels from './conversationCardComponents/CardLabels.vue';
 import CardPriorityIcon from 'dashboard/components-next/Conversation/ConversationCard/CardPriorityIcon.vue';
+import CardChatKindIcon from 'dashboard/components-next/Conversation/ConversationCard/CardChatKindIcon.vue';
 import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard/UnreadBadge.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
 import VoiceCallStatus from './VoiceCallStatus.vue';
@@ -162,6 +163,12 @@ watch(
             <fluent-icon icon="person" size="12" class="text-n-slate-11" />
             {{ assignee.name }}
           </span>
+          <CardChatKindIcon
+            v-if="chat.is_group || chat.is_whatsapp_channel"
+            :is-group="chat.is_group"
+            :is-whatsapp-channel="chat.is_whatsapp_channel"
+            class="!size-3.5"
+          />
           <CardPriorityIcon
             :priority="chat.priority"
             class="flex-shrink-0 !size-3.5"

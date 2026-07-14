@@ -7,6 +7,10 @@
       "404": "No hay conversaciones activas en este grupo."
     },
     "FAILED_TO_SEND": "Error al enviar",
+    "CHAT_KIND": {
+      "WHATSAPP_GROUP": "Grupo de WhatsApp",
+      "WHATSAPP_CHANNEL": "Canal de WhatsApp"
+    },
     "TAB_HEADING": "Conversaciones",
     "MENTION_HEADING": "Menciones",
     "UNATTENDED_HEADING": "Desatendido",

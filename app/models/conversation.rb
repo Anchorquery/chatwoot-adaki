@@ -227,10 +227,12 @@ class Conversation < ApplicationRecord
   # The normalized WhatsApp group id for this conversation (e.g. "1203630..." or
   # "12345-67890"), or nil if this isn't a recognizable WhatsApp group conversation.
   # Used to match a conversation against a Captain audience's configured group_jids.
+  # Deliberately not memoized: contact_inbox/additional_attributes can be mutated on this
+  # same in-memory instance after the first call (e.g. a bridge backfills the JID after the
+  # conversation object was already built), and the underlying scan is cheap enough that
+  # caching isn't worth risking a stale answer for the rest of the object's lifetime.
   def group_jid
-    return @group_jid if defined?(@group_jid)
-
-    @group_jid = matched_group_jid || matched_structured_group_id
+    matched_group_jid || matched_structured_group_id
   end
 
   def self.normalize_group_jid(raw)
@@ -258,10 +260,9 @@ class Conversation < ApplicationRecord
   # a Captain audience's configured channel_jids. Unlike #group_jid, there is no structural
   # fallback: channel and group ids are both long digit strings once the "@..." suffix is
   # stripped, so without the marker they can't be told apart.
+  # Not memoized — see the comment on #group_jid above.
   def whatsapp_channel_jid
-    return @whatsapp_channel_jid if defined?(@whatsapp_channel_jid)
-
-    @whatsapp_channel_jid = matched_jid_for_marker(WHATSAPP_NEWSLETTER_JID_MARKER)
+    matched_jid_for_marker(WHATSAPP_NEWSLETTER_JID_MARKER)
   end
 
   # The Captain assistant that should handle this conversation: the first

@@ -10,6 +10,7 @@ import Avatar from 'next/avatar/Avatar.vue';
 import TimeAgo from 'dashboard/components/ui/TimeAgo.vue';
 import SLACardLabel from 'dashboard/components-next/Conversation/Sla/SLACardLabel.vue';
 import CardStatusIcon from './CardStatusIcon.vue';
+import CardChatKindIcon from './CardChatKindIcon.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 
@@ -115,6 +116,12 @@ const selectedModel = computed({
       <div class="w-4 flex items-center justify-center flex-shrink-0">
         <CardStatusIcon :status="chat.status" show-empty />
       </div>
+
+      <CardChatKindIcon
+        v-if="chat.is_group || chat.is_whatsapp_channel"
+        :is-group="chat.is_group"
+        :is-whatsapp-channel="chat.is_whatsapp_channel"
+      />
 
       <div class="w-px h-3 bg-n-slate-6 flex-shrink-0" />
 
