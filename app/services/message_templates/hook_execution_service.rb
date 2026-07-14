@@ -5,12 +5,12 @@ class MessageTemplates::HookExecutionService
     return if conversation.last_incoming_message.blank?
     return if message.auto_reply_email?
 
-    if conversation.group?
+    if broadcast_scope
       return unless conversation.bot_mentioned?(message.content)
 
-      # Protection against spam: Rate limit per user in the group (max 3 every 5 minutes)
+      # Protection against spam: rate limit per user in the group/channel (max 3 every 5 minutes)
       user_id = message.sender_id
-      redis_key = "rate_limit:group_chat:#{conversation.id}:user:#{user_id}"
+      redis_key = "rate_limit:#{broadcast_scope}_chat:#{conversation.id}:user:#{user_id}"
 
       request_count = ::Redis::Alfred.incr(redis_key)
       if request_count == 1
@@ -31,6 +31,16 @@ class MessageTemplates::HookExecutionService
 
   delegate :inbox, :conversation, to: :message
   delegate :contact, to: :conversation
+
+  # "group" or "channel" for a WhatsApp group/broadcast-channel conversation, nil for a
+  # regular 1:1 conversation. Both are shared/many-recipient contexts where an unprompted
+  # bot reply would spam everyone, so they share the same bot_mentioned? + rate-limit gate.
+  def broadcast_scope
+    return 'group' if conversation.group?
+    return 'channel' if conversation.whatsapp_channel?
+
+    nil
+  end
 
   def trigger_templates
     ::MessageTemplates::Template::OutOfOffice.new(conversation: conversation).perform if should_send_out_of_office_message?
@@ -83,7 +93,7 @@ class MessageTemplates::HookExecutionService
       message_type: :outgoing,
       account_id: conversation.account_id,
       inbox_id: conversation.inbox_id,
-      content: '⚠️ Por favor, evita el spam. Has excedido el límite de consultas grupales (máx 3 cada 5 min).'
+      content: '⚠️ Por favor, evita el spam. Has excedido el límite de consultas (máx 3 cada 5 min).'
     )
   end
 end

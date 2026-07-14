@@ -69,13 +69,24 @@ RSpec.describe 'Api::V1::Accounts::Captain::InboxAudiences', type: :request do
         end
       end
 
-      context 'when neither group_jids nor label_titles are present' do
+      context 'when neither group_jids nor channel_jids nor label_titles are present' do
         it 'returns unprocessable entity status' do
           post "/api/v1/accounts/#{account.id}/captain/assistants/#{assistant.id}/inbox_audiences",
                params: { captain_inbox_audience: { inbox_id: inbox.id } },
                headers: admin.create_new_auth_token
 
           expect(response).to have_http_status(:unprocessable_entity)
+        end
+      end
+
+      context 'with channel_jids' do
+        it 'creates a new audience' do
+          post "/api/v1/accounts/#{account.id}/captain/assistants/#{assistant.id}/inbox_audiences",
+               params: { captain_inbox_audience: { inbox_id: inbox.id, channel_jids: ['120363000000000000'] } },
+               headers: admin.create_new_auth_token
+
+          expect(response).to have_http_status(:success)
+          expect(json_response[:channel_jids]).to eq(['120363000000000000'])
         end
       end
     end

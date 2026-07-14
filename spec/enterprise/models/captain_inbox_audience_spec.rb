@@ -6,15 +6,21 @@ RSpec.describe CaptainInboxAudience do
   let(:assistant) { create(:captain_assistant, account: account) }
 
   describe 'validations' do
-    it 'is invalid without group_jids or label_titles' do
+    it 'is invalid without group_jids, channel_jids or label_titles' do
       audience = described_class.new(inbox: inbox, captain_assistant: assistant)
 
       expect(audience).not_to be_valid
-      expect(audience.errors[:base]).to include('must define at least one group_jid or label_title')
+      expect(audience.errors[:base]).to include('must define at least one group_jid, channel_jid or label_title')
     end
 
     it 'is valid with only group_jids' do
       audience = described_class.new(inbox: inbox, captain_assistant: assistant, group_jids: ['1203630000000'])
+
+      expect(audience).to be_valid
+    end
+
+    it 'is valid with only channel_jids' do
+      audience = described_class.new(inbox: inbox, captain_assistant: assistant, channel_jids: ['120363000000000000'])
 
       expect(audience).to be_valid
     end
@@ -32,6 +38,13 @@ RSpec.describe CaptainInboxAudience do
                                                  group_jids: ['1203630000000@g.us', '1203630000000'])
 
       expect(audience.group_jids).to eq(['1203630000000'])
+    end
+
+    it 'strips the @newsletter suffix and dedupes channel_jids' do
+      audience = create(:captain_inbox_audience, inbox: inbox, captain_assistant: assistant, group_jids: [],
+                                                 channel_jids: ['120363000000000000@newsletter', '120363000000000000'])
+
+      expect(audience.channel_jids).to eq(['120363000000000000'])
     end
 
     it 'downcases and strips label_titles' do
@@ -74,6 +87,31 @@ RSpec.describe CaptainInboxAudience do
                                                  group_jids: ['999999999999'], label_titles: ['other'])
 
       expect(audience.matches?(conversation)).to be false
+    end
+
+    context 'with a channel (newsletter) conversation' do
+      let(:contact_inbox) { create(:contact_inbox, inbox: inbox, contact: contact, source_id: '120363000000000000@newsletter') }
+
+      it 'matches by channel_jid' do
+        audience = create(:captain_inbox_audience, inbox: inbox, captain_assistant: assistant, group_jids: [],
+                                                   channel_jids: ['120363000000000000'], label_titles: [])
+
+        expect(audience.matches?(conversation)).to be true
+      end
+
+      it 'does not match a different channel_jid' do
+        audience = create(:captain_inbox_audience, inbox: inbox, captain_assistant: assistant, group_jids: [],
+                                                   channel_jids: ['999999999999999999'], label_titles: [])
+
+        expect(audience.matches?(conversation)).to be false
+      end
+
+      it 'does not match against group_jids' do
+        audience = create(:captain_inbox_audience, inbox: inbox, captain_assistant: assistant,
+                                                   group_jids: ['120363000000000000'], label_titles: [])
+
+        expect(audience.matches?(conversation)).to be false
+      end
     end
   end
 end

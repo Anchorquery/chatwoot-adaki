@@ -11,21 +11,24 @@ class CaptainInboxAudiences extends ApiClient {
   }
 
   create(params = {}) {
-    const { assistantId, inboxId, groupJids, labelTitles } = params;
+    const { assistantId, inboxId, groupJids, channelJids, labelTitles } =
+      params;
     return axios.post(`${this.url}/${assistantId}/inbox_audiences`, {
       captain_inbox_audience: {
         inbox_id: inboxId,
         group_jids: groupJids,
+        channel_jids: channelJids,
         label_titles: labelTitles,
       },
     });
   }
 
   update(params = {}) {
-    const { assistantId, id, groupJids, labelTitles } = params;
+    const { assistantId, id, groupJids, channelJids, labelTitles } = params;
     return axios.patch(`${this.url}/${assistantId}/inbox_audiences/${id}`, {
       captain_inbox_audience: {
         group_jids: groupJids,
+        channel_jids: channelJids,
         label_titles: labelTitles,
       },
     });

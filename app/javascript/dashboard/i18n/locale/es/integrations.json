@@ -1221,8 +1221,9 @@
         "DISCONNECT": "Desconectar"
       },
       "AUDIENCES": {
-        "HINT": "Asigná este asistente a un grupo de WhatsApp o etiqueta específica en vez de a toda la bandeja. Una conversación que no matchee ninguna cae al asistente por defecto de arriba.",
+        "HINT": "Asigná este asistente a un grupo de WhatsApp, canal o etiqueta específica en vez de a toda la bandeja. Una conversación que no matchee ninguna cae al asistente por defecto de arriba.",
         "GROUP_JIDS_PLACEHOLDER": "ID de grupo de WhatsApp, ej. 1203630000000",
+        "CHANNEL_JIDS_PLACEHOLDER": "ID de canal de WhatsApp, ej. 120363000000000000",
         "LABELS_PLACEHOLDER": "Seleccionar etiquetas",
         "ADD": "Agregar audiencia"
       },

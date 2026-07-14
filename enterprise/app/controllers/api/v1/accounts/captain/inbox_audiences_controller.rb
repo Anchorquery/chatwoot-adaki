@@ -14,6 +14,7 @@ class Api::V1::Accounts::Captain::InboxAudiencesController < Api::V1::Accounts::
     @audience = @assistant.captain_inbox_audiences.build(
       inbox: inbox,
       group_jids: audience_params[:group_jids] || [],
+      channel_jids: audience_params[:channel_jids] || [],
       label_titles: audience_params[:label_titles] || []
     )
     @audience.save!
@@ -21,7 +22,12 @@ class Api::V1::Accounts::Captain::InboxAudiencesController < Api::V1::Accounts::
 
   def update
     @audience.update!(audience_params.except(:inbox_id).to_h)
-    render json: { id: @audience.id, group_jids: @audience.group_jids, label_titles: @audience.label_titles }
+    render json: {
+      id: @audience.id,
+      group_jids: @audience.group_jids,
+      channel_jids: @audience.channel_jids,
+      label_titles: @audience.label_titles
+    }
   end
 
   def destroy
@@ -48,6 +54,6 @@ class Api::V1::Accounts::Captain::InboxAudiencesController < Api::V1::Accounts::
   end
 
   def audience_params
-    params.require(:captain_inbox_audience).permit(:inbox_id, group_jids: [], label_titles: [])
+    params.require(:captain_inbox_audience).permit(:inbox_id, group_jids: [], channel_jids: [], label_titles: [])
   end
 end

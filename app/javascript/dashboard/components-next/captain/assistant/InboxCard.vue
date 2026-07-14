@@ -158,10 +158,14 @@ const labelOptions = computed(() =>
 );
 
 const newGroupJids = ref([]);
+const newChannelJids = ref([]);
 const newLabelTitles = ref([]);
 const addingAudience = ref(false);
 const canAddAudience = computed(
-  () => newGroupJids.value.length > 0 || newLabelTitles.value.length > 0
+  () =>
+    newGroupJids.value.length > 0 ||
+    newChannelJids.value.length > 0 ||
+    newLabelTitles.value.length > 0
 );
 
 const addAudience = async () => {
@@ -172,9 +176,11 @@ const addAudience = async () => {
       assistantId: assistantId.value,
       inboxId: props.id,
       groupJids: newGroupJids.value,
+      channelJids: newChannelJids.value,
       labelTitles: newLabelTitles.value,
     });
     newGroupJids.value = [];
+    newChannelJids.value = [];
     newLabelTitles.value = [];
   } finally {
     addingAudience.value = false;
@@ -462,6 +468,13 @@ const removeAudience = audienceId => {
               {{ jid }}
             </span>
             <span
+              v-for="jid in audience.channel_jids"
+              :key="`channel-jid-${jid}`"
+              class="rounded bg-n-alpha-2 px-1.5 py-0.5"
+            >
+              {{ jid }}
+            </span>
+            <span
               v-for="title in audience.label_titles"
               :key="`label-${title}`"
               class="rounded bg-n-alpha-2 px-1.5 py-0.5"
@@ -485,6 +498,15 @@ const removeAudience = audienceId => {
             allow-create
             :show-dropdown="false"
             :placeholder="t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_PLACEHOLDER')"
+          />
+          <TagInput
+            v-model="newChannelJids"
+            type="text"
+            allow-create
+            :show-dropdown="false"
+            :placeholder="
+              t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_PLACEHOLDER')
+            "
           />
           <TagMultiSelectComboBox
             v-model="newLabelTitles"

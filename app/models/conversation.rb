@@ -217,9 +217,9 @@ class Conversation < ApplicationRecord
     # Explicit group markers set by Telegram, Evolution and other integrations, on either
     # the conversation or the contact (snake_case and camelCase variants). These don't carry
     # a clean, reusable JID (see #group_jid), only a boolean signal that this is a group.
-    return true if group_attributes.any? { |attrs| %w[chat_type type].any? { |k| attrs[k].to_s.downcase.include?('group') } }
-    return true if group_attributes.any? { |attrs| %w[group_id groupId].any? { |k| attrs[k].present? } }
-    return true if group_attributes.any? { |attrs| %w[is_group isGroup].any? { |k| ActiveModel::Type::Boolean.new.cast(attrs[k]) } }
+    return true if chat_attributes.any? { |attrs| %w[chat_type type].any? { |k| attrs[k].to_s.downcase.include?('group') } }
+    return true if chat_attributes.any? { |attrs| %w[group_id groupId].any? { |k| attrs[k].present? } }
+    return true if chat_attributes.any? { |attrs| %w[is_group isGroup].any? { |k| ActiveModel::Type::Boolean.new.cast(attrs[k]) } }
 
     false
   end
@@ -234,7 +234,34 @@ class Conversation < ApplicationRecord
   end
 
   def self.normalize_group_jid(raw)
+    normalize_whatsapp_jid(raw)
+  end
+
+  # Generic "strip everything after @" normalizer, shared by every WhatsApp JID kind
+  # (group "@g.us", channel/newsletter "@newsletter", ...).
+  def self.normalize_whatsapp_jid(raw)
     raw.to_s.split('@').first.presence
+  end
+
+  # WhatsApp Channels (the one-to-many broadcast feature, shown as "Canales" in the app)
+  # use JIDs suffixed "@newsletter" — that's the protocol name WhatsApp/Baileys still use
+  # internally for what the UI calls a Channel. Detected the same way as #group?: scan
+  # every place a bridge (Evolution and similar) might have stashed the JID.
+  def whatsapp_channel?
+    return true if whatsapp_channel_jid.present?
+
+    chat_attributes.any? { |attrs| %w[chat_type type].any? { |k| attrs[k].to_s.downcase.include?('newsletter') } }
+  end
+
+  # The normalized WhatsApp channel (newsletter) id for this conversation, or nil if this
+  # isn't a recognizable WhatsApp channel conversation. Used to match a conversation against
+  # a Captain audience's configured channel_jids. Unlike #group_jid, there is no structural
+  # fallback: channel and group ids are both long digit strings once the "@..." suffix is
+  # stripped, so without the marker they can't be told apart.
+  def whatsapp_channel_jid
+    return @whatsapp_channel_jid if defined?(@whatsapp_channel_jid)
+
+    @whatsapp_channel_jid = matched_jid_for_marker(WHATSAPP_NEWSLETTER_JID_MARKER)
   end
 
   # The Captain assistant that should handle this conversation: the first
@@ -293,13 +320,20 @@ class Conversation < ApplicationRecord
   end
 
   WHATSAPP_GROUP_JID_MARKER = '@g.us'.freeze
+  WHATSAPP_NEWSLETTER_JID_MARKER = '@newsletter'.freeze
 
   def matched_group_jid
-    raw = group_jid_candidates.find { |value| value.to_s.include?(WHATSAPP_GROUP_JID_MARKER) }
-    self.class.normalize_group_jid(raw)
+    matched_jid_for_marker(WHATSAPP_GROUP_JID_MARKER)
   end
 
-  def group_jid_candidates
+  # Finds the first JID candidate containing the given "@..." marker and normalizes it.
+  # Shared by every WhatsApp JID kind (group, channel/newsletter, ...).
+  def matched_jid_for_marker(marker)
+    raw = jid_candidates.find { |value| value.to_s.include?(marker) }
+    self.class.normalize_whatsapp_jid(raw)
+  end
+
+  def jid_candidates
     [
       contact_inbox&.source_id,
       contact&.identifier,
@@ -321,7 +355,7 @@ class Conversation < ApplicationRecord
     end
   end
 
-  def group_attributes
+  def chat_attributes
     [additional_attributes, contact&.additional_attributes].select { |attrs| attrs.is_a?(Hash) }
   end
 
@@ -336,8 +370,14 @@ class Conversation < ApplicationRecord
   end
 
   def structured_group_identifier?(raw)
-    local_part = raw.to_s.split('@').first.to_s
+    full = raw.to_s
+    local_part, separator, domain = full.partition('@')
     return false if local_part.blank?
+    # Only guess by shape when there's no "@domain" suffix at all (fully stripped by the
+    # bridge). A present-but-different domain (e.g. "@newsletter", "@lid") already tells us
+    # this JID's kind — a long digit string there is a WhatsApp Channel id, not a group id,
+    # and guessing "group" from digit-count alone would misclassify it.
+    return false if separator.present? && domain.present?
     # WhatsApp JIDs are 100% numeric (modern) or "<digits>-<digits>" (legacy). Anything
     # with letters (UUIDs from API channel source_ids, slugs, etc.) is NOT a group id.
     return false if local_part.match?(/[a-z]/i)

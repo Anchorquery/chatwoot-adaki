@@ -325,4 +325,35 @@ describe MessageTemplates::HookExecutionService do
       expect(conversation.messages.outgoing.last.content).to include('⚠️ Por favor, evita el spam.')
     end
   end
+
+  context 'when conversation is a whatsapp channel (newsletter)' do
+    let(:contact) { create(:contact) }
+    let(:conversation) { create(:conversation, contact: contact) }
+    let(:greeting_service) { double }
+
+    before do
+      # Simulating a WhatsApp channel conversation via Evolution API source_id format
+      conversation.contact_inbox.update!(source_id: '120363000000000000@newsletter')
+      conversation.inbox.update(greeting_enabled: true, greeting_message: 'Hi, this is a greeting message')
+
+      allow(MessageTemplates::Template::Greeting).to receive(:new).and_return(greeting_service)
+      allow(greeting_service).to receive(:perform).and_return(true)
+    end
+
+    it 'does not call any template hooks when the bot is not mentioned' do
+      create(:message, conversation: conversation, account: conversation.account, content: 'Hello everyone!')
+
+      expect(MessageTemplates::Template::Greeting).not_to have_received(:new)
+    end
+
+    it 'calls template hooks when the bot is mentioned' do
+      allow_any_instance_of(Conversation).to receive(:bot_mentioned?).and_return(true)
+
+      Redis::Alfred.delete("rate_limit:channel_chat:#{conversation.id}:user:#{contact.id}")
+
+      create(:message, conversation: conversation, account: conversation.account, sender: contact, content: '!bot tell me a joke')
+
+      expect(MessageTemplates::Template::Greeting).to have_received(:new)
+    end
+  end
 end

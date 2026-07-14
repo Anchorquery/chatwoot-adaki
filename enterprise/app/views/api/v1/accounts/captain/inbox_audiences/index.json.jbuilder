@@ -4,6 +4,7 @@ json.payload do
     json.inbox_id audience.inbox_id
     json.inbox_name audience.inbox.name
     json.group_jids audience.group_jids
+    json.channel_jids audience.channel_jids
     json.label_titles audience.label_titles
   end
 end

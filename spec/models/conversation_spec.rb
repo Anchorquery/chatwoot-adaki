@@ -1285,6 +1285,48 @@ RSpec.describe Conversation do
     end
   end
 
+  describe '#whatsapp_channel_jid and #whatsapp_channel?' do
+    let(:inbox) { create(:inbox) }
+
+    it 'extracts the normalized jid when the @newsletter marker is present in source_id' do
+      contact_inbox = create(:contact_inbox, inbox: inbox, source_id: '120363000000000000@newsletter')
+      conversation = create(:conversation, inbox: inbox, contact_inbox: contact_inbox)
+
+      expect(conversation.whatsapp_channel_jid).to eq('120363000000000000')
+      expect(conversation.whatsapp_channel?).to be(true)
+    end
+
+    it 'finds the marker inside conversation additional_attributes' do
+      conversation = create(:conversation, inbox: inbox,
+                                           additional_attributes: { 'source' => '120363000000000000@newsletter' })
+
+      expect(conversation.whatsapp_channel_jid).to eq('120363000000000000')
+      expect(conversation.whatsapp_channel?).to be(true)
+    end
+
+    it 'returns nil/false for a regular contact' do
+      normal_conversation = create(:conversation, inbox: inbox)
+      expect(normal_conversation.whatsapp_channel_jid).to be_nil
+      expect(normal_conversation.whatsapp_channel?).to be(false)
+    end
+
+    it 'does not confuse a group conversation with a channel conversation' do
+      contact_inbox = create(:contact_inbox, inbox: inbox, source_id: '1203630000000@g.us')
+      conversation = create(:conversation, inbox: inbox, contact_inbox: contact_inbox)
+
+      expect(conversation.group?).to be(true)
+      expect(conversation.whatsapp_channel?).to be(false)
+    end
+
+    it 'does not misclassify a long-digit channel jid as a group via the structural fallback' do
+      contact_inbox = create(:contact_inbox, inbox: inbox, source_id: '120363000000000000@newsletter')
+      conversation = create(:conversation, inbox: inbox, contact_inbox: contact_inbox)
+
+      expect(conversation.group?).to be(false)
+      expect(conversation.group_jid).to be_nil
+    end
+  end
+
   # CaptainInboxAudience/Captain::Assistant are enterprise-only — same CE/CI
   # constraint as the #bot_mentioned? captain contexts above.
   if ChatwootApp.enterprise?
@@ -1311,6 +1353,21 @@ RSpec.describe Conversation do
           create(:captain_inbox, inbox: inbox, captain_assistant: default_assistant)
           create(:captain_inbox_audience, inbox: inbox, captain_assistant: audience_assistant,
                                           group_jids: ['1203630000000'], label_titles: [])
+        end
+
+        it 'resolves to the audience assistant instead of the default' do
+          expect(conversation.resolved_captain_assistant).to eq(audience_assistant)
+        end
+      end
+
+      context 'with a matching channel audience' do
+        let(:contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: '120363000000000000@newsletter') }
+        let(:conversation) { create(:conversation, inbox: inbox, contact_inbox: contact_inbox) }
+
+        before do
+          create(:captain_inbox, inbox: inbox, captain_assistant: default_assistant)
+          create(:captain_inbox_audience, inbox: inbox, captain_assistant: audience_assistant,
+                                          group_jids: [], channel_jids: ['120363000000000000'], label_titles: [])
         end
 
         it 'resolves to the audience assistant instead of the default' do

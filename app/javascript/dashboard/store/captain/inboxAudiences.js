@@ -20,7 +20,7 @@ export default createStore({
     },
     update: async function update(
       { commit },
-      { id, assistantId, groupJids, labelTitles }
+      { id, assistantId, groupJids, channelJids, labelTitles }
     ) {
       commit(mutations.SET_UI_FLAG, { updatingItem: true });
       try {
@@ -28,6 +28,7 @@ export default createStore({
           id,
           assistantId,
           groupJids,
+          channelJids,
           labelTitles,
         });
         commit(mutations.UPSERT, response.data);
