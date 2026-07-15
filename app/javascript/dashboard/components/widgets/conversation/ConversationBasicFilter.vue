@@ -25,6 +25,7 @@ const { updateUISettings } = useUISettings();
 
 const chatStatusFilter = useMapGetter('getChatStatusFilter');
 const chatSortFilter = useMapGetter('getChatSortFilter');
+const chatKindFilter = useMapGetter('getChatKindFilter');
 
 const [showActionsDropdown, toggleDropdown] = useToggle();
 
@@ -36,6 +37,10 @@ const currentSortBy = computed(() => {
   return (
     chatSortFilter.value || wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC
   );
+});
+
+const currentChatKind = computed(() => {
+  return chatKindFilter.value || wootConstants.CHAT_KIND_TYPE.ALL;
 });
 
 const chatStatusOptions = computed(() => [
@@ -100,6 +105,21 @@ const chatSortOptions = computed(() => [
   },
 ]);
 
+const chatKindOptions = computed(() => [
+  {
+    label: t('CHAT_LIST.CHAT_KIND_FILTER_ITEMS.all.TEXT'),
+    value: 'all',
+  },
+  {
+    label: t('CHAT_LIST.CHAT_KIND_FILTER_ITEMS.group.TEXT'),
+    value: 'group',
+  },
+  {
+    label: t('CHAT_LIST.CHAT_KIND_FILTER_ITEMS.whatsapp_channel.TEXT'),
+    value: 'whatsapp_channel',
+  },
+]);
+
 const activeChatStatusLabel = computed(
   () =>
     chatStatusOptions.value.find(m => m.value === chatStatusFilter.value)
@@ -112,11 +132,18 @@ const activeChatSortLabel = computed(
     ''
 );
 
+const activeChatKindLabel = computed(
+  () =>
+    chatKindOptions.value.find(m => m.value === currentChatKind.value)?.label ||
+    ''
+);
+
 const saveSelectedFilter = (type, value) => {
   updateUISettings({
     conversations_filter_by: {
       status: type === 'status' ? value : currentStatusFilter.value,
       order_by: type === 'sort' ? value : currentSortBy.value,
+      chat_kind: type === 'chatKind' ? value : currentChatKind.value,
     },
   });
 };
@@ -131,6 +158,12 @@ const handleSortChange = value => {
   emit('changeFilter', value, 'sort');
   store.dispatch('setChatSortFilter', value);
   saveSelectedFilter('sort', value);
+};
+
+const handleChatKindChange = value => {
+  emit('changeFilter', value, 'chatKind');
+  store.dispatch('setChatKindFilter', value);
+  saveSelectedFilter('chatKind', value);
 };
 </script>
 
@@ -175,6 +208,18 @@ const handleSortChange = value => {
           :label="activeChatSortLabel"
           :sub-menu-position="isOnExpandedLayout ? 'left' : 'right'"
           @update:model-value="handleSortChange"
+        />
+      </div>
+      <div class="flex items-center justify-between last:mt-4 gap-2">
+        <span class="text-sm truncate text-n-slate-12">
+          {{ $t('CHAT_LIST.CHAT_SORT.CHAT_KIND') }}
+        </span>
+        <SelectMenu
+          :model-value="currentChatKind"
+          :options="chatKindOptions"
+          :label="activeChatKindLabel"
+          :sub-menu-position="isOnExpandedLayout ? 'left' : 'right'"
+          @update:model-value="handleChatKindChange"
         />
       </div>
     </div>

@@ -75,6 +75,7 @@ const resolveAttributesModalRef = ref(null);
 const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
 const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
+const activeChatKind = ref(wootConstants.CHAT_KIND_TYPE.ALL);
 const showAdvancedFilters = ref(false);
 // chatsOnView is to store the chats that are currently visible on the screen,
 // which mirrors the conversationList.
@@ -249,6 +250,10 @@ const conversationFilters = computed(() => {
     assigneeType: activeAssigneeTab.value,
     status: activeStatus.value,
     sortBy: activeSortBy.value,
+    chatKind:
+      activeChatKind.value === wootConstants.CHAT_KIND_TYPE.ALL
+        ? undefined
+        : activeChatKind.value,
     page: conversationListPagination.value,
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
@@ -361,13 +366,18 @@ const uniqueInboxes = computed(() => {
 // ---------------------- Methods -----------------------
 function setFiltersFromUISettings() {
   const { conversations_filter_by: filterBy = {} } = uiSettings.value;
-  const { status, order_by: orderBy } = filterBy;
+  const { status, order_by: orderBy, chat_kind: chatKind } = filterBy;
   activeStatus.value = status || wootConstants.STATUS_TYPE.OPEN;
   activeSortBy.value = Object.values(wootConstants.SORT_BY_TYPE).includes(
     orderBy
   )
     ? orderBy
     : wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC;
+  activeChatKind.value = Object.values(wootConstants.CHAT_KIND_TYPE).includes(
+    chatKind
+  )
+    ? chatKind
+    : wootConstants.CHAT_KIND_TYPE.ALL;
 }
 
 function emitConversationLoaded() {
@@ -597,6 +607,8 @@ function updateAssigneeTab(selectedTab) {
 function onBasicFilterChange(value, type) {
   if (type === 'status') {
     activeStatus.value = value;
+  } else if (type === 'chatKind') {
+    activeChatKind.value = value;
   } else {
     activeSortBy.value = value;
   }
@@ -790,6 +802,7 @@ onMounted(() => {
   setFiltersFromUISettings();
   store.dispatch('setChatStatusFilter', activeStatus.value);
   store.dispatch('setChatSortFilter', activeSortBy.value);
+  store.dispatch('setChatKindFilter', activeChatKind.value);
   resetAndFetchData();
   if (hasActiveFolders.value) {
     store.dispatch('campaigns/get');

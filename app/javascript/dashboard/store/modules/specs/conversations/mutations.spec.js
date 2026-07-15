@@ -1077,6 +1077,17 @@ describe('#mutations', () => {
     });
   });
 
+  describe('#CHANGE_CHAT_KIND_FILTER', () => {
+    it('should update chat kind filter', () => {
+      const state = {
+        chatKindFilter: 'all',
+      };
+
+      mutations[types.CHANGE_CHAT_KIND_FILTER](state, 'group');
+      expect(state.chatKindFilter).toBe('group');
+    });
+  });
+
   describe('#UPDATE_ASSIGNEE', () => {
     it('should update assignee on conversation', () => {
       const state = {

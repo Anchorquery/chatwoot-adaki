@@ -160,13 +160,12 @@ RSpec.describe Campaign do
       )
     end
 
-    it 'does not allow API campaigns without a webhook URL' do
+    it 'allows API campaigns without a webhook URL (delivery is a no-op until one is configured)' do
       api_channel = create(:channel_api, account: account, webhook_url: nil)
       api_inbox = api_channel.inbox
       campaign = build(:campaign, inbox: api_inbox, account: account)
 
-      expect(campaign).not_to be_valid
-      expect(campaign.errors[:inbox]).to include('API inbox must have a webhook URL')
+      expect(campaign).to be_valid
     end
   end
 end

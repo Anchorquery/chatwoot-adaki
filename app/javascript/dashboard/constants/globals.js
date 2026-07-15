@@ -17,6 +17,11 @@ export default {
     PARTICIPATING: 'participating',
     UNATTENDED: 'unattended',
   },
+  CHAT_KIND_TYPE: {
+    ALL: 'all',
+    GROUP: 'group',
+    WHATSAPP_CHANNEL: 'whatsapp_channel',
+  },
   SORT_BY_TYPE: {
     LAST_ACTIVITY_AT_ASC: 'last_activity_at_asc',
     LAST_ACTIVITY_AT_DESC: 'last_activity_at_desc',

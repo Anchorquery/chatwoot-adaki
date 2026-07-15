@@ -426,6 +426,10 @@ const actions = {
     commit(types.CHANGE_CHAT_SORT_FILTER, data);
   },
 
+  setChatKindFilter({ commit }, data) {
+    commit(types.CHANGE_CHAT_KIND_FILTER, data);
+  },
+
   updateAssignee({ commit }, data) {
     commit(types.UPDATE_ASSIGNEE, data);
   },

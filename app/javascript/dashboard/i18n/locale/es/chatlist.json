@@ -44,7 +44,19 @@
     "SORT_TOOLTIP_LABEL": "Ordenar conversaciones",
     "CHAT_SORT": {
       "STATUS": "Estado",
-      "ORDER_BY": "Ordenar por"
+      "ORDER_BY": "Ordenar por",
+      "CHAT_KIND": "Tipo de chat"
+    },
+    "CHAT_KIND_FILTER_ITEMS": {
+      "all": {
+        "TEXT": "Todos los chats"
+      },
+      "group": {
+        "TEXT": "Solo grupos de WhatsApp"
+      },
+      "whatsapp_channel": {
+        "TEXT": "Solo canales de WhatsApp"
+      }
     },
     "CHAT_TIME_STAMP": {
       "CREATED": {

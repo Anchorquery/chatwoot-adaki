@@ -147,6 +147,43 @@ describe ConversationFinder do
       end
     end
 
+    context 'with chat_kind' do
+      let!(:group_contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: '1203630000000@g.us') }
+      let!(:channel_contact_inbox) { create(:contact_inbox, inbox: inbox, source_id: '120363000000000000@newsletter') }
+
+      before do
+        create(:conversation, account: account, inbox: inbox, contact_inbox: group_contact_inbox)
+        create(:conversation, account: account, inbox: inbox, contact_inbox: channel_contact_inbox)
+      end
+
+      context 'when group' do
+        let(:params) { { chat_kind: 'group', status: 'all' } }
+
+        it 'returns only conversations whose contact_inbox source_id is a WhatsApp group jid' do
+          result = conversation_finder.perform
+          expect(result[:conversations].map(&:contact_inbox_id)).to eq([group_contact_inbox.id])
+        end
+      end
+
+      context 'when whatsapp_channel' do
+        let(:params) { { chat_kind: 'whatsapp_channel', status: 'all' } }
+
+        it 'returns only conversations whose contact_inbox source_id is a WhatsApp channel jid' do
+          result = conversation_finder.perform
+          expect(result[:conversations].map(&:contact_inbox_id)).to eq([channel_contact_inbox.id])
+        end
+      end
+
+      context 'when an unknown chat_kind value is given' do
+        let(:params) { { chat_kind: 'bogus', status: 'all' } }
+
+        it 'does not filter' do
+          result = conversation_finder.perform
+          expect(result[:conversations].length).to eq(7)
+        end
+      end
+    end
+
     context 'without source' do
       let(:params) { {} }
 

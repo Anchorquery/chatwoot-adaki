@@ -494,6 +494,13 @@ describe('#actions', () => {
       ]);
     });
   });
+
+  describe('#setChatKindFilter', () => {
+    it('sends correct action', async () => {
+      await actions.setChatKindFilter({ commit }, 'group');
+      expect(commit.mock.calls).toEqual([['CHANGE_CHAT_KIND_FILTER', 'group']]);
+    });
+  });
 });
 
 describe('#deleteMessage', () => {

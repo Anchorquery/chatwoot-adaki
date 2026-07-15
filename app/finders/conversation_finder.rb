@@ -85,6 +85,7 @@ class ConversationFinder
     filter_by_labels
     filter_by_query
     filter_by_source_id
+    filter_by_chat_kind
   end
 
   def set_inboxes
@@ -181,6 +182,24 @@ class ConversationFinder
 
     @conversations = @conversations.joins(:contact_inbox)
     @conversations = @conversations.where(contact_inboxes: { source_id: params[:source_id] })
+  end
+
+  # "group" / "whatsapp_channel" — matches on the contact_inbox.source_id JID suffix, the
+  # dominant signal Conversation#group?/#whatsapp_channel? use (the same markers, so results
+  # stay consistent with the badge shown in the conversation list). This intentionally does
+  # NOT replicate the model's rarer fallback paths (structural group-id guessing, chat_type
+  # markers buried in additional_attributes) — those aren't expressible as a single SQL
+  # condition, and the source_id marker covers the real-world Evolution API bridge case.
+  CHAT_KIND_JID_MARKERS = {
+    'group' => Conversation::WHATSAPP_GROUP_JID_MARKER,
+    'whatsapp_channel' => Conversation::WHATSAPP_NEWSLETTER_JID_MARKER
+  }.freeze
+
+  def filter_by_chat_kind
+    marker = CHAT_KIND_JID_MARKERS[params[:chat_kind]]
+    return unless marker
+
+    @conversations = @conversations.joins(:contact_inbox).where('contact_inboxes.source_id LIKE ?', "%#{marker}")
   end
 
   def set_count_for_all_conversations
