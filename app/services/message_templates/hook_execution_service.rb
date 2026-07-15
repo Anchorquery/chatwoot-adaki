@@ -5,12 +5,13 @@ class MessageTemplates::HookExecutionService
     return if conversation.last_incoming_message.blank?
     return if message.auto_reply_email?
 
-    if broadcast_scope
+    scope = broadcast_scope
+    if scope
       return unless conversation.bot_mentioned?(message.content)
 
       # Protection against spam: rate limit per user in the group/channel (max 3 every 5 minutes)
       user_id = message.sender_id
-      redis_key = "rate_limit:#{broadcast_scope}_chat:#{conversation.id}:user:#{user_id}"
+      redis_key = "rate_limit:#{scope}_chat:#{conversation.id}:user:#{user_id}"
 
       request_count = ::Redis::Alfred.incr(redis_key)
       if request_count == 1

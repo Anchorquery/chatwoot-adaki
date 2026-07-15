@@ -372,13 +372,13 @@ class Conversation < ApplicationRecord
 
   def structured_group_identifier?(raw)
     full = raw.to_s
-    local_part, separator, domain = full.partition('@')
+    local_part, separator, = full.partition('@')
     return false if local_part.blank?
-    # Only guess by shape when there's no "@domain" suffix at all (fully stripped by the
-    # bridge). A present-but-different domain (e.g. "@newsletter", "@lid") already tells us
-    # this JID's kind — a long digit string there is a WhatsApp Channel id, not a group id,
-    # and guessing "group" from digit-count alone would misclassify it.
-    return false if separator.present? && domain.present?
+    # Only guess by shape when there's no "@" at all (fully stripped by the bridge). Any "@"
+    # — even a malformed one with an empty domain — means this JID already carries a marker
+    # of its own kind (e.g. "@newsletter", "@lid") that we shouldn't override by guessing
+    # "group" from digit-count alone.
+    return false if separator.present?
     # WhatsApp JIDs are 100% numeric (modern) or "<digits>-<digits>" (legacy). Anything
     # with letters (UUIDs from API channel source_ids, slugs, etc.) is NOT a group id.
     return false if local_part.match?(/[a-z]/i)

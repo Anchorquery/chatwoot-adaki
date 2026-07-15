@@ -1327,6 +1327,14 @@ RSpec.describe Conversation do
       expect(conversation.group?).to be(false)
       expect(conversation.group_jid).to be_nil
     end
+
+    it 'does not misclassify a long-digit jid with a malformed empty-domain "@" as a group' do
+      contact_inbox = create(:contact_inbox, inbox: inbox, source_id: '120363000000000000@')
+      conversation = create(:conversation, inbox: inbox, contact_inbox: contact_inbox)
+
+      expect(conversation.group?).to be(false)
+      expect(conversation.group_jid).to be_nil
+    end
   end
 
   # CaptainInboxAudience/Captain::Assistant are enterprise-only — same CE/CI
