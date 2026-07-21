@@ -200,39 +200,9 @@ watch(showOverrides, isOpen => {
   if (isOpen) fetchAudienceOptions();
 });
 
-const evolutionBaseUrl = ref('');
-const evolutionApiKey = ref('');
-const evolutionInstanceName = ref('');
-const savingEvolutionConfig = ref(false);
-const canSaveEvolutionConfig = computed(
-  () =>
-    evolutionBaseUrl.value.trim() &&
-    evolutionApiKey.value.trim() &&
-    evolutionInstanceName.value.trim()
-);
-
-const saveEvolutionConfig = async () => {
-  if (!canSaveEvolutionConfig.value) return;
-  savingEvolutionConfig.value = true;
-  try {
-    await store.dispatch('inboxes/updateInbox', {
-      id: props.inbox.id,
-      formData: false,
-      channel: {
-        additional_attributes: {
-          evolution_base_url: evolutionBaseUrl.value.trim(),
-          evolution_api_key: evolutionApiKey.value.trim(),
-          evolution_instance_name: evolutionInstanceName.value.trim(),
-        },
-      },
-    });
-    audienceOptionsLoaded.value = false;
-    await fetchAudienceOptions();
-  } finally {
-    savingEvolutionConfig.value = false;
-  }
-};
-
+// La conexión a Evolution (URL, apikey, instancia) se configura en
+// Settings > Bandejas > (canal API) > Configuración, no acá — es
+// config del canal, no del asistente. Ver Evolution::AudienceOptionsService.
 const jidLabelMap = computed(() => {
   const map = {};
   [...groupOptions.value, ...channelOptions.value].forEach(option => {
@@ -527,50 +497,6 @@ const removeAudience = audienceId => {
         <p class="text-xs text-n-slate-11">
           {{ t('CAPTAIN.INBOXES.AUDIENCES.HINT') }}
         </p>
-
-        <details class="rounded-md border border-n-weak p-2">
-          <summary class="text-xs font-medium text-n-slate-11 cursor-pointer">
-            {{ t('CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_LABEL') }}
-          </summary>
-          <div class="flex flex-col gap-2 mt-2">
-            <input
-              v-model="evolutionBaseUrl"
-              type="text"
-              :placeholder="
-                t('CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_URL_PLACEHOLDER')
-              "
-              class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
-            />
-            <input
-              v-model="evolutionApiKey"
-              type="password"
-              :placeholder="
-                t(
-                  'CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_API_KEY_PLACEHOLDER'
-                )
-              "
-              class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
-            />
-            <input
-              v-model="evolutionInstanceName"
-              type="text"
-              :placeholder="
-                t(
-                  'CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_INSTANCE_PLACEHOLDER'
-                )
-              "
-              class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
-            />
-            <Button
-              :label="t('CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_SAVE')"
-              size="xs"
-              class="rounded-md self-start"
-              :disabled="!canSaveEvolutionConfig || savingEvolutionConfig"
-              :is-loading="savingEvolutionConfig"
-              @click="saveEvolutionConfig"
-            />
-          </div>
-        </details>
 
         <div
           v-for="audience in audiences"

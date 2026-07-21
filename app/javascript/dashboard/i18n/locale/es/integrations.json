@@ -1226,12 +1226,7 @@
         "GROUP_JIDS_PLACEHOLDER": "Seleccionar grupos",
         "CHANNEL_JIDS_LABEL": "Canales de WhatsApp",
         "CHANNEL_JIDS_PLACEHOLDER": "Seleccionar canales",
-        "NO_EVOLUTION_OPTIONS": "Conectá este inbox a Evolution API para elegir por nombre",
-        "EVOLUTION_CONFIG_LABEL": "Conexión a Evolution API",
-        "EVOLUTION_CONFIG_URL_PLACEHOLDER": "URL base de Evolution, ej. http://localhost:8085",
-        "EVOLUTION_CONFIG_API_KEY_PLACEHOLDER": "API key de Evolution",
-        "EVOLUTION_CONFIG_INSTANCE_PLACEHOLDER": "Nombre de la instancia en Evolution",
-        "EVOLUTION_CONFIG_SAVE": "Guardar conexión",
+        "NO_EVOLUTION_OPTIONS": "Conectá este inbox a Evolution API (Configuración del inbox) para elegir por nombre",
         "LABELS_LABEL": "Etiquetas",
         "LABELS_PLACEHOLDER": "Seleccionar etiquetas",
         "ADD": "Agregar audiencia"

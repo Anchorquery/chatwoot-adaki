@@ -94,6 +94,7 @@ export default {
       selectedInboxName: '',
       channelWebsiteUrl: '',
       webhookUrl: '',
+      evolutionApiKey: '',
       channelWelcomeTitle: '',
       channelWelcomeTagline: '',
       selectedFeatureFlags: [],
@@ -445,6 +446,8 @@ export default {
       this.avatarUrl = this.inbox.avatar_url;
       this.selectedInboxName = this.inbox.name;
       this.webhookUrl = this.inbox.webhook_url;
+      this.evolutionApiKey =
+        this.inbox.additional_attributes?.evolution_api_key || '';
       this.greetingEnabled = this.inbox.greeting_enabled || false;
       this.greetingMessage = this.inbox.greeting_message || '';
       this.emailCollectEnabled = this.inbox.enable_email_collect;
@@ -585,6 +588,14 @@ export default {
             reply_time: this.replyTime || 'in_a_few_minutes',
             continuity_via_email:
               this.isInboundEmailEnabled && this.continuityViaEmail,
+            ...(this.isAPIInbox
+              ? {
+                  additional_attributes: {
+                    ...(this.inbox.additional_attributes || {}),
+                    evolution_api_key: this.evolutionApiKey?.trim() || '',
+                  },
+                }
+              : {}),
           },
         };
         if (this.avatarFile) {
@@ -799,6 +810,23 @@ export default {
                 @on-copy="copyWebhookSecret"
                 @on-reset="resetWebhookSecret"
               />
+            </SettingsFieldSection>
+
+            <SettingsFieldSection
+              v-if="isAPIInbox"
+              :label="$t('INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.LABEL')"
+            >
+              <woot-input
+                v-model="evolutionApiKey"
+                type="password"
+                class="[&>input]:!mb-0"
+                :placeholder="
+                  $t('INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.PLACEHOLDER')
+                "
+              />
+              <p class="text-n-slate-11 text-xs mt-1">
+                {{ $t('INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.HELP') }}
+              </p>
             </SettingsFieldSection>
 
             <SettingsFieldSection

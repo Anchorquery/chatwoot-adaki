@@ -380,6 +380,11 @@
         "SUBMIT_BUTTON": "Crear canal de API",
         "API": {
           "ERROR_MESSAGE": "No pudimos guardar el canal API"
+        },
+        "EVOLUTION_API_KEY": {
+          "LABEL": "API key de Evolution",
+          "PLACEHOLDER": "apikey",
+          "HELP": "Se usa para traer nombres reales de grupos/canales desde Evolution API (la URL base y la instancia se leen del Webhook URL de arriba) al elegir audiencia de Captain."
         }
       },
       "EMAIL_CHANNEL": {

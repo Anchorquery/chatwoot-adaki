@@ -2,6 +2,7 @@ class Evolution::AudienceOptionsService
   def initialize(inbox)
     @inbox = inbox
     @config = inbox.channel.try(:additional_attributes) || {}
+    @webhook_url = inbox.channel.try(:webhook_url)
   end
 
   def newsletters
@@ -35,15 +36,36 @@ class Evolution::AudienceOptionsService
     base_url.present? && api_key.present? && instance_name.present?
   end
 
+  # Evolution ya arma el webhook_url del inbox como
+  # "{base_url}/chatwoot/webhook/{instanceName}" al conectar el canal
+  # (ver initInstanceChatwoot en chatwoot.service.ts de Evolution). En vez
+  # de pedirle a Evolution URL/nombre de instancia de nuevo, los sacamos
+  # de ahí — solo la apikey no tiene forma de derivarse.
+  def parsed_webhook_uri
+    return @parsed_webhook_uri if defined?(@parsed_webhook_uri)
+
+    @parsed_webhook_uri = URI.parse(@webhook_url) if @webhook_url.present?
+  rescue URI::InvalidURIError
+    @parsed_webhook_uri = nil
+  end
+
   def base_url
-    @config['evolution_base_url']
+    uri = parsed_webhook_uri
+    return nil unless uri&.host
+
+    port_suffix = uri.port && [80, 443].exclude?(uri.port) ? ":#{uri.port}" : ''
+    "#{uri.scheme}://#{uri.host}#{port_suffix}"
+  end
+
+  def instance_name
+    uri = parsed_webhook_uri
+    return nil unless uri&.path
+
+    segment = uri.path.split('/').last
+    segment.present? ? CGI.unescape(segment) : nil
   end
 
   def api_key
     @config['evolution_api_key']
-  end
-
-  def instance_name
-    @config['evolution_instance_name']
   end
 end
