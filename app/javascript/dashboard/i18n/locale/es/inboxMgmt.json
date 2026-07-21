@@ -384,7 +384,10 @@
         "EVOLUTION_API_KEY": {
           "LABEL": "API key de Evolution",
           "PLACEHOLDER": "apikey",
-          "HELP": "Se usa para traer nombres reales de grupos/canales desde Evolution API (la URL base y la instancia se leen del Webhook URL de arriba) al elegir audiencia de Captain."
+          "HELP": "Se usa para traer nombres reales de grupos/canales desde Evolution API (la URL base y la instancia se leen del Webhook URL de arriba) al elegir audiencia de Captain.",
+          "TEST_BUTTON": "Probar conexión",
+          "TEST_SUCCESS": "Conectado — ya se pueden elegir grupos/canales por nombre",
+          "TEST_ERROR": "No se pudo conectar a Evolution API con esta key"
         }
       },
       "EMAIL_CHANNEL": {

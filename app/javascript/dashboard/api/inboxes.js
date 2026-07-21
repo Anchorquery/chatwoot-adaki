@@ -27,6 +27,10 @@ class Inboxes extends CacheEnabledApiClient {
     return axios.get(`${this.url}/${inboxId}/evolution_audience_options`);
   }
 
+  testEvolutionConnection(inboxId) {
+    return axios.post(`${this.url}/${inboxId}/evolution_test_connection`);
+  }
+
   setAgentBot(inboxId, botId) {
     return axios.post(`${this.url}/${inboxId}/set_agent_bot`, {
       agent_bot: botId,

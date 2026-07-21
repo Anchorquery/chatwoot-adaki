@@ -30,6 +30,16 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
     render json: { newsletters: service.newsletters, groups: service.groups }
   end
 
+  def evolution_test_connection
+    result = Evolution::AudienceOptionsService.new(@inbox).test_connection
+    @inbox.channel.update!(
+      additional_attributes: (@inbox.channel.additional_attributes || {}).merge(
+        'evolution_verified' => result[:success]
+      )
+    )
+    render json: result
+  end
+
   def avatar
     @inbox.avatar.attachment.destroy! if @inbox.avatar.attached?
     head :ok

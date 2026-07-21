@@ -170,12 +170,19 @@ const canAddAudience = computed(
 
 // Grupos/canales de WhatsApp con nombre real, traídos de Evolution API
 // (ver Evolution::AudienceOptionsService) en vez de que el admin tipee el JID.
+// Solo se pide si la conexión ya se probó con éxito (Settings > Bandejas >
+// Configuración > "Probar conexión") — evita pegarle a Evolution a ciegas
+// con una apikey no verificada.
 const groupOptions = ref([]);
 const channelOptions = ref([]);
 const loadingAudienceOptions = ref(false);
 const audienceOptionsLoaded = ref(false);
+const evolutionVerified = computed(
+  () => props.inbox.additional_attributes?.evolution_verified === true
+);
 
 const fetchAudienceOptions = async () => {
+  if (!evolutionVerified.value) return;
   if (audienceOptionsLoaded.value || loadingAudienceOptions.value) return;
   loadingAudienceOptions.value = true;
   try {

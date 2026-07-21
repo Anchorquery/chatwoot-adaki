@@ -13,6 +13,20 @@ class Evolution::AudienceOptionsService
     fetch('group/fetchAllGroups', getParticipants: 'false')
   end
 
+  def test_connection
+    return { success: false, message: 'not_configured' } unless configured?
+
+    response = HTTParty.get(
+      "#{base_url}/instance/connectionState/#{instance_name}",
+      headers: { 'apikey' => api_key },
+      timeout: 10
+    )
+    { success: response.success?, message: response.success? ? 'ok' : "http_#{response.code}" }
+  rescue StandardError => e
+    ChatwootExceptionTracker.new(e).capture_exception
+    { success: false, message: 'connection_error' }
+  end
+
   private
 
   def fetch(path, query = {})

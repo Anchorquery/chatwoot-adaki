@@ -318,6 +318,7 @@ Rails.application.routes.draw do
             post :sync_templates, on: :member
             get :health, on: :member
             get :evolution_audience_options, on: :member
+            post :evolution_test_connection, on: :member
             post :register_webhook, on: :member
             post :reset_secret, on: :member
             if ChatwootApp.enterprise?

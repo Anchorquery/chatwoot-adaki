@@ -17,6 +17,7 @@ import MicrosoftReauthorize from './channels/microsoft/Reauthorize.vue';
 import GoogleReauthorize from './channels/google/Reauthorize.vue';
 import WhatsappReauthorize from './channels/whatsapp/Reauthorize.vue';
 import InboxHealthAPI from 'dashboard/api/inboxHealth';
+import InboxesAPI from 'dashboard/api/inboxes';
 import PreChatFormSettings from './PreChatForm/Settings.vue';
 import WeeklyAvailability from './components/WeeklyAvailability.vue';
 import GreetingsEditor from 'shared/components/GreetingsEditor.vue';
@@ -95,6 +96,8 @@ export default {
       channelWebsiteUrl: '',
       webhookUrl: '',
       evolutionApiKey: '',
+      evolutionVerified: null,
+      testingEvolutionConnection: false,
       channelWelcomeTitle: '',
       channelWelcomeTagline: '',
       selectedFeatureFlags: [],
@@ -448,6 +451,8 @@ export default {
       this.webhookUrl = this.inbox.webhook_url;
       this.evolutionApiKey =
         this.inbox.additional_attributes?.evolution_api_key || '';
+      this.evolutionVerified =
+        this.inbox.additional_attributes?.evolution_verified ?? null;
       this.greetingEnabled = this.inbox.greeting_enabled || false;
       this.greetingMessage = this.inbox.greeting_message || '';
       this.emailCollectEnabled = this.inbox.enable_email_collect;
@@ -593,6 +598,13 @@ export default {
                   additional_attributes: {
                     ...(this.inbox.additional_attributes || {}),
                     evolution_api_key: this.evolutionApiKey?.trim() || '',
+                    // Cambiar la apikey invalida el último test; hay que
+                    // probar la conexión de nuevo para reactivar el picker.
+                    evolution_verified:
+                      this.evolutionApiKey?.trim() ===
+                      this.inbox.additional_attributes?.evolution_api_key
+                        ? this.inbox.additional_attributes?.evolution_verified
+                        : false,
                   },
                 }
               : {}),
@@ -606,6 +618,41 @@ export default {
         this.showBusinessNameInput = false;
       } catch (error) {
         useAlert(error.message || this.$t('INBOX_MGMT.EDIT.API.ERROR_MESSAGE'));
+      }
+    },
+    async testEvolutionConnection() {
+      this.testingEvolutionConnection = true;
+      try {
+        // Guarda la apikey tipeada primero, para probar contra lo que hay
+        // en pantalla y no contra lo último guardado.
+        await this.$store.dispatch('inboxes/updateInbox', {
+          id: this.currentInboxId,
+          formData: false,
+          channel: {
+            additional_attributes: {
+              ...(this.inbox.additional_attributes || {}),
+              evolution_api_key: this.evolutionApiKey?.trim() || '',
+            },
+          },
+        });
+        const { data } = await InboxesAPI.testEvolutionConnection(
+          this.currentInboxId
+        );
+        this.evolutionVerified = data.success;
+        useAlert(
+          data.success
+            ? this.$t(
+                'INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.TEST_SUCCESS'
+              )
+            : this.$t('INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.TEST_ERROR')
+        );
+      } catch (error) {
+        this.evolutionVerified = false;
+        useAlert(
+          this.$t('INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.TEST_ERROR')
+        );
+      } finally {
+        this.testingEvolutionConnection = false;
       }
     },
     handleImageUpload({ file, url }) {
@@ -827,6 +874,39 @@ export default {
               <p class="text-n-slate-11 text-xs mt-1">
                 {{ $t('INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.HELP') }}
               </p>
+              <div class="flex items-center gap-2 mt-2">
+                <NextButton
+                  size="sm"
+                  color="slate"
+                  :label="
+                    $t(
+                      'INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.TEST_BUTTON'
+                    )
+                  "
+                  :is-loading="testingEvolutionConnection"
+                  @click="testEvolutionConnection"
+                />
+                <span
+                  v-if="evolutionVerified === true"
+                  class="text-n-teal-11 text-xs"
+                >
+                  {{
+                    $t(
+                      'INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.TEST_SUCCESS'
+                    )
+                  }}
+                </span>
+                <span
+                  v-else-if="evolutionVerified === false"
+                  class="text-n-ruby-11 text-xs"
+                >
+                  {{
+                    $t(
+                      'INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.TEST_ERROR'
+                    )
+                  }}
+                </span>
+              </div>
             </SettingsFieldSection>
 
             <SettingsFieldSection
