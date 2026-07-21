@@ -317,6 +317,7 @@ Rails.application.routes.draw do
             delete :avatar, on: :member
             post :sync_templates, on: :member
             get :health, on: :member
+            get :evolution_audience_options, on: :member
             post :register_webhook, on: :member
             post :reset_secret, on: :member
             if ChatwootApp.enterprise?
@@ -752,9 +753,7 @@ Rails.application.routes.draw do
       resources :platform_banners
       resource :instance_status, only: [:show]
 
-      resource :settings, only: [:show] do
-        get :refresh, on: :collection
-      end
+      resource :settings, only: [:show]
 
       # resources that doesn't appear in primary navigation in super admin
       resources :account_users, only: [:new, :create, :show, :destroy]

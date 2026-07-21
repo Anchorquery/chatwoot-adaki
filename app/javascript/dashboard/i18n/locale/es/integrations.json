@@ -1223,9 +1223,15 @@
       "AUDIENCES": {
         "HINT": "Asigná este asistente a un grupo de WhatsApp, canal o etiqueta específica en vez de a toda la bandeja. Una conversación que no matchee ninguna cae al asistente por defecto de arriba.",
         "GROUP_JIDS_LABEL": "Grupos de WhatsApp",
-        "GROUP_JIDS_PLACEHOLDER": "ID de grupo de WhatsApp, ej. 1203630000000",
+        "GROUP_JIDS_PLACEHOLDER": "Seleccionar grupos",
         "CHANNEL_JIDS_LABEL": "Canales de WhatsApp",
-        "CHANNEL_JIDS_PLACEHOLDER": "ID de canal de WhatsApp, ej. 120363000000000000",
+        "CHANNEL_JIDS_PLACEHOLDER": "Seleccionar canales",
+        "NO_EVOLUTION_OPTIONS": "Conectá este inbox a Evolution API para elegir por nombre",
+        "EVOLUTION_CONFIG_LABEL": "Conexión a Evolution API",
+        "EVOLUTION_CONFIG_URL_PLACEHOLDER": "URL base de Evolution, ej. http://localhost:8085",
+        "EVOLUTION_CONFIG_API_KEY_PLACEHOLDER": "API key de Evolution",
+        "EVOLUTION_CONFIG_INSTANCE_PLACEHOLDER": "Nombre de la instancia en Evolution",
+        "EVOLUTION_CONFIG_SAVE": "Guardar conexión",
         "LABELS_LABEL": "Etiquetas",
         "LABELS_PLACEHOLDER": "Seleccionar etiquetas",
         "ADD": "Agregar audiencia"

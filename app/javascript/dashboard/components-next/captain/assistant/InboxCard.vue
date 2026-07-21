@@ -9,9 +9,9 @@ import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Policy from 'dashboard/components/policy.vue';
-import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 import { INBOX_TYPES, getInboxIconByType } from 'dashboard/helper/inbox';
+import InboxesAPI from 'dashboard/api/inboxes';
 
 const props = defineProps({
   id: {
@@ -167,6 +167,80 @@ const canAddAudience = computed(
     newChannelJids.value.length > 0 ||
     newLabelTitles.value.length > 0
 );
+
+// Grupos/canales de WhatsApp con nombre real, traídos de Evolution API
+// (ver Evolution::AudienceOptionsService) en vez de que el admin tipee el JID.
+const groupOptions = ref([]);
+const channelOptions = ref([]);
+const loadingAudienceOptions = ref(false);
+const audienceOptionsLoaded = ref(false);
+
+const fetchAudienceOptions = async () => {
+  if (audienceOptionsLoaded.value || loadingAudienceOptions.value) return;
+  loadingAudienceOptions.value = true;
+  try {
+    const { data } = await InboxesAPI.getEvolutionAudienceOptions(props.id);
+    groupOptions.value = (data.groups || []).map(group => ({
+      value: group.id,
+      label: group.subject || group.id,
+    }));
+    channelOptions.value = (data.newsletters || []).map(newsletter => ({
+      value: newsletter.id,
+      label: newsletter.name || newsletter.id,
+    }));
+    audienceOptionsLoaded.value = true;
+  } catch {
+    // Sin conexión a Evolution configurada en el inbox, seguimos sin opciones
+  } finally {
+    loadingAudienceOptions.value = false;
+  }
+};
+
+watch(showOverrides, isOpen => {
+  if (isOpen) fetchAudienceOptions();
+});
+
+const evolutionBaseUrl = ref('');
+const evolutionApiKey = ref('');
+const evolutionInstanceName = ref('');
+const savingEvolutionConfig = ref(false);
+const canSaveEvolutionConfig = computed(
+  () =>
+    evolutionBaseUrl.value.trim() &&
+    evolutionApiKey.value.trim() &&
+    evolutionInstanceName.value.trim()
+);
+
+const saveEvolutionConfig = async () => {
+  if (!canSaveEvolutionConfig.value) return;
+  savingEvolutionConfig.value = true;
+  try {
+    await store.dispatch('inboxes/updateInbox', {
+      id: props.inbox.id,
+      formData: false,
+      channel: {
+        additional_attributes: {
+          evolution_base_url: evolutionBaseUrl.value.trim(),
+          evolution_api_key: evolutionApiKey.value.trim(),
+          evolution_instance_name: evolutionInstanceName.value.trim(),
+        },
+      },
+    });
+    audienceOptionsLoaded.value = false;
+    await fetchAudienceOptions();
+  } finally {
+    savingEvolutionConfig.value = false;
+  }
+};
+
+const jidLabelMap = computed(() => {
+  const map = {};
+  [...groupOptions.value, ...channelOptions.value].forEach(option => {
+    map[option.value] = option.label;
+  });
+  return map;
+});
+const labelForJid = jid => jidLabelMap.value[jid] || jid;
 
 const addAudience = async () => {
   if (!canAddAudience.value) return;
@@ -454,6 +528,50 @@ const removeAudience = audienceId => {
           {{ t('CAPTAIN.INBOXES.AUDIENCES.HINT') }}
         </p>
 
+        <details class="rounded-md border border-n-weak p-2">
+          <summary class="text-xs font-medium text-n-slate-11 cursor-pointer">
+            {{ t('CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_LABEL') }}
+          </summary>
+          <div class="flex flex-col gap-2 mt-2">
+            <input
+              v-model="evolutionBaseUrl"
+              type="text"
+              :placeholder="
+                t('CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_URL_PLACEHOLDER')
+              "
+              class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            />
+            <input
+              v-model="evolutionApiKey"
+              type="password"
+              :placeholder="
+                t(
+                  'CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_API_KEY_PLACEHOLDER'
+                )
+              "
+              class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            />
+            <input
+              v-model="evolutionInstanceName"
+              type="text"
+              :placeholder="
+                t(
+                  'CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_INSTANCE_PLACEHOLDER'
+                )
+              "
+              class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            />
+            <Button
+              :label="t('CAPTAIN.INBOXES.AUDIENCES.EVOLUTION_CONFIG_SAVE')"
+              size="xs"
+              class="rounded-md self-start"
+              :disabled="!canSaveEvolutionConfig || savingEvolutionConfig"
+              :is-loading="savingEvolutionConfig"
+              @click="saveEvolutionConfig"
+            />
+          </div>
+        </details>
+
         <div
           v-for="audience in audiences"
           :key="audience.id"
@@ -466,7 +584,7 @@ const removeAudience = audienceId => {
               class="flex items-center gap-1 rounded bg-n-alpha-2 px-1.5 py-0.5"
             >
               <span class="i-lucide-users size-3 text-n-slate-11" />
-              {{ jid }}
+              {{ labelForJid(jid) }}
             </span>
             <span
               v-for="jid in audience.channel_jids"
@@ -474,7 +592,7 @@ const removeAudience = audienceId => {
               class="flex items-center gap-1 rounded bg-n-alpha-2 px-1.5 py-0.5"
             >
               <span class="i-lucide-radio size-3 text-n-slate-11" />
-              {{ jid }}
+              {{ labelForJid(jid) }}
             </span>
             <span
               v-for="title in audience.label_titles"
@@ -502,13 +620,13 @@ const removeAudience = audienceId => {
               <span class="i-lucide-users size-3.5" />
               {{ t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_LABEL') }}
             </label>
-            <TagInput
+            <TagMultiSelectComboBox
               v-model="newGroupJids"
-              type="text"
-              allow-create
-              :show-dropdown="false"
+              :options="groupOptions"
               :placeholder="
-                t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_PLACEHOLDER')
+                groupOptions.length
+                  ? t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_PLACEHOLDER')
+                  : t('CAPTAIN.INBOXES.AUDIENCES.NO_EVOLUTION_OPTIONS')
               "
             />
           </div>
@@ -519,13 +637,13 @@ const removeAudience = audienceId => {
               <span class="i-lucide-radio size-3.5" />
               {{ t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_LABEL') }}
             </label>
-            <TagInput
+            <TagMultiSelectComboBox
               v-model="newChannelJids"
-              type="text"
-              allow-create
-              :show-dropdown="false"
+              :options="channelOptions"
               :placeholder="
-                t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_PLACEHOLDER')
+                channelOptions.length
+                  ? t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_PLACEHOLDER')
+                  : t('CAPTAIN.INBOXES.AUDIENCES.NO_EVOLUTION_OPTIONS')
               "
             />
           </div>

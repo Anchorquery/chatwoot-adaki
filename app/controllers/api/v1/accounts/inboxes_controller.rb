@@ -25,6 +25,11 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
     @campaigns = @inbox.campaigns
   end
 
+  def evolution_audience_options
+    service = Evolution::AudienceOptionsService.new(@inbox)
+    render json: { newsletters: service.newsletters, groups: service.groups }
+  end
+
   def avatar
     @inbox.avatar.attachment.destroy! if @inbox.avatar.attached?
     head :ok

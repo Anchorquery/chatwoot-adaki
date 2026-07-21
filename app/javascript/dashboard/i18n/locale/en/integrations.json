@@ -1222,9 +1222,15 @@
       "AUDIENCES": {
         "HINT": "Assign this assistant to a specific WhatsApp group, channel or label instead of the whole inbox. A conversation that matches none of these falls back to the default assistant above.",
         "GROUP_JIDS_LABEL": "WhatsApp groups",
-        "GROUP_JIDS_PLACEHOLDER": "WhatsApp group id, e.g. 1203630000000",
+        "GROUP_JIDS_PLACEHOLDER": "Select groups",
         "CHANNEL_JIDS_LABEL": "WhatsApp channels",
-        "CHANNEL_JIDS_PLACEHOLDER": "WhatsApp channel id, e.g. 120363000000000000",
+        "CHANNEL_JIDS_PLACEHOLDER": "Select channels",
+        "NO_EVOLUTION_OPTIONS": "Connect this inbox to Evolution API to select by name",
+        "EVOLUTION_CONFIG_LABEL": "Evolution API connection",
+        "EVOLUTION_CONFIG_URL_PLACEHOLDER": "Evolution base URL, e.g. http://localhost:8085",
+        "EVOLUTION_CONFIG_API_KEY_PLACEHOLDER": "Evolution API key",
+        "EVOLUTION_CONFIG_INSTANCE_PLACEHOLDER": "Evolution instance name",
+        "EVOLUTION_CONFIG_SAVE": "Save connection",
         "LABELS_LABEL": "Labels",
         "LABELS_PLACEHOLDER": "Select labels",
         "ADD": "Add audience"
