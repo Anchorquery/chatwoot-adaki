@@ -69,4 +69,12 @@ class InboxPolicy < ApplicationPolicy
   def reset_secret?
     @account_user.administrator?
   end
+
+  def evolution_audience_options?
+    @account_user.administrator?
+  end
+
+  def evolution_test_connection?
+    @account_user.administrator?
+  end
 end
