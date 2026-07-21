@@ -17,7 +17,7 @@ class Evolution::AudienceOptionsService
     return { success: false, message: 'not_configured' } unless configured?
 
     response = HTTParty.get(
-      "#{base_url}/instance/connectionState/#{instance_name}",
+      "#{base_url}/instance/connectionState/#{encoded_instance_name}",
       headers: { 'apikey' => api_key },
       timeout: 10
     )
@@ -33,7 +33,7 @@ class Evolution::AudienceOptionsService
     return [] unless configured?
 
     response = HTTParty.get(
-      "#{base_url}/#{path}/#{instance_name}",
+      "#{base_url}/#{path}/#{encoded_instance_name}",
       headers: { 'apikey' => api_key },
       query: query,
       timeout: 10
@@ -77,6 +77,12 @@ class Evolution::AudienceOptionsService
 
     segment = uri.path.split('/').last
     segment.present? ? CGI.unescape(segment) : nil
+  end
+
+  # El nombre puede traer espacios u otros caracteres (ej. "EAJ - PNV");
+  # hay que re-codificarlo al armar URLs hacia Evolution.
+  def encoded_instance_name
+    ERB::Util.url_encode(instance_name)
   end
 
   def api_key
