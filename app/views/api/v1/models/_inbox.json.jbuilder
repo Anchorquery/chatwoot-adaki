@@ -118,7 +118,12 @@ if resource.api?
   json.secret resource.channel.try(:secret) if Current.account_user&.administrator?
   json.webhook_url resource.channel.try(:webhook_url)
   json.inbox_identifier resource.channel.try(:identifier)
-  json.additional_attributes resource.channel.try(:additional_attributes)
+  # La apikey de Evolution es la credencial global de ese servidor (controla todas
+  # las instancias de WhatsApp), y este JSON lo reciben también los agentes, no
+  # solo administradores. Nunca se envía su valor: el frontend solo necesita saber
+  # si hay una configurada.
+  json.additional_attributes resource.channel.try(:additional_attributes)&.except('evolution_api_key')
+  json.evolution_api_key_configured resource.channel.try(:additional_attributes)&.dig('evolution_api_key').present?
 end
 
 json.provider resource.channel.try(:provider)

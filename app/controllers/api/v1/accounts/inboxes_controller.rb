@@ -32,11 +32,7 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
 
   def evolution_test_connection
     result = Evolution::AudienceOptionsService.new(@inbox).test_connection
-    @inbox.channel.update!(
-      additional_attributes: (@inbox.channel.additional_attributes || {}).merge(
-        'evolution_verified' => result[:success]
-      )
-    )
+    persist_evolution_verified(result[:success])
     render json: result
   end
 
@@ -141,7 +137,33 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
 
   def reauthorize_and_update_channel(channel_attributes)
     @inbox.channel.reauthorized! if @inbox.channel.respond_to?(:reauthorized!)
-    @inbox.channel.update!(permitted_params(channel_attributes)[:channel])
+    @inbox.channel.update!(preserve_evolution_api_key(permitted_params(channel_attributes)[:channel]))
+  end
+
+  # El frontend nunca recibe la apikey de Evolution, así que tampoco puede
+  # reenviarla al guardar. Si llega vacía, se conserva la que ya estaba guardada;
+  # solo se reemplaza cuando el admin escribe una nueva.
+  def preserve_evolution_api_key(channel_params)
+    return channel_params unless channel_params.key?(:additional_attributes)
+
+    incoming = channel_params[:additional_attributes]
+    return channel_params if incoming.blank? || incoming['evolution_api_key'].present?
+
+    stored_key = @inbox.channel.additional_attributes.try(:[], 'evolution_api_key')
+    return channel_params if stored_key.blank?
+
+    channel_params.merge(additional_attributes: incoming.merge('evolution_api_key' => stored_key))
+  end
+
+  # Guardar el resultado del test no debe hacer fallar la respuesta: al usuario le
+  # importa saber si Evolution respondió, y perder el flag solo implica volver a
+  # probar la conexión.
+  def persist_evolution_verified(success)
+    @inbox.channel.update!(
+      additional_attributes: (@inbox.channel.additional_attributes || {}).merge('evolution_verified' => success)
+    )
+  rescue StandardError => e
+    ChatwootExceptionTracker.new(e).capture_exception
   end
 
   def update_channel_feature_flags

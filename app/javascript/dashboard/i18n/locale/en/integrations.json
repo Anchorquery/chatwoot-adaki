@@ -1225,7 +1225,9 @@
         "GROUP_JIDS_PLACEHOLDER": "Select groups",
         "CHANNEL_JIDS_LABEL": "WhatsApp channels",
         "CHANNEL_JIDS_PLACEHOLDER": "Select channels",
-        "NO_EVOLUTION_OPTIONS": "Connect this inbox to Evolution API (Inbox settings > Configuration) to select by name",
+        "NO_EVOLUTION_OPTIONS": "Connect this inbox to Evolution API and test the connection (Inbox settings > Configuration) to pick groups and channels by name. Meanwhile, you can paste the id manually.",
+        "GROUP_JIDS_MANUAL_PLACEHOLDER": "WhatsApp group id, e.g. 1203630000000",
+        "CHANNEL_JIDS_MANUAL_PLACEHOLDER": "WhatsApp channel id, e.g. 120363000000000000",
         "LABELS_LABEL": "Labels",
         "LABELS_PLACEHOLDER": "Select labels",
         "ADD": "Add audience"

@@ -9,6 +9,7 @@ import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Policy from 'dashboard/components/policy.vue';
+import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 import { INBOX_TYPES, getInboxIconByType } from 'dashboard/helper/inbox';
 import InboxesAPI from 'dashboard/api/inboxes';
@@ -196,8 +197,11 @@ const fetchAudienceOptions = async () => {
       label: newsletter.name || newsletter.id,
     }));
     audienceOptionsLoaded.value = true;
-  } catch {
-    // Sin conexión a Evolution configurada en el inbox, seguimos sin opciones
+  } catch (error) {
+    // Se cae a los campos de texto manual; el aviso de arriba ya explica al
+    // usuario que tiene que configurar y probar la conexión a Evolution.
+    // eslint-disable-next-line no-console
+    console.warn('Could not fetch Evolution audience options', error);
   } finally {
     loadingAudienceOptions.value = false;
   }
@@ -504,6 +508,13 @@ const removeAudience = audienceId => {
         <p class="text-xs text-n-slate-11">
           {{ t('CAPTAIN.INBOXES.AUDIENCES.HINT') }}
         </p>
+        <p
+          v-if="!evolutionVerified"
+          class="text-xs text-n-amber-11 flex items-start gap-1.5"
+        >
+          <span class="i-lucide-info size-3.5 shrink-0 mt-0.5" />
+          {{ t('CAPTAIN.INBOXES.AUDIENCES.NO_EVOLUTION_OPTIONS') }}
+        </p>
 
         <div
           v-for="audience in audiences"
@@ -554,12 +565,21 @@ const removeAudience = audienceId => {
               {{ t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_LABEL') }}
             </label>
             <TagMultiSelectComboBox
+              v-if="groupOptions.length"
               v-model="newGroupJids"
               :options="groupOptions"
               :placeholder="
-                groupOptions.length
-                  ? t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_PLACEHOLDER')
-                  : t('CAPTAIN.INBOXES.AUDIENCES.NO_EVOLUTION_OPTIONS')
+                t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_PLACEHOLDER')
+              "
+            />
+            <TagInput
+              v-else
+              v-model="newGroupJids"
+              type="text"
+              allow-create
+              :show-dropdown="false"
+              :placeholder="
+                t('CAPTAIN.INBOXES.AUDIENCES.GROUP_JIDS_MANUAL_PLACEHOLDER')
               "
             />
           </div>
@@ -571,12 +591,21 @@ const removeAudience = audienceId => {
               {{ t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_LABEL') }}
             </label>
             <TagMultiSelectComboBox
+              v-if="channelOptions.length"
               v-model="newChannelJids"
               :options="channelOptions"
               :placeholder="
-                channelOptions.length
-                  ? t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_PLACEHOLDER')
-                  : t('CAPTAIN.INBOXES.AUDIENCES.NO_EVOLUTION_OPTIONS')
+                t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_PLACEHOLDER')
+              "
+            />
+            <TagInput
+              v-else
+              v-model="newChannelJids"
+              type="text"
+              allow-create
+              :show-dropdown="false"
+              :placeholder="
+                t('CAPTAIN.INBOXES.AUDIENCES.CHANNEL_JIDS_MANUAL_PLACEHOLDER')
               "
             />
           </div>

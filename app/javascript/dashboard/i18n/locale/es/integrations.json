@@ -1226,7 +1226,9 @@
         "GROUP_JIDS_PLACEHOLDER": "Seleccionar grupos",
         "CHANNEL_JIDS_LABEL": "Canales de WhatsApp",
         "CHANNEL_JIDS_PLACEHOLDER": "Seleccionar canales",
-        "NO_EVOLUTION_OPTIONS": "Conectá este inbox a Evolution API (Configuración del inbox) para elegir por nombre",
+        "NO_EVOLUTION_OPTIONS": "Conectá este inbox a Evolution API y probá la conexión (Configuración del inbox) para elegir grupos y canales por nombre. Mientras tanto, podés pegar el ID a mano.",
+        "GROUP_JIDS_MANUAL_PLACEHOLDER": "ID de grupo de WhatsApp, ej. 1203630000000",
+        "CHANNEL_JIDS_MANUAL_PLACEHOLDER": "ID de canal de WhatsApp, ej. 120363000000000000",
         "LABELS_LABEL": "Etiquetas",
         "LABELS_PLACEHOLDER": "Seleccionar etiquetas",
         "ADD": "Agregar audiencia"

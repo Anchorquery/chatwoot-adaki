@@ -96,6 +96,7 @@ export default {
       channelWebsiteUrl: '',
       webhookUrl: '',
       evolutionApiKey: '',
+      evolutionApiKeyConfigured: false,
       evolutionVerified: null,
       testingEvolutionConnection: false,
       channelWelcomeTitle: '',
@@ -449,8 +450,11 @@ export default {
       this.avatarUrl = this.inbox.avatar_url;
       this.selectedInboxName = this.inbox.name;
       this.webhookUrl = this.inbox.webhook_url;
-      this.evolutionApiKey =
-        this.inbox.additional_attributes?.evolution_api_key || '';
+      // El backend nunca envía el valor de la apikey, solo si hay una guardada.
+      // El campo queda vacío: escribir algo la reemplaza, dejarlo vacío la conserva.
+      this.evolutionApiKey = '';
+      this.evolutionApiKeyConfigured =
+        this.inbox.evolution_api_key_configured || false;
       this.evolutionVerified =
         this.inbox.additional_attributes?.evolution_verified ?? null;
       this.greetingEnabled = this.inbox.greeting_enabled || false;
@@ -597,14 +601,16 @@ export default {
               ? {
                   additional_attributes: {
                     ...(this.inbox.additional_attributes || {}),
+                    // Vacío = conservar la guardada (el backend la repone).
+                    // Con valor = key nueva, así que el último test deja de
+                    // valer y hay que volver a probar para reactivar el picker.
                     evolution_api_key: this.evolutionApiKey?.trim() || '',
-                    // Cambiar la apikey invalida el último test; hay que
-                    // probar la conexión de nuevo para reactivar el picker.
-                    evolution_verified:
-                      this.evolutionApiKey?.trim() ===
-                      this.inbox.additional_attributes?.evolution_api_key
-                        ? this.inbox.additional_attributes?.evolution_verified
-                        : false,
+                    // Se usa el estado local y no el del store: tras probar la
+                    // conexión el store queda desactualizado (esa respuesta no
+                    // devuelve el inbox), y guardar reescribiría el valor viejo.
+                    evolution_verified: this.evolutionApiKey?.trim()
+                      ? false
+                      : this.evolutionVerified,
                   },
                 }
               : {}),
