@@ -319,6 +319,8 @@ Rails.application.routes.draw do
             get :health, on: :member
             get :evolution_audience_options, on: :member
             post :evolution_test_connection, on: :member
+            get :evolution_privacy_filter, on: :member
+            post :evolution_update_privacy_filter, on: :member
             post :register_webhook, on: :member
             post :reset_secret, on: :member
             if ChatwootApp.enterprise?

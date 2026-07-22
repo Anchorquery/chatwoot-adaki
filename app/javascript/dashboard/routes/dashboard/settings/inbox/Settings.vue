@@ -41,6 +41,7 @@ import ColorPicker from 'dashboard/components-next/colorpicker/ColorPicker.vue';
 import SelectInput from 'dashboard/components-next/select/Select.vue';
 import Widget from 'dashboard/modules/widget-preview/components/Widget.vue';
 import AccessToken from 'dashboard/routes/dashboard/settings/profile/AccessToken.vue';
+import EvolutionPrivacyFilter from './components/EvolutionPrivacyFilter.vue';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 
 export default {
@@ -75,6 +76,7 @@ export default {
     AccountHealth,
     Widget,
     AccessToken,
+    EvolutionPrivacyFilter,
   },
   mixins: [inboxMixin],
   setup() {
@@ -913,6 +915,16 @@ export default {
                   }}
                 </span>
               </div>
+            </SettingsFieldSection>
+
+            <SettingsFieldSection
+              v-if="isAPIInbox"
+              :label="$t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.LABEL')"
+            >
+              <EvolutionPrivacyFilter
+                :inbox-id="currentInboxId"
+                :connected="evolutionVerified === true"
+              />
             </SettingsFieldSection>
 
             <SettingsFieldSection

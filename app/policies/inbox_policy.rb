@@ -77,4 +77,12 @@ class InboxPolicy < ApplicationPolicy
   def evolution_test_connection?
     @account_user.administrator?
   end
+
+  def evolution_privacy_filter?
+    @account_user.administrator?
+  end
+
+  def evolution_update_privacy_filter?
+    @account_user.administrator?
+  end
 end
