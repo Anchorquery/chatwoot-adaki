@@ -732,22 +732,6 @@
       "USE_INBOX_AVATAR_FOR_BOT": "Usar nombre de bandeja de entrada y avatar para el bot"
     },
     "SETTINGS_POPUP": {
-      "EVOLUTION_PRIVACY": {
-        "LABEL": "Privacidad — qué se sincroniza a Chatwoot",
-        "HINT": "Elegí si se sincroniza todo chat de WhatsApp a Chatwoot, se excluyen algunos, o solo se permiten los que elijas. Aplica solo a esta bandeja.",
-        "NO_CONNECTION_HINT": "Probá la conexión a Evolution de arriba para elegir grupos, canales y contactos por nombre. Mientras tanto, podés pegar los IDs a mano.",
-        "MODES": {
-          "ALL": "Todos",
-          "BLOCK": "Excluir seleccionados",
-          "ALLOW": "Permitir solo seleccionados"
-        },
-        "GROUPS_LABEL": "Grupos de WhatsApp",
-        "CHANNELS_LABEL": "Canales de WhatsApp",
-        "CONTACTS_LABEL": "Contactos",
-        "SAVE_BUTTON": "Guardar filtro",
-        "SAVE_SUCCESS": "Filtro de privacidad guardado",
-        "SAVE_ERROR": "No se pudo guardar el filtro de privacidad"
-      },
       "MESSENGER_HEADING": "Script de Messenger",
       "MESSENGER_SUB_HEAD": "Coloca este botón dentro de tu etiqueta cuerpo",
       "ALLOWED_DOMAINS": {

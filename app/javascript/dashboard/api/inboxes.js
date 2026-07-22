@@ -31,20 +31,6 @@ class Inboxes extends CacheEnabledApiClient {
     return axios.post(`${this.url}/${inboxId}/evolution_test_connection`);
   }
 
-  getEvolutionPrivacyFilter(inboxId) {
-    return axios.get(`${this.url}/${inboxId}/evolution_privacy_filter`);
-  }
-
-  updateEvolutionPrivacyFilter(inboxId, { mode, jids }) {
-    return axios.post(
-      `${this.url}/${inboxId}/evolution_update_privacy_filter`,
-      {
-        mode,
-        jids,
-      }
-    );
-  }
-
   setAgentBot(inboxId, botId) {
     return axios.post(`${this.url}/${inboxId}/set_agent_bot`, {
       agent_bot: botId,

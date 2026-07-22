@@ -734,22 +734,6 @@
       "SHOW_ASSIGNMENT_HANDOFF_MESSAGE": "Show a visible message after assignment"
     },
     "SETTINGS_POPUP": {
-      "EVOLUTION_PRIVACY": {
-        "LABEL": "Privacy — what gets synced to Chatwoot",
-        "HINT": "Choose whether every WhatsApp chat is sent to Chatwoot, only some are excluded, or only a chosen few are allowed through. This applies to this inbox only.",
-        "NO_CONNECTION_HINT": "Test the Evolution connection above to pick groups, channels and contacts by name. Meanwhile, you can paste ids manually.",
-        "MODES": {
-          "ALL": "All",
-          "BLOCK": "Exclude selected",
-          "ALLOW": "Only allow selected"
-        },
-        "GROUPS_LABEL": "WhatsApp groups",
-        "CHANNELS_LABEL": "WhatsApp channels",
-        "CONTACTS_LABEL": "Contacts",
-        "SAVE_BUTTON": "Save filter",
-        "SAVE_SUCCESS": "Privacy filter saved",
-        "SAVE_ERROR": "Could not save the privacy filter"
-      },
       "MESSENGER_HEADING": "Messenger Script",
       "MESSENGER_SUB_HEAD": "Place this button inside your body tag",
       "ALLOWED_DOMAINS": {
