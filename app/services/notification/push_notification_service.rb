@@ -99,6 +99,10 @@ class Notification::PushNotificationService
     remove_subscription_if_error(subscription, response)
   end
 
+  # TODO: Adaki is a disconnected fork; this still relays FCM push payloads
+  # through the upstream Chatwoot hub (hub.2.chatwoot.com) as a fallback when
+  # no Firebase project is configured. Replace with Adaki's own push
+  # infrastructure (or drop the fallback) instead of depending on it.
   def send_push_via_chatwoot_hub(subscription)
     return if firebase_credentials_present?
     return unless chatwoot_hub_enabled?

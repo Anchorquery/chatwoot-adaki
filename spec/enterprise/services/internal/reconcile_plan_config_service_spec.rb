@@ -4,79 +4,36 @@ RSpec.describe Internal::ReconcilePlanConfigService do
   describe '#perform' do
     let(:service) { described_class.new }
 
-    context 'when pricing plan is community' do
-      before do
-        allow(ChatwootHub).to receive(:pricing_plan).and_return('community')
-      end
+    # Adaki is a disconnected fork with all premium features permanently
+    # unlocked. This service used to reset local branding config back to
+    # "Chatwoot" whenever the (unreachable) upstream hub resolved the plan to
+    # 'community', which happens by default on every self-hosted install.
+    # It's now a no-op that only clears the stale reset warning.
+    it 'does not modify installation config regardless of pricing plan' do
+      create(:installation_config, name: 'INSTALLATION_NAME', value: 'custom-name')
+      create(:installation_config, name: 'LOGO', value: '/custom-path/logo.svg')
 
-      # Adaki's enterprise/config/premium_features.yml is deliberately emptied
-      # ("all premium features unlocked for self-hosted/internal use"), so
-      # community-plan reconciliation has nothing left to disable here.
-      it 'does not disable any features (premium_features.yml is empty on this fork)' do
-        account = create(:account)
-        account.enable_features!('disable_branding', 'audit_logs', 'captain_integration')
-        account_with_captain = create(:account)
-        account_with_captain.enable_features!('captain_integration')
-        disable_branding_account = create(:account)
-        disable_branding_account.enable_features!('disable_branding')
-        service.perform
-        expect(account.reload.enabled_features.keys).to include('captain_integration', 'disable_branding', 'audit_logs')
-        expect(account_with_captain.reload.enabled_features.keys).to include('captain_integration')
-        expect(disable_branding_account.reload.enabled_features.keys).to include('disable_branding')
-      end
+      service.perform
 
-      it 'creates a premium config reset warning if config was modified' do
-        create(:installation_config, name: 'INSTALLATION_NAME', value: 'custom-name')
-        service.perform
-        expect(Redis::Alfred.get(Redis::Alfred::CHATWOOT_INSTALLATION_CONFIG_RESET_WARNING)).to eq('true')
-      end
-
-      it 'will not create a premium config reset warning if config is not modified' do
-        create(:installation_config, name: 'INSTALLATION_NAME', value: 'Chatwoot')
-        service.perform
-        expect(Redis::Alfred.get(Redis::Alfred::CHATWOOT_INSTALLATION_CONFIG_RESET_WARNING)).to be_nil
-      end
-
-      it 'updates the premium configs to default' do
-        create(:installation_config, name: 'INSTALLATION_NAME', value: 'custom-name')
-        create(:installation_config, name: 'LOGO', value: '/custom-path/logo.svg')
-        service.perform
-        expect(InstallationConfig.find_by(name: 'INSTALLATION_NAME').value).to eq('Chatwoot')
-        expect(InstallationConfig.find_by(name: 'LOGO').value).to eq('/brand-assets/logo.svg')
-      end
+      expect(InstallationConfig.find_by(name: 'INSTALLATION_NAME').value).to eq('custom-name')
+      expect(InstallationConfig.find_by(name: 'LOGO').value).to eq('/custom-path/logo.svg')
     end
 
-    context 'when pricing plan is not community' do
-      before do
-        allow(ChatwootHub).to receive(:pricing_plan).and_return('enterprise')
-      end
+    it 'does not disable any account features' do
+      account = create(:account)
+      account.enable_features!('disable_branding', 'audit_logs', 'captain_integration')
 
-      it 'unset premium config warning on upgrade' do
-        Redis::Alfred.set(Redis::Alfred::CHATWOOT_INSTALLATION_CONFIG_RESET_WARNING, true)
-        service.perform
-        expect(Redis::Alfred.get(Redis::Alfred::CHATWOOT_INSTALLATION_CONFIG_RESET_WARNING)).to be_nil
-      end
+      service.perform
 
-      it 'does not disable the premium features for accounts' do
-        account = create(:account)
-        account.enable_features!('disable_branding', 'audit_logs', 'captain_integration')
-        account_with_captain = create(:account)
-        account_with_captain.enable_features!('captain_integration')
-        disable_branding_account = create(:account)
-        disable_branding_account.enable_features!('disable_branding')
-        service.perform
-        expect(account.reload.enabled_features.keys).to include('captain_integration', 'disable_branding', 'audit_logs')
-        expect(account_with_captain.reload.enabled_features.keys).to include('captain_integration')
-        expect(disable_branding_account.reload.enabled_features.keys).to include('disable_branding')
-      end
+      expect(account.reload.enabled_features.keys).to include('captain_integration', 'disable_branding', 'audit_logs')
+    end
 
-      it 'does not update the LOGO config' do
-        create(:installation_config, name: 'INSTALLATION_NAME', value: 'custom-name')
-        create(:installation_config, name: 'LOGO', value: '/custom-path/logo.svg')
-        service.perform
-        expect(InstallationConfig.find_by(name: 'INSTALLATION_NAME').value).to eq('custom-name')
-        expect(InstallationConfig.find_by(name: 'LOGO').value).to eq('/custom-path/logo.svg')
-      end
+    it 'clears the premium config reset warning' do
+      Redis::Alfred.set(Redis::Alfred::CHATWOOT_INSTALLATION_CONFIG_RESET_WARNING, true)
+
+      service.perform
+
+      expect(Redis::Alfred.get(Redis::Alfred::CHATWOOT_INSTALLATION_CONFIG_RESET_WARNING)).to be_nil
     end
   end
 end

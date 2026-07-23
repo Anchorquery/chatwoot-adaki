@@ -5,7 +5,7 @@ class Notification::PushTestService
   DEFAULT_BODY = 'This is a test from our team to check notification delivery on your device. No action needed.'.freeze
 
   def self.default_title
-    format(DEFAULT_TITLE, installation_name: GlobalConfigService.load('INSTALLATION_NAME', 'Chatwoot'))
+    format(DEFAULT_TITLE, installation_name: GlobalConfigService.load('INSTALLATION_NAME', 'Adaki'))
   end
 
   def self.default_body
@@ -72,6 +72,8 @@ class Notification::PushTestService
     result(subscription, 'fcm', :failure, "#{e.class.name}: #{e.message}")
   end
 
+  # TODO: same upstream Chatwoot hub relay dependency as
+  # Notification::PushNotificationService#send_push_via_chatwoot_hub — replace.
   def test_fcm_via_hub(subscription)
     response = ChatwootHub.send_push_with_response(fcm_options(subscription))
     result(subscription, 'fcm_via_hub', :success, "HTTP #{response.code} — #{response.body}")
