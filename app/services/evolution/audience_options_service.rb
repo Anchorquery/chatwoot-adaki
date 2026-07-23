@@ -20,8 +20,15 @@ class Evolution::AudienceOptionsService
   end
 
   # Chats individuales (sin grupos ni canales), para el picker de privacidad.
+  # Tope duro: sin esto, una cuenta con miles de contactos hace timeout (10s)
+  # contra Evolution y el picker queda vacio en silencio. Para listas mas
+  # grandes, el buscador paginado del Manager de Evolution es la herramienta
+  # correcta — este panel es para el uso diario de un agente, no reemplaza
+  # eso.
+  CONTACTS_LIMIT = 200
+
   def contacts
-    result = fetch('chat/findChats', method: :post, body: { where: {} })
+    result = fetch('chat/findChats', method: :post, body: { where: {}, take: CONTACTS_LIMIT, skip: 0 })
     Array.wrap(result).reject do |chat|
       jid = chat['remoteJid'].to_s
       jid.end_with?('@g.us', '@newsletter')

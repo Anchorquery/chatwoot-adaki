@@ -51,6 +51,7 @@
     "MUTED_SUCCESS": "Este contacto está bloqueado con éxito. No se te notificará de ninguna conversación futura.",
     "UNMUTED_SUCCESS": "Este contacto está desbloqueado correctamente.",
     "SEND_TRANSCRIPT": "Enviar Transcripción",
+    "PRIVACY_FILTER": "Privacidad del canal",
     "EDIT_LABEL": "Editar",
     "SIDEBAR_SECTIONS": {
       "CUSTOM_ATTRIBUTES": "Atributos personalizados",

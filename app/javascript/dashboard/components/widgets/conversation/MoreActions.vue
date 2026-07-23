@@ -2,9 +2,11 @@
 import { computed, onUnmounted } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { emitter } from 'shared/helpers/mitt';
+import { useInbox } from 'dashboard/composables/useInbox';
 import EmailTranscriptModal from './EmailTranscriptModal.vue';
 import ResolveAction from '../../buttons/ResolveAction.vue';
 import ButtonV4 from 'dashboard/components-next/button/Button.vue';
@@ -18,7 +20,11 @@ import {
 
 // No props needed as we're getting currentChat from the store directly
 const store = useStore();
+const router = useRouter();
 const { t } = useI18n();
+// Sin inboxId explicito, useInbox() ya resuelve contra el inbox_id de la
+// conversacion actualmente abierta (getSelectedChat).
+const { isAPIInbox } = useInbox();
 
 const [showEmailActionsModal, toggleEmailModal] = useToggle(false);
 const [showActionsDropdown, toggleDropdown] = useToggle(false);
@@ -51,6 +57,15 @@ const actionMenuItems = computed(() => {
     value: 'send_transcript',
   });
 
+  if (isAPIInbox.value) {
+    items.push({
+      icon: 'i-lucide-shield',
+      label: t('CONTACT_PANEL.PRIVACY_FILTER'),
+      action: 'privacy_filter',
+      value: 'privacy_filter',
+    });
+  }
+
   return items;
 });
 
@@ -65,6 +80,14 @@ const handleActionClick = ({ action }) => {
     useAlert(t('CONTACT_PANEL.UNMUTED_SUCCESS'));
   } else if (action === 'send_transcript') {
     toggleEmailModal();
+  } else if (action === 'privacy_filter') {
+    router.push({
+      name: 'settings_inbox_privacy_filter',
+      params: {
+        accountId: store.getters.getCurrentAccountId,
+        inboxId: currentChat.value.inbox_id,
+      },
+    });
   }
 };
 
