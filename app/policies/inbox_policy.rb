@@ -78,11 +78,15 @@ class InboxPolicy < ApplicationPolicy
     @account_user.administrator?
   end
 
+  # A diferencia de evolution_audience_options/evolution_test_connection (solo
+  # admin — tocan la config de conexion de la bandeja), el filtro de
+  # privacidad lo puede operar cualquier agente asignado a esta bandeja, sin
+  # necesitar acceso de administrador ni al Manager de Evolution.
   def evolution_privacy_filter?
-    @account_user.administrator?
+    Current.user.assigned_inboxes.include? record
   end
 
   def evolution_update_privacy_filter?
-    @account_user.administrator?
+    Current.user.assigned_inboxes.include? record
   end
 end

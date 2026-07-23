@@ -6,6 +6,7 @@ import SettingsContent from '../Wrapper.vue';
 import SettingsWrapper from '../SettingsWrapper.vue';
 import InboxHome from './Index.vue';
 import Settings from './Settings.vue';
+import PrivacyFilter from './PrivacyFilter.vue';
 import InboxChannel from './InboxChannels.vue';
 import ChannelList from './ChannelList.vue';
 import AddAgents from './AddAgents.vue';
@@ -92,6 +93,17 @@ export default {
               component: AddAgents,
             },
           ],
+        },
+        {
+          // Tiene que ir ANTES de settings_inbox_show — esa ruta usa :tab?
+          // como comodin y matchearia "privacy" como si fuera una pestaña.
+          path: ':inboxId/privacy',
+          name: 'settings_inbox_privacy_filter',
+          component: PrivacyFilter,
+          meta: {
+            featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
+            permissions: ['administrator', 'agent'],
+          },
         },
         {
           path: ':inboxId/:tab?',
