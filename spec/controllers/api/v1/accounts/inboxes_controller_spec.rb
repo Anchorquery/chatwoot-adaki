@@ -1248,4 +1248,78 @@ RSpec.describe 'Inboxes API', type: :request do
       end
     end
   end
+
+  # Regresión: estas dos acciones usan políticas por instancia
+  # (assigned_inboxes.include?(record)), así que no pueden pasar por el
+  # check_authorization genérico del controller (autoriza la CLASE Inbox y
+  # denegaba a todo el mundo, admin incluido). Cubre que el skip + authorize
+  # por instancia del concern se mantenga.
+  describe 'GET /api/v1/accounts/{account.id}/inboxes/{inbox.id}/evolution_privacy_filter' do
+    let(:inbox) { create(:inbox, account: account) }
+    let(:filter_payload) { { mode: 'all', group_jids: [], channel_jids: [], contact_jids: [] } }
+
+    before do
+      allow(Evolution::AudienceOptionsService).to receive(:new).and_return(
+        instance_double(Evolution::AudienceOptionsService, current_privacy_filter: filter_payload)
+      )
+    end
+
+    it 'returns the filter for an administrator' do
+      get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_privacy_filter",
+          headers: admin.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['mode']).to eq('all')
+    end
+
+    it 'returns the filter for an agent assigned to the inbox' do
+      create(:inbox_member, user: agent, inbox: inbox)
+
+      get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_privacy_filter",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'returns unauthorized for an agent not assigned to the inbox' do
+      get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_privacy_filter",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/inboxes/{inbox.id}/evolution_update_privacy_filter' do
+    let(:inbox) { create(:inbox, account: account) }
+
+    before do
+      allow(Evolution::AudienceOptionsService).to receive(:new).and_return(
+        instance_double(Evolution::AudienceOptionsService, update_privacy_filter: { success: true, message: 'ok' })
+      )
+    end
+
+    it 'updates the filter for an agent assigned to the inbox' do
+      create(:inbox_member, user: agent, inbox: inbox)
+
+      post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_update_privacy_filter",
+           params: { mode: 'allow', jids: ['123@s.whatsapp.net'] },
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['success']).to be(true)
+    end
+
+    it 'returns unauthorized for an agent not assigned to the inbox' do
+      post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_update_privacy_filter",
+           params: { mode: 'allow', jids: [] },
+           headers: agent.create_new_auth_token,
+           as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
 end

@@ -1,6 +1,15 @@
 module Api::V1::Accounts::Concerns::EvolutionChannelManagement
   extend ActiveSupport::Concern
 
+  included do
+    # Las acciones del filtro de privacidad no pueden pasar por el
+    # check_authorization genérico del controller: ese autoriza la CLASE Inbox,
+    # y las políticas de estas dos acciones son por instancia
+    # (assigned_inboxes.include?(record)) — con la clase fallan para todo el
+    # mundo, admin incluido. Autorizan la instancia dentro de la propia acción.
+    skip_before_action :check_authorization, only: [:evolution_privacy_filter, :evolution_update_privacy_filter]
+  end
+
   def evolution_audience_options
     service = Evolution::AudienceOptionsService.new(@inbox)
     render json: { newsletters: service.newsletters, groups: service.groups, contacts: service.contacts }
@@ -16,10 +25,12 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
   # El estado vive en Evolution (su propia config de la integración con
   # Chatwoot), no en la base de Chatwoot.
   def evolution_privacy_filter
+    authorize @inbox, :evolution_privacy_filter?
     render json: Evolution::AudienceOptionsService.new(@inbox).current_privacy_filter
   end
 
   def evolution_update_privacy_filter
+    authorize @inbox, :evolution_update_privacy_filter?
     result = Evolution::AudienceOptionsService.new(@inbox).update_privacy_filter(
       mode: params[:mode],
       jids: Array(params[:jids])
