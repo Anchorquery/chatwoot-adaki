@@ -748,7 +748,8 @@
         "CONTACTS_LABEL": "Contacts",
         "SAVE_BUTTON": "Save filter",
         "SAVE_SUCCESS": "Privacy filter saved",
-        "SAVE_ERROR": "Could not save the privacy filter"
+        "SAVE_ERROR": "Could not save the privacy filter",
+        "LOAD_ERROR": "Could not read the saved filter; saving is disabled so it doesn't get overwritten. Reload the page to retry."
       },
       "MESSENGER_HEADING": "Messenger Script",
       "MESSENGER_SUB_HEAD": "Place this button inside your body tag",

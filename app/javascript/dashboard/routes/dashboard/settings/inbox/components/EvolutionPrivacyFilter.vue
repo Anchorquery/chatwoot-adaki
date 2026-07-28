@@ -33,6 +33,13 @@ const contactOptions = ref([]);
 
 const loading = ref(false);
 const saving = ref(false);
+// Sin el filtro actual cargado, guardar pisaría la config existente con el
+// estado por defecto ("Todos" vacío). Se deshabilita el guardado hasta releer.
+const filterLoaded = ref(false);
+// El listado de audiencias (nombres reales) es admin-only a propósito: expone
+// TODOS los chats del número, incluidos los que este mismo filtro oculta. Un
+// agente recibe 403 ahí y cae a texto libre, pero el filtro sí puede leerlo.
+const optionsLoaded = ref(false);
 
 const modeItems = computed(() =>
   MODES.map(value => ({
@@ -44,38 +51,54 @@ const modeItems = computed(() =>
   }))
 );
 
-// Con nombres reales solo si la conexión ya se probó; si no, se cae a texto
-// libre (mismo criterio que el picker de audiencias de Captain).
-const hasNamedOptions = computed(() => props.connected);
+// Con nombres reales solo si la conexión ya se probó Y el listado de
+// audiencias respondió (a un agente le da 403); si no, texto libre (mismo
+// criterio que el picker de audiencias de Captain).
+const hasNamedOptions = computed(() => props.connected && optionsLoaded.value);
 
 const loadOptionsAndFilter = async () => {
   loading.value = true;
   try {
-    const [{ data: options }, { data: filter }] = await Promise.all([
+    // allSettled, no all: audiencias es admin-only y para un agente rechaza
+    // con 403. Con Promise.all ese rechazo descartaba también el filtro (que
+    // el agente sí puede leer) y el agente veía "Todos" vacío — y al guardar,
+    // pisaba el filtro configurado.
+    const [optionsResult, filterResult] = await Promise.allSettled([
       InboxesAPI.getEvolutionAudienceOptions(props.inboxId),
       InboxesAPI.getEvolutionPrivacyFilter(props.inboxId),
     ]);
 
-    groupOptions.value = (options.groups || []).map(group => ({
-      value: group.id,
-      label: group.subject || group.id,
-    }));
-    channelOptions.value = (options.newsletters || []).map(newsletter => ({
-      value: newsletter.id,
-      label: newsletter.name || newsletter.id,
-    }));
-    contactOptions.value = (options.contacts || []).map(contact => ({
-      value: contact.remoteJid,
-      label: contact.pushName || contact.remoteJid?.split('@')[0],
-    }));
+    optionsLoaded.value = optionsResult.status === 'fulfilled';
+    if (optionsLoaded.value) {
+      const options = optionsResult.value.data;
+      groupOptions.value = (options.groups || []).map(group => ({
+        value: group.id,
+        label: group.subject || group.id,
+      }));
+      channelOptions.value = (options.newsletters || []).map(newsletter => ({
+        value: newsletter.id,
+        label: newsletter.name || newsletter.id,
+      }));
+      contactOptions.value = (options.contacts || []).map(contact => ({
+        value: contact.remoteJid,
+        label: contact.pushName || contact.remoteJid?.split('@')[0],
+      }));
+    }
 
+    if (filterResult.status === 'rejected') {
+      throw filterResult.reason;
+    }
+    const filter = filterResult.value.data;
     mode.value = filter.mode || 'all';
     groupJids.value = filter.group_jids || [];
     channelJids.value = filter.channel_jids || [];
     contactJids.value = filter.contact_jids || [];
+    filterLoaded.value = true;
   } catch (error) {
-    // Sin conexión configurada/verificada todavía; queda en modo "Todos"
-    // con listas vacías, el usuario puede seguir usando texto libre.
+    // El GET del filtro devuelve 200 con defaults cuando la conexión no está
+    // configurada; llegar acá es un error real (permisos, Evolution caído).
+    // Se deja el guardado deshabilitado para no pisar la config guardada.
+    filterLoaded.value = false;
     // eslint-disable-next-line no-console
     console.warn('Could not load Evolution privacy filter', error);
   } finally {
@@ -122,6 +145,13 @@ const save = async () => {
     >
       <span class="i-lucide-info size-3.5 shrink-0 mt-0.5" />
       {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.NO_CONNECTION_HINT') }}
+    </p>
+    <p
+      v-if="!loading && !filterLoaded"
+      class="text-xs text-n-ruby-11 flex items-start gap-1.5"
+    >
+      <span class="i-lucide-triangle-alert size-3.5 shrink-0 mt-0.5" />
+      {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.LOAD_ERROR') }}
     </p>
 
     <InputRadioGroup
@@ -189,7 +219,7 @@ const save = async () => {
       size="sm"
       class="rounded-md self-start"
       :is-loading="saving"
-      :disabled="loading"
+      :disabled="loading || !filterLoaded"
       @click="save"
     />
   </div>

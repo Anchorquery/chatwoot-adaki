@@ -746,7 +746,8 @@
         "CONTACTS_LABEL": "Contactos",
         "SAVE_BUTTON": "Guardar filtro",
         "SAVE_SUCCESS": "Filtro de privacidad guardado",
-        "SAVE_ERROR": "No se pudo guardar el filtro de privacidad"
+        "SAVE_ERROR": "No se pudo guardar el filtro de privacidad",
+        "LOAD_ERROR": "No se pudo leer el filtro guardado; el guardado queda deshabilitado para no pisarlo. Recargá la página para reintentar."
       },
       "MESSENGER_HEADING": "Script de Messenger",
       "MESSENGER_SUB_HEAD": "Coloca este botón dentro de tu etiqueta cuerpo",
