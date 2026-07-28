@@ -96,17 +96,22 @@ class Evolution::AudienceOptionsService
     { success: ok, message: ok ? 'ok' : "http_#{response&.code}" }
   end
 
-  # JIDs guardados en Evolution son solo dígitos (normalizados), sin sufijo,
-  # así que no queda registrado si eran grupo/canal/contacto. El picker
-  # necesita saber a qué categoría pertenece cada uno para mostrar el nombre
-  # correcto, así que se resuelve contra las listas actuales de Evolution.
+  # Los JIDs guardados en Evolution pueden venir en dos formatos según qué UI
+  # los guardó: JID completo ("123@g.us") desde este picker, o número pelado
+  # ("123") desde el Manager de Evolution. El picker necesita saber a qué
+  # categoría pertenece cada uno para mostrar el nombre correcto, así que se
+  # resuelve contra las listas actuales de Evolution matcheando ambas formas.
   def split_jids_by_type(jids)
-    jid_set = jids.to_set
+    jid_set = jids.flat_map { |jid| [jid.to_s, strip_suffix(jid)] }.to_set
     {
-      group_jids: groups.filter_map { |g| g['id'] if jid_set.include?(strip_suffix(g['id'])) },
-      channel_jids: newsletters.filter_map { |n| n['id'] if jid_set.include?(strip_suffix(n['id'])) },
-      contact_jids: contacts.filter_map { |c| c['remoteJid'] if jid_set.include?(strip_suffix(c['remoteJid'])) }
+      group_jids: matching_jids(groups.pluck('id'), jid_set),
+      channel_jids: matching_jids(newsletters.pluck('id'), jid_set),
+      contact_jids: matching_jids(contacts.pluck('remoteJid'), jid_set)
     }
+  end
+
+  def matching_jids(candidates, jid_set)
+    candidates.select { |jid| jid_set.include?(jid.to_s) || jid_set.include?(strip_suffix(jid)) }
   end
 
   def strip_suffix(jid)
