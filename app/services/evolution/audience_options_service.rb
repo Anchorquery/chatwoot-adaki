@@ -31,7 +31,7 @@ class Evolution::AudienceOptionsService
     result = fetch('chat/findChats', method: :post, body: { where: {}, take: CONTACTS_LIMIT, skip: 0 })
     Array.wrap(result).reject do |chat|
       jid = chat['remoteJid'].to_s
-      jid.end_with?('@g.us', '@newsletter')
+      jid.end_with?('@g.us', '@newsletter') || jid == 'status@broadcast'
     end
   end
 
@@ -45,27 +45,25 @@ class Evolution::AudienceOptionsService
     { success: ok, message: ok ? 'ok' : "http_#{response.code}" }
   end
 
+  EMPTY_FILTER = { mode: 'all', group_jids: [], channel_jids: [], contact_jids: [] }.freeze
+
   # Evolution guarda ignoreJids/allowedJids dentro de SU PROPIA config de la
   # integración con Chatwoot (GET /chatwoot/find/{instance}) — Chatwoot no
   # necesita (ni debe) duplicar ese estado en su propia base.
+  #
+  # Nunca devuelve el filtro vacío como fallback ante un error: "no pude leer" y
+  # "no hay filtro" se ven idénticos en la UI, y el usuario guardaría encima
+  # borrando la config real. Los fallos salen con :status y el controller los
+  # convierte en un HTTP de error.
   def current_privacy_filter
-    return { mode: 'all', group_jids: [], channel_jids: [], contact_jids: [] } unless configured?
+    return { status: 'not_configured' } unless configured?
 
     response = request("#{base_url}/chatwoot/find/#{encoded_instance_name}")
-    config = response.is_a?(Net::HTTPSuccess) ? JSON.parse(response.body) : {}
+    return { status: 'unreachable' } unless response.is_a?(Net::HTTPSuccess)
 
-    allowed = Array.wrap(config['allowedJids'])
-    ignored = Array.wrap(config['ignoreJids'])
-
-    if allowed.any?
-      { mode: 'allow', **split_jids_by_type(allowed) }
-    elsif ignored.any?
-      { mode: 'block', **split_jids_by_type(ignored) }
-    else
-      { mode: 'all', group_jids: [], channel_jids: [], contact_jids: [] }
-    end
+    build_privacy_filter(JSON.parse(response.body))
   rescue JSON::ParserError
-    { mode: 'all', group_jids: [], channel_jids: [], contact_jids: [] }
+    { status: 'invalid_response' }
   end
 
   def update_privacy_filter(mode:, jids:)
@@ -84,11 +82,33 @@ class Evolution::AudienceOptionsService
 
   private
 
+  # Evolution aplica allowedJids e ignoreJids a la vez; esta UI los modela como
+  # modos excluyentes. Si vienen los dos (típico: alguien tocó el Manager de
+  # Evolution y este panel), se avisa con :conflict en vez de mostrar solo uno y
+  # borrar el otro en silencio al guardar.
+  def build_privacy_filter(config)
+    allowed = privacy_jids(config, 'allowedJids')
+    ignored = privacy_jids(config, 'ignoreJids')
+    conflict = allowed.any? && ignored.any?
+
+    return { status: 'ok', conflict: conflict, mode: 'allow', **split_jids_by_type(allowed) } if allowed.any?
+    return { status: 'ok', conflict: conflict, mode: 'block', **split_jids_by_type(ignored) } if ignored.any?
+
+    { status: 'ok', conflict: false, **EMPTY_FILTER }
+  end
+
+  def privacy_jids(config, key)
+    Array.wrap(config[key]).map(&:to_s).reject(&:blank?)
+  end
+
+  # Se reenvía la config completa porque /chatwoot/set reescribe el registro
+  # entero; solo se quitan los campos que Evolution agrega al responder y que su
+  # DTO de escritura no espera de vuelta.
   def merge_privacy_filter_into_config(current_config, mode, jids)
     current_config.merge(
       'ignoreJids' => mode == 'block' ? jids : [],
       'allowedJids' => mode == 'allow' ? jids : []
-    ).except('createdAt', 'updatedAt', 'id')
+    ).except('createdAt', 'updatedAt', 'id', 'instanceId', 'webhook_url')
   end
 
   def build_result(response)
@@ -96,26 +116,34 @@ class Evolution::AudienceOptionsService
     { success: ok, message: ok ? 'ok' : "http_#{response&.code}" }
   end
 
-  # Los JIDs guardados en Evolution pueden venir en dos formatos según qué UI
-  # los guardó: JID completo ("123@g.us") desde este picker, o número pelado
-  # ("123") desde el Manager de Evolution. El picker necesita saber a qué
-  # categoría pertenece cada uno para mostrar el nombre correcto, así que se
-  # resuelve contra las listas actuales de Evolution matcheando ambas formas.
+  # Reparte los JIDs guardados en las tres cajas del picker por su SUFIJO, no
+  # cruzándolos contra las listas vivas de Evolution.
+  #
+  # Cruzarlas era una fuga de datos: lo guardado que no apareciera en esas
+  # listas (un contacto más allá del tope de CONTACTS_LIMIT, un grupo cuando
+  # fetchAllGroups daba timeout, o los comodines "@g.us"/"@newsletter"/
+  # "@s.whatsapp.net" que Evolution sí soporta) desaparecía de la respuesta, y
+  # como el front guarda exactamente lo que muestra, el siguiente guardado lo
+  # borraba de Evolution. Además ahorra tres llamadas HTTP en cada lectura.
+  #
+  # Los JIDs que el picker no reconozca se muestran crudos: TagMultiSelectComboBox
+  # cae a { value, label: value } cuando el valor no está entre las opciones.
   def split_jids_by_type(jids)
-    jid_set = jids.flat_map { |jid| [jid.to_s, strip_suffix(jid)] }.to_set
+    grouped = jids.uniq.group_by { |jid| jid_category(jid) }
     {
-      group_jids: matching_jids(groups.pluck('id'), jid_set),
-      channel_jids: matching_jids(newsletters.pluck('id'), jid_set),
-      contact_jids: matching_jids(contacts.pluck('remoteJid'), jid_set)
+      group_jids: grouped.fetch(:group, []),
+      channel_jids: grouped.fetch(:channel, []),
+      contact_jids: grouped.fetch(:contact, [])
     }
   end
 
-  def matching_jids(candidates, jid_set)
-    candidates.select { |jid| jid_set.include?(jid.to_s) || jid_set.include?(strip_suffix(jid)) }
-  end
+  # Un número pelado ("34600111222", como lo guarda el Manager de Evolution) no
+  # lleva sufijo y cae en contactos, que es donde corresponde.
+  def jid_category(jid)
+    return :group if jid.end_with?('@g.us')
+    return :channel if jid.end_with?('@newsletter')
 
-  def strip_suffix(jid)
-    jid.to_s.split('@').first
+    :contact
   end
 
   def fetch(path, query: {}, method: :get, body: nil)

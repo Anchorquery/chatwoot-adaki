@@ -40,6 +40,9 @@ const filterLoaded = ref(false);
 // TODOS los chats del número, incluidos los que este mismo filtro oculta. Un
 // agente recibe 403 ahí y cae a texto libre, pero el filtro sí puede leerlo.
 const optionsLoaded = ref(false);
+// Evolution aplica excluidos y permitidos a la vez, esta UI no. Si Evolution
+// tiene los dos cargados, guardar desde acá borra el que no se muestra.
+const hasConflictingLists = ref(false);
 
 const modeItems = computed(() =>
   MODES.map(value => ({
@@ -51,10 +54,24 @@ const modeItems = computed(() =>
   }))
 );
 
-// Con nombres reales solo si la conexión ya se probó Y el listado de
-// audiencias respondió (a un agente le da 403); si no, texto libre (mismo
-// criterio que el picker de audiencias de Captain).
-const hasNamedOptions = computed(() => props.connected && optionsLoaded.value);
+// Se decide por campo: combo con nombres solo si el listado de audiencias
+// respondió Y trajo algo para ese campo. Antes esto exigía además que un admin
+// hubiera pulsado "probar conexión" (evolution_verified), así que una bandeja
+// perfectamente conectada mostraba IDs crudos hasta que alguien apretaba ese
+// botón. Y si la lista viene vacía (Evolution sin datos, o timeout), el combo
+// no dejaría elegir nada: ahí el texto libre sí sirve para pegar un JID.
+const namedGroups = computed(
+  () => optionsLoaded.value && groupOptions.value.length > 0
+);
+const namedChannels = computed(
+  () => optionsLoaded.value && channelOptions.value.length > 0
+);
+const namedContacts = computed(
+  () => optionsLoaded.value && contactOptions.value.length > 0
+);
+const hasNamedOptions = computed(
+  () => namedGroups.value || namedChannels.value || namedContacts.value
+);
 
 const loadOptionsAndFilter = async () => {
   loading.value = true;
@@ -93,12 +110,14 @@ const loadOptionsAndFilter = async () => {
     groupJids.value = filter.group_jids || [];
     channelJids.value = filter.channel_jids || [];
     contactJids.value = filter.contact_jids || [];
+    hasConflictingLists.value = Boolean(filter.conflict);
     filterLoaded.value = true;
   } catch (error) {
-    // El GET del filtro devuelve 200 con defaults cuando la conexión no está
-    // configurada; llegar acá es un error real (permisos, Evolution caído).
-    // Se deja el guardado deshabilitado para no pisar la config guardada.
+    // El GET solo responde 200 cuando de verdad leyó la config de Evolution;
+    // "no configurado" y "Evolution no responde" llegan como 4xx/5xx. Se deja
+    // el guardado deshabilitado para no pisar la config guardada.
     filterLoaded.value = false;
+    hasConflictingLists.value = false;
     // eslint-disable-next-line no-console
     console.warn('Could not load Evolution privacy filter', error);
   } finally {
@@ -113,6 +132,16 @@ const setMode = item => {
   mode.value = item.id;
 };
 
+const SAVE_ERROR_REASONS = ['not_configured', 'invalid_mode'];
+
+const saveErrorMessage = error => {
+  const reason = error?.response?.data?.message;
+  const key = SAVE_ERROR_REASONS.includes(reason)
+    ? `SAVE_ERROR_${reason.toUpperCase()}`
+    : 'SAVE_ERROR';
+  return t(`INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.${key}`);
+};
+
 const save = async () => {
   saving.value = true;
   try {
@@ -125,9 +154,14 @@ const save = async () => {
       mode: mode.value,
       jids,
     });
+    // Éxito real: el backend responde 2xx solo cuando Evolution confirmó el
+    // guardado. Antes devolvía 200 con {success:false} ante cualquier fallo
+    // (sin apikey, Evolution caído, 401) y acá se cantaba "guardado" igual,
+    // mientras Evolution seguía con el filtro viejo.
     useAlert(t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.SAVE_SUCCESS'));
-  } catch {
-    useAlert(t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.SAVE_ERROR'));
+    hasConflictingLists.value = false;
+  } catch (error) {
+    useAlert(saveErrorMessage(error));
   } finally {
     saving.value = false;
   }
@@ -153,6 +187,13 @@ const save = async () => {
       <span class="i-lucide-triangle-alert size-3.5 shrink-0 mt-0.5" />
       {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.LOAD_ERROR') }}
     </p>
+    <p
+      v-if="hasConflictingLists"
+      class="text-xs text-n-amber-11 flex items-start gap-1.5"
+    >
+      <span class="i-lucide-triangle-alert size-3.5 shrink-0 mt-0.5" />
+      {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.CONFLICT_WARNING') }}
+    </p>
 
     <InputRadioGroup
       name="evolution-privacy-mode"
@@ -166,7 +207,7 @@ const save = async () => {
           {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.GROUPS_LABEL') }}
         </label>
         <TagMultiSelectComboBox
-          v-if="hasNamedOptions"
+          v-if="namedGroups"
           v-model="groupJids"
           :options="groupOptions"
         />
@@ -183,7 +224,7 @@ const save = async () => {
           {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.CHANNELS_LABEL') }}
         </label>
         <TagMultiSelectComboBox
-          v-if="hasNamedOptions"
+          v-if="namedChannels"
           v-model="channelJids"
           :options="channelOptions"
         />
@@ -200,7 +241,7 @@ const save = async () => {
           {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.CONTACTS_LABEL') }}
         </label>
         <TagMultiSelectComboBox
-          v-if="hasNamedOptions"
+          v-if="namedContacts"
           v-model="contactJids"
           :options="contactOptions"
         />

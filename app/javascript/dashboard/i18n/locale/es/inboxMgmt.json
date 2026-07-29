@@ -1,4 +1,4 @@
-﻿{
+{
   "INBOX_MGMT": {
     "HEADER": "Entradas",
     "DESCRIPTION": "Un canal es el modo de comunicación que tu cliente elige para interactuar contigo. Una bandeja de entrada es donde administras interacciones para un canal específico. Puede incluir comunicaciones de diversas fuentes como correo electrónico, chat en vivo y redes sociales.",
@@ -735,7 +735,7 @@
       "EVOLUTION_PRIVACY": {
         "LABEL": "Privacidad — qué se sincroniza a Chatwoot",
         "HINT": "Elegí si se sincroniza todo chat de WhatsApp a Chatwoot, se excluyen algunos, o solo se permiten los que elijas. Aplica solo a esta bandeja.",
-        "NO_CONNECTION_HINT": "Probá la conexión a Evolution de arriba para elegir grupos, canales y contactos por nombre. Mientras tanto, podés pegar los IDs a mano.",
+        "NO_CONNECTION_HINT": "No hay lista con nombres para esta bandeja, así que podés pegar los IDs a mano. Ver grupos, canales y contactos por nombre requiere acceso de administrador y conexión con Evolution.",
         "MODES": {
           "ALL": "Todos",
           "BLOCK": "Excluir seleccionados",
@@ -747,7 +747,10 @@
         "SAVE_BUTTON": "Guardar filtro",
         "SAVE_SUCCESS": "Filtro de privacidad guardado",
         "SAVE_ERROR": "No se pudo guardar el filtro de privacidad",
-        "LOAD_ERROR": "No se pudo leer el filtro guardado; el guardado queda deshabilitado para no pisarlo. Recargá la página para reintentar."
+        "LOAD_ERROR": "No se pudo leer el filtro guardado; el guardado queda deshabilitado para no pisarlo. Recargá la página para reintentar.",
+        "SAVE_ERROR_NOT_CONFIGURED": "Esta bandeja no tiene guardada la apikey de Evolution, así que el filtro no se puede enviar a Evolution. Un administrador tiene que cargarla en la configuración del canal.",
+        "SAVE_ERROR_INVALID_MODE": "Modo de privacidad inválido",
+        "CONFLICT_WARNING": "Evolution tiene cargadas a la vez una lista de excluidos y una de permitidos para esta instancia. Este panel solo puede mostrar una: si guardás desde acá, se borra la otra."
       },
       "MESSENGER_HEADING": "Script de Messenger",
       "MESSENGER_SUB_HEAD": "Coloca este botón dentro de tu etiqueta cuerpo",

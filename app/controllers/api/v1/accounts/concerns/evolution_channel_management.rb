@@ -21,12 +21,26 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
     render json: result
   end
 
+  # Estas acciones hablan con Evolution, no con la base de Chatwoot: un fallo
+  # ahí NO puede salir como 200. Devolver 200 con {success: false} hacía que el
+  # front cantara "guardado" mientras Evolution seguía con la config vieja.
+  PRIVACY_FILTER_ERROR_STATUS = {
+    'not_configured' => :unprocessable_entity,
+    'invalid_mode' => :unprocessable_entity,
+    'unreachable' => :bad_gateway,
+    'evolution_unreachable' => :bad_gateway,
+    'invalid_response' => :bad_gateway
+  }.freeze
+
   # Filtro de privacidad: qué chats de esta bandeja se reenvían a Chatwoot.
   # El estado vive en Evolution (su propia config de la integración con
   # Chatwoot), no en la base de Chatwoot.
   def evolution_privacy_filter
     authorize @inbox, :evolution_privacy_filter?
-    render json: Evolution::AudienceOptionsService.new(@inbox).current_privacy_filter
+    result = Evolution::AudienceOptionsService.new(@inbox).current_privacy_filter
+    return render json: { error: result[:status] }, status: privacy_filter_error_status(result[:status]) if result[:status] != 'ok'
+
+    render json: result.except(:status)
   end
 
   def evolution_update_privacy_filter
@@ -35,10 +49,18 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
       mode: params[:mode],
       jids: Array(params[:jids])
     )
-    render json: result
+    return render json: result if result[:success]
+
+    render json: result, status: privacy_filter_error_status(result[:message])
   end
 
   private
+
+  # Cualquier mensaje no mapeado (ej. "http_401" de Evolution) es un fallo del
+  # lado de Evolution, no de la petición del usuario.
+  def privacy_filter_error_status(message)
+    PRIVACY_FILTER_ERROR_STATUS.fetch(message, :bad_gateway)
+  end
 
   # El frontend nunca recibe la apikey de Evolution, así que tampoco puede
   # reenviarla al guardar. Si llega vacía, se conserva la que ya estaba guardada;

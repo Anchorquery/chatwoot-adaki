@@ -1,4 +1,4 @@
-﻿{
+{
   "INBOX_MGMT": {
     "HEADER": "Inboxes",
     "DESCRIPTION": "A channel is the mode of communication your customer chooses to interact with you. An inbox is where you manage interactions for a specific channel. It can include communications from various sources such as email, live chat, and social media.",
@@ -737,7 +737,7 @@
       "EVOLUTION_PRIVACY": {
         "LABEL": "Privacy — what gets synced to Chatwoot",
         "HINT": "Choose whether every WhatsApp chat is sent to Chatwoot, only some are excluded, or only a chosen few are allowed through. This applies to this inbox only.",
-        "NO_CONNECTION_HINT": "Test the Evolution connection above to pick groups, channels and contacts by name. Meanwhile, you can paste ids manually.",
+        "NO_CONNECTION_HINT": "No named list is available for this inbox, so you can paste ids manually. Listing groups, channels and contacts by name needs administrator access and a working Evolution connection.",
         "MODES": {
           "ALL": "All",
           "BLOCK": "Exclude selected",
@@ -749,7 +749,10 @@
         "SAVE_BUTTON": "Save filter",
         "SAVE_SUCCESS": "Privacy filter saved",
         "SAVE_ERROR": "Could not save the privacy filter",
-        "LOAD_ERROR": "Could not read the saved filter; saving is disabled so it doesn't get overwritten. Reload the page to retry."
+        "LOAD_ERROR": "Could not read the saved filter; saving is disabled so it doesn't get overwritten. Reload the page to retry.",
+        "SAVE_ERROR_NOT_CONFIGURED": "This inbox has no Evolution API key saved, so the filter cannot be sent to Evolution. An administrator has to set it in the channel settings.",
+        "SAVE_ERROR_INVALID_MODE": "Invalid privacy mode",
+        "CONFLICT_WARNING": "Evolution has both an exclude list and an allow list set for this instance. This panel can only show one of them: saving from here will clear the other."
       },
       "MESSENGER_HEADING": "Messenger Script",
       "MESSENGER_SUB_HEAD": "Place this button inside your body tag",

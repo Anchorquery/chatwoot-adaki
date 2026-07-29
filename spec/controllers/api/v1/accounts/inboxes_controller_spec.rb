@@ -1256,7 +1256,7 @@ RSpec.describe 'Inboxes API', type: :request do
   # por instancia del concern se mantenga.
   describe 'GET /api/v1/accounts/{account.id}/inboxes/{inbox.id}/evolution_privacy_filter' do
     let(:inbox) { create(:inbox, account: account) }
-    let(:filter_payload) { { mode: 'all', group_jids: [], channel_jids: [], contact_jids: [] } }
+    let(:filter_payload) { { status: 'ok', conflict: false, mode: 'all', group_jids: [], channel_jids: [], contact_jids: [] } }
 
     before do
       allow(Evolution::AudienceOptionsService).to receive(:new).and_return(
@@ -1290,14 +1290,44 @@ RSpec.describe 'Inboxes API', type: :request do
 
       expect(response).to have_http_status(:unauthorized)
     end
+
+    # Regresión: devolver 200 con el filtro vacío cuando Evolution no responde
+    # es indistinguible de "no hay filtro". El front lo mostraba como "Todos",
+    # habilitaba Guardar, y el usuario borraba la config real de Evolution.
+    context 'when evolution cannot be read' do
+      let(:filter_payload) { { status: 'unreachable' } }
+
+      it 'fails instead of reporting an empty filter' do
+        get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_privacy_filter",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:bad_gateway)
+        expect(response.parsed_body['error']).to eq('unreachable')
+        expect(response.parsed_body).not_to have_key('mode')
+      end
+    end
+
+    context 'when the inbox has no evolution api key' do
+      let(:filter_payload) { { status: 'not_configured' } }
+
+      it 'returns unprocessable entity' do
+        get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_privacy_filter",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
   end
 
   describe 'POST /api/v1/accounts/{account.id}/inboxes/{inbox.id}/evolution_update_privacy_filter' do
     let(:inbox) { create(:inbox, account: account) }
+    let(:update_result) { { success: true, message: 'ok' } }
 
     before do
       allow(Evolution::AudienceOptionsService).to receive(:new).and_return(
-        instance_double(Evolution::AudienceOptionsService, update_privacy_filter: { success: true, message: 'ok' })
+        instance_double(Evolution::AudienceOptionsService, update_privacy_filter: update_result)
       )
     end
 
@@ -1320,6 +1350,35 @@ RSpec.describe 'Inboxes API', type: :request do
            as: :json
 
       expect(response).to have_http_status(:unauthorized)
+    end
+
+    # Regresión: un fallo al escribir en Evolution salía como 200, así que el
+    # front cantaba "filtro guardado" mientras Evolution seguía igual.
+    context 'when evolution rejects the write' do
+      let(:update_result) { { success: false, message: 'evolution_unreachable' } }
+
+      it 'does not report success' do
+        post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_update_privacy_filter",
+             params: { mode: 'allow', jids: ['123@s.whatsapp.net'] },
+             headers: admin.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:bad_gateway)
+        expect(response.parsed_body['success']).to be(false)
+      end
+    end
+
+    context 'when the inbox has no evolution api key' do
+      let(:update_result) { { success: false, message: 'not_configured' } }
+
+      it 'returns unprocessable entity' do
+        post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_update_privacy_filter",
+             params: { mode: 'block', jids: [] },
+             headers: admin.create_new_auth_token,
+             as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
     end
   end
 end
