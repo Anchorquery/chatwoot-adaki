@@ -10,9 +10,17 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
     skip_before_action :check_authorization, only: [:evolution_privacy_filter, :evolution_update_privacy_filter]
   end
 
+  # Cada lista se pide por separado y con su propio rescate: un fallo inesperado
+  # en una (ej. Evolution devolviendo una forma rara para los canales) no debe
+  # tumbar las otras dos con un 500 — mismo criterio que el allSettled del front
+  # para current_privacy_filter.
   def evolution_audience_options
     service = Evolution::AudienceOptionsService.new(@inbox)
-    render json: { newsletters: service.newsletters, groups: service.groups, contacts: service.contacts }
+    render json: {
+      newsletters: fetch_audience_list { service.newsletters },
+      groups: fetch_audience_list { service.groups },
+      contacts: fetch_audience_list { service.contacts }
+    }
   end
 
   def evolution_test_connection
@@ -60,6 +68,13 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
   # lado de Evolution, no de la petición del usuario.
   def privacy_filter_error_status(message)
     PRIVACY_FILTER_ERROR_STATUS.fetch(message, :bad_gateway)
+  end
+
+  def fetch_audience_list
+    yield
+  rescue StandardError => e
+    ChatwootExceptionTracker.new(e).capture_exception
+    []
   end
 
   # El frontend nunca recibe la apikey de Evolution, así que tampoco puede

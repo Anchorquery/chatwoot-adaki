@@ -1249,6 +1249,52 @@ RSpec.describe 'Inboxes API', type: :request do
     end
   end
 
+  describe 'GET /api/v1/accounts/{account.id}/inboxes/{inbox.id}/evolution_audience_options' do
+    let(:inbox) { create(:inbox, account: account) }
+    let(:service_double) { instance_double(Evolution::AudienceOptionsService) }
+
+    before { allow(Evolution::AudienceOptionsService).to receive(:new).and_return(service_double) }
+
+    it 'returns the three lists for an administrator' do
+      allow(service_double).to receive_messages(newsletters: [{ 'id' => 'n1' }], groups: [{ 'id' => 'g1' }],
+                                                contacts: [{ 'remoteJid' => '1@s.whatsapp.net' }])
+
+      get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_audience_options",
+          headers: admin.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to eq(
+        'newsletters' => [{ 'id' => 'n1' }], 'groups' => [{ 'id' => 'g1' }], 'contacts' => [{ 'remoteJid' => '1@s.whatsapp.net' }]
+      )
+    end
+
+    it 'returns unauthorized for a non-administrator' do
+      get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_audience_options",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    # Regresión: un fallo inesperado en una sola lista (ej. Evolution devolviendo
+    # una forma rara para los canales) tumbaba el endpoint entero con 500 en vez
+    # de devolver vacías esa lista y las otras dos igual.
+    context 'when one of the three lists raises unexpectedly' do
+      it 'degrades that list to empty instead of returning 500' do
+        allow(service_double).to receive(:newsletters).and_raise(StandardError, 'boom')
+        allow(service_double).to receive_messages(groups: [{ 'id' => 'g1' }], contacts: [])
+
+        get "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_audience_options",
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq('newsletters' => [], 'groups' => [{ 'id' => 'g1' }], 'contacts' => [])
+      end
+    end
+  end
+
   # Regresión: estas dos acciones usan políticas por instancia
   # (assigned_inboxes.include?(record)), así que no pueden pasar por el
   # check_authorization genérico del controller (autoriza la CLASE Inbox y

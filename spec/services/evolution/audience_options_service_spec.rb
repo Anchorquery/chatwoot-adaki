@@ -22,6 +22,24 @@ describe Evolution::AudienceOptionsService do
     stub_request(:get, find_url).to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
   end
 
+  describe '#contacts' do
+    let(:find_chats_url) { 'https://evo.example.com/chat/findChats/miinstancia' }
+
+    # Regresión: un elemento que no fuera un Hash (Evolution devolviendo null
+    # dentro del array) tiraba NoMethodError en chat['remoteJid'] sin rescatar,
+    # y el endpoint entero devolvia 500 en vez de descartar esa fila.
+    it 'discards non-hash entries instead of raising' do
+      stub_request(:post, find_chats_url).to_return(
+        status: 200,
+        body: [{ 'remoteJid' => '1@s.whatsapp.net' }, nil, 'garbage'].to_json,
+        headers: { 'Content-Type' => 'application/json' }
+      )
+
+      expect { service.contacts }.not_to raise_error
+      expect(service.contacts).to eq([{ 'remoteJid' => '1@s.whatsapp.net' }])
+    end
+  end
+
   describe '#current_privacy_filter' do
     context 'when the inbox has no evolution api key' do
       let(:additional_attributes) { { 'evolution_api_key' => '' } }

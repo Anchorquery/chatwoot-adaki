@@ -29,7 +29,10 @@ class Evolution::AudienceOptionsService
 
   def contacts
     result = fetch('chat/findChats', method: :post, body: { where: {}, take: CONTACTS_LIMIT, skip: 0 })
-    Array.wrap(result).reject do |chat|
+    # select antes de reject: un elemento que no sea un Hash (Evolution devolviendo
+    # algo inesperado, ej. null en la lista) tiraba NoMethodError sin rescatar en
+    # chat['remoteJid'] y tumbaba el endpoint entero con 500.
+    Array.wrap(result).select { |chat| chat.is_a?(Hash) }.reject do |chat|
       jid = chat['remoteJid'].to_s
       jid.end_with?('@g.us', '@newsletter') || jid == 'status@broadcast'
     end
