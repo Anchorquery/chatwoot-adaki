@@ -748,6 +748,8 @@
         "SAVE_SUCCESS": "Filtro de privacidad guardado",
         "SAVE_ERROR": "No se pudo guardar el filtro de privacidad",
         "LOAD_ERROR": "No se pudo leer el filtro guardado; el guardado queda deshabilitado para no pisarlo. Recargá la página para reintentar.",
+        "LOADING": "Cargando el filtro actual…",
+        "RELOAD_BUTTON": "Reintentar",
         "SAVE_ERROR_NOT_CONFIGURED": "Esta bandeja no tiene guardada la apikey de Evolution, así que el filtro no se puede enviar a Evolution. Un administrador tiene que cargarla en la configuración del canal.",
         "SAVE_ERROR_INVALID_MODE": "Modo de privacidad inválido",
         "CONFLICT_WARNING": "Evolution tiene cargadas a la vez una lista de excluidos y una de permitidos para esta instancia. Este panel solo puede mostrar una: si guardás desde acá, se borra la otra."

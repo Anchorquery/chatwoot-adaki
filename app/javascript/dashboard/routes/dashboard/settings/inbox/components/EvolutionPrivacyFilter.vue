@@ -6,6 +6,7 @@ import InboxesAPI from 'dashboard/api/inboxes';
 import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 import TagInput from 'dashboard/components-next/taginput/TagInput.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import SpinnerLoader from 'dashboard/components-next/spinner/Spinner.vue';
 import InputRadioGroup from './InputRadioGroup.vue';
 
 const props = defineProps({
@@ -181,13 +182,6 @@ const save = async () => {
       {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.NO_CONNECTION_HINT') }}
     </p>
     <p
-      v-if="!loading && !filterLoaded"
-      class="text-xs text-n-ruby-11 flex items-start gap-1.5"
-    >
-      <span class="i-lucide-triangle-alert size-3.5 shrink-0 mt-0.5" />
-      {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.LOAD_ERROR') }}
-    </p>
-    <p
       v-if="hasConflictingLists"
       class="text-xs text-n-amber-11 flex items-start gap-1.5"
     >
@@ -195,7 +189,36 @@ const save = async () => {
       {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.CONFLICT_WARNING') }}
     </p>
 
+    <!-- Evolution puede tardar (varias llamadas HTTP secuenciales contra una
+         instancia lenta); sin este indicador el panel parecía colgado. -->
+    <div
+      v-if="loading"
+      class="flex items-center gap-2 text-xs text-n-slate-11 py-2"
+    >
+      <SpinnerLoader :size="16" />
+      {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.LOADING') }}
+    </div>
+
+    <div
+      v-else-if="!filterLoaded"
+      class="flex items-center justify-between gap-2 text-xs text-n-ruby-11"
+    >
+      <span class="flex items-start gap-1.5">
+        <span class="i-lucide-triangle-alert size-3.5 shrink-0 mt-0.5" />
+        {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.LOAD_ERROR') }}
+      </span>
+      <NextButton
+        :label="t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.RELOAD_BUTTON')"
+        icon="i-lucide-refresh-cw"
+        size="sm"
+        variant="ghost"
+        class="rounded-md shrink-0"
+        @click="loadOptionsAndFilter"
+      />
+    </div>
+
     <InputRadioGroup
+      v-if="filterLoaded"
       name="evolution-privacy-mode"
       :items="modeItems"
       :action="setMode"

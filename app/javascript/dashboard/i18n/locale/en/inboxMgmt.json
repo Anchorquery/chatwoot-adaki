@@ -750,6 +750,8 @@
         "SAVE_SUCCESS": "Privacy filter saved",
         "SAVE_ERROR": "Could not save the privacy filter",
         "LOAD_ERROR": "Could not read the saved filter; saving is disabled so it doesn't get overwritten. Reload the page to retry.",
+        "LOADING": "Loading the current filter…",
+        "RELOAD_BUTTON": "Retry",
         "SAVE_ERROR_NOT_CONFIGURED": "This inbox has no Evolution API key saved, so the filter cannot be sent to Evolution. An administrator has to set it in the channel settings.",
         "SAVE_ERROR_INVALID_MODE": "Invalid privacy mode",
         "CONFLICT_WARNING": "Evolution has both an exclude list and an allow list set for this instance. This panel can only show one of them: saving from here will clear the other."
