@@ -14,12 +14,25 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
   # en una (ej. Evolution devolviendo una forma rara para los canales) no debe
   # tumbar las otras dos con un 500 — mismo criterio que el allSettled del front
   # para current_privacy_filter.
+  #
+  # En threads, no secuencial: son 3 llamadas HTTP a Evolution con hasta
+  # REQUEST_TIMEOUT (10s) cada una. En cadena, la suma podía superar los 15s del
+  # limite global de Rack::Timeout y la request moria con
+  # Rack::Timeout::RequestTimeoutException a mitad de la segunda o tercera
+  # llamada, sin que nada de esto lo pudiera rescatar (esa excepcion no hereda
+  # de StandardError a proposito, para que un rescue no oculte un timeout real).
+  # En paralelo el peor caso pasa a ser ~10s (la mas lenta), no ~30s.
   def evolution_audience_options
     service = Evolution::AudienceOptionsService.new(@inbox)
+
+    newsletters_thread = Thread.new { fetch_audience_list { service.newsletters } }
+    groups_thread = Thread.new { fetch_audience_list { service.groups } }
+    contacts_thread = Thread.new { fetch_audience_list { service.contacts } }
+
     render json: {
-      newsletters: fetch_audience_list { service.newsletters },
-      groups: fetch_audience_list { service.groups },
-      contacts: fetch_audience_list { service.contacts }
+      newsletters: newsletters_thread.value,
+      groups: groups_thread.value,
+      contacts: contacts_thread.value
     }
   end
 

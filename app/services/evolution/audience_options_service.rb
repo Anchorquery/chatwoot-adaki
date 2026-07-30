@@ -2,7 +2,13 @@ require 'ssrf_filter'
 
 class Evolution::AudienceOptionsService
   ALLOWED_SCHEMES = %w[http https].freeze
-  REQUEST_TIMEOUT = 10
+  # update_privacy_filter encadena dos llamadas (find + set) que no se pueden
+  # paralelizar: la segunda necesita el resultado de la primera. Con el viejo
+  # valor de 10s, dos llamadas lentas sumaban 20s y superaban el limite global
+  # de 15s de Rack::Timeout, igual que le pasaba a evolution_audience_options.
+  # 6s dejan margen para ese peor caso (~12s) sin ser tan corto como para
+  # fallar ante una Evolution simplemente algo lenta.
+  REQUEST_TIMEOUT = 6
   PRIVACY_MODES = %w[all block allow].freeze
 
   def initialize(inbox)
