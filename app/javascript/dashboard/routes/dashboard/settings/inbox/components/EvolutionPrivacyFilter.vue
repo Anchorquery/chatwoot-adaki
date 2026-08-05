@@ -224,7 +224,10 @@ const save = async () => {
       :action="setMode"
     />
 
-    <template v-if="mode !== 'all'">
+    <!-- filterLoaded además de mode: tras un reintento fallido el mode viejo
+         persiste, y sin el guard los pickers quedaban visibles con el selector
+         de modo oculto. -->
+    <template v-if="filterLoaded && mode !== 'all'">
       <div class="flex flex-col gap-1">
         <label class="text-xs font-medium text-n-slate-11">
           {{ t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.GROUPS_LABEL') }}
