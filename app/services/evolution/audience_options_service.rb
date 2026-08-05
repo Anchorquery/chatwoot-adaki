@@ -3,18 +3,25 @@ require 'ssrf_filter'
 class Evolution::AudienceOptionsService
   ALLOWED_SCHEMES = %w[http https].freeze
   # update_privacy_filter encadena dos llamadas (find + set) que no se pueden
-  # paralelizar: la segunda necesita el resultado de la primera. Con el viejo
-  # valor de 10s, dos llamadas lentas sumaban 20s y superaban el limite global
-  # de 15s de Rack::Timeout, igual que le pasaba a evolution_audience_options.
-  # 6s dejan margen para ese peor caso (~12s) sin ser tan corto como para
-  # fallar ante una Evolution simplemente algo lenta.
-  REQUEST_TIMEOUT = 6
+  # paralelizar: la segunda necesita el resultado de la primera. El presupuesto
+  # real de una peticion es open_timeout + read_timeout (no un unico timeout):
+  # con 2s + 5s el peor caso por llamada es ~7s y la cadena find+set queda en
+  # ~14s, por debajo del limite global de 15s de Rack::Timeout. El valor
+  # anterior (6s + 6s) permitia ~24s en cadena y la request moria con
+  # Rack::Timeout::RequestTimeoutException, irrescatable a proposito.
+  OPEN_TIMEOUT = 2
+  REQUEST_TIMEOUT = 5
   PRIVACY_MODES = %w[all block allow].freeze
 
   def initialize(inbox)
     @inbox = inbox
     @config = inbox.channel.try(:additional_attributes) || {}
     @webhook_url = inbox.channel.try(:webhook_url)
+    # evolution_audience_options comparte esta instancia entre varios threads.
+    # La memoizacion de parsed_webhook_uri escribe un nil intermedio antes de
+    # parsear: un thread que entrara justo ahi veia "sin webhook" y devolvia su
+    # lista vacia. Se resuelve aca, antes de que exista concurrencia.
+    parsed_webhook_uri
   end
 
   def newsletters
@@ -192,7 +199,7 @@ class Evolution::AudienceOptionsService
   end
 
   def request_via_ssrf_filter(url, method, headers, json_body)
-    http_options = { open_timeout: REQUEST_TIMEOUT, read_timeout: REQUEST_TIMEOUT }
+    http_options = { open_timeout: OPEN_TIMEOUT, read_timeout: REQUEST_TIMEOUT }
 
     if method == :post
       SsrfFilter.post(url, headers: headers, body: json_body, http_options: http_options)
@@ -208,6 +215,10 @@ class Evolution::AudienceOptionsService
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = uri.scheme == 'https'
+    # Sin esto quedaban los defaults de Net::HTTP (60s de read_timeout): una
+    # Evolution local colgada bloqueaba la request hasta el Rack::Timeout.
+    http.open_timeout = OPEN_TIMEOUT
+    http.read_timeout = REQUEST_TIMEOUT
     req = method == :post ? Net::HTTP::Post.new(uri) : Net::HTTP::Get.new(uri)
     headers.each { |key, value| req[key] = value }
     req.body = json_body if json_body
