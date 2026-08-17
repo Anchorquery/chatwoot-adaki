@@ -83,6 +83,8 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
+    ports:
+      - '5432:5432'
     environment:
       - POSTGRES_DB=chatwoot
       - POSTGRES_USER=postgres
