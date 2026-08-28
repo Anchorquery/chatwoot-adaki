@@ -337,6 +337,31 @@ RSpec.describe Captain::InboxPendingConversationsResolutionJob, type: :job do
     end
   end
 
+  context 'when a service-channel conversation is pending' do
+    let!(:service_contact) { create(:contact, account: inbox.account, identifier: nil, phone_number: '+123456') }
+    let!(:service_channel_conversation) do
+      create(:conversation, inbox: inbox, contact: service_contact, last_activity_at: 2.hours.ago, status: :pending)
+    end
+
+    before do
+      allow(inbox.account).to receive(:feature_enabled?).and_call_original
+      allow(inbox.account).to receive(:feature_enabled?).with('captain_tasks').and_return(false)
+    end
+
+    it 'never resolves or hands it off, even though it is otherwise eligible' do
+      described_class.perform_now(inbox)
+
+      expect(service_channel_conversation.reload.status).to eq('pending')
+      expect(service_channel_conversation.messages).to be_empty
+    end
+
+    it 'still resolves other eligible pending conversations in the same batch' do
+      described_class.perform_now(inbox)
+
+      expect(resolvable_pending_conversation.reload.status).to eq('resolved')
+    end
+  end
+
   it 'does not resolve conversations when auto-resolve is disabled at execution time' do
     inbox.account.update!(captain_auto_resolve_mode: 'disabled')
 

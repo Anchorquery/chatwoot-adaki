@@ -18,6 +18,22 @@ end
 Sidekiq.configure_server do |config|
   config.redis = Redis::Config.app
 
+  # Dedicated capsule so a stuck/slow LLM provider (Captain::Conversation::
+  # ResponseBuilderJob, Captain::Copilot::ResponseJob) can't starve every
+  # other queue of worker threads — previously both ran on :default,
+  # sharing the same pool as everything else. Carved OUT of the existing
+  # concurrency (not added on top): config/database.yml sizes the Sidekiq
+  # DB connection pool from SIDEKIQ_CONCURRENCY alone, so adding capsule
+  # threads on top of that would silently exceed the pool and trade one
+  # hang for another. See docs/adaki/captain-remediacion.md §3.
+  captain_concurrency = ENV.fetch('SIDEKIQ_CAPTAIN_CONCURRENCY', 3).to_i
+  config[:concurrency] = [config[:concurrency].to_i - captain_concurrency, 1].max
+
+  config.capsule('captain') do |cap|
+    cap.concurrency = captain_concurrency
+    cap.queues = %w[captain]
+  end
+
   if ActiveModel::Type::Boolean.new.cast(ENV.fetch('ENABLE_SIDEKIQ_DEQUEUE_LOGGER', false))
     config.server_middleware do |chain|
       chain.add ChatwootDequeuedLogger

@@ -83,10 +83,30 @@ module Captain::ChatHelper
     # RubyLLM callbacks fire after chunks arrive, not around the API call, so
     # span timing won't reflect actual API latency. But Langfuse calculates costs
     # from model + token counts, so this is sufficient for cost tracking.
-    chat.on_end_message { |message| record_llm_generation(chat, message) }
+    chat.on_end_message do |message|
+      record_llm_generation(chat, message)
+      accumulate_llm_usage(message)
+    end
     chat.on_tool_call { |tool_call| handle_tool_call(tool_call) }
     chat.on_tool_result { |result| handle_tool_result(result) }
     chat
+  end
+
+  # Fires once per underlying LLM call — a tool-call round means chat.ask
+  # drives multiple of these within a single #request_chat_completion, so
+  # totals accumulate here rather than reading a single message's tokens.
+  # Adaki::ChatHelperAdaki reads #llm_usage after `super` returns to record
+  # real token counts instead of the parsed response hash it used to
+  # introspect (which never carried usage data — see
+  # docs/adaki/captain-remediacion.md §Fase 4, C10).
+  def accumulate_llm_usage(message)
+    @llm_usage ||= { input: 0, output: 0 }
+    @llm_usage[:input] += message.input_tokens.to_i
+    @llm_usage[:output] += message.respond_to?(:output_tokens) ? message.output_tokens.to_i : 0
+  end
+
+  def llm_usage
+    @llm_usage || { input: 0, output: 0 }
   end
 
   def handle_tool_call(tool_call)

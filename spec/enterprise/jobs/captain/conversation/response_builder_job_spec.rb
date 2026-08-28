@@ -6,6 +6,10 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
   let(:assistant) { create(:captain_assistant, account: account) }
   let(:captain_inbox_association) { create(:captain_inbox, captain_assistant: assistant, inbox: inbox) }
 
+  it 'runs on the dedicated captain Sidekiq capsule, not :default' do
+    expect(described_class.queue_name).to eq('captain')
+  end
+
   describe '#perform' do
     let(:conversation) { create(:conversation, inbox: inbox, account: account, status: :pending) }
     let(:mock_llm_chat_service) { instance_double(Captain::Llm::AssistantChatService) }
@@ -498,9 +502,233 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
     it 'has retry_on configuration for retryable errors' do
       expect(described_class).to respond_to(:retry_on)
     end
+  end
 
-    it 'defines MAX_MESSAGE_LENGTH constant' do
-      expect(described_class::MAX_MESSAGE_LENGTH).to eq(10_000)
+  # Captain::FailurePolicy classification — see docs/adaki/captain-remediacion.md
+  # §2a. Unit coverage of the classification logic itself lives in
+  # spec/enterprise/lib/captain/failure_policy_spec.rb; this covers how the job
+  # reacts once a failure is classified, for both runtimes.
+  describe 'failure classification' do
+    let(:conversation) { create(:conversation, inbox: inbox, account: account, status: :pending) }
+
+    before do
+      create(:message, conversation: conversation, content: 'Hello', message_type: :incoming)
+    end
+
+    context 'with V1 (Captain::Llm::AssistantChatService raises directly)' do
+      let(:mock_llm_chat_service) { instance_double(Captain::Llm::AssistantChatService) }
+
+      before do
+        allow(account).to receive(:feature_enabled?).and_return(false)
+        allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(false)
+        allow(Captain::Llm::AssistantChatService).to receive(:new).and_return(mock_llm_chat_service)
+      end
+
+      context 'when the LLM call fails with a transient provider error' do
+        before do
+          allow(mock_llm_chat_service).to receive(:generate_response).and_raise(RubyLLM::ServerError.new('server error'))
+        end
+
+        it 'does not hand off — it is retried at the job level instead (see retry_on above)' do
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.reload.status).to eq('pending')
+          expect(conversation.messages.outgoing).to be_empty
+        end
+      end
+
+      context 'when the LLM call fails with a dead/revoked credential' do
+        before do
+          allow(mock_llm_chat_service).to receive(:generate_response)
+            .and_raise(RubyLLM::UnauthorizedError.new('Incorrect API key provided'))
+        end
+
+        it 'hands off and leaves a private note distinguishing it from a legitimate escalation' do
+          described_class.perform_now(conversation, assistant)
+          conversation.reload
+
+          expect(conversation.status).to eq('open')
+
+          note = conversation.messages.where(private: true).last
+          expect(note.content).to include('configuration', 'Incorrect API key provided')
+
+          public_message = conversation.messages.outgoing.where(private: false).last
+          expect(public_message.content).to eq(I18n.t('conversations.captain.handoff'))
+        end
+      end
+
+      context 'when the Adaki monthly limit is exceeded' do
+        before do
+          allow(mock_llm_chat_service).to receive(:generate_response)
+            .and_raise(Adaki::CaptainUsageTracker::LimitExceeded.new('limit reached'))
+        end
+
+        it 'hands off and leaves a private note' do
+          described_class.perform_now(conversation, assistant)
+          conversation.reload
+
+          expect(conversation.status).to eq('open')
+          expect(conversation.messages.where(private: true).last.content).to include('limit_adaki')
+        end
+      end
+    end
+
+    context 'with V2 (Captain::Assistant::AgentRunnerService reports failure_class in its response)' do
+      let(:mock_agent_runner_service) { instance_double(Captain::Assistant::AgentRunnerService) }
+
+      before do
+        allow(account).to receive(:feature_enabled?).and_return(false)
+        allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(true)
+        allow(Captain::Assistant::AgentRunnerService).to receive(:new).and_return(mock_agent_runner_service)
+      end
+
+      context 'when the runner reports a transient failure' do
+        before do
+          allow(mock_agent_runner_service).to receive(:generate_response).and_return({
+                                                                                       'response' => 'conversation_handoff',
+                                                                                       'error' => 'server error',
+                                                                                       'failure_class' => 'transient',
+                                                                                       'handoff_tool_called' => false
+                                                                                     })
+        end
+
+        it 'does not hand off — it is retried at the job level instead (see retry_on above)' do
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.reload.status).to eq('pending')
+          expect(conversation.messages.outgoing).to be_empty
+        end
+      end
+
+      context 'when the runner reports a configuration failure' do
+        before do
+          allow(mock_agent_runner_service).to receive(:generate_response).and_return({
+                                                                                       'response' => 'conversation_handoff',
+                                                                                       'error' => 'Incorrect API key provided',
+                                                                                       'failure_class' => 'configuration',
+                                                                                       'handoff_tool_called' => false
+                                                                                     })
+        end
+
+        it 'hands off and leaves a private diagnostic note' do
+          described_class.perform_now(conversation, assistant)
+          conversation.reload
+
+          expect(conversation.status).to eq('open')
+          expect(conversation.messages.where(private: true).last.content)
+            .to include('configuration', 'Incorrect API key provided')
+        end
+      end
+    end
+  end
+
+  # Unit-level coverage of the counting/opening/closing logic itself lives in
+  # spec/enterprise/lib/captain/credential_circuit_breaker_spec.rb; this only
+  # confirms the job actually wires into it at the right points.
+  describe 'credential circuit breaker' do
+    let(:conversation) { create(:conversation, inbox: inbox, account: account, status: :pending) }
+    let(:mock_llm_chat_service) { instance_double(Captain::Llm::AssistantChatService) }
+
+    before do
+      create(:message, conversation: conversation, content: 'Hello', message_type: :incoming)
+      allow(account).to receive(:feature_enabled?).and_return(false)
+      allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(false)
+      allow(Captain::Llm::AssistantChatService).to receive(:new).and_return(mock_llm_chat_service)
+    end
+
+    after { Captain::CredentialCircuitBreaker.close!(account) }
+
+    context 'when the circuit is already open for this account' do
+      before do
+        Captain::CredentialCircuitBreaker::FAILURE_THRESHOLD.times { Captain::CredentialCircuitBreaker.record_failure!(account) }
+      end
+
+      it 'hands off without ever attempting the LLM call' do
+        expect(Captain::Llm::AssistantChatService).not_to receive(:new)
+
+        described_class.perform_now(conversation, assistant)
+
+        expect(conversation.reload.status).to eq('open')
+      end
+
+      it 'still leaves a diagnostic note explaining why' do
+        described_class.perform_now(conversation, assistant)
+
+        note = conversation.reload.messages.where(private: true).last
+        expect(note.content).to include('configuration')
+      end
+    end
+
+    context 'when repeated configuration failures occur across separate incoming messages' do
+      before do
+        allow(mock_llm_chat_service).to receive(:generate_response)
+          .and_raise(RubyLLM::UnauthorizedError.new('Incorrect API key provided'))
+      end
+
+      it 'opens the circuit once the failure threshold is reached' do
+        Captain::CredentialCircuitBreaker::FAILURE_THRESHOLD.times do
+          described_class.perform_now(conversation, assistant)
+        end
+
+        expect(Captain::CredentialCircuitBreaker.open?(account)).to be(true)
+      end
+    end
+  end
+
+  # Unit-level coverage of the flag itself lives in spec/lib/llm/config_spec.rb;
+  # this only confirms the job actually gates on it at the right point.
+  describe 'global credential fallback' do
+    let(:conversation) { create(:conversation, inbox: inbox, account: account, status: :pending) }
+    let(:mock_llm_chat_service) { instance_double(Captain::Llm::AssistantChatService) }
+
+    before do
+      create(:message, conversation: conversation, content: 'Hello', message_type: :incoming)
+      allow(account).to receive(:feature_enabled?).and_return(false)
+      allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(false)
+      allow(Captain::Llm::AssistantChatService).to receive(:new).and_return(mock_llm_chat_service)
+      allow(mock_llm_chat_service).to receive(:generate_response).and_return({ 'response' => 'Hey there' })
+    end
+
+    context 'when the operator has not restricted the global fallback (default)' do
+      it 'still runs the LLM even though the account has no credential of its own' do
+        expect(Captain::Llm::AssistantChatService).to receive(:new)
+
+        described_class.perform_now(conversation, assistant)
+      end
+    end
+
+    context 'when the global fallback is turned off and the account has no credential of its own' do
+      before { InstallationConfig.find_or_create_by!(name: 'CAPTAIN_ALLOW_GLOBAL_FALLBACK') { |c| c.value = 'false' } }
+
+      it 'hands off without ever attempting the LLM call' do
+        expect(Captain::Llm::AssistantChatService).not_to receive(:new)
+
+        described_class.perform_now(conversation, assistant)
+
+        expect(conversation.reload.status).to eq('open')
+      end
+
+      it 'leaves a diagnostic note explaining the account has no provider configured' do
+        described_class.perform_now(conversation, assistant)
+
+        note = conversation.reload.messages.where(private: true).last
+        expect(note.content).to include('no tiene un proveedor de IA configurado')
+      end
+    end
+
+    context 'when the global fallback is turned off but the account has its own credential' do
+      before do
+        InstallationConfig.find_or_create_by!(name: 'CAPTAIN_ALLOW_GLOBAL_FALLBACK') { |c| c.value = 'false' }
+        allow(Platform::Models::Resolver).to receive(:resolve)
+          .with(account: account, feature: 'assistant')
+          .and_return({ credential: instance_double(Platform::Credential) })
+      end
+
+      it 'runs the LLM normally' do
+        expect(Captain::Llm::AssistantChatService).to receive(:new)
+
+        described_class.perform_now(conversation, assistant)
+      end
     end
   end
 
@@ -603,6 +831,53 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
           described_class.perform_now(conversation, assistant)
         end.not_to(change { conversation.messages.template.count })
       end
+    end
+  end
+
+  # Message-shaping rules (history window, truncation, human-vs-bot role
+  # attribution) have their own detailed coverage in
+  # spec/enterprise/services/captain/conversation/history_builder_spec.rb.
+  # This just confirms the job actually wires that builder in.
+  describe 'conversation history for the LLM' do
+    let(:conversation) { create(:conversation, inbox: inbox, account: account, status: :pending) }
+    let(:mock_llm_chat_service) { instance_double(Captain::Llm::AssistantChatService) }
+    let(:agent) { create(:user, account: account) }
+
+    before do
+      allow(account).to receive(:feature_enabled?).and_return(false)
+      allow(account).to receive(:feature_enabled?).with('captain_integration_v2').and_return(false)
+      allow(Captain::Llm::AssistantChatService).to receive(:new).and_return(mock_llm_chat_service)
+      allow(mock_llm_chat_service).to receive(:generate_response).and_return({ 'response' => 'ok' })
+      # A human agent's own outgoing message correctly trips
+      # Captain::HumanTakeoverEvaluator in real usage (a human already
+      # replied publicly, so the bot should go quiet) — that's working
+      # as intended, but it's a different concern from what this describe
+      # block tests (HistoryBuilder wiring), and without it every example
+      # here that creates such a message would short-circuit in
+      # #conversation_captain_controllable? before generate_response is
+      # ever reached. Caught by running this spec against a real Postgres
+      # for the first time this session (2026-08-28).
+      allow_any_instance_of(Captain::HumanTakeoverEvaluator).to receive(:human_takeover?).and_return(false) # rubocop:disable RSpec/AnyInstance
+    end
+
+    it "never presents a human agent's own reply to the LLM as the assistant's own words" do
+      create(:message, conversation: conversation, content: 'Hola', message_type: :incoming)
+      create(:message, conversation: conversation, content: 'Nota de un agente', message_type: :outgoing,
+                       sender: agent, account: account)
+
+      expect(mock_llm_chat_service).to receive(:generate_response) do |**kwargs|
+        history = kwargs[:message_history]
+        expect(history).to eq([
+                                { content: 'Hola', role: 'user' },
+                                {
+                                  content: "#{Captain::Conversation::HistoryBuilder::HUMAN_AGENT_MESSAGE_PREFIX}Nota de un agente",
+                                  role: 'user'
+                                }
+                              ])
+        { 'response' => 'ok' }
+      end
+
+      described_class.perform_now(conversation, assistant)
     end
   end
 end

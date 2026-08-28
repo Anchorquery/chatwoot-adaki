@@ -282,6 +282,21 @@ class Conversation < ApplicationRecord
       inbox.respond_to?(:captain_responses_available?) && inbox.captain_responses_available?
   end
 
+  # Default phone numbers used by channel providers (Evolution/WhatsApp bridges)
+  # as the "service contact" through which they publish instance-status
+  # notifications (QR codes, connection events, import progress) as if they
+  # were incoming messages. Lives in FOSS (not CaptainInbox, which is
+  # enterprise-only and stripped from `run_foss_spec.yml`) so this constant
+  # stays resolvable even when enterprise/ isn't loaded.
+  DEFAULT_SERVICE_CONTACT_NUMBERS = ['+123456'].freeze
+
+  # See Contact#service_channel_contact?. Captain must never engage with this
+  # conversation: no response, no handoff, no auto-resolution — it is not a
+  # customer conversation.
+  def service_channel_conversation?
+    contact.present? && contact.service_channel_contact?(service_contact_numbers)
+  end
+
   # Generic commands that always summon the bot, regardless of its name.
   GROUP_BOT_COMMANDS = ['!bot', '/bot', '/ask'].freeze
 
@@ -314,6 +329,12 @@ class Conversation < ApplicationRecord
     return nil unless inbox.respond_to?(:captain_inbox_audiences)
 
     inbox.captain_inbox_audiences.ordered.detect { |audience| audience.matches?(self) }
+  end
+
+  def service_contact_numbers
+    return DEFAULT_SERVICE_CONTACT_NUMBERS unless inbox.respond_to?(:captain_inbox)
+
+    inbox.captain_inbox&.service_contact_numbers_value || DEFAULT_SERVICE_CONTACT_NUMBERS
   end
 
   def inbox_captain_assistant

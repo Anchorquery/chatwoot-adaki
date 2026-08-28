@@ -1418,5 +1418,58 @@ RSpec.describe Conversation do
         end
       end
     end
+
+    describe '#service_channel_conversation? with a per-inbox override' do
+      let(:override_account) { create(:account) }
+      let(:override_inbox) { create(:inbox, account: override_account) }
+
+      before do
+        assistant = create(:captain_assistant, account: override_account)
+        create(:captain_inbox, inbox: override_inbox, captain_assistant: assistant,
+                               settings: { 'service_contact_numbers' => ['+999999'] })
+      end
+
+      it 'honors a custom service_contact_numbers list configured on the captain_inbox' do
+        contact = create(:contact, account: override_account, identifier: nil, phone_number: '+999999')
+        conversation = create(:conversation, inbox: override_inbox, contact: contact)
+
+        expect(conversation.service_channel_conversation?).to be(true)
+      end
+
+      it 'no longer matches the built-in default once a custom list is configured' do
+        contact = create(:contact, account: override_account, identifier: nil, phone_number: '+123456')
+        conversation = create(:conversation, inbox: override_inbox, contact: contact)
+
+        expect(conversation.service_channel_conversation?).to be(false)
+      end
+    end
+  end
+
+  # FOSS-safe: exercises only the built-in default (Conversation::DEFAULT_SERVICE_CONTACT_NUMBERS),
+  # so it does not depend on CaptainInbox (enterprise-only, stripped in run_foss_spec.yml).
+  describe '#service_channel_conversation?' do
+    let(:inbox) { create(:inbox) }
+
+    it 'is true for the channel provider service contact (blank identifier, default number)' do
+      contact = create(:contact, account: inbox.account, identifier: nil, phone_number: '+123456')
+      conversation = create(:conversation, inbox: inbox, contact: contact)
+
+      expect(conversation.service_channel_conversation?).to be(true)
+    end
+
+    it 'is false for a real customer conversation' do
+      contact = create(:contact, account: inbox.account, identifier: '584145910437@s.whatsapp.net', phone_number: '+584145910437')
+      conversation = create(:conversation, inbox: inbox, contact: contact)
+
+      expect(conversation.service_channel_conversation?).to be(false)
+    end
+
+    it 'is false when there is no contact' do
+      # contact is a required belongs_to, so this only happens on an unsaved
+      # instance — build (not create) keeps validations from firing.
+      conversation = build(:conversation, inbox: inbox, contact: nil)
+
+      expect(conversation.service_channel_conversation?).to be(false)
+    end
   end
 end

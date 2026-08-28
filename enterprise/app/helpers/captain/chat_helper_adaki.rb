@@ -6,13 +6,19 @@ module Captain::ChatHelperAdaki
     response = super
 
     if account
-      tokens = adaki_extract_token_counts(response)
+      # Real token counts, not a guess: llm_usage (Captain::ChatHelper) accumulates
+      # from chat.on_end_message across every LLM call this response made, including
+      # tool-call round-trips. `response` here is the already-parsed JSON hash
+      # (build_response's return value) and never carried usage data — reading it
+      # for tokens is what made V1's Adaki accounting always log 0/0. See
+      # docs/adaki/captain-remediacion.md §Fase 4, C10.
+      usage = llm_usage
       Adaki::CaptainUsageTracker.record!(
         account: account,
         user: nil,
         feature: feature_name,
-        input_tokens: tokens[:input],
-        output_tokens: tokens[:output],
+        input_tokens: usage[:input],
+        output_tokens: usage[:output],
         assistant_id: @assistant&.id
       )
     end
@@ -24,17 +30,6 @@ module Captain::ChatHelperAdaki
 
   def adaki_resolve_account
     @account || @assistant&.account
-  end
-
-  def adaki_extract_token_counts(response)
-    return { input: 0, output: 0 } unless response.respond_to?(:input_tokens) || response.respond_to?(:usage)
-
-    if response.respond_to?(:input_tokens)
-      { input: response.input_tokens.to_i, output: response.output_tokens.to_i }
-    else
-      usage = response.usage || {}
-      { input: usage[:prompt_tokens].to_i, output: usage[:completion_tokens].to_i }
-    end
   end
 end
 

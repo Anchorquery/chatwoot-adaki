@@ -66,10 +66,22 @@ class Captain::InboxPendingConversationsResolutionJob < ApplicationJob
     # be auto-resolved or auto-handed off when the recipient stays silent. The campaign
     # itself owns the follow-up cadence; Captain piggy-backing on it produces unwanted
     # "Auto-handoff" messages on cold leads.
+    #
+    # Service-channel conversations (see Conversation#service_channel_conversation?)
+    # are excluded the same way: they are the channel provider's own notification
+    # contact, not a customer, and must never receive an "Auto-handoff"/"Auto-resolved"
+    # message. Filtered via subquery (not Ruby-level reject) so BULK_ACTIONS_LIMIT
+    # still bounds one SQL query per inbox instead of over-fetching.
     inbox.conversations.pending
          .where(campaign_id: nil)
          .where('last_activity_at < ?', auto_resolve_cutoff_time(inbox))
+         .where.not(contact_id: service_channel_contact_ids(inbox))
          .limit(Limits::BULK_ACTIONS_LIMIT)
+  end
+
+  def service_channel_contact_ids(inbox)
+    numbers = inbox.captain_inbox&.service_contact_numbers_value || Conversation::DEFAULT_SERVICE_CONTACT_NUMBERS
+    inbox.account.contacts.where(identifier: [nil, ''], phone_number: numbers).select(:id)
   end
 
   def still_resolvable_after_evaluation?(conversation)

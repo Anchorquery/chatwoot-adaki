@@ -93,3 +93,11 @@ adaki_audit_chain_verify_job:
   cron: '0 4 * * 0'
   class: 'Adaki::AuditChainVerifyJob'
   queue: low
+
+# Platform credential revalidation daily 0330 UTC — keeps status/metadata
+# truthful instead of only discovering a dead key when Captain fails live.
+# See docs/adaki/captain-remediacion.md §Fase 2c.
+platform_credentials_revalidation_job:
+  cron: '30 3 * * *'
+  class: 'Platform::Credentials::RevalidationJob'
+  queue: low

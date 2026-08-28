@@ -59,6 +59,28 @@ RSpec.describe Contact do
     end
   end
 
+  describe '#service_channel_contact?' do
+    it 'is true when the identifier is blank and the phone number matches the allowlist' do
+      contact = create(:contact, identifier: nil, phone_number: '+123456')
+      expect(contact.service_channel_contact?(['+123456'])).to be(true)
+    end
+
+    it 'is false when the phone number does not match the allowlist' do
+      contact = create(:contact, identifier: nil, phone_number: '+123456')
+      expect(contact.service_channel_contact?(['+999999'])).to be(false)
+    end
+
+    it 'is false when the contact has a real identifier, even with a matching phone number' do
+      contact = create(:contact, identifier: '584145910437@s.whatsapp.net', phone_number: '+123456')
+      expect(contact.service_channel_contact?(['+123456'])).to be(false)
+    end
+
+    it 'is false for a real customer contact' do
+      contact = create(:contact, identifier: '584145910437@s.whatsapp.net', phone_number: '+584145910437')
+      expect(contact.service_channel_contact?(['+123456'])).to be(false)
+    end
+  end
+
   context 'when phone number format' do
     it 'will throw error for existing invalid phone number' do
       contact = create(:contact)

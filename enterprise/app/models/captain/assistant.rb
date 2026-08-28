@@ -43,10 +43,17 @@ class Captain::Assistant < ApplicationRecord
   DEFAULT_HUMAN_TAKEOVER_MODE = 'after_window'
   DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES = 15
 
+  # Cap on how many recent conversation messages are sent to the LLM as context.
+  # Unbounded history was the actual cause behind some "Captain se pega"
+  # reports: a long-lived conversation grows its prompt without limit until a
+  # request eventually fails with a context-length error, which the job then
+  # (incorrectly) treats as a handoff-worthy failure.
+  DEFAULT_HISTORY_WINDOW_MESSAGES = 30
+
   store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes,
                  :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number,
                  :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
-                 :human_takeover_mode, :human_takeover_window_minutes
+                 :human_takeover_mode, :human_takeover_window_minutes, :history_window_messages
 
   validates :name, presence: true
   validates :description, presence: true
@@ -101,6 +108,13 @@ class Captain::Assistant < ApplicationRecord
   def human_takeover_window_minutes_value
     value = config['human_takeover_window_minutes'].to_i
     value.positive? ? value : DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES
+  end
+
+  # How many recent messages to include as LLM context. See
+  # DEFAULT_HISTORY_WINDOW_MESSAGES.
+  def history_window_messages_value
+    value = config['history_window_messages'].to_i
+    value.positive? ? value : DEFAULT_HISTORY_WINDOW_MESSAGES
   end
 
   def available_agent_tools

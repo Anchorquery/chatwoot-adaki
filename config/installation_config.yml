@@ -199,6 +199,12 @@
   display_title: 'Embedding Model (optional)'
   description: 'The embedding model configured for use in Captain AI. Default: text-embedding-3-small'
   locked: false
+- name: CAPTAIN_ALLOW_GLOBAL_FALLBACK
+  display_title: 'Allow Captain to fall back to the global AI provider key'
+  value: true
+  locked: false
+  description: 'When an account has no AI provider credential of its own, Captain silently uses the shared key configured above. Turn this OFF once every account that needs Captain has its own credential, so a misconfigured account gets a clear "not configured" handoff instead of quietly sharing another account''s key and usage.'
+  type: boolean
 - name: CAPTAIN_FIRECRAWL_API_KEY
   display_title: 'FireCrawl API Key (optional)'
   description: 'The FireCrawl API key for the Captain AI service'

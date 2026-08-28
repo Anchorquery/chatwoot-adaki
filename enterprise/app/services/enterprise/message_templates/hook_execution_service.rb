@@ -3,6 +3,7 @@ module Enterprise::MessageTemplates::HookExecutionService
 
   def trigger_templates
     super
+    return if skip_service_channel_conversation?
     return unless should_process_captain_response?
     return perform_handoff unless conversation.resolved_captain_active?
 
@@ -28,6 +29,19 @@ module Enterprise::MessageTemplates::HookExecutionService
   end
 
   private
+
+  # The channel provider's own service contact (QR/status notifications
+  # arriving as fake incoming messages, e.g. Evolution's +123456) must never
+  # reach Captain: no response, no handoff, no auto-resolution. It is not a
+  # customer conversation. See Conversation#service_channel_conversation?.
+  def skip_service_channel_conversation?
+    return false unless conversation.service_channel_conversation?
+
+    Rails.logger.info(
+      "[CAPTAIN][skip] account=#{conversation.account_id} conversation=#{conversation.display_id} reason=service_contact"
+    )
+    true
+  end
 
   def schedule_captain_response
     job_args = [conversation, conversation.resolved_captain_assistant]

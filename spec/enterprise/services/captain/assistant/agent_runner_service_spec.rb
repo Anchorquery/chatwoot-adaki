@@ -33,6 +33,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     allow(mock_runner).to receive(:run).and_return(mock_result)
     allow(mock_runner).to receive(:on_tool_complete).and_return(mock_runner)
     allow(mock_runner).to receive(:on_run_complete).and_return(mock_runner)
+    allow(mock_runner).to receive(:on_chat_created).and_return(mock_runner)
     allow(mock_agent).to receive(:register_handoffs)
     allow(mock_scenario_agent).to receive(:register_handoffs)
   end
@@ -93,7 +94,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       expect(mock_runner).to receive(:run).with(
         'I need help with my account',
         context: expected_context,
-        max_turns: 100
+        max_turns: described_class::MAX_TURNS
       )
 
       service.generate_response(message_history: message_history)
@@ -119,7 +120,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
           expect(input.text).to eq('What does this error mean?')
           expect(input.attachments.first.source.to_s).to eq('https://example.com/error.png')
           expect(context[:conversation_history]).to eq([{ role: :assistant, content: 'Please share a screenshot', agent_name: nil }])
-          expect(max_turns).to eq(100)
+          expect(max_turns).to eq(described_class::MAX_TURNS)
         end
 
         service.generate_response(message_history: multimodal_message_history)
@@ -147,7 +148,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
             { type: 'text', text: 'Here is my error screenshot' },
             { type: 'image_url', image_url: { url: 'https://example.com/error.png' } }
           )
-          expect(max_turns).to eq(100)
+          expect(max_turns).to eq(described_class::MAX_TURNS)
         end
 
         service.generate_response(message_history: history_with_prior_image)
@@ -157,7 +158,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         expect(mock_runner).to receive(:run) do |_input, context:, max_turns:|
           expect(context[:captain_v2_trace_input]).to include('image_url')
           expect(context[:captain_v2_trace_current_input]).to include('image_url')
-          expect(max_turns).to eq(100)
+          expect(max_turns).to eq(described_class::MAX_TURNS)
         end
 
         service.generate_response(message_history: multimodal_message_history)
@@ -193,7 +194,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         service.generate_response(message_history: message_history)
 
         expect(mock_runner).to have_received(:run).with(
-          described_class::RETRY_NUDGE, context: promise_result.context, max_turns: 100
+          described_class::RETRY_NUDGE, context: promise_result.context, max_turns: described_class::MAX_TURNS
         )
       end
 
@@ -285,6 +286,47 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       end
     end
 
+    context 'when the reply falsely claims a handoff without the tool having fired' do
+      let(:mock_result) do
+        instance_double(
+          Agents::RunResult,
+          output: { 'response' => 'Se ha transferido la conversación al agente de información de productos' },
+          context: {}
+        )
+      end
+
+      it 'suppresses the reply and replaces it with a safe fallback' do
+        result = service.generate_response(message_history: message_history)
+
+        expect(result['response']).to eq(I18n.t('conversations.captain.handoff_announcement_leak_fallback'))
+        expect(result['handoff_tool_called']).to be(false)
+      end
+
+      it 'logs the suppression instead of silently swallowing it' do
+        allow(Rails.logger).to receive(:warn)
+
+        service.generate_response(message_history: message_history)
+
+        expect(Rails.logger).to have_received(:warn).with(a_string_including('Suppressed a reply that falsely claimed a handoff'))
+      end
+    end
+
+    context 'when the reply mentions a transfer AND the handoff tool actually fired' do
+      let(:mock_result) do
+        instance_double(
+          Agents::RunResult,
+          output: { 'response' => 'Se ha transferido la conversación al agente de información de productos' },
+          context: { captain_v2_handoff_tool_called: true }
+        )
+      end
+
+      it 'does not suppress a legitimate handoff message' do
+        result = service.generate_response(message_history: message_history)
+
+        expect(result['response']).to eq('Se ha transferido la conversación al agente de información de productos')
+      end
+    end
+
     context 'when no scenarios are enabled' do
       before do
         scenarios_relation = instance_double(Captain::Scenario)
@@ -333,6 +375,8 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         expect(result).to eq({
                                'response' => 'conversation_handoff',
                                'reasoning' => 'Error occurred: Test error',
+                               'error' => 'Test error',
+                               'failure_class' => 'unknown',
                                'handoff_tool_called' => false
                              })
       end
@@ -355,6 +399,8 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
           expect(result).to eq({
                                  'response' => 'conversation_handoff',
                                  'reasoning' => 'Error occurred: Test error',
+                                 'error' => 'Test error',
+                                 'failure_class' => 'unknown',
                                  'handoff_tool_called' => false
                                })
         end
@@ -379,9 +425,31 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
           expect(result).to eq({
                                  'response' => 'conversation_handoff',
                                  'reasoning' => 'Error occurred: Test error',
+                                 'error' => 'Test error',
+                                 'failure_class' => 'unknown',
                                  'handoff_tool_called' => true
                                })
         end
+      end
+    end
+
+    # Deliberately a sibling of 'when an error occurs' (not nested in it): that
+    # context's `before` makes runner.run raise, which never exercises this
+    # path — the ai-agents Runner swallows the LLM error itself and returns it
+    # as result.error instead of letting it propagate.
+    context 'when the runner catches the LLM error internally (result.error, not a raise)' do
+      let(:runner_context) { {} }
+      let(:mock_result) do
+        instance_double(Agents::RunResult, output: nil, context: runner_context,
+                                           error: RubyLLM::UnauthorizedError.new('Incorrect API key provided'))
+      end
+
+      it 'classifies the failure so the job can tell a dead credential apart from a transient one' do
+        result = service.generate_response(message_history: message_history)
+
+        expect(result['failure_class']).to eq('configuration')
+        expect(result['response']).to eq('conversation_handoff')
+        expect(result['error']).to eq('Incorrect API key provided')
       end
     end
   end
@@ -739,6 +807,62 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       expect(root_span).to receive(:set_attribute).with('langfuse.trace.metadata.credit_used', 'true')
       run_complete_callback.call('assistant', nil, context_wrapper)
+    end
+  end
+
+  describe '#add_usage_tracking_callback' do
+    # Unlike V1 (Captain::ChatHelperAdaki), V2 never called
+    # Adaki::CaptainUsageTracker at all — every response was invisible to
+    # Adaki's usage dashboard. See docs/adaki/captain-remediacion.md §Fase 4
+    # (C10).
+    it 'accumulates tokens across every LLM call the chat makes, not just the last one' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      runner = instance_double(Agents::AgentRunner)
+      chat_created_callback = nil
+
+      allow(runner).to receive(:on_chat_created) do |&block|
+        chat_created_callback = block
+        runner
+      end
+
+      service.send(:add_usage_tracking_callback, runner)
+
+      chat = instance_double(RubyLLM::Chat)
+      end_message_callback = nil
+      allow(chat).to receive(:on_end_message) do |&block|
+        end_message_callback = block
+      end
+      context_wrapper = Struct.new(:context).new({})
+
+      chat_created_callback.call(chat, 'Assistant', 'gpt-4.1-mini', context_wrapper)
+      end_message_callback.call(instance_double(RubyLLM::Message, input_tokens: 10, output_tokens: 5))
+      end_message_callback.call(instance_double(RubyLLM::Message, input_tokens: 20, output_tokens: 8))
+
+      expect(context_wrapper.context[:captain_v2_usage]).to eq({ input: 30, output: 13 })
+    end
+  end
+
+  describe '#record_adaki_usage!' do
+    it 'records the accumulated usage from the final result context' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      result = instance_double(Agents::RunResult, context: { captain_v2_usage: { input: 30, output: 13 } })
+
+      expect(Adaki::CaptainUsageTracker).to receive(:record!).with(
+        hash_including(account: account, feature: 'assistant', input_tokens: 30, output_tokens: 13, assistant_id: assistant.id)
+      )
+
+      service.send(:record_adaki_usage!, result)
+    end
+
+    it 'records zero usage instead of raising when the run never reached a chat (e.g. failed before any LLM call)' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      result = instance_double(Agents::RunResult, context: nil)
+
+      expect(Adaki::CaptainUsageTracker).to receive(:record!).with(
+        hash_including(input_tokens: 0, output_tokens: 0)
+      )
+
+      service.send(:record_adaki_usage!, result)
     end
   end
 

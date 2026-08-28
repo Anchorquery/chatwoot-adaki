@@ -1,5 +1,6 @@
 class Captain::Copilot::ResponseJob < ApplicationJob
-  queue_as :default
+  # See Captain::Conversation::ResponseBuilderJob — same isolation rationale.
+  queue_as :captain
 
   def perform(assistant:, conversation_id:, user_id:, copilot_thread_id:, message:)
     Rails.logger.info("#{self.class.name} Copilot response job for assistant_id=#{assistant.id} user_id=#{user_id}")

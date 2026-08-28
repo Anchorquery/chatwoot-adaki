@@ -1,6 +1,17 @@
 require 'digest'
 
 class Adaki::AuditLogger
+  # Raised when the per-account hash-chain lock can't be acquired within
+  # LOCK_ACQUIRE_ATTEMPTS. Previously this used a blocking
+  # pg_advisory_xact_lock, which under contention (or a stuck lock holder)
+  # tied up a Sidekiq worker thread indefinitely — a real contributor to
+  # multi-minute hangs, since Adaki::CaptainUsageTracker#record! calls this
+  # on every V1 Captain response. See docs/adaki/captain-remediacion.md §3.
+  class LockContention < StandardError; end
+
+  LOCK_ACQUIRE_ATTEMPTS = 5
+  LOCK_RETRY_DELAY = 0.05
+
   def self.log(account:, action:, user: nil, auditable: nil, payload: {})
     new(account: account, user: user, action: action, auditable: auditable, payload: payload).call
   end
@@ -48,9 +59,7 @@ class Adaki::AuditLogger
   def call
     Adaki::AuditLogEntry.transaction do
       # Serialize per-account append to keep hash chain monotonic under concurrency.
-      Adaki::AuditLogEntry.connection.execute(
-        ActiveRecord::Base.sanitize_sql_array(['SELECT pg_advisory_xact_lock(?)', advisory_key])
-      )
+      acquire_advisory_lock!
 
       previous = Adaki::AuditLogEntry.for_account(@account).order(:id).last
       recorded_at = Time.current
@@ -80,6 +89,33 @@ class Adaki::AuditLogger
   end
 
   private
+
+  # Non-blocking: retries a bounded number of times instead of waiting
+  # indefinitely for a busy or stuck lock holder. Must run inside the same
+  # transaction as the rest of #call — pg_try_advisory_xact_lock releases on
+  # commit/rollback of that transaction, not on an explicit unlock call.
+  def acquire_advisory_lock!
+    attempts = 0
+
+    until try_advisory_lock?
+      attempts += 1
+      raise_lock_contention! if attempts >= LOCK_ACQUIRE_ATTEMPTS
+
+      sleep(LOCK_RETRY_DELAY)
+    end
+  end
+
+  def try_advisory_lock?
+    acquired = Adaki::AuditLogEntry.connection.select_value(
+      ActiveRecord::Base.sanitize_sql_array(['SELECT pg_try_advisory_xact_lock(?)', advisory_key])
+    )
+    acquired == true || acquired == 't'
+  end
+
+  def raise_lock_contention!
+    raise LockContention,
+          "No se pudo tomar el lock de cadena de auditoría para account=#{@account.id} tras #{LOCK_ACQUIRE_ATTEMPTS} intentos"
+  end
 
   # Compress account_id to bigint range for pg_advisory_xact_lock.
   def advisory_key

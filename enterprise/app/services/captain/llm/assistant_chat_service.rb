@@ -1,3 +1,5 @@
+require 'agents'
+
 class Captain::Llm::AssistantChatService < Llm::BaseAiService
   include Captain::ChatHelper
 
@@ -35,7 +37,26 @@ class Captain::Llm::AssistantChatService < Llm::BaseAiService
 
   def build_tools
     tools = [Captain::Tools::SearchDocumentationService.new(@assistant, user: nil)]
-    tools + Captain::Tools::RegistryService.new(account: @assistant.account, assistant: @assistant).assistant_tools
+    registry_tools = Captain::Tools::RegistryService.new(account: @assistant.account, assistant: @assistant).assistant_tools
+    tools + v1_compatible_tools(registry_tools)
+  end
+
+  # Captain::Tools::BasePublicTool (FaqLookupTool, HandoffTool, add_label_to_
+  # conversation, etc.) and Captain::Tools::McpTool all inherit from
+  # Agents::Tool, whose #execute(tool_context, **params) takes a required
+  # positional tool_context. V1's plain RubyLLM::Chat has no such context to
+  # pass — RubyLLM::Tool#call invokes execute(**args) with no positional
+  # argument at all, so the instant the LLM calls one of these tools it
+  # raises ArgumentError, which V1 has no recovery for beyond a plain
+  # handoff. Every V1 conversation that reaches a tool call was hitting this.
+  # V1 already has its own tool-independent handoff signal
+  # (Captain::Llm::AssistantActionClassifierService reads the reply text, no
+  # tool call needed), so dropping these here loses nothing V1 could
+  # actually use — it trades a crash-triggered false handoff for the tool
+  # simply not being offered. See docs/adaki/captain-remediacion.md §Fase 4
+  # (C5).
+  def v1_compatible_tools(tools)
+    tools.reject { |tool| tool.is_a?(Agents::Tool) }
   end
 
   def system_message
@@ -49,12 +70,15 @@ class Captain::Llm::AssistantChatService < Llm::BaseAiService
     }
   end
 
+  # available_tool_metadata's mcp/custom entries describe exactly the tools
+  # v1_compatible_tools filters out above (both are Agents::Tool-based) — so
+  # for V1 this can never have anything real to list. Advertising them here
+  # anyway would have the system prompt tell the LLM about tools it then
+  # can't actually call (they're absent from the RubyLLM function-calling
+  # schema chat.with_tool builds), which invites a hallucinated "I'll use
+  # tool X" reply instead of a clean unsupported-tool omission.
   def custom_tools_metadata
-    Captain::Tools::RegistryService.new(account: @assistant.account, assistant: @assistant).available_tool_metadata.map do |tool|
-      next if tool[:mcp].blank? && tool[:custom].blank?
-
-      { name: tool[:id], description: tool[:description] }
-    end.compact
+    []
   end
 
   def contact_attributes

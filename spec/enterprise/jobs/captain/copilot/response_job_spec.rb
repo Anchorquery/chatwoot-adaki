@@ -8,6 +8,10 @@ RSpec.describe Captain::Copilot::ResponseJob, type: :job do
   let(:conversation_id) { 123 }
   let(:message) { { 'content' => 'Test message' } }
 
+  it 'runs on the dedicated captain Sidekiq capsule, not :default' do
+    expect(described_class.queue_name).to eq('captain')
+  end
+
   describe '#perform' do
     let(:chat_service) { instance_double(Captain::Copilot::ChatService) }
 

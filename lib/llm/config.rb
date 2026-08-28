@@ -1,4 +1,6 @@
 require 'ruby_llm'
+require 'agents'
+require 'digest'
 
 module Llm::Config
   DEFAULT_MODEL = 'gpt-4.1-mini'.freeze
@@ -21,23 +23,53 @@ module Llm::Config
 
   class << self
     def initialized?
-      @initialized ||= false
+      !@configured_fingerprint.nil?
     end
 
+    # Re-reads InstallationConfig every call (cheap: 10 indexed lookups) and
+    # only re-runs RubyLLM.configure/Agents.configure (which mutate global gem
+    # state) when the resolved values actually changed since last time. This
+    # is what lets a Super Admin rotate a key and have it take effect on the
+    # next call, without a container restart — previously only a full app
+    # reboot picked up a changed InstallationConfig row. See
+    # docs/adaki/captain-remediacion.md §2c.
+    #
+    # Deliberately NOT time-cached: caching provider_values itself (e.g. a
+    # 30s TTL) would let a value from one RSpec example leak into another,
+    # since transactional-fixture rollback resets the DB but not a Ruby-level
+    # ivar. Only the cheap-to-compare fingerprint is memoized.
     def initialize!
-      return if @initialized
+      values = provider_values
+      fingerprint = fingerprint_for(values)
+      return if @configured_fingerprint == fingerprint
 
-      configure_ruby_llm
-      @initialized = true
+      configure_ruby_llm(values)
+      configure_agents_sdk(values)
+      @configured_fingerprint = fingerprint
     end
 
     def reset!
-      @initialized = false
+      @configured_fingerprint = nil
     end
 
     # Providers fully wired for per-credential routing. Add a provider here
     # once its RubyLLM setters are mapped in #apply_provider_credential.
     SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini].freeze
+
+    # Whether an account with no Platform::Credential of its own may
+    # silently fall back to the shared global RubyLLM config (built from
+    # InstallationConfig's own API keys). Defaults to true (today's
+    # existing behavior, unchanged) so shipping this doesn't flip anyone's
+    # Captain off — an operator running multiple accounts on one install
+    # opts into strict mode explicitly by setting this InstallationConfig
+    # row to false once every account that needs Captain has its own
+    # credential. See docs/adaki/captain-remediacion.md §Fase 2c.
+    def global_fallback_allowed?
+      value = InstallationConfig.find_by(name: 'CAPTAIN_ALLOW_GLOBAL_FALLBACK')&.value
+      return true if value.nil?
+
+      ActiveModel::Type::Boolean.new.cast(value)
+    end
 
     def with_api_key(api_key, api_base: nil, provider: 'openai')
       yield context_for(api_key, api_base: api_base, provider: provider)
@@ -126,17 +158,24 @@ module Llm::Config
 
     private
 
+    # Strips whitespace: a key pasted with a trailing newline/space into the
+    # Super Admin form previously reached RubyLLM verbatim and failed auth
+    # with no obvious reason in the provider's error message.
     def provider_values
-      @provider_values = PROVIDER_KEYS.each_with_object({}) do |(config_name, setter), h|
-        value = InstallationConfig.find_by(name: config_name)&.value
-        value = value.to_s.chomp('/') if setter == :openai_api_base && value.present?
+      PROVIDER_KEYS.each_with_object({}) do |(config_name, setter), h|
+        value = InstallationConfig.find_by(name: config_name)&.value.to_s.strip.presence
+        value = value.chomp('/') if setter == :openai_api_base && value.present?
         h[setter] = value
       end
     end
 
-    def configure_ruby_llm
+    def fingerprint_for(values)
+      Digest::SHA256.hexdigest(values.sort.to_s)
+    end
+
+    def configure_ruby_llm(values)
       RubyLLM.configure do |config|
-        provider_values.each do |setter, value|
+        values.each do |setter, value|
           next unless value.present?
 
           # Some RubyLLM versions may not expose every setter; skip silently.
@@ -144,7 +183,42 @@ module Llm::Config
         end
         config.model_registry_file = Rails.root.join('config/llm_models.json').to_s
         config.logger = Rails.logger
+        # Defaults are request_timeout 300s / max_retries 3 / retry_interval
+        # 0.1s — a provider hiccup could keep a Sidekiq worker busy for
+        # minutes retrying inside Faraday alone. Job-level retry_on already
+        # handles backoff for transient failures (see Captain::FailurePolicy
+        # + response_builder_job.rb), so this only needs to fail fast enough
+        # for that outer layer to take over. See
+        # docs/adaki/captain-remediacion.md §3.
+        config.request_timeout = 60
+        config.max_retries = 1
+        config.retry_interval = 1
       end
+    end
+
+    # Mirrors what config/initializers/ai_agents.rb used to do once at boot.
+    # Called on every #initialize! (fingerprint-gated like RubyLLM above) so
+    # the ai-agents gem picks up a rotated OpenAI key/model/endpoint too,
+    # without needing its own separate reload path.
+    def configure_agents_sdk(values)
+      api_key = values[:openai_api_key]
+      return if api_key.blank?
+
+      Agents.configure do |config|
+        config.openai_api_key = api_key
+        endpoint = agents_openai_endpoint
+        config.openai_api_base = "#{endpoint.chomp('/')}/v1" if endpoint.present?
+        config.default_model = agents_openai_model
+        config.debug = false
+      end
+    end
+
+    def agents_openai_model
+      InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence || LlmConstants::DEFAULT_MODEL
+    end
+
+    def agents_openai_endpoint
+      InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value || LlmConstants::OPENAI_API_ENDPOINT
     end
   end
 end

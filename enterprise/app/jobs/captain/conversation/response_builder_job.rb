@@ -1,9 +1,19 @@
 class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   include Captain::Conversation::V1ActionClassifier
 
-  MAX_MESSAGE_LENGTH = 10_000
+  # Dedicated Sidekiq capsule (config/initializers/sidekiq.rb) — an LLM
+  # provider incident stays isolated to Captain traffic instead of starving
+  # the shared :default queue of worker threads.
+  queue_as :captain
+
   retry_on ActiveStorage::FileNotFoundError, attempts: 3, wait: 2.seconds
   retry_on Faraday::BadRequestError, attempts: 3, wait: 2.seconds
+  # See Captain::FailurePolicy: a provider hiccup (rate limit, 5xx, dropped
+  # connection) should be retried, never handed off. RubyLLM/Faraday already
+  # ran their own short internal retry before this reaches us — this is a
+  # second, coarser layer with real backoff instead of hammering a struggling
+  # provider again within milliseconds.
+  retry_on Captain::FailurePolicy::TransientProviderError, wait: :polynomially_longer, attempts: 3
 
   def perform(conversation, assistant)
     @conversation = conversation
@@ -14,11 +24,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
     Current.executed_by = @assistant
 
-    if captain_v2_enabled?
-      generate_response_with_v2
-    else
-      generate_and_process_response
-    end
+    dispatch_response
   rescue ActiveStorage::FileNotFoundError, Faraday::BadRequestError => e
     handle_error(e)
     raise e
@@ -31,6 +37,64 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   private
 
   delegate :account, :inbox, to: :@conversation
+
+  def dispatch_response
+    if Captain::CredentialCircuitBreaker.open?(account)
+      handle_open_circuit
+    elsif !usable_credential_configured?
+      handle_missing_credential
+    elsif captain_v2_enabled?
+      generate_response_with_v2
+    else
+      generate_and_process_response
+    end
+  end
+
+  # See Captain::CredentialCircuitBreaker: skip the doomed LLM attempt
+  # entirely once this account's credential has recently failed repeatedly
+  # with a configuration error — otherwise every incoming message pays for a
+  # call we already know will fail, and spams a fresh diagnostic note each
+  # time. Routes through the normal handoff pipeline so the customer still
+  # gets a handoff and FailureNotifier still leaves a note.
+  def handle_open_circuit
+    Rails.logger.info("[CAPTAIN][ResponseBuilderJob] Circuit open for account=#{account.id}, skipping LLM call")
+    @response = {
+      'response' => 'conversation_handoff',
+      'action_source' => 'circuit_breaker',
+      'action_reason' => 'credential_circuit_open',
+      'failure_class' => Captain::FailurePolicy::CONFIGURATION.to_s,
+      'error' => 'El proveedor de IA de esta cuenta viene fallando repetidamente. ' \
+                 'Revisa la credencial en Configuración → Captain.'
+    }
+    process_response
+  end
+
+  # An account with no Platform::Credential of its own used to silently ride
+  # on the shared global RubyLLM config (InstallationConfig's own API keys)
+  # forever, with no visibility into which accounts were actually depending
+  # on someone else's key. Llm::Config.global_fallback_allowed? defaults to
+  # true (nothing changes until an operator opts in), but once turned off,
+  # an account with no credential of its own gets a clear, diagnosable
+  # handoff instead of an invisible dependency on shared usage/limits. See
+  # docs/adaki/captain-remediacion.md §Fase 2c.
+  def usable_credential_configured?
+    return true if Llm::Config.global_fallback_allowed?
+
+    Platform::Models::Resolver.resolve(account: account, feature: 'assistant').present?
+  end
+
+  def handle_missing_credential
+    Rails.logger.info("[CAPTAIN][ResponseBuilderJob] No credential configured for account=#{account.id}, skipping LLM call")
+    @response = {
+      'response' => 'conversation_handoff',
+      'action_source' => 'missing_credential',
+      'action_reason' => 'no_credential_configured',
+      'failure_class' => Captain::FailurePolicy::CONFIGURATION.to_s,
+      'error' => 'Esta cuenta no tiene un proveedor de IA configurado. ' \
+                 'Configura una credencial en Configuración → Captain.'
+    }
+    process_response
+  end
 
   def generate_and_process_response
     message_history = collect_previous_messages
@@ -45,10 +109,20 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     @response = Captain::Assistant::AgentRunnerService.new(assistant: @assistant, conversation: @conversation).generate_response(
       message_history: collect_previous_messages
     )
+    # The V2 runner swallows LLM errors into a handoff-token response instead of
+    # raising (see AgentRunnerService#llm_error_response/#error_response), so a
+    # transient provider failure never reaches this job's own rescue/handle_error
+    # on its own. Re-raise it here instead of handing off — see Captain::FailurePolicy.
+    raise Captain::FailurePolicy::TransientProviderError, @response['error'] if transient_v2_failure?
+
+    Captain::CredentialCircuitBreaker.record_failure!(account) if configuration_failure?
+
     process_response
   end
 
   def process_response
+    track_credential_health!
+
     # Check V2 before V1: error_response can set both signals at once when HandoffTool
     # fired before the runner errored. V2 must win — running V1 on top would duplicate
     # OOO and re-dispatch the bot_handoff event.
@@ -79,30 +153,10 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     end
   end
 
+  # See Captain::Conversation::HistoryBuilder for the message-shaping rules
+  # (history window, per-message truncation, human-vs-bot role attribution).
   def collect_previous_messages
-    @conversation
-      .messages
-      .where(message_type: [:incoming, :outgoing])
-      .where(private: false)
-      .map do |message|
-      message_hash = {
-        content: prepare_multimodal_message_content(message),
-        role: determine_role(message)
-      }
-
-      # Include agent_name if present in additional_attributes
-      message_hash[:agent_name] = message.additional_attributes['agent_name'] if message.additional_attributes&.dig('agent_name').present?
-
-      message_hash
-    end
-  end
-
-  def determine_role(message)
-    message.message_type == 'incoming' ? 'user' : 'assistant'
-  end
-
-  def prepare_multimodal_message_content(message)
-    Captain::OpenAiMessageBuilderService.new(message: message).generate_content
+    Captain::Conversation::HistoryBuilder.new(conversation: @conversation, assistant: @assistant).call
   end
 
   def v1_handoff_requested?
@@ -121,12 +175,40 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     @response['handoff_tool_called']
   end
 
+  # A credential that just worked (or failed for a reason unrelated to the
+  # credential itself — budget/limit_adaki/unknown) resets the circuit
+  # breaker's failure count. Skipped specifically for 'configuration' so this
+  # doesn't immediately undo the record_failure! a caller
+  # (generate_response_with_v2 above, or handle_error below) just made
+  # moments ago.
+  def track_credential_health!
+    return if configuration_failure?
+
+    Captain::CredentialCircuitBreaker.record_success!(account)
+  end
+
+  def transient_v2_failure?
+    failure_class?(Captain::FailurePolicy::TRANSIENT)
+  end
+
+  def configuration_failure?
+    failure_class?(Captain::FailurePolicy::CONFIGURATION)
+  end
+
+  def failure_class?(classification)
+    @response['failure_class'] == classification.to_s
+  end
+
   def process_v1_handoff
     I18n.with_locale(@assistant.account.locale) do
       Rails.logger.info(
         "[CAPTAIN][ResponseBuilderJob] V1 handoff requested for account=#{account.id} conversation=#{@conversation.display_id} " \
         "source=#{@response&.dig('action_source') || 'legacy'} reason=#{@response&.dig('action_reason')}"
       )
+      # See Captain::Conversation::FailureNotifier: only writes a note when the
+      # handoff was actually caused by a diagnosable infrastructure failure
+      # (dead credential, exhausted quota), not a legitimate escalation.
+      Captain::Conversation::FailureNotifier.new(conversation: @conversation, assistant: @assistant, response: @response).call
       create_handoff_message
       @conversation.bot_handoff!
       report_v1_handoff_not_executed if conversation_pending?
@@ -183,11 +265,29 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
 
   def handle_error(error)
     log_error(error)
+    populate_error_diagnostics(error)
+    Captain::CredentialCircuitBreaker.record_failure!(account) if Captain::FailurePolicy.configuration?(error)
+
+    if error.is_a?(Captain::FailurePolicy::TransientProviderError)
+      raise error
+    elsif Captain::FailurePolicy.transient?(error)
+      raise Captain::FailurePolicy::TransientProviderError, error.message
+    end
+
+    process_v1_handoff if conversation_pending?
+    true
+  end
+
+  def populate_error_diagnostics(error)
     @response ||= {}
     @response['action_source'] ||= 'error'
     @response['action_reason'] ||= error_action_reason(error)
-    process_v1_handoff if conversation_pending?
-    true
+    @response['failure_class'] ||= Captain::FailurePolicy.classify(error).to_s
+    # Matches the key V2's error responses already carry (see
+    # AgentRunnerService#llm_error_response/#error_response) so
+    # Captain::Conversation::FailureNotifier has one human-readable field to
+    # read regardless of which runtime failed.
+    @response['error'] ||= error.message
   end
 
   def log_error(error)

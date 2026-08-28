@@ -22,7 +22,18 @@ class CaptainInbox < ApplicationRecord
   validates :inbox_id, uniqueness: true
 
   store_accessor :settings, :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
-                 :human_takeover_mode, :human_takeover_window_minutes
+                 :human_takeover_mode, :human_takeover_window_minutes, :service_contact_numbers
+
+  # Cascade: override > default. No assistant-level fallback — this is a
+  # channel/provider concern, not an assistant behavior setting. The default
+  # lives on Conversation (FOSS), not here, so it stays resolvable in the
+  # stripped FOSS CI build that never loads this (enterprise-only) class.
+  def service_contact_numbers_value
+    raw = settings['service_contact_numbers']
+    return raw if raw.is_a?(Array) && raw.present?
+
+    Conversation::DEFAULT_SERVICE_CONTACT_NUMBERS
+  end
 
   # Cascada: override del binding > assistant > default true.
   def continue_after_human_takeover?

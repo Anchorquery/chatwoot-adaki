@@ -38,4 +38,26 @@ RSpec.describe Adaki::AuditLogger do
       expect { e.destroy }.to raise_error(ActiveRecord::ReadOnlyRecord)
     end
   end
+
+  describe 'lock contention' do
+    before { stub_const('Adaki::AuditLogger::LOCK_RETRY_DELAY', 0) }
+
+    it 'raises LockContention instead of blocking forever when the advisory lock is never free' do
+      allow(Adaki::AuditLogEntry.connection).to receive(:select_value).and_return(false)
+
+      expect { described_class.log(account: account, action: 'x') }.to raise_error(described_class::LockContention)
+    end
+
+    it 'succeeds once the lock frees up within the retry budget' do
+      attempt = 0
+      allow(Adaki::AuditLogEntry.connection).to receive(:select_value) do
+        attempt += 1
+        attempt >= 2
+      end
+
+      entry = described_class.log(account: account, action: 'x')
+
+      expect(entry).to be_persisted
+    end
+  end
 end

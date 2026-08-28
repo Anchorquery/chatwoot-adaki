@@ -102,6 +102,36 @@ RSpec.describe MessageTemplates::HookExecutionService do
     end
   end
 
+  context 'when the conversation is with the channel provider service contact' do
+    let(:service_contact) { create(:contact, account: account, identifier: nil, phone_number: '+123456') }
+    let(:conversation) { create(:conversation, inbox: inbox, account: account, contact: service_contact, status: :pending) }
+
+    it 'does not schedule a captain response' do
+      expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
+
+      create(:message, conversation: conversation, message_type: :incoming, account: account)
+    end
+
+    it 'does not perform a handoff even when quota is exceeded' do
+      account.update!(
+        limits: { 'captain_responses' => 100 },
+        custom_attributes: account.custom_attributes.merge('captain_responses_usage' => 100)
+      )
+
+      create(:message, conversation: conversation, message_type: :incoming, account: account)
+
+      expect(conversation.reload.status).to eq('pending')
+    end
+
+    it 'logs the skip with the service_contact reason' do
+      allow(Rails.logger).to receive(:info)
+
+      create(:message, conversation: conversation, message_type: :incoming, account: account)
+
+      expect(Rails.logger).to have_received(:info).with(a_string_matching(/\[CAPTAIN\]\[skip\].*reason=service_contact/))
+    end
+  end
+
   context 'when no captain assistant is configured' do
     before do
       CaptainInbox.where(inbox: inbox).destroy_all

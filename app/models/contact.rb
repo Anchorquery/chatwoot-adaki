@@ -178,6 +178,19 @@ class Contact < ApplicationRecord
     }
   end
 
+  # True when this contact is a channel provider's own service contact rather
+  # than a customer — e.g. Evolution/WhatsApp bridges publish QR codes,
+  # connection status, and import progress as incoming messages from a fixed
+  # phone number with no real chat identifier. Used by Captain to avoid
+  # engaging with (and burning quota on) that traffic.
+  #
+  # Deliberately narrow: `identifier` alone being blank is not sufficient (some
+  # legitimate API integrations don't set one), so the phone number must also
+  # match the caller-provided allowlist.
+  def service_channel_contact?(service_numbers)
+    identifier.blank? && service_numbers.include?(phone_number.to_s)
+  end
+
   def self.resolved_contacts(use_crm_v2: false)
     return where(contact_type: 'lead') if use_crm_v2
 
