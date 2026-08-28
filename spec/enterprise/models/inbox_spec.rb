@@ -140,7 +140,7 @@ RSpec.describe Inbox do
   describe 'audit log' do
     context 'when inbox is created' do
       it 'has associated audit log created' do
-        expect(Audited::Audit.where(auditable_type: 'Inbox', action: 'create').count).to eq(1)
+        expect(Audited::Audit.where(auditable_type: 'Inbox', auditable_id: inbox.id, action: 'create').count).to eq(1)
       end
     end
 
@@ -172,14 +172,14 @@ RSpec.describe Inbox do
 
     context 'when inbox is created' do
       it 'has associated audit log created' do
-        expect(Audited::Audit.where(auditable_type: 'Inbox', action: 'create').count).to eq(1)
+        expect(Audited::Audit.where(auditable_type: 'Inbox', auditable_id: inbox.id, action: 'create').count).to eq(1)
       end
     end
 
     context 'when inbox is updated' do
       it 'has associated audit log created' do
         inbox.update(name: 'Updated Inbox')
-        expect(Audited::Audit.where(auditable_type: 'Inbox', action: 'update').count).to eq(1)
+        expect(Audited::Audit.where(auditable_type: 'Inbox', auditable_id: inbox.id, action: 'update').count).to eq(1)
       end
     end
 
@@ -216,14 +216,14 @@ RSpec.describe Inbox do
 
     context 'when inbox is created' do
       it 'has associated audit log created' do
-        expect(Audited::Audit.where(auditable_type: 'Inbox', action: 'create').count).to eq(1)
+        expect(Audited::Audit.where(auditable_type: 'Inbox', auditable_id: inbox.id, action: 'create').count).to eq(1)
       end
     end
 
     context 'when inbox is updated' do
       it 'has associated audit log created' do
         inbox.update(name: 'Updated Inbox')
-        expect(Audited::Audit.where(auditable_type: 'Inbox', action: 'update').count).to eq(1)
+        expect(Audited::Audit.where(auditable_type: 'Inbox', auditable_id: inbox.id, action: 'update').count).to eq(1)
       end
     end
 
