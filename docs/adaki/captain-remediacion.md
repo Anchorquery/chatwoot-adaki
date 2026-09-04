@@ -1084,3 +1084,24 @@ obsoleto nunca anuncia un handoff que otro posterior sustituyó. No decide
 quién atiende: eso sigue siendo del equipo; solo garantiza que todos se
 enteran. Siguiente paso natural si hiciera falta: repetir el aviso (o escalar
 a administradores) si tras N minutos sigue sin dueño.
+
+### 7.8 El proveedor rechaza los parámetros de razonamiento: reintento sin ellos
+
+Playground de la cuenta 4 (asistente 12, `gpt-5.4-mini`), 09:39 UTC:
+`RubyLLM::BadRequestError: Unsupported value: 'reasoning_effort' does not
+support 'minimal' with this model. Supported values are: 'none', 'low',
+'medium', 'high', and 'xhigh'.` `Llm::Thinking` traducía `off` a `minimal`
+para cualquier `gpt-5*` salvo 5.1 y 5.2; OpenAI retiró `minimal` a partir de
+5.1. El 400 se clasificaba como `unknown` y acababa en handoff: otra vez una
+tabla estática sobre modelos que cambian más rápido que el código.
+
+Dos capas:
+
+1. **Mapeo por familia, no por lista**: `minimal` solo para la familia 5.0
+   (`gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5-chat`), `none` para 5.1 y
+   cualquier versión posterior, `low` para la serie o.
+2. **Red de seguridad**: si el proveedor responde 400 mencionando
+   `reasoning`/`thinking`, `AgentRunnerService` reconstruye los agentes dentro
+   de `Llm::Thinking.without_params` (kill switch por hilo) y repite el turno
+   una vez sin ningún parámetro de razonamiento. Un knob rechazado cuesta un
+   reintento, nunca la conversación.

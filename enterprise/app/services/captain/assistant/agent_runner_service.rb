@@ -95,15 +95,16 @@ class Captain::Assistant::AgentRunnerService
     @handoff_tool_called = false
   end
 
+  # Provider 400s caused by the reasoning knobs Llm::Thinking guessed for the
+  # model (OpenAI "'reasoning_effort' does not support 'minimal' with this
+  # model", Gemini "thinking is not supported", DeepSeek "thinking"…). Never a
+  # reason to hand off: replay once without those params.
+  REASONING_PARAM_ERROR_PATTERN = /reasoning_effort|reasoning|thinking/i
+
   def generate_response(message_history: [])
     message_to_process, context = run_payload(message_history)
-    # The ai-agents gem builds its chats from the global RubyLLM config and
-    # validates the credential eagerly in Chat.new. Publish the account's
-    # resolved credential as the per-thread context so those chats route to the
-    # configured provider (e.g. Gemini) instead of always hitting OpenAI.
-    result = RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
-      runner.run(message_to_process, context: context, max_turns: MAX_TURNS)
-    end
+    result = run_agents(message_to_process, context)
+    result = retry_without_reasoning_params(message_history, result) if reasoning_params_rejected?(result)
     result = retry_if_unusable(result)
     record_adaki_usage!(result)
 
@@ -118,6 +119,36 @@ class Captain::Assistant::AgentRunnerService
   end
 
   private
+
+  # The ai-agents gem builds its chats from the global RubyLLM config and
+  # validates the credential eagerly in Chat.new. Publish the account's
+  # resolved credential (and provider) as the per-thread context so those
+  # chats route to the configured provider instead of always hitting OpenAI.
+  def run_agents(message_to_process, context)
+    RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
+      runner.run(message_to_process, context: context, max_turns: MAX_TURNS)
+    end
+  end
+
+  def reasoning_params_rejected?(result)
+    return false unless result.respond_to?(:error) && result.error.is_a?(RubyLLM::BadRequestError)
+    return false if Llm::Thinking.suppressed?
+
+    result.error.message.to_s.match?(REASONING_PARAM_ERROR_PATTERN)
+  end
+
+  # Agents are built with the params baked in, so the runner is rebuilt inside
+  # the kill switch; the payload is rebuilt too because the failed run may
+  # have mutated the context it was given.
+  def retry_without_reasoning_params(message_history, rejected)
+    Rails.logger.warn(
+      "[Captain V2] Provider rejected the reasoning params for assistant=#{@assistant&.id} " \
+      "(#{rejected.error.message}); retrying once without them"
+    )
+    @runner = nil
+    message_to_process, context = run_payload(message_history)
+    Llm::Thinking.without_params { run_agents(message_to_process, context) }
+  end
 
   def build_context(message_history)
     conversation_history = message_history.map do |msg|
