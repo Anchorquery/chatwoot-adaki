@@ -233,6 +233,46 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       end
     end
 
+    context 'when the agent replies with an empty message (production conversation 309, 2026-09-04)' do
+      let(:empty_result) { instance_double(Agents::RunResult, output: '', context: {}) }
+      let(:retry_result) { instance_double(Agents::RunResult, output: 'Tenemos soportes y tarjetas NFC.', context: {}) }
+
+      before do
+        allow(mock_runner).to receive(:run).and_return(empty_result, retry_result)
+      end
+
+      it 'retries once with the empty-reply nudge and uses the retry reply' do
+        result = service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).with(
+          described_class::EMPTY_REPLY_NUDGE, context: empty_result.context, max_turns: described_class::MAX_TURNS
+        )
+        expect(result['response']).to eq('Tenemos soportes y tarjetas NFC.')
+      end
+
+      context 'when the retry is empty too' do
+        let(:retry_result) { instance_double(Agents::RunResult, output: { 'response' => '' }, context: {}) }
+
+        it 'sends the empty-reply fallback instead of a blank reply (which the job would turn into a handoff)' do
+          result = service.generate_response(message_history: message_history)
+
+          expect(result['response']).to eq(I18n.t('conversations.captain.empty_reply_fallback'))
+          expect(result['handoff_tool_called']).to be(false)
+        end
+      end
+
+      context 'when the empty reply came with a real handoff' do
+        let(:empty_result) { instance_double(Agents::RunResult, output: '', context: { captain_v2_handoff_tool_called: true }) }
+
+        it 'does not retry and keeps the handoff signal' do
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).once
+          expect(result['handoff_tool_called']).to be(true)
+        end
+      end
+    end
+
     context 'when a content tool already ran during the turn' do
       let(:mock_result) do
         instance_double(

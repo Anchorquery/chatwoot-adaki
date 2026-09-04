@@ -38,6 +38,15 @@ class Captain::Assistant::AgentRunnerService
                 'just give the final answer directly (or ask one short clarifying question if you genuinely ' \
                 'cannot search yet).'.freeze
 
+  # Gemini "thinking" models sometimes answer with thought parts only;
+  # RubyLLM strips those, so the run ends with output "" and zero output
+  # tokens (production conversation 309, 2026-09-04: "Que productos tiene ?"
+  # → empty reply → the job raised on the blank content → false handoff).
+  # Same replay mechanism as the promise-only case, different nudge.
+  EMPTY_REPLY_NUDGE = "#{RETRY_NUDGE_MARKER} Your previous reply was empty. Answer the user's last message now with " \
+                      'actual text (call a tool first if you need information). Never mention this note or that ' \
+                      'you were reminded — just give the answer directly.'.freeze
+
   PROMISE_ONLY_MAX_LENGTH = 240
 
   # Was 100 (10x the gem's own default/recommendation). Verified against the
@@ -83,7 +92,7 @@ class Captain::Assistant::AgentRunnerService
     result = RubyLLM.with_thread_context(resolved_llm_context) do
       runner.run(message_to_process, context: context, max_turns: MAX_TURNS)
     end
-    result = retry_if_promise_only(result)
+    result = retry_if_unusable(result)
     record_adaki_usage!(result)
 
     process_agent_result(result)
@@ -159,24 +168,28 @@ class Captain::Assistant::AgentRunnerService
   # a future turn. If the retry doesn't clearly improve on the original
   # (still a promise, blank, or echoes the nudge), the original reply is kept
   # as-is — this can only add a second attempt, never make things worse.
-  def retry_if_promise_only(result)
-    return result unless promise_only_result?(result)
+  def retry_if_unusable(result)
+    nudge = retry_nudge_for(result)
+    return result unless nudge
 
-    Rails.logger.info '[Captain V2] Promise-only reply with no tool call detected, retrying once'
+    Rails.logger.info "[Captain V2] #{nudge == EMPTY_REPLY_NUDGE ? 'Empty' : 'Promise-only'} reply detected, retrying once"
 
     retry_result = RubyLLM.with_thread_context(resolved_llm_context) do
-      runner.run(RETRY_NUDGE, context: result.context, max_turns: MAX_TURNS)
+      runner.run(nudge, context: result.context, max_turns: MAX_TURNS)
     end
 
     usable_retry?(retry_result) ? retry_result : result
   end
 
-  def promise_only_result?(result)
-    return false if result_errored?(result)
-    return false if result.context&.dig(:captain_v2_handoff_tool_called)
-    return false if content_tool_called?(result)
+  def retry_nudge_for(result)
+    return nil if result_errored?(result)
+    return nil if result.context&.dig(:captain_v2_handoff_tool_called)
 
-    promise_only_text?(response_text(result.output))
+    text = response_text(result.output)
+    return EMPTY_REPLY_NUDGE if text.blank?
+    return nil if content_tool_called?(result)
+
+    RETRY_NUDGE if promise_only_text?(text)
   end
 
   def usable_retry?(result)
@@ -221,8 +234,26 @@ class Captain::Assistant::AgentRunnerService
     response = output.is_a?(Hash) ? output.with_indifferent_access : { 'response' => output.to_s, 'reasoning' => 'Processed by agent' }
     response['agent_name'] = result.context&.dig(:current_agent)
     response['handoff_tool_called'] = result.context&.dig(:captain_v2_handoff_tool_called) || false
+    substitute_empty_reply!(response)
     suppress_handoff_announcement_leak!(response)
     response
+  end
+
+  # Still blank after the EMPTY_REPLY_NUDGE retry. A blank reply is not an
+  # infrastructure failure and must not become a handoff (see
+  # ResponseBuilderJob#validate_message_content! → handle_error → handoff):
+  # the customer gets a short "please rephrase" instead, and the next
+  # message gets a fresh attempt.
+  def substitute_empty_reply!(response)
+    return if response['handoff_tool_called']
+    return if response['response'].to_s.strip.present?
+
+    Rails.logger.warn(
+      "[Captain V2] Empty reply after retry for assistant=#{@assistant&.id} conversation=#{@conversation&.display_id}; " \
+      'sending the empty-reply fallback instead of handing off'
+    )
+    response['response'] = I18n.t('conversations.captain.empty_reply_fallback')
+    response['reasoning'] = 'LLM returned an empty reply twice (thought-only or blocked response)'
   end
 
   # The prompt tells the LLM twice never to announce a transfer, but it can

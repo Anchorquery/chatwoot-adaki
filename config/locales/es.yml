@@ -233,6 +233,7 @@ es:
     captain:
       handoff: 'Te estamos transfiriendo a otro agente para darte más ayuda.'
       handoff_announcement_leak_fallback: 'Sigo revisando tu consulta, dame un momento por favor.'
+      empty_reply_fallback: 'Perdona, no he entendido bien tu mensaje. ¿Puedes escribirlo de otra forma?'
     messages:
       instagram_story_content: '%{story_sender} te mencionó en la historia: '
       instagram_deleted_story_content: Esta historia ya no está disponible.
