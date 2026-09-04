@@ -555,7 +555,7 @@ class Captain::Assistant::AgentRunnerService
     result = tool_result.to_s
     return false if result.blank?
 
-    !result.match?(/\A(?:Conversation not found|Failed to handoff conversation|ERROR:)/i)
+    !result.match?(/\A(?:Conversation not found|Failed to handoff conversation|Handoff skipped|ERROR:)/i)
   end
 
   # Counts tool calls that actually do the work of answering the user (search,
