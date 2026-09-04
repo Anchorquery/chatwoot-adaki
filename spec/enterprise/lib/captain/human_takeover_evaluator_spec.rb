@@ -61,11 +61,19 @@ RSpec.describe Captain::HumanTakeoverEvaluator do
         end
       end
 
-      it 'never lets the bot back in when the mode says the human owns the conversation' do
+      # A bot-initiated handoff is a temporary ownership marker, not a human
+      # takeover preference: even in `never` mode, a handoff nobody picked up
+      # releases the bot after the grace window instead of silencing the
+      # conversation forever. `never` still applies once a human has replied.
+      it 'releases the bot after the grace window in never mode when nobody picked the handoff up' do
         assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'never'))
 
-        travel_to(30.days.from_now) do
+        travel_to((assistant.human_takeover_window_minutes_value - 1).minutes.from_now) do
           expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(true)
+        end
+
+        travel_to((assistant.human_takeover_window_minutes_value + 1).minutes.from_now) do
+          expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(false)
         end
       end
 

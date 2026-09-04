@@ -947,7 +947,7 @@ absoluto:
 | Modo | Tras el handoff |
 |---|---|
 | `after_window` (default) | Silencio durante la ventana configurada (15 min por defecto); si nadie lo recoge, el bot sigue ayudando |
-| `never` | Silencio permanente: el humano es dueño de la conversación |
+| `never` | Misma gracia que `after_window` mientras nadie recoja el handoff (la marca del bot es temporal, no una preferencia de propiedad humana); en cuanto un humano responde, el humano es dueño para siempre (ajuste de 71d63e5) |
 | `always` | Sin silencio; el handoff igual asigna, etiqueta con el equipo y notifica |
 
 Es la misma pregunta que ya respondía la ventana para las respuestas humanas
