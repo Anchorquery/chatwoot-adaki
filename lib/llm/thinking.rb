@@ -96,7 +96,10 @@ module Llm::Thinking
   end
 
   def deepseek_reasoning_params(model, level)
-    return {} unless model.include?('reasoner')
+    # DeepSeek's current V4 API exposes the thinking toggle and effort on both
+    # V4 Flash and V4 Pro. Keep the legacy alias for older installations that
+    # have not migrated their stored preference yet.
+    return {} unless model.start_with?('deepseek-v4-') || model.include?('reasoner')
 
     return { thinking: { type: 'disabled' } } if level == OFF
 

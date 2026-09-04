@@ -263,7 +263,6 @@ class Captain::Assistant::AgentRunnerService
     response['agent_name'] = result.context&.dig(:current_agent)
     response['handoff_tool_called'] = result.context&.dig(:captain_v2_handoff_tool_called) || false
     substitute_empty_reply!(response)
-    suppress_greeting_handoff!(response)
     suppress_handoff_announcement_leak!(response)
     response
   end
@@ -310,11 +309,6 @@ class Captain::Assistant::AgentRunnerService
     hablar[áa]s\s+con\s+(un|otro)
   /ix
 
-  GREETING_ONLY_PATTERN = /
-    \A(?:hola|hello|hi|hey|buenas?|buenos\s+dias|buenas\s+tardes|buenas\s+noches)
-    (?:\s+(?:hola|hello|hi|hey|buenas?|buenos\s+dias|buenas\s+tardes|buenas\s+noches))*\z
-  /ix
-
   def suppress_handoff_announcement_leak!(response)
     return if response['handoff_tool_called']
 
@@ -343,10 +337,10 @@ class Captain::Assistant::AgentRunnerService
                 end
 
     {
-      # Only a known, permanent configuration/budget/limit failure warrants a
-      # human handoff. Unknown tool/provider errors must stay a normal Captain
-      # reply; otherwise a broken tool turns an innocuous customer message
-      # into an unsolicited transfer (the production "Hola" symptom).
+      # Any provider/tool failure that reaches this boundary is operationally
+      # actionable and must follow the same handoff pipeline as a deliberate
+      # escalation. FailureNotifier adds the private diagnostic note. Transient
+      # failures are retried by ResponseBuilderJob before reaching this path.
       'response' => handoff_for_failure?(failure_class) ? 'conversation_handoff' : provider_error_fallback,
       'reasoning' => reasoning,
       'error' => error.message,
@@ -357,19 +351,6 @@ class Captain::Assistant::AgentRunnerService
       'failure_class' => failure_class,
       'handoff_tool_called' => @handoff_tool_called
     }
-  end
-
-  # A model can emit the legacy handoff token directly instead of calling the
-  # tool. A greeting alone is never evidence for escalation, so neutralize
-  # that token before ResponseBuilderJob can open the conversation.
-  def suppress_greeting_handoff!(response)
-    return if response['handoff_tool_called']
-    return unless response['response'].to_s == 'conversation_handoff' || response['action'] == 'handoff'
-    return unless greeting_only_message?
-
-    response.delete('action')
-    response['response'] = I18n.t('conversations.captain.greeting_fallback', default: '¡Hola! ¿En qué puedo ayudarte?')
-    response['reasoning'] = 'Suppressed an unsolicited handoff for a greeting-only message'
   end
 
   def error_response(error)
@@ -386,21 +367,18 @@ class Captain::Assistant::AgentRunnerService
 
   def handoff_for_failure?(failure_class)
     return true if @handoff_tool_called
-    return false if greeting_only_message?
 
-    %w[configuration budget limit_adaki].include?(failure_class)
+    # A transient error is re-raised by ResponseBuilderJob so the job-level
+    # retry policy can recover it. Every other classified failure is a final
+    # actionable error for this turn and must hand off with diagnostics.
+    failure_class != Captain::FailurePolicy::TRANSIENT.to_s
   end
 
   def provider_error_fallback
-    I18n.t('conversations.captain.handoff_announcement_leak_fallback')
-  end
-
-  def greeting_only_message?
-    return false unless @conversation
-
-    text = @conversation.messages.incoming.order(created_at: :desc).pick(:content).to_s
-    normalized = I18n.transliterate(text).downcase.gsub(/[^\p{L}\p{N}\s]/, ' ').squeeze(' ').strip
-    normalized.match?(GREETING_ONLY_PATTERN)
+    I18n.t(
+      'conversations.captain.provider_error_fallback',
+      default: 'No puedo responder ahora mismo. Inténtalo de nuevo en unos minutos.'
+    )
   end
 
   def build_state
@@ -555,7 +533,7 @@ class Captain::Assistant::AgentRunnerService
     result = tool_result.to_s
     return false if result.blank?
 
-    !result.match?(/\A(?:Conversation not found|Failed to handoff conversation|Handoff skipped|ERROR:)/i)
+    !result.match?(/\A(?:Conversation not found|Failed to handoff conversation|ERROR:)/i)
   end
 
   # Counts tool calls that actually do the work of answering the user (search,
@@ -596,16 +574,28 @@ class Captain::Assistant::AgentRunnerService
   def resolved_llm_context
     return @resolved_llm_context if defined?(@resolved_llm_context)
 
-    account = @assistant&.account
-    preferred_slug = account&.try(:captain_models)&.[]('assistant')
-    resolved = account && Platform::Models::Resolver.resolve(
-      account: account,
-      feature: 'assistant',
-      preferred_slug: preferred_slug
-    )
-    credential = resolved&.dig(:credential)
+    account = @assistant.try(:account)
+    preferred_slug = account.try(:captain_models).try(:[], 'assistant')
+    resolved = if account
+                 Platform::Models::Resolver.resolve(
+                   account: account,
+                   feature: 'assistant',
+                   preferred_slug: preferred_slug
+                 )
+               end
+    log_model_resolution(account, resolved)
+    credential = resolved.try(:dig, :credential)
     @resolved_llm_provider = credential_provider(credential)
     @resolved_llm_context = Llm::Config.context_for_credential(credential)
+  end
+
+  def log_model_resolution(account, resolved)
+    credential = resolved&.dig(:credential)
+    Rails.logger.info(
+      "[Captain V2] model resolution account=#{account&.id} assistant=#{@assistant&.id} " \
+      "model=#{resolved&.dig(:model_slug).inspect} provider=#{credential&.provider.inspect} " \
+      "source=#{resolved&.dig(:source).inspect} credential_id=#{credential&.id.inspect}"
+    )
   end
 
   # Provider the thread context routes to, in RubyLLM's naming. Lets the

@@ -56,5 +56,17 @@ RSpec.describe Llm::Thinking do
     it 'sends nothing for providers with no supported knob here' do
       expect(described_class.params_for(provider: 'openai', model: 'gpt-4.1', level: 'off')).to eq({})
     end
+
+    it 'disables thinking on DeepSeek V4 Flash when reasoning is off' do
+      expect(described_class.params_for(provider: 'deepseek', model: 'deepseek-v4-flash', level: 'off')).to eq(
+        { thinking: { type: 'disabled' } }
+      )
+    end
+
+    it 'maps low reasoning to the DeepSeek V4 thinking payload' do
+      expect(described_class.params_for(provider: 'deepseek', model: 'deepseek-v4-pro', level: 'low')).to eq(
+        { thinking: { type: 'enabled' }, reasoning_effort: 'low' }
+      )
+    end
   end
 end

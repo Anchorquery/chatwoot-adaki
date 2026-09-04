@@ -994,6 +994,15 @@ Fix:
   `NameError`; se añaden casos para `preferred_slug` de catálogo y para
   credenciales de proveedores sin adaptador.
 
+La configuración de modelos también quedó alineada con los proveedores que
+Captain V2 usa actualmente: OpenAI, Gemini y DeepSeek. Los identificadores
+retirados `deepseek-chat` y `deepseek-reasoner` se conservan como alias de
+migración hacia `deepseek-v4-flash` y `deepseek-v4-pro`; así no se rompen las
+preferencias ni las filas existentes de `platform_credential_models`. El
+selector de razonamiento traduce `off`/`low` a los parámetros nativos de cada
+API y deja `dynamic` sin parámetros para conservar el comportamiento del
+proveedor.
+
 ### 7.5 "Sigo revisando tu consulta" en bucle: modelo desconocido para el registro de RubyLLM
 
 Tras el fix de §7.4 (y el de `main` que convierte un fallo `unknown` en la

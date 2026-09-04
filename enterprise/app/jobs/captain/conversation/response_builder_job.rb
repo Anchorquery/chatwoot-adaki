@@ -54,8 +54,8 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   # entirely once this account's credential has recently failed repeatedly
   # with a configuration error — otherwise every incoming message pays for a
   # call we already know will fail, and spams a fresh diagnostic note each
-  # time. Routes through the normal handoff pipeline so the customer still
-  # gets a handoff and FailureNotifier still leaves a note.
+  # time. The customer still receives the standard handoff, while
+  # FailureNotifier records the circuit cause as a private note for the team.
   def handle_open_circuit
     Rails.logger.info("[CAPTAIN][ResponseBuilderJob] Circuit open for account=#{account.id}, skipping LLM call")
     @response = {
@@ -75,7 +75,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   # on someone else's key. Llm::Config.global_fallback_allowed? defaults to
   # true (nothing changes until an operator opts in), but once turned off,
   # an account with no credential of its own gets a clear, diagnosable
-  # handoff instead of an invisible dependency on shared usage/limits. See
+  # handoff with a private diagnostic note instead of an invisible dependency on shared usage/limits. See
   # docs/adaki/captain-remediacion.md §Fase 2c.
   def usable_credential_configured?
     return true if Llm::Config.global_fallback_allowed?
@@ -208,8 +208,8 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
       create_handoff_message
       @conversation.bot_handoff!
       # See Captain::Conversation::FailureNotifier: only writes a note when the
-      # handoff was actually caused by a diagnosable infrastructure failure
-      # (dead credential, exhausted quota), not a legitimate escalation. After
+      # handoff was actually caused by an infrastructure failure, not a
+      # legitimate escalation. After
       # bot_handoff! on purpose: the note @mentions whoever the handoff just
       # assigned (or the handoff team), so they get notified with the cause.
       Captain::Conversation::FailureNotifier.new(conversation: @conversation, assistant: @assistant, response: @response).call

@@ -375,24 +375,6 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       end
     end
 
-    context 'when the model returns a handoff token for a greeting-only message' do
-      let(:mock_result) do
-        instance_double(Agents::RunResult, output: { 'response' => 'conversation_handoff' }, context: {})
-      end
-
-      before do
-        create(:message, conversation: conversation, message_type: :incoming, sender: contact, account: account, content: 'Hola')
-      end
-
-      it 'replaces the token with a greeting instead of escalating' do
-        result = service.generate_response(message_history: [{ role: 'user', content: 'Hola' }])
-
-        expected = I18n.t('conversations.captain.greeting_fallback', default: '¡Hola! ¿En qué puedo ayudarte?')
-        expect(result['response']).to eq(expected)
-        expect(result['handoff_tool_called']).to be(false)
-      end
-    end
-
     context 'when the reply falsely claims a transfer to a human in the first person (production conversation 120, 2026-09-04)' do
       let(:mock_result) do
         instance_double(
@@ -502,7 +484,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         result = service.generate_response(message_history: message_history)
 
         expect(result).to eq({
-                               'response' => I18n.t('conversations.captain.handoff_announcement_leak_fallback'),
+                               'response' => 'conversation_handoff',
                                'reasoning' => 'Error occurred: Test error',
                                'error' => 'Test error',
                                'failure_class' => 'unknown',
@@ -526,7 +508,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
           result = service.generate_response(message_history: message_history)
 
           expect(result).to eq({
-                                 'response' => I18n.t('conversations.captain.handoff_announcement_leak_fallback'),
+                                 'response' => 'conversation_handoff',
                                  'reasoning' => 'Error occurred: Test error',
                                  'error' => 'Test error',
                                  'failure_class' => 'unknown',

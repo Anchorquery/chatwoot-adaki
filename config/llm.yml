@@ -83,13 +83,13 @@ models:
     provider: gemini
     display_name: 'Gemini 3 Pro'
     credit_multiplier: 3
-  deepseek-chat:
+  deepseek-v4-flash:
     provider: deepseek
-    display_name: 'DeepSeek Chat'
+    display_name: 'DeepSeek V4 Flash'
     credit_multiplier: 1
-  deepseek-reasoner:
+  deepseek-v4-pro:
     provider: deepseek
-    display_name: 'DeepSeek Reasoner'
+    display_name: 'DeepSeek V4 Pro'
     credit_multiplier: 2
   whisper-1:
     provider: openai
@@ -116,8 +116,8 @@ features:
         gpt-5.2,
         gemini-3-flash-preview,
         gemini-3-pro-preview,
-        deepseek-chat,
-        deepseek-reasoner,
+        deepseek-v4-flash,
+        deepseek-v4-pro,
       ]
     default: gpt-4.1-mini
   assistant:
@@ -129,8 +129,8 @@ features:
         gpt-5.2,
         gemini-3-flash-preview,
         gemini-3-pro-preview,
-        deepseek-chat,
-        deepseek-reasoner,
+        deepseek-v4-flash,
+        deepseek-v4-pro,
       ]
     default: gpt-5.1
   copilot:
@@ -142,13 +142,13 @@ features:
         gpt-5.2,
         gemini-3-flash-preview,
         gemini-3-pro-preview,
-        deepseek-chat,
-        deepseek-reasoner,
+        deepseek-v4-flash,
+        deepseek-v4-pro,
       ]
     default: gpt-5.1
   label_suggestion:
     models:
-      [gpt-4.1-nano, gpt-4.1-mini, gpt-5-mini, gemini-3-flash-preview, deepseek-chat]
+      [gpt-4.1-nano, gpt-4.1-mini, gpt-5-mini, gemini-3-flash-preview, deepseek-v4-flash]
     default: gpt-4.1-nano
   audio_transcription:
     models: [whisper-1]
@@ -165,7 +165,7 @@ features:
         gpt-5.1,
         gemini-3-flash-preview,
         gemini-3-pro-preview,
-        deepseek-chat,
-        deepseek-reasoner,
+        deepseek-v4-flash,
+        deepseek-v4-pro,
       ]
     default: gpt-4.1-mini

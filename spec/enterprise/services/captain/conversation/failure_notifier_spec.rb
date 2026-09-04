@@ -7,7 +7,7 @@ RSpec.describe Captain::Conversation::FailureNotifier do
   let(:conversation) { create(:conversation, inbox: inbox, account: account) }
 
   describe '#call' do
-    %w[configuration limit_adaki budget unknown].each do |failure_class|
+    %w[configuration budget limit_adaki unknown].each do |failure_class|
       it "writes a private note when failure_class is #{failure_class.inspect}" do
         response = { 'failure_class' => failure_class, 'error' => 'Incorrect API key provided' }
 
@@ -20,12 +20,14 @@ RSpec.describe Captain::Conversation::FailureNotifier do
       end
     end
 
-    it 'does not write anything when failure_class is "transient" (retried by the job, never a handoff)' do
-      response = { 'failure_class' => 'transient', 'error' => 'some error' }
+    %w[transient].each do |failure_class|
+      it "does not write anything when failure_class is #{failure_class.inspect} (retried before handoff)" do
+        response = { 'failure_class' => failure_class, 'error' => 'some error' }
 
-      described_class.new(conversation: conversation, assistant: assistant, response: response).call
+        described_class.new(conversation: conversation, assistant: assistant, response: response).call
 
-      expect(conversation.messages).to be_empty
+        expect(conversation.messages).to be_empty
+      end
     end
 
     it 'does not write anything when there is no failure_class at all (a legitimate escalation, not an infrastructure failure)' do
