@@ -30,6 +30,11 @@
   description: 'Search FAQ responses using semantic similarity'
   icon: 'search'
 
+- id: search_documentation
+  title: 'Search Documentation'
+  description: 'Search the account knowledge base for documentation and product answers'
+  icon: 'search'
+
 - id: resolve_conversation
   title: 'Resolve Conversation'
   description: 'Resolve a conversation when the issue has been addressed'

@@ -255,6 +255,7 @@ en:
       assignment_handoff: 'You will be assisted by an agent shortly. Meanwhile, I will keep helping you.'
       handoff_announcement_leak_fallback: "I'm still looking into this for you — one moment, please."
       empty_reply_fallback: "Sorry, I didn't quite get that. Could you rephrase your message?"
+      greeting_fallback: 'Hi! How can I help you?'
     messages:
       instagram_story_content: '%{story_sender} mentioned you in the story: '
       instagram_deleted_story_content: This story is no longer available.

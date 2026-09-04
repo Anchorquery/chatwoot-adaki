@@ -1,8 +1,13 @@
 module Enterprise::Conversation
   attr_accessor :captain_activity_reason, :captain_activity_reason_type
 
+  def self.prepended(base)
+    base.before_save :stamp_captain_takeover_at
+  end
+
   # Written by #bot_handoff! below, read by Captain::HumanTakeoverEvaluator.
   CAPTAIN_HANDOFF_AT_KEY = 'captain_handoff_at'.freeze
+  CAPTAIN_TAKEOVER_AT_KEY = 'captain_takeover_at'.freeze
 
   # Adaki lets Captain answer `open` conversations too (see
   # Captain::HumanTakeoverEvaluator), so the FOSS bot_handoff! — which only
@@ -28,6 +33,19 @@ module Enterprise::Conversation
 
   def captain_handoff_at
     raw = additional_attributes&.dig(CAPTAIN_HANDOFF_AT_KEY)
+    return nil unless raw.is_a?(String) && raw.present?
+
+    Time.zone.parse(raw)
+  rescue ArgumentError
+    nil
+  end
+
+  # A manual/automatic assignment is also a human takeover, even when it did
+  # not originate in Captain#bot_handoff! (for example, an agent opening a
+  # pending conversation from the inbox). Keep its timestamp so
+  # HumanTakeoverEvaluator can release the bot after the configured window.
+  def captain_takeover_at
+    raw = additional_attributes&.dig(CAPTAIN_TAKEOVER_AT_KEY)
     return nil unless raw.is_a?(String) && raw.present?
 
     Time.zone.parse(raw)
@@ -66,6 +84,14 @@ module Enterprise::Conversation
   end
 
   private
+
+  def stamp_captain_takeover_at
+    return unless will_save_change_to_assignee_id? && assignee_id.present?
+
+    self.additional_attributes = (additional_attributes || {}).merge(
+      CAPTAIN_TAKEOVER_AT_KEY => Time.current.iso8601
+    )
+  end
 
   # Team configured for Captain handoffs on this inbox (CaptainInbox override
   # > assistant, see CaptainInbox#handoff_team). Only fills an empty team so a

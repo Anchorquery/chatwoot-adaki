@@ -25,6 +25,14 @@ RSpec.describe Captain::HumanTakeoverEvaluator do
       expect(evaluator.human_takeover?).to be(true)
     end
 
+    it 'lets the bot resume after an assigned conversation has been idle for the window' do
+      conversation.update!(assignee: agent)
+
+      travel_to((assistant.human_takeover_window_minutes_value + 1).minutes.from_now) do
+        expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(false)
+      end
+    end
+
     context 'when Captain has handed the conversation off (bot_handoff!)' do
       before do
         allow(Rails.configuration.dispatcher).to receive(:dispatch)

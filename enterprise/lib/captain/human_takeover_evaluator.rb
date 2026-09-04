@@ -99,11 +99,27 @@ module Captain
     end
 
     def mode
-      captain_inbox&.human_takeover_mode_value
+      inbox_override = captain_inbox&.settings&.[]('human_takeover_mode')
+      return inbox_override if Captain::Assistant::HUMAN_TAKEOVER_MODES.include?(inbox_override)
+
+      resolved_assistant&.human_takeover_mode_value
     end
 
     def window_minutes
-      captain_inbox&.human_takeover_window_minutes_value || Captain::Assistant::DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES
+      inbox_override = captain_inbox&.settings&.[]('human_takeover_window_minutes')
+      return inbox_override.to_i if inbox_override.present? && inbox_override.to_i.positive?
+
+      resolved_assistant&.human_takeover_window_minutes_value || Captain::Assistant::DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES
+    end
+
+    def resolved_assistant
+      return @resolved_assistant if defined?(@resolved_assistant)
+
+      @resolved_assistant = if conversation.respond_to?(:resolved_captain_assistant)
+                              conversation.resolved_captain_assistant
+                            else
+                              captain_inbox&.captain_assistant
+                            end
     end
 
     def captain_inbox
@@ -124,13 +140,14 @@ module Captain
       # An assigned handoff can have no public human reply yet. Once the
       # handoff grace window has expired, use the handoff timestamp as the
       # takeover baseline so a failed/empty assignment cannot silence Captain
-      # forever. A plain pre-existing assignment without a handoff marker keeps
-      # the historical behavior: it remains human-owned until the agent replies.
-      ts = [last_human_response_at, captain_handoff_at].compact.max
-      # ts blank here means an agent is assigned but hasn't replied yet (the
-      # `assignee_present? || human_response_exists?` guard in #human_takeover?
-      # already ruled out the "no signal at all" case). Treat that as freshly
-      # taken over rather than stale, so a bare assignment silences the bot.
+      # forever. Assignments created before this marker existed have no reliable
+      # start time and remain human-owned until a new assignment or human reply
+      # supplies one.
+      ts = [last_human_response_at, captain_handoff_at, captain_takeover_at].compact.max
+      # A legacy assignment may predate the takeover marker. Treat it as
+      # freshly taken over rather than allowing an unknown timestamp to make
+      # the bot answer immediately; new assignments are stamped by
+      # Enterprise::Conversation before_save.
       return false if ts.blank?
 
       ts < window_minutes.minutes.ago
@@ -140,6 +157,12 @@ module Captain
       return unless conversation.respond_to?(:captain_handoff_at)
 
       conversation.captain_handoff_at
+    end
+
+    def captain_takeover_at
+      return unless conversation.respond_to?(:captain_takeover_at)
+
+      conversation.captain_takeover_at
     end
   end
 end

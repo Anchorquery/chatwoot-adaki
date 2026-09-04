@@ -35,9 +35,9 @@ module Captain::FailurePolicy
   # Adaki's own monthly quota (independent of the upstream provider's
   # quota/billing, see docs/adaki/captain-limits.md Capa 2).
   LIMIT_ADAKI = :limit_adaki
-  # Anything not recognized above. Handled the same as CONFIGURATION/BUDGET
-  # (handoff, no retry) since an unrecognized failure mode should fail safe
-  # rather than be silently retried.
+  # Anything not recognized above. It is not safe to retry blindly, but it is
+  # also not evidence that the customer requested a human. The runner returns
+  # a normal fallback reply for this class and records the error for operators.
   UNKNOWN = :unknown
 
   CONFIGURATION_ERROR_CLASSES = [
