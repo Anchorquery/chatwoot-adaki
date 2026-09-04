@@ -101,7 +101,7 @@ class Captain::Assistant::AgentRunnerService
     # validates the credential eagerly in Chat.new. Publish the account's
     # resolved credential as the per-thread context so those chats route to the
     # configured provider (e.g. Gemini) instead of always hitting OpenAI.
-    result = RubyLLM.with_thread_context(resolved_llm_context) do
+    result = RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
       runner.run(message_to_process, context: context, max_turns: MAX_TURNS)
     end
     result = retry_if_unusable(result)
@@ -193,7 +193,7 @@ class Captain::Assistant::AgentRunnerService
              end
     Rails.logger.info "[Captain V2] #{reason} reply detected, retrying once"
 
-    retry_result = RubyLLM.with_thread_context(resolved_llm_context) do
+    retry_result = RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
       runner.run(nudge, context: result.context, max_turns: MAX_TURNS)
     end
 
@@ -584,7 +584,9 @@ class Captain::Assistant::AgentRunnerService
                  )
                end
     log_model_resolution(account, resolved)
-    @resolved_llm_context = Llm::Config.context_for_credential(resolved.try(:dig, :credential))
+    credential = resolved.try(:dig, :credential)
+    @resolved_llm_provider = credential_provider(credential)
+    @resolved_llm_context = Llm::Config.context_for_credential(credential)
   end
 
   def log_model_resolution(account, resolved)
@@ -594,6 +596,23 @@ class Captain::Assistant::AgentRunnerService
       "model=#{resolved&.dig(:model_slug).inspect} provider=#{credential&.provider.inspect} " \
       "source=#{resolved&.dig(:source).inspect} credential_id=#{credential&.id.inspect}"
     )
+  end
+
+  # Provider the thread context routes to, in RubyLLM's naming. Lets the
+  # ChatThreadContext patch (config/initializers/ruby_llm_thread_context.rb)
+  # accept a model slug the static RubyLLM registry does not know yet — the
+  # slugs come from the provider's live model list, so they are ahead of the
+  # registry by design. Nil when the account rides on the global config.
+  def resolved_llm_provider
+    resolved_llm_context
+    @resolved_llm_provider
+  end
+
+  def credential_provider(credential)
+    return nil unless credential.respond_to?(:provider)
+
+    provider = credential.provider.to_s
+    provider == 'google' ? 'gemini' : provider.presence
   end
 
   def run_payload(message_history)
