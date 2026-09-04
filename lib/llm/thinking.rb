@@ -13,6 +13,11 @@
 # default. The params are deep-merged into the request payload by RubyLLM
 # (Provider#complete → Utils.deep_merge), so they must mirror the provider's
 # own payload shape.
+#
+# Which efforts a model accepts is NOT decided here: Llm::ReasoningCapabilities
+# answers that from the model's own row (seeded by family, corrected from the
+# provider's rejections, editable in the providers view). This module only
+# picks the effort for Captain's level and renders it for the provider.
 module Llm::Thinking
   OFF = 'off'.freeze
   LOW = 'low'.freeze
@@ -38,10 +43,10 @@ module Llm::Thinking
 
   # Runs the block with every provider reasoning param disabled on this
   # thread. Captain uses it to replay a turn after the provider rejected the
-  # params we guessed for a model this table does not know yet (2026-09-04,
+  # params we guessed for a model nothing knew about yet (2026-09-04,
   # account 4: gpt-5.4-mini answered 400 "'reasoning_effort' does not support
   # 'minimal'" and the customer got a handoff instead of an answer). Provider
-  # catalogues move faster than this mapping; a rejected knob must cost one
+  # catalogues move faster than any mapping; a rejected knob must cost one
   # retry, never the conversation.
   def without_params
     previous = Thread.current[SUPPRESS_KEY]
@@ -55,79 +60,52 @@ module Llm::Thinking
     Thread.current[SUPPRESS_KEY] == true
   end
 
+  # @param supported_efforts [Array<String>, nil] efforts the model accepts
+  #   (from its platform_credential_models row); nil → family seed.
   # @return [Hash] provider params to merge into the chat payload; empty when
   #   the level is 'dynamic' (send nothing, let the provider decide), the
-  #   provider has no supported knob, or .without_params is active.
-  def params_for(provider:, model:, level:)
+  #   model offers no suitable effort, or .without_params is active.
+  def params_for(provider:, model:, level:, supported_efforts: nil)
     return {} if suppressed?
 
     level = normalize_level(level)
     return {} if level == DYNAMIC
 
-    provider = provider.to_s
+    provider = Llm::ReasoningCapabilities.normalize_provider(provider)
     model = model.to_s
+    efforts = supported_efforts.nil? ? Llm::ReasoningCapabilities.seed_for(provider: provider, model: model) : Array(supported_efforts)
+    effort = Llm::ReasoningCapabilities.effort_for_level(efforts, level)
+    return {} if effort.nil?
 
+    render(provider, model, effort)
+  end
+
+  def render(provider, model, effort)
     case provider
-    when 'gemini', 'google'
-      { generationConfig: { thinkingConfig: gemini_thinking_config(model, level) } }
-    when 'openai'
-      openai_reasoning_params(model, level)
-    when 'deepseek'
-      deepseek_reasoning_params(model, level)
-    else
-      {}
+    when 'gemini' then { generationConfig: { thinkingConfig: gemini_thinking_config(model, effort) } }
+    when 'openai' then { reasoning_effort: effort }
+    when 'deepseek' then deepseek_params(effort)
+    else {}
     end
   end
 
-  # Gemini 3 replaced the numeric budget with thinkingLevel. Flash supports a
-  # minimal level; Pro does not, so its minimum is low.
-  def gemini_thinking_config(model, level)
-    return gemini_3_thinking_config(model, level) if model.start_with?('gemini-3')
+  # Gemini 3 replaced the numeric budget with thinkingLevel; 2.5 takes a
+  # token budget (0 disables it on Flash, Pro floors at 128).
+  def gemini_thinking_config(model, effort)
+    return { thinkingLevel: effort } if model.start_with?('gemini-3')
 
-    { thinkingBudget: gemini_budget(model, level) }
+    { thinkingBudget: gemini_budget(model, effort) }
   end
 
-  def gemini_budget(model, level)
+  def gemini_budget(model, effort)
     return PRO_MINIMUM_BUDGET if model.include?('pro')
-    return 0 if level == OFF
 
-    FLASH_LOW_BUDGET
+    effort == 'none' ? 0 : FLASH_LOW_BUDGET
   end
 
-  def gemini_3_thinking_config(model, level)
-    # Gemini 3 Pro and newer Flash variants have a low minimum. Gemini 3
-    # Flash preview accepts minimal, which is the closest provider-supported
-    # equivalent to Captain's default "off" setting.
-    minimum = model.include?('pro') || model.include?('3.7') ? 'low' : 'minimal'
-    { thinkingLevel: level == OFF ? minimum : 'low' }
-  end
+  def deepseek_params(effort)
+    return { thinking: { type: 'disabled' } } if effort == 'none'
 
-  def openai_reasoning_params(model, level)
-    return {} unless model.match?(/\A(?:gpt-5|o[134])/)
-
-    { reasoning_effort: level == OFF ? openai_off_effort(model) : 'low' }
-  end
-
-  # The gpt-5.0 family (gpt-5, gpt-5-mini, gpt-5-nano, gpt-5-chat…) accepts
-  # 'minimal' and rejects 'none'; gpt-5.1 and every later release (5.2, 5.4,
-  # …) accept 'none' and dropped 'minimal'. o-series models bottom out at
-  # 'low'. Matching "5.0 vs anything newer" instead of listing versions keeps
-  # the next release from turning into a 400 (see .without_params for the
-  # safety net when a model still surprises us).
-  def openai_off_effort(model)
-    return 'low' if model.start_with?('o')
-
-    model.match?(/\Agpt-5(?:-|\z)/) ? 'minimal' : 'none'
-  end
-
-  def deepseek_reasoning_params(model, level)
-    # DeepSeek's current V4 API exposes the thinking toggle and effort on both
-    # V4 Flash and V4 Pro. Keep the legacy alias for older installations that
-    # have not migrated their stored preference yet.
-    return {} unless model.start_with?('deepseek-v4-') || model.include?('reasoner')
-
-    return { thinking: { type: 'disabled' } } if level == OFF
-
-    { thinking: { type: 'enabled' }, reasoning_effort: 'low' }
+    { thinking: { type: 'enabled' }, reasoning_effort: effort }
   end
 end

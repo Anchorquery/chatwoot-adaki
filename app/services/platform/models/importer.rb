@@ -220,11 +220,20 @@ module Platform::Models
         model.send("#{k}=", v)
       end
       model.enabled = preserved_enabled
+      seed_reasoning_config(model)
       model.save!
       model
     rescue ActiveRecord::RecordInvalid => e
       Rails.logger.warn("[Platform::Models::Importer] skip #{attrs[:slug]}: #{e.message}")
       nil
+    end
+
+    # Reasoning capabilities are seeded once by family and never overwritten
+    # by a sync: what the provider taught us (or an operator edited) wins.
+    def seed_reasoning_config(model)
+      return if model.reasoning_config.present?
+
+      model.reasoning_config = Llm::ReasoningCapabilities.seed_config(provider: @credential.provider, model: model.slug)
     end
 
     def api_base(default_base)

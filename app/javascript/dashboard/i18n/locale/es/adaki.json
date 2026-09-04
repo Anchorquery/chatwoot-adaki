@@ -291,7 +291,16 @@
           "OUTPUT_PRICE": "$ salida / 1M tokens",
           "DATA_CUTOFF": "Fecha de datos",
           "CANCEL": "Cancelar",
-          "SAVE": "Guardar cambios"
+          "SAVE": "Guardar cambios",
+          "REASONING": "Niveles de razonamiento que acepta este modelo",
+          "REASONING_HINT": "(Captain envía el más bajo para \"desactivado\". Deja todos sin marcar si el modelo rechaza el parámetro. Se corrige solo cuando el proveedor responde con un error.)"
+        },
+        "REASONING_LABEL": "razonamiento",
+        "REASONING_NONE": "sin parámetro de razonamiento",
+        "REASONING_SOURCE": {
+          "SEED": "Supuesto por la familia del modelo",
+          "PROVIDER": "Aprendido de la respuesta del proveedor",
+          "MANUAL": "Definido manualmente"
         }
       }
     },

@@ -1105,3 +1105,36 @@ Dos capas:
    de `Llm::Thinking.without_params` (kill switch por hilo) y repite el turno
    una vez sin ningún parámetro de razonamiento. Un knob rechazado cuesta un
    reintento, nunca la conversación.
+
+### 7.9 Capacidades de razonamiento como dato por modelo
+
+Cierre de §7.8. Qué niveles de razonamiento acepta cada modelo deja de vivir
+solo en una tabla en código y pasa a ser un dato de la fila del modelo
+(`platform_credential_models.reasoning_config`), con la forma que usa
+OpenRouter en su catálogo:
+
+```json
+{ "supported_efforts": ["none", "low", "medium", "high", "xhigh"], "source": "seed" }
+```
+
+Vocabulario único (`none minimal low medium high xhigh`, de menor a mayor);
+`Llm::Thinking` traduce el effort elegido al payload de cada proveedor
+(`thinkingBudget`/`thinkingLevel` en Gemini, `thinking` en DeepSeek,
+`reasoning_effort` en OpenAI). Tres capas, en orden:
+
+1. **Semilla por familia** (`Llm::ReasoningCapabilities.seed_for`): la tabla
+   pública de Vercel AI Gateway y las docs de Google/DeepSeek. Se escribe en
+   la fila al importar (`Importer#upsert`, solo si está vacía) y sirve de
+   respaldo cuando la fila no dice nada. `source: seed`.
+2. **Aprendido del proveedor** (`learn_from_rejection!`): ante un 400 por los
+   parámetros de razonamiento, `AgentRunnerService` guarda en la fila lo que
+   el proveedor enumeró ("Supported values are: …") o `[]` si no enumeró nada
+   (el modelo no admite el parámetro), y repite el turno con lo aprendido.
+   `source: provider`. El siguiente turno ya sale bien a la primera.
+3. **Manual** (vista de proveedores → editar modelo): checkboxes con los
+   niveles aceptados; un cambio del operador pisa lo anterior. `source: manual`.
+
+"Desactivado" significa siempre **el nivel más bajo que el modelo acepte**
+(`none` → `minimal` → `low`); "bajo" es `low` o lo más cercano; "dinámico" no
+envía nada. Un modelo sin niveles (`[]`) no recibe parámetro alguno. El kill
+switch de §7.8 (`Llm::Thinking.without_params`) queda como última red.

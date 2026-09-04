@@ -84,6 +84,18 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         expect(Agents::Runner).to have_received(:with_agents).twice
       end
 
+      it 'replays with the learned efforts (no kill switch) when the provider listed them' do
+        allow(Llm::ReasoningCapabilities).to receive(:learn_from_rejection!).and_return(%w[none low medium high xhigh])
+        allow(Llm::Thinking).to receive(:without_params).and_call_original
+
+        response = service.generate_response(message_history: message_history)
+
+        expect(response['response']).to eq('Tenemos manoplas de depilación.')
+        expect(Llm::ReasoningCapabilities).to have_received(:learn_from_rejection!).once
+        expect(Llm::Thinking).not_to have_received(:without_params)
+        expect(mock_runner).to have_received(:run).twice
+      end
+
       it 'gives up after one retry when the replay is rejected too' do
         allow(mock_runner).to receive(:run).and_return(rejected_result, rejected_result)
 
