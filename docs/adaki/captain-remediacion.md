@@ -1020,9 +1020,15 @@ antes de llamar a Google. Como `Chat#with_model` se vuelve a llamar en cada
 handoff a un escenario, el problema no se limita al primer turno.
 
 Fix (`config/initializers/ruby_llm_thread_context.rb`): `with_thread_context`
-acepta ahora el proveedor al que enruta el contexto, y el prepend de
-`RubyLLM::Chat#with_model` reintenta un `ModelNotFoundError` como modelo
-asumido de ese proveedor (`assume_exists: true`, que RubyLLM ya soporta y que
-asume function calling). `AgentRunnerService` publica el proveedor de la
-credencial resuelta junto al contexto. Un slug que el registro sí conoce no
-cambia, y sin proveedor por hilo el error sigue subiendo como antes.
+acepta ahora el proveedor al que enruta el contexto, y mientras hay un
+proveedor por hilo el prepend de `RubyLLM::Chat#with_model` **no consulta el
+registro estático**: crea el chat para ese proveedor con el id tal cual
+(`assume_exists: true`, que RubyLLM ya soporta y que asume function calling).
+La fila de `platform_credential_models` (id + proveedor de la credencial) es la
+única fuente de verdad; el registro de RubyLLM es legacy y ni puede rechazar un
+modelo ni desviarlo a otro proveedor por su lista de preferencia
+(`Models::PROVIDER_PREFERENCE`). Ni RubyLLM ni la app usan los metadatos del
+registro (precios, ventana de contexto, capacidades) para decidir nada en el
+chat. `AgentRunnerService` publica el proveedor de la credencial resuelta junto
+al contexto; sin proveedor por hilo (config global legacy) RubyLLM se comporta
+como antes.
