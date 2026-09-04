@@ -65,11 +65,11 @@ RSpec.describe Concerns::Agentable do
       dummy_instance.agent
     end
 
-    it 'converts nil temperature to 0.0' do
+    it 'defaults a nil temperature to 0.7' do
       dummy_instance.temperature = nil
 
       expect(Agents::Agent).to receive(:new).with(
-        hash_including(temperature: 0.0)
+        hash_including(temperature: 0.7)
       )
 
       dummy_instance.agent
@@ -190,14 +190,14 @@ RSpec.describe Concerns::Agentable do
     it "resolves the account's configured provider model when present" do
       account = create(:account)
       credential = create(:platform_credential, :gemini, account: account)
-      create(:platform_credential_model, credential: credential, slug: 'gemini-3-flash', kind: 'chat', enabled: true)
+      create(:platform_credential_model, credential: credential, slug: 'gemini-3-flash-preview', kind: 'chat', enabled: true)
 
       account_aware = Class.new(dummy_class) do
         define_method(:account) { @account }
       end.new
       account_aware.instance_variable_set(:@account, account)
 
-      expect(account_aware.send(:agent_model)).to eq('gemini-3-flash')
+      expect(account_aware.send(:agent_model)).to eq('gemini-3-flash-preview')
     end
   end
 

@@ -947,7 +947,7 @@ absoluto:
 | Modo | Tras el handoff |
 |---|---|
 | `after_window` (default) | Silencio durante la ventana configurada (15 min por defecto); si nadie lo recoge, el bot sigue ayudando |
-| `never` | Silencio permanente: el humano es dueño de la conversación |
+| `never` | Misma gracia que `after_window` mientras nadie recoja el handoff (la marca del bot es temporal, no una preferencia de propiedad humana); en cuanto un humano responde, el humano es dueño para siempre (ajuste de 71d63e5) |
 | `always` | Sin silencio; el handoff igual asigna, etiqueta con el equipo y notifica |
 
 Es la misma pregunta que ya respondía la ventana para las respuestas humanas
@@ -955,29 +955,50 @@ Es la misma pregunta que ya respondía la ventana para las respuestas humanas
 nuevo. La asignación, la etiqueta de equipo y la notificación del handoff
 siguen ocurriendo igual en los tres modos.
 
-### 7.4 Fallo global de V2 por resolución de proveedor
+### 7.4 Todo mensaje terminaba en handoff: `NameError` en el resolver de modelos
 
-Cuando todos los mensajes terminan en handoff en menos de un segundo, no es
-una decisión del modelo: `process_v1_handoff` se ejecuta después de que el
-runner captura una excepción. El síntoma se confirma comparando los tiempos:
-una llamada real al proveedor tarda más que la creación inmediata del mensaje
-de handoff y la asignación ocurre después.
+Tras el commit "route v2 across supported llm providers" (71d63e5), cualquier
+mensaje entrante en la cuenta 3 recibía el mensaje de handoff del asistente
+**~300 ms** después de crearse (conv 30 / id 311, 07:03:08.85 → 07:03:09.17),
+sin ninguna llamada al proveedor de IA. El orden de eventos lo delataba: el
+mensaje de handoff se creó **antes** de la asignación y del cambio de estado,
+que es el orden de `process_v1_handoff` (ruta de error), no el de `HandoffTool`
+(donde `bot_handoff!` corre dentro del turno y el mensaje se crea después).
 
-La regresión introducida en `71d63e5` fue un `NameError`: el resolver consultaba
-`Llm::Config::SUPPORTED_RUNTIME_PROVIDERS`, pero la constante estaba declarada
-dentro de `class << self` y por tanto no existía en el namespace del módulo.
-El `rescue StandardError` de V2 convertía ese error de código en
-`conversation_handoff` con clase `unknown`, ocultando la causa y evitando la
-nota interna.
+Causa: `Platform::Models::Resolver#active_credentials` (nuevo en ese commit)
+leía `Llm::Config::SUPPORTED_RUNTIME_PROVIDERS`, pero la constante estaba
+definida **dentro del bloque `class << self`** de `Llm::Config`. En Ruby una
+constante así pertenece a la singleton class y `Llm::Config::X` lanza
+`NameError: uninitialized constant`. Se alcanzaba en cualquier resolución que
+pasara por `resolve_by_preferred_slug` (slug preferido sin fila habilitada) o
+por `resolve_fallback` (credencial sin modelos habilitados). El `rescue
+StandardError` de `AgentRunnerService#generate_response` lo convertía en
+`error_response` → `conversation_handoff` con `failure_class=unknown` → handoff
+V1 inmediato. Al ser `unknown`, `FailureNotifier` no dejaba nota privada y el
+circuit breaker no se enteraba: por eso "los logs no dicen nada" (la traza solo
+está en la cápsula `captain` de Sidekiq, como `[Captain V2] AgentRunnerService
+error: uninitialized constant …`).
 
-La constante vive ahora en el nivel del módulo, el resolver conserva una
-credencial activa como último fallback (prefiriendo proveedores con adaptador
-nativo) y `FailureNotifier` deja una nota privada para las clases
-`configuration`, `budget`, `limit_adaki` y `unknown`. Sólo `transient` queda
-fuera porque Sidekiq lo reintenta antes de escalar.
+Fix:
 
-También se actualizaron los modelos de DeepSeek a `deepseek-v4-flash` y
-`deepseek-v4-pro`: los alias `deepseek-chat` y `deepseek-reasoner` fueron
-retirados por DeepSeek el 24-07-2026. El nivel de razonamiento se envía con
-`thinking.type` y `reasoning_effort` según la API V4; OpenAI usa
-`reasoning_effort` y Gemini 3 usa `generationConfig.thinkingConfig.thinkingLevel`.
+- `SUPPORTED_RUNTIME_PROVIDERS` pasa al nivel del módulo `Llm::Config`.
+- `Resolver#resolve_fallback` prefiere una credencial de proveedor soportado y,
+  si no hay ninguna, mantiene el comportamiento previo (primera credencial
+  activa, enrutada por el cliente compatible con OpenAI) en vez de devolver
+  `nil` y mandar a la cuenta al config global compartido sin avisar.
+- `FailureNotifier` deja nota privada también para `budget` y `unknown`: un
+  fallo del propio código de Captain nunca debe volver a ser indistinguible de
+  una escalada legítima. Solo `transient` queda fuera, porque el job lo
+  reintenta y nunca llega al notificador.
+- El spec del resolver ya cubría el fallback y habría fallado con el
+  `NameError`; se añaden casos para `preferred_slug` de catálogo y para
+  credenciales de proveedores sin adaptador.
+
+La configuración de modelos también quedó alineada con los proveedores que
+Captain V2 usa actualmente: OpenAI, Gemini y DeepSeek. Los identificadores
+retirados `deepseek-chat` y `deepseek-reasoner` se conservan como alias de
+migración hacia `deepseek-v4-flash` y `deepseek-v4-pro`; así no se rompen las
+preferencias ni las filas existentes de `platform_credential_models`. El
+selector de razonamiento traduce `off`/`low` a los parámetros nativos de cada
+API y deja `dynamic` sin parámetros para conservar el comportamiento del
+proveedor.
