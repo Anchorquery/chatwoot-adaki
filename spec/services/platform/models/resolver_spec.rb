@@ -11,13 +11,57 @@ RSpec.describe Platform::Models::Resolver do
     context 'when an enabled model matches the feature' do
       it 'returns that credential and slug' do
         credential = create(:platform_credential, :gemini, account: account)
-        create(:platform_credential_model, credential: credential, slug: 'gemini-3-flash', kind: 'chat', enabled: true)
+        create(:platform_credential_model, credential: credential, slug: 'gemini-3-flash-preview', kind: 'chat', enabled: true)
 
         result = described_class.resolve(account: account, feature: 'assistant')
 
-        expect(result[:model_slug]).to eq('gemini-3-flash')
+        expect(result[:model_slug]).to eq('gemini-3-flash-preview')
         expect(result[:credential]).to eq(credential)
         expect(result[:source]).to eq(:feature)
+      end
+    end
+
+    context 'when the preferred slug is a catalog model with no enabled row but a matching active credential' do
+      # Regression: this path reads Llm::Config::SUPPORTED_RUNTIME_PROVIDERS. While
+      # that constant lived inside `class << self` the lookup raised NameError and
+      # every Captain V2 run ended in an instant handoff (2026-09-04, account 3).
+      it 'pairs the catalog slug with the credential of the same provider' do
+        credential = create(:platform_credential, :gemini, account: account)
+
+        result = described_class.resolve(account: account, feature: 'assistant', preferred_slug: 'gemini-3-flash')
+
+        expect(result[:credential]).to eq(credential)
+        expect(result[:model_slug]).to eq('gemini-3-flash-preview')
+        expect(result[:source]).to eq(:preferred_catalog)
+      end
+
+      it 'does not pair the slug with a credential of another provider' do
+        create(:platform_credential, :openai, account: account)
+
+        result = described_class.resolve(account: account, preferred_slug: 'gemini-3-flash-preview')
+
+        expect(result[:source]).to eq(:fallback)
+        expect(result[:model_slug]).not_to eq('gemini-3-flash-preview')
+      end
+    end
+
+    context 'when the only credential belongs to a provider without a runtime adapter' do
+      it 'still resolves it (legacy OpenAI-compatible routing) instead of returning nil' do
+        credential = create(:platform_credential, account: account, provider: 'openrouter')
+
+        result = described_class.resolve(account: account, feature: 'assistant')
+
+        expect(result[:credential]).to eq(credential)
+        expect(result[:source]).to eq(:fallback)
+      end
+
+      it 'prefers a supported provider when both kinds of credentials exist' do
+        create(:platform_credential, account: account, provider: 'openrouter')
+        supported = create(:platform_credential, :gemini, account: account)
+
+        result = described_class.resolve(account: account, feature: 'assistant')
+
+        expect(result[:credential]).to eq(supported)
       end
     end
 
