@@ -54,7 +54,7 @@ class Captain::Assistant < ApplicationRecord
                  :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number,
                  :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
                  :human_takeover_mode, :human_takeover_window_minutes, :history_window_messages,
-                 :handoff_team_id
+                 :handoff_team_id, :reasoning_level
 
   validates :name, presence: true
   validates :description, presence: true
@@ -70,6 +70,14 @@ class Captain::Assistant < ApplicationRecord
 
   def autopilot_enabled?
     ActiveModel::Type::Boolean.new.cast(config['autopilot_enabled'])
+  end
+
+  # Cuánto puede "pensar" el modelo antes de responder (ver Llm::Thinking).
+  # Default 'off': para un bot de soporte que consulta FAQs y enruta a
+  # escenarios, el razonamiento interno solo añade latencia, coste y el
+  # fallo de respuesta vacía del incidente del 2026-09-04.
+  def reasoning_level_value
+    Llm::Thinking.normalize_level(config['reasoning_level'])
   end
 
   # Equipo al que se enruta un handoff bot → humano (ver

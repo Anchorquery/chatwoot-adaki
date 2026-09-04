@@ -8,7 +8,8 @@ module Concerns::Agentable
       tools: agent_tools,
       model: agent_model,
       temperature: temperature.to_f || 0.7,
-      response_schema: agent_response_schema
+      response_schema: agent_response_schema,
+      params: agent_thinking_params
     )
   end
 
@@ -86,6 +87,18 @@ module Concerns::Agentable
     return nil if agent_provider == 'gemini'
 
     Captain::ResponseSchema
+  end
+
+  # Caps (or disables) the model's internal reasoning — see Llm::Thinking for
+  # why the default is 'off'. Reaches the request because Agents::Agent
+  # forwards `params` to the chat and RubyLLM deep-merges them into the
+  # payload. A scenario inherits the level from its assistant.
+  def agent_thinking_params
+    Llm::Thinking.params_for(
+      provider: agent_provider,
+      model: agent_model,
+      level: reasoning_level_value
+    )
   end
 
   def prompt_context

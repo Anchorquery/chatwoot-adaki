@@ -526,6 +526,15 @@
           "LABEL": "Inactivity window (hours)",
           "DESCRIPTION": "How many hours a conversation must be inactive before auto handoff / auto resolution kicks in. Default: 24."
         },
+        "REASONING_LEVEL": {
+          "LABEL": "Model reasoning level",
+          "DESCRIPTION": "How much the model may 'think' before replying. Off is faster and cheaper, and is the recommended setting for customer support. Dynamic lets the provider decide and can cause empty replies and extra latency.",
+          "OPTIONS": {
+            "OFF": "Off (recommended)",
+            "LOW": "Low",
+            "DYNAMIC": "Dynamic (provider decides)"
+          }
+        },
         "HANDOFF_TEAM": {
           "LABEL": "Handoff team",
           "DESCRIPTION": "When the assistant hands a conversation to a human, tag it with this team and auto-assign among its members. Leave empty to auto-assign among all inbox members.",

@@ -526,6 +526,15 @@
           "LABEL": "Ventana de inactividad (horas)",
           "DESCRIPTION": "Cuántas horas debe estar inactiva la conversación antes de aplicar transferencia/resolución automática. Por defecto: 24."
         },
+        "REASONING_LEVEL": {
+          "LABEL": "Nivel de razonamiento del modelo",
+          "DESCRIPTION": "Cuánto puede 'pensar' el modelo antes de responder. Desactivado es más rápido y barato, y es lo recomendado para atención al cliente. Dinámico deja decidir al proveedor y puede provocar respuestas vacías y más latencia.",
+          "OPTIONS": {
+            "OFF": "Desactivado (recomendado)",
+            "LOW": "Bajo",
+            "DYNAMIC": "Dinámico (lo decide el proveedor)"
+          }
+        },
         "HANDOFF_TEAM": {
           "LABEL": "Equipo de transferencia",
           "DESCRIPTION": "Cuando el asistente transfiere una conversación a un humano, la etiqueta con este equipo y la auto-asigna entre sus miembros. Vacío = auto-asignar entre todos los miembros de la bandeja.",

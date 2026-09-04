@@ -28,6 +28,7 @@ const isCaptainV2Enabled = computed(() =>
 );
 
 const HUMAN_TAKEOVER_MODES = ['always', 'after_window', 'never'];
+const REASONING_LEVELS = ['off', 'low', 'dynamic'];
 
 // Teams are loaded account-wide at dashboard boot (see teams store module).
 const teams = useMapGetter('teams/getTeams');
@@ -44,6 +45,7 @@ const initialState = {
   autoHandoffEnabled: false,
   autoResolveHours: 24,
   handoffTeamId: null,
+  reasoningLevel: 'off',
 };
 
 const state = reactive({ ...initialState });
@@ -87,6 +89,9 @@ const updateStateFromAssistant = assistant => {
   state.humanTakeoverWindowMinutes =
     Number(config.human_takeover_window_minutes) || 15;
   state.handoffTeamId = Number(config.handoff_team_id) || null;
+  state.reasoningLevel = REASONING_LEVELS.includes(config.reasoning_level)
+    ? config.reasoning_level
+    : 'off';
 };
 
 const handleSystemMessagesUpdate = async () => {
@@ -118,6 +123,7 @@ const handleSystemMessagesUpdate = async () => {
       auto_handoff_enabled: state.autoHandoffEnabled,
       auto_resolve_hours: Number(state.autoResolveHours) || 24,
       handoff_team_id: Number(state.handoffTeamId) || null,
+      reasoning_level: state.reasoningLevel,
     },
   };
 
@@ -260,6 +266,29 @@ watch(
       />
       <p class="text-sm text-n-slate-11 italic">
         {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_WINDOW.DESCRIPTION') }}
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-n-slate-12">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.REASONING_LEVEL.LABEL') }}
+      </label>
+      <select
+        v-model="state.reasoningLevel"
+        class="w-full px-3 py-2 rounded-lg border border-n-weak bg-n-alpha-black2 text-sm text-n-slate-12"
+      >
+        <option value="off">
+          {{ t('CAPTAIN.ASSISTANTS.FORM.REASONING_LEVEL.OPTIONS.OFF') }}
+        </option>
+        <option value="low">
+          {{ t('CAPTAIN.ASSISTANTS.FORM.REASONING_LEVEL.OPTIONS.LOW') }}
+        </option>
+        <option value="dynamic">
+          {{ t('CAPTAIN.ASSISTANTS.FORM.REASONING_LEVEL.OPTIONS.DYNAMIC') }}
+        </option>
+      </select>
+      <p class="text-sm text-n-slate-11 italic">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.REASONING_LEVEL.DESCRIPTION') }}
       </p>
     </div>
 

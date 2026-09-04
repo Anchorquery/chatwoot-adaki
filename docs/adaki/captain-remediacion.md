@@ -878,3 +878,54 @@ es un `team_id` en `run_handoff_auto_assignment`.
   workflow `build-coolify-image.yml` tiene un paso que avisa a Coolify al
   terminar, pero requiere los secrets `COOLIFY_WEBHOOK_URL` y `COOLIFY_TOKEN`
   en GitHub (no configurados a 2026-09-04).
+
+### 7.2 Respuesta vacía de Gemini y nivel de razonamiento configurable
+
+Conversación 309 (2026-09-04 02:41), mensaje "Que productos tiene ?": el runner
+V2 terminó con `output=""` y `output_tokens=0`, sin error y sin tool call.
+`ResponseBuilderJob#validate_message_content!` lanzó `ArgumentError` →
+`handle_error` → handoff. El cliente pidió información de productos y acabó
+transferido a un humano.
+
+**Causa.** Gemini 2.5 razona antes de responder; esas partes vienen marcadas
+`thought: true`, RubyLLM las descarta (`extract_content` filtra los thought
+parts) y los tokens de razonamiento se cobran a precio de salida y cuentan
+contra el límite de salida. Cuando el razonamiento se lleva el turno entero, la
+respuesta llega sin texto visible. Ni RubyLLM ni ai-agents envían un
+`thinkingConfig` por su cuenta — RubyLLM solo lo hace si alguien llama
+`with_thinking`, y el runner de la gema nunca lo llama — así que Gemini venía
+aplicando su presupuesto dinámico por defecto, sin techo.
+
+**Dos capas de arreglo:**
+
+1. **Red de seguridad** (`AgentRunnerService`): una respuesta vacía se reintenta
+   una vez con `EMPTY_REPLY_NUDGE` (mismo mecanismo que el reintento por
+   "promesa sin tool"); si sigue vacía, se envía
+   `conversations.captain.empty_reply_fallback` en vez de una cadena vacía. Una
+   respuesta vacía ya no puede convertirse en handoff. Un handoff real (con la
+   tool llamada) no se toca.
+2. **Causa raíz** (`Llm::Thinking` + ajuste por asistente): nuevo
+   `config.reasoning_level` con tres valores — `off` (por defecto), `low`,
+   `dynamic`. `Concerns::Agentable` lo traduce a los params del proveedor y los
+   pasa a `Agents::Agent#params`; el runner los aplica con `chat.with_params` y
+   RubyLLM los deep-mergea en el payload (`Provider#complete` →
+   `Utils.deep_merge`), así que llegan como `generationConfig.thinkingConfig`
+   sin parchear ninguna gema.
+
+Detalles por modelo, verificados contra la documentación de Google:
+
+| Modelo | `off` | `low` | Nota |
+|---|---|---|---|
+| gemini-2.5-flash / flash-lite | `thinkingBudget: 0` | `512` | 0 desactiva el razonamiento |
+| gemini-2.5-pro | `thinkingBudget: 128` | `128` | Pro **no** permite 0; 128 es el suelo de la API |
+| gemini-3-* | `thinkingLevel: "low"` | igual | La familia 3 usa nivel, no presupuesto, y no se puede desactivar |
+| Otros proveedores | sin params | sin params | Sin equivalente cableado aquí |
+
+`dynamic` no envía nada y deja decidir al proveedor: es el comportamiento
+anterior, y el que provocó el incidente.
+
+**Default `off` a propósito.** Captain consulta FAQs y enruta a escenarios; el
+razonamiento interno solo añadía latencia, coste (unos 3,50 USD por millón de
+tokens de salida con razonamiento frente a 0,60 sin él) y este modo de fallo.
+Quien quiera lo contrario lo cambia desde Captain → Asistente → Ajustes del
+sistema → "Nivel de razonamiento del modelo".
