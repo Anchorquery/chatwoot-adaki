@@ -5,6 +5,7 @@ import { useVuelidate } from '@vuelidate/core';
 import { minLength } from '@vuelidate/validators';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { useAccount } from 'dashboard/composables/useAccount';
+import { useMapGetter } from 'dashboard/composables/store';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Editor from 'dashboard/components-next/Editor/Editor.vue';
@@ -28,6 +29,9 @@ const isCaptainV2Enabled = computed(() =>
 
 const HUMAN_TAKEOVER_MODES = ['always', 'after_window', 'never'];
 
+// Teams are loaded account-wide at dashboard boot (see teams store module).
+const teams = useMapGetter('teams/getTeams');
+
 const initialState = {
   handoffMessage: '',
   resolutionMessage: '',
@@ -39,6 +43,7 @@ const initialState = {
   humanTakeoverWindowMinutes: 15,
   autoHandoffEnabled: false,
   autoResolveHours: 24,
+  handoffTeamId: null,
 };
 
 const state = reactive({ ...initialState });
@@ -81,6 +86,7 @@ const updateStateFromAssistant = assistant => {
     : 'after_window';
   state.humanTakeoverWindowMinutes =
     Number(config.human_takeover_window_minutes) || 15;
+  state.handoffTeamId = Number(config.handoff_team_id) || null;
 };
 
 const handleSystemMessagesUpdate = async () => {
@@ -111,6 +117,7 @@ const handleSystemMessagesUpdate = async () => {
         Number(state.humanTakeoverWindowMinutes) || 15,
       auto_handoff_enabled: state.autoHandoffEnabled,
       auto_resolve_hours: Number(state.autoResolveHours) || 24,
+      handoff_team_id: Number(state.handoffTeamId) || null,
     },
   };
 
@@ -253,6 +260,26 @@ watch(
       />
       <p class="text-sm text-n-slate-11 italic">
         {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_WINDOW.DESCRIPTION') }}
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-n-slate-12">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.HANDOFF_TEAM.LABEL') }}
+      </label>
+      <select
+        v-model="state.handoffTeamId"
+        class="w-full px-3 py-2 rounded-lg border border-n-weak bg-n-alpha-black2 text-sm text-n-slate-12"
+      >
+        <option :value="null">
+          {{ t('CAPTAIN.ASSISTANTS.FORM.HANDOFF_TEAM.NONE') }}
+        </option>
+        <option v-for="team in teams" :key="team.id" :value="team.id">
+          {{ team.name }}
+        </option>
+      </select>
+      <p class="text-sm text-n-slate-11 italic">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.HANDOFF_TEAM.DESCRIPTION') }}
       </p>
     </div>
 

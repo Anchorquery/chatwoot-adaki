@@ -43,7 +43,37 @@ class Captain::Conversation::FailureNotifier
   # (a machine-oriented code like "ruby_llm_unauthorized_error") when both are
   # present — it reads far better in a note meant for a person to act on.
   def note_content
-    "[Captain] Handoff automático (#{@response['failure_class']}), no por decisión del asistente: " \
-      "#{@response['error'] || @response['action_reason']}"
+    body = "[Captain] Handoff automático (#{@response['failure_class']}), no por decisión del asistente: " \
+           "#{@response['error'] || @response['action_reason']}"
+    mention = mention_markup
+    mention ? "#{mention} #{body}" : body
+  end
+
+  # @mention (Chatwoot's private-note markup, picked up by
+  # Messages::MentionService) so the person who should act gets a
+  # conversation_mention notification that carries the real cause, instead
+  # of a generic "assigned to you" indistinguishable from any other
+  # conversation. Assignee first — bot_handoff! runs right before this and
+  # assigns synchronously on the legacy assignment path; with assignment_v2
+  # the assignment is a background job that hasn't run yet, so fall back to
+  # the handoff team (already on the conversation, or configured for Captain
+  # on this inbox). No mention at all when neither exists.
+  def mention_markup
+    assignee = @conversation.assignee
+    return mention_link('user', assignee.id, assignee.name) if assignee
+
+    team = @conversation.team || captain_handoff_team
+    return nil unless team
+
+    mention_link('team', team.id, team.name)
+  end
+
+  def mention_link(kind, id, name)
+    "[@#{name}](mention://#{kind}/#{id}/#{ERB::Util.url_encode(name.to_s)})"
+  end
+
+  def captain_handoff_team
+    inbox = @conversation.inbox
+    inbox.respond_to?(:captain_inbox) ? inbox.captain_inbox&.handoff_team : nil
   end
 end

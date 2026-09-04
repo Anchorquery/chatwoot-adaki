@@ -65,6 +65,43 @@ RSpec.describe Conversation, type: :model do
       expect(conversation.reload.assignee).to eq(other)
     end
 
+    context 'with a Captain handoff team configured for the inbox' do
+      let(:assistant) { create(:captain_assistant, account: account) }
+      let(:team) { create(:team, account: account) }
+      let(:team_agent) { create(:user, account: account) }
+
+      before do
+        create(:captain_inbox, inbox: inbox, captain_assistant: assistant, settings: { 'handoff_team_id' => team.id })
+        create(:inbox_member, inbox: inbox, user: team_agent)
+        create(:team_member, team: team, user: team_agent)
+        allow(OnlineStatusTracker).to receive(:get_available_users)
+          .and_return({ agent.id.to_s => 'online', team_agent.id.to_s => 'online' })
+      end
+
+      it 'tags the conversation with that team' do
+        conversation.bot_handoff!
+
+        expect(conversation.reload.team).to eq(team)
+      end
+
+      it 'assigns only among that team (legacy assignment path)' do
+        account.disable_features('assignment_v2')
+
+        conversation.bot_handoff!
+
+        expect(conversation.reload.assignee).to eq(team_agent)
+      end
+
+      it 'never overwrites a team an agent already chose' do
+        other_team = create(:team, account: account)
+        conversation.update!(team: other_team)
+
+        conversation.bot_handoff!
+
+        expect(conversation.reload.team).to eq(other_team)
+      end
+    end
+
     it 'stamps the marker on the pending → open path too' do
       pending = create(:conversation, account: account, inbox: inbox, status: :pending)
 

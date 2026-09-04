@@ -22,7 +22,28 @@ class CaptainInbox < ApplicationRecord
   validates :inbox_id, uniqueness: true
 
   store_accessor :settings, :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
-                 :human_takeover_mode, :human_takeover_window_minutes, :service_contact_numbers
+                 :human_takeover_mode, :human_takeover_window_minutes, :service_contact_numbers,
+                 :handoff_team_id
+
+  # Cascada: override > assistant > nil (sin equipo: auto-asignación del inbox).
+  # Un override explícito a 0 significa "sin equipo" aunque el asistente
+  # tenga uno; la clave ausente significa heredar.
+  def handoff_team_id_value
+    if settings.key?('handoff_team_id') && !settings['handoff_team_id'].nil?
+      value = settings['handoff_team_id'].to_i
+      return value.positive? ? value : nil
+    end
+
+    value = captain_assistant.config['handoff_team_id'].to_i
+    value.positive? ? value : nil
+  end
+
+  def handoff_team
+    team_id = handoff_team_id_value
+    return nil if team_id.nil?
+
+    captain_assistant.account.teams.find_by(id: team_id)
+  end
 
   # Cascade: override > default. No assistant-level fallback — this is a
   # channel/provider concern, not an assistant behavior setting. The default

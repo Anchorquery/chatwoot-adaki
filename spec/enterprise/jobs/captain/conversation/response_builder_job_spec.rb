@@ -555,6 +555,18 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
           public_message = conversation.messages.outgoing.where(private: false).last
           expect(public_message.content).to eq(I18n.t('conversations.captain.handoff'))
         end
+
+        it 'writes the note after the handoff so it can @mention the handoff team (with the cause) for notification' do
+          team = create(:team, account: account, name: 'Soporte')
+          create(:captain_inbox, inbox: inbox, captain_assistant: assistant, settings: { 'handoff_team_id' => team.id })
+
+          described_class.perform_now(conversation, assistant)
+
+          note = conversation.reload.messages.where(private: true).last
+          expect(note.content).to start_with("[@#{team.name}](mention://team/#{team.id}/#{team.name})")
+          expect(note.content).to include('Incorrect API key provided')
+          expect(conversation.team).to eq(team)
+        end
       end
 
       context 'when the Adaki monthly limit is exceeded' do

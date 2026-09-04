@@ -20,6 +20,7 @@ module Enterprise::Conversation
   def bot_handoff!
     already_open = open?
     self.additional_attributes = (additional_attributes || {}).merge(CAPTAIN_HANDOFF_AT_KEY => Time.current.iso8601)
+    apply_captain_handoff_team!
     super
     save! if changed?
     run_handoff_auto_assignment if already_open
@@ -65,6 +66,20 @@ module Enterprise::Conversation
   end
 
   private
+
+  # Team configured for Captain handoffs on this inbox (CaptainInbox override
+  # > assistant, see CaptainInbox#handoff_team). Only fills an empty team so a
+  # team an agent already chose is never overwritten. Set before the status
+  # flip so both assignment paths — AutoAssignmentHandler on pending → open
+  # and run_handoff_auto_assignment below — draw from that team's members
+  # instead of the whole inbox.
+  def apply_captain_handoff_team!
+    return if team_id.present?
+    return unless inbox.respond_to?(:captain_inbox)
+
+    handoff_team = inbox.captain_inbox&.handoff_team
+    self.team_id = handoff_team.id if handoff_team
+  end
 
   # Mirrors AutoAssignmentHandler#run_auto_assignment, which is gated on a
   # status change to open and therefore never fires for a conversation that

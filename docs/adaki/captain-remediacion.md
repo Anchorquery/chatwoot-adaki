@@ -856,3 +856,25 @@ Decisión pendiente del operador: la asignación tras handoff usa la
 auto-asignación del inbox (round robin de miembros online, o `AssignmentJob` con
 `assignment_v2`). Si se prefiere asignar siempre al equipo `soporte` (team 1),
 es un `team_id` en `run_handoff_auto_assignment`.
+
+### 7.1 Seguimiento (misma fecha): equipo de handoff configurable y nota con @mención
+
+- **Equipo de handoff** (`handoff_team_id`): configurable en el asistente y
+  sobreescribible por bandeja (`captain_inboxes.settings`; `0` explícito =
+  sin equipo). `Enterprise::Conversation#bot_handoff!` etiqueta la
+  conversación con ese equipo si no tenía ninguno y la auto-asignación se
+  limita a sus miembros. Sin equipo: auto-asignación entre todos los miembros
+  del inbox (comportamiento anterior).
+- **Nota de fallo con @mención**: `FailureNotifier` corre ahora *después* de
+  `bot_handoff!` y menciona al asignado (o al equipo de handoff si la
+  asignación aún no ocurrió — con `assignment_v2` es un job asíncrono). La
+  mención genera notificación `conversation_mention` con el texto del error
+  (cuota agotada, credencial muerta). Formato: markup de Chatwoot
+  `[@Nombre](mention://user|team/ID/Nombre)`, procesado por
+  `Messages::MentionService`.
+- **Deploy**: Coolify solo hace `pull` de `ghcr.io/...:latest`; si se
+  despliega antes de que GitHub Actions termine la imagen (~4 min), se
+  redespliega la imagen anterior con el commit nuevo en la etiqueta. El
+  workflow `build-coolify-image.yml` tiene un paso que avisa a Coolify al
+  terminar, pero requiere los secrets `COOLIFY_WEBHOOK_URL` y `COOLIFY_TOKEN`
+  en GitHub (no configurados a 2026-09-04).

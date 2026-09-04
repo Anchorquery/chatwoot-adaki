@@ -114,7 +114,8 @@ class Api::V1::Accounts::Captain::AssistantsController < Api::V1::Accounts::Base
                                                     :instructions, :temperature, :autopilot_enabled, :group_trigger,
                                                     :whatsapp_number,
                                                     :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
-                                                    :human_takeover_mode, :human_takeover_window_minutes
+                                                    :human_takeover_mode, :human_takeover_window_minutes,
+                                                    :handoff_team_id
                                                   ])
 
     # Handle array parameters separately to allow partial updates

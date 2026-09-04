@@ -205,12 +205,14 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
         "[CAPTAIN][ResponseBuilderJob] V1 handoff requested for account=#{account.id} conversation=#{@conversation.display_id} " \
         "source=#{@response&.dig('action_source') || 'legacy'} reason=#{@response&.dig('action_reason')}"
       )
-      # See Captain::Conversation::FailureNotifier: only writes a note when the
-      # handoff was actually caused by a diagnosable infrastructure failure
-      # (dead credential, exhausted quota), not a legitimate escalation.
-      Captain::Conversation::FailureNotifier.new(conversation: @conversation, assistant: @assistant, response: @response).call
       create_handoff_message
       @conversation.bot_handoff!
+      # See Captain::Conversation::FailureNotifier: only writes a note when the
+      # handoff was actually caused by a diagnosable infrastructure failure
+      # (dead credential, exhausted quota), not a legitimate escalation. After
+      # bot_handoff! on purpose: the note @mentions whoever the handoff just
+      # assigned (or the handoff team), so they get notified with the cause.
+      Captain::Conversation::FailureNotifier.new(conversation: @conversation, assistant: @assistant, response: @response).call
       report_v1_handoff_not_executed if conversation_pending?
       send_out_of_office_message_if_applicable
     end

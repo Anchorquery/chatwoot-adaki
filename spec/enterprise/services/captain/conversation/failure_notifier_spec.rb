@@ -57,6 +57,53 @@ RSpec.describe Captain::Conversation::FailureNotifier do
       expect(conversation.messages.last.content).to include('ruby_llm_unauthorized_error')
     end
 
+    context 'when mentioning whoever should act on the failure' do
+      let(:response) { { 'failure_class' => 'configuration', 'error' => 'You exceeded your current quota' } }
+      let(:agent) { create(:user, account: account, name: 'Ana Pérez') }
+      let(:team) { create(:team, account: account, name: 'Soporte') }
+
+      it '@mentions the assignee when the handoff assigned someone' do
+        conversation.update!(assignee: agent)
+
+        described_class.new(conversation: conversation, assistant: assistant, response: response).call
+
+        note = conversation.messages.where(private: true).last
+        expect(note.content).to start_with("[@Ana Pérez](mention://user/#{agent.id}/Ana%20P%C3%A9rez)")
+        expect(note.content).to include('You exceeded your current quota')
+      end
+
+      it "@mentions the conversation's team when nobody is assigned yet" do
+        conversation.update!(team: team)
+
+        described_class.new(conversation: conversation, assistant: assistant, response: response).call
+
+        expect(conversation.messages.where(private: true).last.content).to start_with("[@#{team.name}](mention://team/#{team.id}/#{team.name})")
+      end
+
+      it "@mentions the inbox's configured Captain handoff team when the conversation has none" do
+        create(:captain_inbox, inbox: inbox, captain_assistant: assistant, settings: { 'handoff_team_id' => team.id })
+
+        described_class.new(conversation: conversation.reload, assistant: assistant, response: response).call
+
+        expect(conversation.messages.where(private: true).last.content).to start_with("[@#{team.name}](mention://team/#{team.id}/#{team.name})")
+      end
+
+      it 'prefers the assignee over the team' do
+        create(:team_member, team: team, user: agent)
+        conversation.update!(assignee: agent, team: team)
+
+        described_class.new(conversation: conversation, assistant: assistant, response: response).call
+
+        expect(conversation.messages.where(private: true).last.content).to start_with('[@Ana Pérez]')
+      end
+
+      it 'writes a plain note when there is nobody to mention' do
+        described_class.new(conversation: conversation, assistant: assistant, response: response).call
+
+        expect(conversation.messages.where(private: true).last.content).to start_with('[Captain] Handoff automático')
+      end
+    end
+
     it 'tolerates a nil response instead of raising' do
       expect do
         described_class.new(conversation: conversation, assistant: assistant, response: nil).call

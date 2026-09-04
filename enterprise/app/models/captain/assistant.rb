@@ -53,7 +53,8 @@ class Captain::Assistant < ApplicationRecord
   store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes,
                  :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number,
                  :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
-                 :human_takeover_mode, :human_takeover_window_minutes, :history_window_messages
+                 :human_takeover_mode, :human_takeover_window_minutes, :history_window_messages,
+                 :handoff_team_id
 
   validates :name, presence: true
   validates :description, presence: true
@@ -69,6 +70,17 @@ class Captain::Assistant < ApplicationRecord
 
   def autopilot_enabled?
     ActiveModel::Type::Boolean.new.cast(config['autopilot_enabled'])
+  end
+
+  # Equipo al que se enruta un handoff bot → humano (ver
+  # Enterprise::Conversation#bot_handoff!). Nil = sin equipo: auto-asignación
+  # entre todos los miembros del inbox. Un id que ya no existe en la cuenta
+  # cuenta como nil, no como error.
+  def handoff_team
+    team_id = config['handoff_team_id'].to_i
+    return nil unless team_id.positive?
+
+    account.teams.find_by(id: team_id)
   end
 
   # Default true: bot retoma conversación aunque exista assignee o respuesta humana previa.

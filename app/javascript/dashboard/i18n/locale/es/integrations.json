@@ -61,8 +61,8 @@
           }
         },
         "NAME": {
-        "LABEL": "Nombre del webhook",
-        "PLACEHOLDER": "Introduce el nombre del webhook"
+          "LABEL": "Nombre del webhook",
+          "PLACEHOLDER": "Introduce el nombre del webhook"
         },
         "END_POINT": {
           "LABEL": "URL de Webhook",
@@ -526,6 +526,11 @@
           "LABEL": "Ventana de inactividad (horas)",
           "DESCRIPTION": "Cuántas horas debe estar inactiva la conversación antes de aplicar transferencia/resolución automática. Por defecto: 24."
         },
+        "HANDOFF_TEAM": {
+          "LABEL": "Equipo de transferencia",
+          "DESCRIPTION": "Cuando el asistente transfiere una conversación a un humano, la etiqueta con este equipo y la auto-asigna entre sus miembros. Vacío = auto-asignar entre todos los miembros de la bandeja.",
+          "NONE": "Sin equipo (toda la bandeja)"
+        },
         "DESCRIPTION": {
           "LABEL": "Descripción",
           "PLACEHOLDER": "Introduce la descripción del asistente",
@@ -601,7 +606,7 @@
           "DESCRIPTION": "Añade más control al asistente. (Una vista más visual, tipo historia: filtros de consulta → escenarios → salida) Invita a los usuarios a utilizarlas.",
           "OPTIONS": {
             "GUARDRAILS": {
-            "TITLE": "Límites de seguridad",
+              "TITLE": "Límites de seguridad",
               "DESCRIPTION": "Mantiene todo bajo control: solo los tipos de preguntas que quieres que responda tu asistente, sin temas fuera de alcance ni fuera de contexto."
             },
             "RESPONSE_GUIDELINES": {
@@ -626,9 +631,9 @@
           }
         },
         "DELETE": {
-        "TITLE": "Eliminar asistente",
+          "TITLE": "Eliminar asistente",
           "DESCRIPTION": "Esta acción es permanente. Eliminar este asistente lo quitará de todas las bandejas conectadas y borrará de forma definitiva todo el conocimiento generado.",
-        "BUTTON_TEXT": "Eliminar {assistantName}"
+          "BUTTON_TEXT": "Eliminar {assistantName}"
         }
       },
       "OPTIONS": {
@@ -905,8 +910,8 @@
         "DEFAULT": "Error de sincronización"
       },
       "RELATED_RESPONSES": {
-      "TITLE": "Preguntas frecuentes relacionadas",
-      "DESCRIPTION": "Estas preguntas frecuentes se generan directamente a partir del documento."
+        "TITLE": "Preguntas frecuentes relacionadas",
+        "DESCRIPTION": "Estas preguntas frecuentes se generan directamente a partir del documento."
       },
       "FORM_DESCRIPTION": "Introduce la URL del documento para añadirlo como fuente de conocimiento y elige el asistente al que quieres asociarlo.",
       "CREATE": {
@@ -954,7 +959,7 @@
         }
       },
       "DELETE": {
-          "TITLE": "¿Seguro que quieres eliminar el documento?",
+        "TITLE": "¿Seguro que quieres eliminar el documento?",
         "DESCRIPTION": "Esta acción es permanente. Eliminar este documento borrará de forma definitiva todo el conocimiento generado.",
         "CONFIRM": "Sí, eliminar",
         "SUCCESS_MESSAGE": "El documento se ha eliminado correctamente",

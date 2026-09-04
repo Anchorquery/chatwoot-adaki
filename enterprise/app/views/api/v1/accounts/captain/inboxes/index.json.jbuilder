@@ -10,6 +10,7 @@ json.payload do
         json.auto_resolve_hours ci.auto_resolve_hours_value
         json.human_takeover_mode ci.human_takeover_mode_value
         json.human_takeover_window_minutes ci.human_takeover_window_minutes_value
+        json.handoff_team_id ci.handoff_team_id_value
       end
     end
   end

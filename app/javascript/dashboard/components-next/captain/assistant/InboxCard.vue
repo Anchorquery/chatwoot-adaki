@@ -91,8 +91,16 @@ const localAutoHandoff = ref(null);
 const localHours = ref(null);
 const localTakeoverMode = ref(null);
 const localTakeoverWindow = ref(null);
+// null = inherit from the assistant, 0 = explicitly no team, N = team id
+const localHandoffTeam = ref(null);
 
 const HUMAN_TAKEOVER_MODES = ['always', 'after_window', 'never'];
+
+const teams = useMapGetter('teams/getTeams');
+const teamName = teamId => {
+  const team = teams.value.find(item => item.id === Number(teamId));
+  return team ? team.name : t('CAPTAIN.ASSISTANTS.FORM.HANDOFF_TEAM.NONE');
+};
 
 const syncLocal = () => {
   localContinue.value =
@@ -116,6 +124,11 @@ const syncLocal = () => {
     settings.value.human_takeover_window_minutes === undefined
       ? null
       : Number(settings.value.human_takeover_window_minutes);
+  localHandoffTeam.value =
+    settings.value.handoff_team_id === undefined ||
+    settings.value.handoff_team_id === null
+      ? null
+      : Number(settings.value.handoff_team_id);
 };
 watch(() => props.inbox, syncLocal, { immediate: true, deep: true });
 
@@ -468,6 +481,52 @@ const removeAudience = audienceId => {
                 : clearOverride('human_takeover_window_minutes')
             "
           />
+        </div>
+      </div>
+
+      <!-- handoff_team_id -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-n-slate-12">
+            {{ t('CAPTAIN.ASSISTANTS.FORM.HANDOFF_TEAM.LABEL') }}
+          </p>
+          <p class="text-xs text-n-slate-11">
+            {{
+              t('CAPTAIN.INBOXES.OVERRIDES.EFFECTIVE', {
+                value: teamName(effective.handoff_team_id),
+              })
+            }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select
+            :value="
+              localHandoffTeam === null ? 'inherit' : String(localHandoffTeam)
+            "
+            :disabled="saving"
+            class="text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            @change="
+              $event.target.value === 'inherit'
+                ? clearOverride('handoff_team_id')
+                : saveOverride({
+                    handoff_team_id: Number($event.target.value),
+                  })
+            "
+          >
+            <option value="inherit">
+              {{ t('CAPTAIN.INBOXES.OVERRIDES.INHERIT') }}
+            </option>
+            <option value="0">
+              {{ t('CAPTAIN.ASSISTANTS.FORM.HANDOFF_TEAM.NONE') }}
+            </option>
+            <option
+              v-for="team in teams"
+              :key="team.id"
+              :value="String(team.id)"
+            >
+              {{ team.name }}
+            </option>
+          </select>
         </div>
       </div>
 

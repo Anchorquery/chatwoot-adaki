@@ -526,6 +526,11 @@
           "LABEL": "Inactivity window (hours)",
           "DESCRIPTION": "How many hours a conversation must be inactive before auto handoff / auto resolution kicks in. Default: 24."
         },
+        "HANDOFF_TEAM": {
+          "LABEL": "Handoff team",
+          "DESCRIPTION": "When the assistant hands a conversation to a human, tag it with this team and auto-assign among its members. Leave empty to auto-assign among all inbox members.",
+          "NONE": "No team (whole inbox)"
+        },
         "DESCRIPTION": {
           "LABEL": "Description",
           "PLACEHOLDER": "Enter assistant description",
