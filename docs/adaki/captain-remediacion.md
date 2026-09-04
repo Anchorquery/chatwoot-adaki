@@ -1052,3 +1052,32 @@ ante bloqueos, nota privada como resumen para el humano, nota de contacto solo
 para datos duraderos). `AgentRunnerService::HOUSEKEEPING_TOOL_NAMES` ya las
 trataba como acciones de fondo, así que no cuentan como "trabajo" para el
 detector de respuestas-promesa.
+
+### 7.7 Handoff sin nadie disponible: aviso a todo el equipo
+
+La auto-asignación tras un handoff solo reparte entre agentes **online y con
+capacidad**. Fuera de horario, o con el equipo ocupado, la conversación queda
+`open` sin assignee, y como por defecto los agentes solo tienen activado el
+email de "conversación asignada", nadie recibía nada: el cliente esperaba a un
+humano que no sabía que lo esperaban.
+
+`Enterprise::Conversation#bot_handoff!` encola ahora
+`Captain::Conversation::UnattendedHandoffJob` con una gracia de
+`UNATTENDED_HANDOFF_GRACE` (1 minuto, suficiente para el `AssignmentJob` de
+assignment_v2 y para que alguien que esté mirando la bandeja la coja). Si al
+cumplirse la conversación sigue abierta, sin assignee y sin respuesta humana:
+
+1. Deja una **nota privada que @menciona al equipo de handoff** (o a cada
+   colaborador de la bandeja si no hay equipo). La mención coloca la
+   conversación en la carpeta "Menciones" de cada uno, los añade como
+   participantes y dispara la notificación in-app.
+2. Envía un **email directo a cada miembro** (`captain_unattended_handoff` en
+   el mailer de notificaciones, plantilla y asunto en el idioma de la cuenta),
+   a propósito fuera de los ajustes personales de notificación, respetando
+   solo la confirmación del email y el rate limit de la cuenta.
+
+Idempotente por handoff (`captain_unattended_notified_at`), y un check
+obsoleto nunca anuncia un handoff que otro posterior sustituyó. No decide
+quién atiende: eso sigue siendo del equipo; solo garantiza que todos se
+enteran. Siguiente paso natural si hiciera falta: repetir el aviso (o escalar
+a administradores) si tras N minutos sigue sin dueño.

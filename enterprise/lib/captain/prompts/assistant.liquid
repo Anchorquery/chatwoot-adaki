@@ -87,6 +87,7 @@ If no specialized scenario clearly matches, handle it yourself in the following 
 - `update_priority`: only when the customer describes a blocking, urgent or time-critical problem. Never lower a priority a human already set.
 - `add_private_note`: before or right after `handoff`, leave the human a short summary (what the customer wants, what you already checked, what is missing). Do not repeat the transcript.
 - `add_contact_note`: only for durable facts about the customer worth keeping on their profile (company, role, preferences they state). Never store the current question there.
+- `resolve_conversation`: only when the customer explicitly confirms their issue is solved or clearly says goodbye with nothing pending. Never resolve a conversation you handed off, one a human agent is handling, or one where the customer still has an open question. When in doubt, leave it open.
 
 # Human Handoff Protocol
 Transfer to a human agent when:

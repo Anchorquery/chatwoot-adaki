@@ -9,6 +9,13 @@ module Enterprise::Conversation
   CAPTAIN_HANDOFF_AT_KEY = 'captain_handoff_at'.freeze
   CAPTAIN_TAKEOVER_AT_KEY = 'captain_takeover_at'.freeze
 
+  # How long a handoff may stay without an owner before
+  # Captain::Conversation::UnattendedHandoffJob alerts the whole handoff team
+  # (or every inbox collaborator). Long enough for assignment_v2's background
+  # AssignmentJob to run and for an agent watching the inbox to grab it; short
+  # enough that a customer nobody was online for is not left hanging.
+  UNATTENDED_HANDOFF_GRACE = 1.minute
+
   # Adaki lets Captain answer `open` conversations too (see
   # Captain::HumanTakeoverEvaluator), so the FOSS bot_handoff! — which only
   # flips pending → open — is a no-op for a conversation that is already
@@ -29,6 +36,7 @@ module Enterprise::Conversation
     super
     save! if changed?
     run_handoff_auto_assignment if already_open
+    schedule_unattended_handoff_check
   end
 
   def captain_handoff_at
@@ -120,6 +128,19 @@ module Enterprise::Conversation
       allowed_agent_ids = team_id.present? ? team_member_ids_with_capacity : inbox.member_ids_with_assignment_capacity
       AutoAssignment::AgentAssignmentService.new(conversation: self, allowed_agent_ids: allowed_agent_ids).perform
     end
+  end
+
+  # Auto-assignment only considers agents who are online with free capacity,
+  # so a handoff outside working hours (or with a team that is all busy) ends
+  # with no assignee and, by default, no email to anyone. The job re-checks
+  # after the grace period and alerts the team if the conversation still has
+  # no owner. It carries this handoff's timestamp so a stale check never
+  # announces a handoff that a newer one superseded.
+  def schedule_unattended_handoff_check
+    handoff_at = additional_attributes&.dig(CAPTAIN_HANDOFF_AT_KEY)
+    return if handoff_at.blank?
+
+    Captain::Conversation::UnattendedHandoffJob.set(wait: UNATTENDED_HANDOFF_GRACE).perform_later(self, handoff_at)
   end
 
   def dispatch_captain_inference_event(event_name)
