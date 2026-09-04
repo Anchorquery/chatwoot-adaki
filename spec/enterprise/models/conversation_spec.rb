@@ -65,6 +65,15 @@ RSpec.describe Conversation, type: :model do
       expect(conversation.reload.assignee).to eq(other)
     end
 
+    it 'schedules the unattended-handoff check for this handoff after the grace period' do
+      freeze_time do
+        expect { conversation.bot_handoff! }
+          .to have_enqueued_job(Captain::Conversation::UnattendedHandoffJob)
+          .with(conversation, Time.current.iso8601)
+          .at(described_class::UNATTENDED_HANDOFF_GRACE.from_now)
+      end
+    end
+
     context 'with a Captain handoff team configured for the inbox' do
       let(:assistant) { create(:captain_assistant, account: account) }
       let(:team) { create(:team, account: account) }

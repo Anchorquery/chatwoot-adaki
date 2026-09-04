@@ -5,14 +5,14 @@ RSpec.describe Captain::Tools::RegistryService do
   let(:assistant) { create(:captain_assistant, account: account) }
 
   describe '#assistant_tools' do
-    it 'gives the orchestrator the lookup, handoff and housekeeping tools (resolve stays scenario-only)' do
+    it 'gives the orchestrator every built-in tool: lookup, handoff and housekeeping' do
       names = described_class.new(account: account, assistant: assistant).assistant_tools.map(&:name)
 
       expect(names).to contain_exactly(
         'faq_lookup', 'search_documentation', 'handoff',
-        'add_label_to_conversation', 'update_priority', 'add_private_note', 'add_contact_note'
+        'add_label_to_conversation', 'update_priority', 'add_private_note', 'add_contact_note',
+        'resolve_conversation'
       )
-      expect(names).not_to include('resolve_conversation')
     end
   end
 

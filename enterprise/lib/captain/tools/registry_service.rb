@@ -46,10 +46,10 @@ class Captain::Tools::RegistryService
   # Tools the orchestrator assistant itself can call. Until 2026-09-04 only
   # the first three were here and the housekeeping tools existed for
   # scenarios only, so a conversation the orchestrator handled directly could
-  # never be labelled, prioritised or annotated for the human who picks it
-  # up. `resolve_conversation` stays scenario-only on purpose: a premature
-  # close by the orchestrator is the same class of failure as an unsolicited
-  # handoff (§7), and auto-resolve already has its own timed job.
+  # never be labelled, prioritised, annotated or closed. `resolve_conversation`
+  # is gated by the prompt (explicit customer confirmation only, never after a
+  # handoff) and by the account-level auto-resolve switch the tool already
+  # honours (Account#captain_auto_resolve_disabled?).
   def built_in_tool_instances
     [
       Captain::Tools::FaqLookupTool.new(assistant),
@@ -58,7 +58,8 @@ class Captain::Tools::RegistryService
       Captain::Tools::AddLabelToConversationTool.new(assistant),
       Captain::Tools::UpdatePriorityTool.new(assistant),
       Captain::Tools::AddPrivateNoteTool.new(assistant),
-      Captain::Tools::AddContactNoteTool.new(assistant)
+      Captain::Tools::AddContactNoteTool.new(assistant),
+      Captain::Tools::ResolveConversationTool.new(assistant)
     ]
   end
 

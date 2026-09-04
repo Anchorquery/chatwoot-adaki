@@ -234,6 +234,13 @@ es:
       handoff: 'Te estamos transfiriendo a otro agente para darte más ayuda.'
       handoff_announcement_leak_fallback: 'Sigo revisando tu consulta, dame un momento por favor.'
       empty_reply_fallback: 'Perdona, no he entendido bien tu mensaje. ¿Puedes escribirlo de otra forma?'
+      unattended_handoff_note: '[Captain] Nadie ha recogido esta conversación desde que la transferí a un humano (no había ningún agente disponible). %{mentions} ¿puede alguien atenderla?'
+      unattended_handoff_email:
+        subject: '%{name}, la conversación [ID - %{id}] de %{inbox} está esperando a un humano'
+        intro: 'Captain transfirió la conversación #%{id} de %{inbox} a un agente humano, pero no había nadie disponible para atenderla.'
+        body: '%{contact} está esperando. Abre la conversación y asígnatela.'
+        customer: 'El cliente'
+        cta: 'Abrir la conversación'
     messages:
       instagram_story_content: '%{story_sender} te mencionó en la historia: '
       instagram_deleted_story_content: Esta historia ya no está disponible.
