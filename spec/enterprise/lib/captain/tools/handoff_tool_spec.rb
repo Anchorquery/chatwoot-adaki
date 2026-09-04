@@ -28,6 +28,21 @@ RSpec.describe Captain::Tools::HandoffTool, type: :model do
 
   describe '#perform' do
     context 'when conversation exists' do
+      context 'when the latest customer message is only a greeting' do
+        before do
+          create(:message, conversation: conversation, message_type: :incoming, sender: contact, account: account, content: 'Hola')
+        end
+
+        it 'does not hand off or create an internal note' do
+          expect(conversation).not_to receive(:bot_handoff!)
+
+          expect do
+            result = tool.perform(tool_context, reason: 'Customer needs help')
+            expect(result).to include('Handoff skipped')
+          end.not_to change(Message, :count)
+        end
+      end
+
       context 'with reason provided' do
         it 'creates a private note with reason and hands off conversation' do
           reason = 'Customer needs specialized support'

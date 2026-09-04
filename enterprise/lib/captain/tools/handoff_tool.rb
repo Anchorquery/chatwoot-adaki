@@ -1,10 +1,20 @@
 class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
+  GREETING_ONLY_PATTERN = /
+    \A(?:hola|hello|hi|hey|buenas?|buenos\s+dias|buenas\s+tardes|buenas\s+noches)
+    (?:\s+(?:hola|hello|hi|hey|buenas?|buenos\s+dias|buenas\s+tardes|buenas\s+noches))*\z
+  /ix
+
   description 'Hand off the conversation to a human agent when unable to assist further'
   param :reason, type: 'string', desc: 'The reason why handoff is needed (optional)', required: false
 
   def perform(tool_context, reason: nil)
     conversation = find_conversation(tool_context.state)
     return 'Conversation not found' unless conversation
+
+    if greeting_only?(conversation)
+      log_tool_usage('handoff_rejected', { conversation_id: conversation.id, reason: 'greeting_only' })
+      return 'Handoff skipped: the customer only greeted you. Greet them and ask how you can help.'
+    end
 
     # Log the handoff with reason
     log_tool_usage('tool_handoff', {
@@ -22,6 +32,12 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
   end
 
   private
+
+  def greeting_only?(conversation)
+    text = conversation.messages.incoming.order(created_at: :desc).pick(:content).to_s
+    normalized = I18n.transliterate(text).downcase.gsub(/[^\p{L}\p{N}\s]/, ' ').squeeze(' ').strip
+    normalized.match?(GREETING_ONLY_PATTERN)
+  end
 
   def trigger_handoff(conversation, reason)
     # post the reason as a private note

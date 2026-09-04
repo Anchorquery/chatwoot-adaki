@@ -44,7 +44,11 @@ class Captain::Tools::RegistryService
   end
 
   def built_in_tool_instances
-    [Captain::Tools::FaqLookupTool.new(assistant), Captain::Tools::HandoffTool.new(assistant)]
+    [
+      Captain::Tools::FaqLookupTool.new(assistant),
+      Captain::Tools::SearchDocumentationTool.new(assistant),
+      Captain::Tools::HandoffTool.new(assistant)
+    ]
   end
 
   def custom_tool_instances

@@ -263,6 +263,7 @@ class Captain::Assistant::AgentRunnerService
     response['agent_name'] = result.context&.dig(:current_agent)
     response['handoff_tool_called'] = result.context&.dig(:captain_v2_handoff_tool_called) || false
     substitute_empty_reply!(response)
+    suppress_greeting_handoff!(response)
     suppress_handoff_announcement_leak!(response)
     response
   end
@@ -309,6 +310,11 @@ class Captain::Assistant::AgentRunnerService
     hablar[áa]s\s+con\s+(un|otro)
   /ix
 
+  GREETING_ONLY_PATTERN = /
+    \A(?:hola|hello|hi|hey|buenas?|buenos\s+dias|buenas\s+tardes|buenas\s+noches)
+    (?:\s+(?:hola|hello|hi|hey|buenas?|buenos\s+dias|buenas\s+tardes|buenas\s+noches))*\z
+  /ix
+
   def suppress_handoff_announcement_leak!(response)
     return if response['handoff_tool_called']
 
@@ -326,6 +332,8 @@ class Captain::Assistant::AgentRunnerService
   def llm_error_response(error)
     Rails.logger.error "[Captain V2] LLM error: #{error.class}: #{error.message}"
 
+    failure_class = Captain::FailurePolicy.classify(error).to_s
+
     reasoning = if error.is_a?(RubyLLM::ConfigurationError)
                   'El proveedor de IA de esta cuenta no está configurado correctamente ' \
                     '(falta la API key o la credencial del proveedor). Revisa los modelos/credenciales de Captain. ' \
@@ -335,26 +343,64 @@ class Captain::Assistant::AgentRunnerService
                 end
 
     {
-      'response' => 'conversation_handoff',
+      # Only a known, permanent configuration/budget/limit failure warrants a
+      # human handoff. Unknown tool/provider errors must stay a normal Captain
+      # reply; otherwise a broken tool turns an innocuous customer message
+      # into an unsolicited transfer (the production "Hola" symptom).
+      'response' => handoff_for_failure?(failure_class) ? 'conversation_handoff' : provider_error_fallback,
       'reasoning' => reasoning,
       'error' => error.message,
       # See Captain::FailurePolicy — lets ResponseBuilderJob tell a dead
       # credential apart from a transient provider hiccup (which should be
       # retried, not handed off) even though the exception object itself
       # never reaches the job in the V2 path.
-      'failure_class' => Captain::FailurePolicy.classify(error).to_s,
+      'failure_class' => failure_class,
       'handoff_tool_called' => @handoff_tool_called
     }
   end
 
+  # A model can emit the legacy handoff token directly instead of calling the
+  # tool. A greeting alone is never evidence for escalation, so neutralize
+  # that token before ResponseBuilderJob can open the conversation.
+  def suppress_greeting_handoff!(response)
+    return if response['handoff_tool_called']
+    return unless response['response'].to_s == 'conversation_handoff' || response['action'] == 'handoff'
+    return unless greeting_only_message?
+
+    response.delete('action')
+    response['response'] = I18n.t('conversations.captain.greeting_fallback', default: '¡Hola! ¿En qué puedo ayudarte?')
+    response['reasoning'] = 'Suppressed an unsolicited handoff for a greeting-only message'
+  end
+
   def error_response(error)
+    failure_class = Captain::FailurePolicy.classify(error).to_s
+
     {
-      'response' => 'conversation_handoff',
+      'response' => handoff_for_failure?(failure_class) ? 'conversation_handoff' : provider_error_fallback,
       'reasoning' => "Error occurred: #{error.message}",
       'error' => error.message,
-      'failure_class' => Captain::FailurePolicy.classify(error).to_s,
+      'failure_class' => failure_class,
       'handoff_tool_called' => @handoff_tool_called
     }
+  end
+
+  def handoff_for_failure?(failure_class)
+    return true if @handoff_tool_called
+    return false if greeting_only_message?
+
+    %w[configuration budget limit_adaki].include?(failure_class)
+  end
+
+  def provider_error_fallback
+    I18n.t('conversations.captain.handoff_announcement_leak_fallback')
+  end
+
+  def greeting_only_message?
+    return false unless @conversation
+
+    text = @conversation.messages.incoming.order(created_at: :desc).pick(:content).to_s
+    normalized = I18n.transliterate(text).downcase.gsub(/[^\p{L}\p{N}\s]/, ' ').squeeze(' ').strip
+    normalized.match?(GREETING_ONLY_PATTERN)
   end
 
   def build_state
