@@ -86,8 +86,13 @@ module Platform::Models
       { credential: model.credential, model_slug: model.slug, source: :any_enabled }
     end
 
+    # Prefers a credential whose provider is wired for per-credential routing;
+    # otherwise keeps the historical behavior and hands back the first active
+    # credential, which Llm::Config routes through the OpenAI-compatible
+    # client (custom api_base). Returning nil here would silently push a
+    # legacy account onto the shared global config instead.
     def resolve_fallback
-      credential = active_credentials.first
+      credential = active_credentials.first || @account.platform_credentials.active.first
       return nil unless credential
 
       { credential: credential, model_slug: fallback_slug_for(credential), source: :fallback }

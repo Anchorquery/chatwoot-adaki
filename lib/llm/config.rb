@@ -5,6 +5,17 @@ require 'digest'
 module Llm::Config
   DEFAULT_MODEL = 'gpt-4.1-mini'.freeze
 
+  # Providers fully wired for per-credential routing. Add a provider here
+  # once its RubyLLM setters are mapped in #apply_provider_credential.
+  #
+  # Must live at module level (NOT inside `class << self` below): a constant
+  # defined inside `class << self` belongs to the singleton class and is
+  # invisible as `Llm::Config::SUPPORTED_RUNTIME_PROVIDERS`. That exact
+  # lookup from Platform::Models::Resolver raised NameError on every Captain
+  # V2 run whose resolution reached the fallback path (2026-09-04, account 3:
+  # every customer message became an instant handoff without an LLM call).
+  SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini deepseek].freeze
+
   # InstallationConfig name -> RubyLLM config setter mapping for every
   # provider. Add a row here + a matching entry in installation_config.yml
   # to expose a new provider in the Super Admin UI.
@@ -51,10 +62,6 @@ module Llm::Config
     def reset!
       @configured_fingerprint = nil
     end
-
-    # Providers fully wired for per-credential routing. Add a provider here
-    # once its RubyLLM setters are mapped in #apply_provider_credential.
-    SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini deepseek].freeze
 
     # Whether an account with no Platform::Credential of its own may
     # silently fall back to the shared global RubyLLM config (built from

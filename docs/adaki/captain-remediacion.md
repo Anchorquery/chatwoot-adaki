@@ -954,3 +954,42 @@ Es la misma pregunta que ya respondía la ventana para las respuestas humanas
 —cuánto esperamos a que un humano se haga cargo— así que no añade un ajuste
 nuevo. La asignación, la etiqueta de equipo y la notificación del handoff
 siguen ocurriendo igual en los tres modos.
+
+### 7.4 Todo mensaje terminaba en handoff: `NameError` en el resolver de modelos
+
+Tras el commit "route v2 across supported llm providers" (71d63e5), cualquier
+mensaje entrante en la cuenta 3 recibía el mensaje de handoff del asistente
+**~300 ms** después de crearse (conv 30 / id 311, 07:03:08.85 → 07:03:09.17),
+sin ninguna llamada al proveedor de IA. El orden de eventos lo delataba: el
+mensaje de handoff se creó **antes** de la asignación y del cambio de estado,
+que es el orden de `process_v1_handoff` (ruta de error), no el de `HandoffTool`
+(donde `bot_handoff!` corre dentro del turno y el mensaje se crea después).
+
+Causa: `Platform::Models::Resolver#active_credentials` (nuevo en ese commit)
+leía `Llm::Config::SUPPORTED_RUNTIME_PROVIDERS`, pero la constante estaba
+definida **dentro del bloque `class << self`** de `Llm::Config`. En Ruby una
+constante así pertenece a la singleton class y `Llm::Config::X` lanza
+`NameError: uninitialized constant`. Se alcanzaba en cualquier resolución que
+pasara por `resolve_by_preferred_slug` (slug preferido sin fila habilitada) o
+por `resolve_fallback` (credencial sin modelos habilitados). El `rescue
+StandardError` de `AgentRunnerService#generate_response` lo convertía en
+`error_response` → `conversation_handoff` con `failure_class=unknown` → handoff
+V1 inmediato. Al ser `unknown`, `FailureNotifier` no dejaba nota privada y el
+circuit breaker no se enteraba: por eso "los logs no dicen nada" (la traza solo
+está en la cápsula `captain` de Sidekiq, como `[Captain V2] AgentRunnerService
+error: uninitialized constant …`).
+
+Fix:
+
+- `SUPPORTED_RUNTIME_PROVIDERS` pasa al nivel del módulo `Llm::Config`.
+- `Resolver#resolve_fallback` prefiere una credencial de proveedor soportado y,
+  si no hay ninguna, mantiene el comportamiento previo (primera credencial
+  activa, enrutada por el cliente compatible con OpenAI) en vez de devolver
+  `nil` y mandar a la cuenta al config global compartido sin avisar.
+- `FailureNotifier` deja nota privada también para `budget` y `unknown`: un
+  fallo del propio código de Captain nunca debe volver a ser indistinguible de
+  una escalada legítima. Solo `transient` queda fuera, porque el job lo
+  reintenta y nunca llega al notificador.
+- El spec del resolver ya cubría el fallback y habría fallado con el
+  `NameError`; se añaden casos para `preferred_slug` de catálogo y para
+  credenciales de proveedores sin adaptador.
