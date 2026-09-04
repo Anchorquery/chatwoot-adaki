@@ -26,6 +26,9 @@ module Llm::Thinking
   PRO_MINIMUM_BUDGET = 128
   FLASH_LOW_BUDGET = 512
 
+  # Thread-local kill switch, see .without_params.
+  SUPPRESS_KEY = :llm_thinking_params_suppressed
+
   module_function
 
   def normalize_level(level)
@@ -33,10 +36,31 @@ module Llm::Thinking
     LEVELS.include?(level) ? level : DEFAULT_LEVEL
   end
 
+  # Runs the block with every provider reasoning param disabled on this
+  # thread. Captain uses it to replay a turn after the provider rejected the
+  # params we guessed for a model this table does not know yet (2026-09-04,
+  # account 4: gpt-5.4-mini answered 400 "'reasoning_effort' does not support
+  # 'minimal'" and the customer got a handoff instead of an answer). Provider
+  # catalogues move faster than this mapping; a rejected knob must cost one
+  # retry, never the conversation.
+  def without_params
+    previous = Thread.current[SUPPRESS_KEY]
+    Thread.current[SUPPRESS_KEY] = true
+    yield
+  ensure
+    Thread.current[SUPPRESS_KEY] = previous
+  end
+
+  def suppressed?
+    Thread.current[SUPPRESS_KEY] == true
+  end
+
   # @return [Hash] provider params to merge into the chat payload; empty when
-  #   the level is 'dynamic' (send nothing, let the provider decide) or the
-  #   provider has no supported knob.
+  #   the level is 'dynamic' (send nothing, let the provider decide), the
+  #   provider has no supported knob, or .without_params is active.
   def params_for(provider:, model:, level:)
+    return {} if suppressed?
+
     level = normalize_level(level)
     return {} if level == DYNAMIC
 
@@ -81,18 +105,19 @@ module Llm::Thinking
   def openai_reasoning_params(model, level)
     return {} unless model.match?(/\A(?:gpt-5|o[134])/)
 
-    effort = if level == OFF
-               if model.start_with?('gpt-5.1', 'gpt-5.2')
-                 'none'
-               elsif model.start_with?('o')
-                 'low'
-               else
-                 'minimal'
-               end
-             else
-               'low'
-             end
-    { reasoning_effort: effort }
+    { reasoning_effort: level == OFF ? openai_off_effort(model) : 'low' }
+  end
+
+  # The gpt-5.0 family (gpt-5, gpt-5-mini, gpt-5-nano, gpt-5-chat…) accepts
+  # 'minimal' and rejects 'none'; gpt-5.1 and every later release (5.2, 5.4,
+  # …) accept 'none' and dropped 'minimal'. o-series models bottom out at
+  # 'low'. Matching "5.0 vs anything newer" instead of listing versions keeps
+  # the next release from turning into a 400 (see .without_params for the
+  # safety net when a model still surprises us).
+  def openai_off_effort(model)
+    return 'low' if model.start_with?('o')
+
+    model.match?(/\Agpt-5(?:-|\z)/) ? 'minimal' : 'none'
   end
 
   def deepseek_reasoning_params(model, level)

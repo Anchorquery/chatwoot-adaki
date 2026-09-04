@@ -58,6 +58,42 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
   describe '#generate_response' do
     subject(:service) { described_class.new(assistant: assistant, conversation: conversation) }
 
+    # gpt-5.4-mini, account 4, 2026-09-04: the provider answered 400 to the
+    # reasoning_effort we guessed and the customer got a handoff.
+    context 'when the provider rejects the reasoning params' do
+      let(:rejected_result) do
+        instance_double(
+          Agents::RunResult,
+          output: nil,
+          context: {},
+          error: RubyLLM::BadRequestError.new("Unsupported value: 'reasoning_effort' does not support 'minimal' with this model.")
+        )
+      end
+      let(:retry_result) { instance_double(Agents::RunResult, output: { 'response' => 'Tenemos manoplas de depilación.' }, context: {}) }
+
+      before { allow(mock_runner).to receive(:run).and_return(rejected_result, retry_result) }
+
+      it 'rebuilds the agents without the params and replays the turn instead of handing off' do
+        allow(Llm::Thinking).to receive(:without_params).and_call_original
+
+        response = service.generate_response(message_history: message_history)
+
+        expect(response['response']).to eq('Tenemos manoplas de depilación.')
+        expect(Llm::Thinking).to have_received(:without_params).once
+        expect(mock_runner).to have_received(:run).twice
+        expect(Agents::Runner).to have_received(:with_agents).twice
+      end
+
+      it 'gives up after one retry when the replay is rejected too' do
+        allow(mock_runner).to receive(:run).and_return(rejected_result, rejected_result)
+
+        response = service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).twice
+        expect(response['error']).to include('reasoning_effort')
+      end
+    end
+
     it 'builds agents and wires them together' do
       expect(assistant).to receive(:agent).and_return(mock_agent)
       scenarios_relation = instance_double(Captain::Scenario)

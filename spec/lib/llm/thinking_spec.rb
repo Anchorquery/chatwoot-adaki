@@ -57,6 +57,25 @@ RSpec.describe Llm::Thinking do
       expect(described_class.params_for(provider: 'openai', model: 'gpt-4.1', level: 'off')).to eq({})
     end
 
+    # OpenAI dropped 'minimal' after the 5.0 family; guessing it for gpt-5.4-mini
+    # was a 400 in production (account 4, 2026-09-04).
+    it "uses 'minimal' only for the gpt-5.0 family and 'none' for every later release" do
+      expect(described_class.params_for(provider: 'openai', model: 'gpt-5-mini', level: 'off')).to eq({ reasoning_effort: 'minimal' })
+      expect(described_class.params_for(provider: 'openai', model: 'gpt-5', level: 'off')).to eq({ reasoning_effort: 'minimal' })
+      expect(described_class.params_for(provider: 'openai', model: 'gpt-5.1', level: 'off')).to eq({ reasoning_effort: 'none' })
+      expect(described_class.params_for(provider: 'openai', model: 'gpt-5.4-mini', level: 'off')).to eq({ reasoning_effort: 'none' })
+      expect(described_class.params_for(provider: 'openai', model: 'o3-mini', level: 'off')).to eq({ reasoning_effort: 'low' })
+    end
+
+    it 'sends nothing at all while .without_params is active' do
+      described_class.without_params do
+        expect(described_class.params_for(provider: 'openai', model: 'gpt-5.4-mini', level: 'off')).to eq({})
+        expect(described_class.params_for(provider: 'gemini', model: 'gemini-2.5-flash', level: 'off')).to eq({})
+      end
+
+      expect(described_class.params_for(provider: 'gemini', model: 'gemini-2.5-flash', level: 'off')).not_to eq({})
+    end
+
     it 'disables thinking on DeepSeek V4 Flash when reasoning is off' do
       expect(described_class.params_for(provider: 'deepseek', model: 'deepseek-v4-flash', level: 'off')).to eq(
         { thinking: { type: 'disabled' } }
