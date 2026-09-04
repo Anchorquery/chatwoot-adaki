@@ -67,7 +67,8 @@ module Concerns::Agentable
   def agent_provider
     credential = agent_resolution&.dig(:credential)
     provider = credential.provider.to_s if credential.respond_to?(:provider)
-    provider.presence || Llm::Models.models.dig(agent_model, 'provider').presence || 'openai'
+    provider = provider.presence || Llm::Models.models.dig(agent_model, 'provider').presence || 'openai'
+    provider == 'google' ? 'gemini' : provider
   end
 
   def agent_resolution

@@ -42,15 +42,15 @@ module Llm::Thinking
   def params_for(provider:, model:, level:)
     level = normalize_level(level)
     return {} if level == DYNAMIC
-    return {} unless provider.to_s == 'gemini'
+    return {} unless %w[gemini google].include?(provider.to_s)
 
     { generationConfig: { thinkingConfig: gemini_thinking_config(model.to_s, level) } }
   end
 
-  # Gemini 3 replaced the numeric budget with thinkingLevel and has no "off"
-  # — 'low' is as quiet as it gets.
+  # Gemini 3 replaced the numeric budget with thinkingLevel. Flash supports a
+  # minimal level; Pro does not, so its minimum is low.
   def gemini_thinking_config(model, level)
-    return { thinkingLevel: 'low' } if model.start_with?('gemini-3')
+    return gemini_3_thinking_config(model, level) if model.start_with?('gemini-3')
 
     { thinkingBudget: gemini_budget(model, level) }
   end
@@ -60,5 +60,13 @@ module Llm::Thinking
     return 0 if level == OFF
 
     FLASH_LOW_BUDGET
+  end
+
+  def gemini_3_thinking_config(model, level)
+    # Gemini 3 Pro has no "minimal" level; low is its minimum. Flash models
+    # support minimal, which is the closest provider-supported equivalent to
+    # Captain's default "off" setting.
+    minimum = model.include?('pro') ? 'low' : 'minimal'
+    { thinkingLevel: level == OFF ? minimum : 'low' }
   end
 end

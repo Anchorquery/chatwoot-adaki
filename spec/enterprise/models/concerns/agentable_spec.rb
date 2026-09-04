@@ -27,6 +27,10 @@ RSpec.describe Concerns::Agentable do
       def prompt_context
         { base_key: 'base_value' }
       end
+
+      def reasoning_level_value
+        Llm::Thinking::OFF
+      end
     end
   end
 
@@ -54,7 +58,8 @@ RSpec.describe Concerns::Agentable do
         tools: [],
         model: 'gpt-4-turbo',
         temperature: 0.8,
-        response_schema: Captain::ResponseSchema
+        response_schema: Captain::ResponseSchema,
+        params: {}
       )
 
       dummy_instance.agent

@@ -216,6 +216,7 @@ watch(
     />
 
     <SettingsToggleSection
+      v-if="!isCaptainV2Enabled"
       v-model="state.continueAfterHumanTakeover"
       :header="t('CAPTAIN.ASSISTANTS.FORM.CONTINUE_AFTER_TAKEOVER.LABEL')"
       :description="

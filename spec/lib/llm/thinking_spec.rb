@@ -40,6 +40,12 @@ RSpec.describe Llm::Thinking do
     it 'uses thinkingLevel instead of a budget on Gemini 3' do
       params = described_class.params_for(provider: 'gemini', model: 'gemini-3-flash', level: 'off')
 
+      expect(params).to eq({ generationConfig: { thinkingConfig: { thinkingLevel: 'minimal' } } })
+    end
+
+    it 'uses low as the minimum for Gemini 3 Pro' do
+      params = described_class.params_for(provider: 'google', model: 'gemini-3-pro', level: 'off')
+
       expect(params).to eq({ generationConfig: { thinkingConfig: { thinkingLevel: 'low' } } })
     end
 

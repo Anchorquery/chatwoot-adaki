@@ -273,6 +273,30 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       end
     end
 
+    context 'when a scenario echoes the internal ai-agents handoff payload' do
+      let(:internal_result) do
+        instance_double(
+          Agents::RunResult,
+          output: { 'response' => "I'll transfer you to scenario_34_informacion_sobre_produc_agent who can better assist you with this." },
+          context: { current_agent: 'scenario_34_informacion_sobre_produc_agent' }
+        )
+      end
+      let(:retry_result) do
+        instance_double(Agents::RunResult, output: { 'response' => 'Tenemos soportes y tarjetas NFC.' }, context: {})
+      end
+
+      before { allow(mock_runner).to receive(:run).and_return(internal_result, retry_result) }
+
+      it 'retries with a completion nudge and never publishes the routing text' do
+        result = service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).with(
+          described_class::INTERNAL_HANDOFF_NUDGE, context: internal_result.context, max_turns: described_class::MAX_TURNS
+        )
+        expect(result['response']).to eq('Tenemos soportes y tarjetas NFC.')
+      end
+    end
+
     context 'when a content tool already ran during the turn' do
       let(:mock_result) do
         instance_double(
@@ -375,6 +399,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         'Se ha transferido la conversación al agente de productos.',
         'Te voy a pasar con un compañero de soporte.',
         'Voy a transferirte con soporte ahora mismo.',
+        "I'll transfer you to scenario_34_informacion_sobre_produc_agent who can better assist you with this.",
         'Le pongo en contacto con un agente.',
         'Hablarás con un agente en breve.',
         'Te comunico con una persona del equipo.',
@@ -835,6 +860,25 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       tool_complete_callback.call(Captain::Tools::HandoffTool.new(assistant).name, 'ok', context_wrapper)
 
       expect(context_wrapper.context[:captain_v2_handoff_tool_called]).to be true
+    end
+
+    it 'does not mark a failed handoff as executed' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      runner = instance_double(Agents::AgentRunner)
+      tool_complete_callback = nil
+
+      allow(ChatwootApp).to receive(:otel_enabled?).and_return(false)
+      allow(runner).to receive(:on_tool_complete) do |&block|
+        tool_complete_callback = block
+        runner
+      end
+
+      service.send(:add_usage_metadata_callback, runner)
+      context_wrapper = Struct.new(:context).new({})
+      tool_complete_callback.call(Captain::Tools::HandoffTool.new(assistant).name, 'Failed to handoff conversation', context_wrapper)
+
+      expect(context_wrapper.context[:captain_v2_handoff_tool_called]).to be_nil
+      expect(context_wrapper.context[:captain_v2_handoff_tool_failed]).to be true
     end
 
     it 'does not register OTEL run callback when OTEL is disabled' do

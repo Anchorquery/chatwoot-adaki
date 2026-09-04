@@ -49,15 +49,7 @@ class Captain::Tools::HandoffTool < Captain::Tools::BasePublicTool
     ::MessageTemplates::Template::OutOfOffice.perform_if_applicable(conversation)
   end
 
-  # TODO: Future enhancement - Add team assignment capability
-  # This tool could be enhanced to:
-  # 1. Accept team_id parameter for routing to specific teams
-  # 2. Set conversation priority based on handoff reason
-  # 3. Add metadata for intelligent agent assignment
-  # 4. Support escalation levels (L1 -> L2 -> L3)
-  #
-  # Example future signature:
-  # param :team_id, type: 'string', desc: 'ID of team to assign conversation to', required: false
-  # param :priority, type: 'string', desc: 'Priority level (low/medium/high/urgent)', required: false
-  # param :escalation_level, type: 'string', desc: 'Support level (L1/L2/L3)', required: false
+  # Team routing is applied by Conversation#bot_handoff! from the assistant or
+  # inbox Captain configuration. Keeping it out of the LLM tool parameters
+  # prevents the model from selecting arbitrary account teams.
 end

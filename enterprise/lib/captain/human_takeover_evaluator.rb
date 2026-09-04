@@ -118,7 +118,12 @@ module Captain
     end
 
     def last_human_response_older_than_window?
-      ts = last_human_response_at
+      # An assigned handoff can have no public human reply yet. Once the
+      # handoff grace window has expired, use the handoff timestamp as the
+      # takeover baseline so a failed/empty assignment cannot silence Captain
+      # forever. A plain pre-existing assignment without a handoff marker keeps
+      # the historical behavior: it remains human-owned until the agent replies.
+      ts = [last_human_response_at, captain_handoff_at].compact.max
       # ts blank here means an agent is assigned but hasn't replied yet (the
       # `assignee_present? || human_response_exists?` guard in #human_takeover?
       # already ruled out the "no signal at all" case). Treat that as freshly
@@ -126,6 +131,12 @@ module Captain
       return false if ts.blank?
 
       ts < window_minutes.minutes.ago
+    end
+
+    def captain_handoff_at
+      return unless conversation.respond_to?(:captain_handoff_at)
+
+      conversation.captain_handoff_at
     end
   end
 end

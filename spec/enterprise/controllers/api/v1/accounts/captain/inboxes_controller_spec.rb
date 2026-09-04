@@ -116,4 +116,17 @@ RSpec.describe 'Api::V1::Accounts::Captain::Inboxes', type: :request do
       end
     end
   end
+
+  describe 'PATCH /api/v1/accounts/:account/captain/assistants/:assistant_id/inboxes/:inbox_id' do
+    it 'removes previous overrides when the UI selects inherit' do
+      captain_inbox.update!(settings: { 'human_takeover_mode' => 'never', 'handoff_team_id' => 7 })
+
+      patch "/api/v1/accounts/#{account.id}/captain/assistants/#{assistant.id}/inboxes/#{inbox.id}",
+            params: { captain_inbox: { settings: { human_takeover_window_minutes: 30 } } },
+            headers: admin.create_new_auth_token
+
+      expect(response).to have_http_status(:ok)
+      expect(captain_inbox.reload.settings).to eq('human_takeover_window_minutes' => '30')
+    end
+  end
 end

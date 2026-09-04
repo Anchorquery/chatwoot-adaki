@@ -15,8 +15,10 @@ class Api::V1::Accounts::Captain::InboxesController < Api::V1::Accounts::BaseCon
 
   def update
     @captain_inbox = @assistant.captain_inboxes.find_by!(inbox_id: permitted_params[:inbox_id])
-    merged = (@captain_inbox.settings || {}).merge(settings_params.to_h.stringify_keys)
-    @captain_inbox.update!(settings: merged)
+    # The UI sends the complete override set. Replacing it is required for
+    # "inherit": deleting a key must remove the persisted override instead of
+    # being resurrected by a merge with the old JSON object.
+    @captain_inbox.update!(settings: settings_params.to_h.stringify_keys)
     render json: { settings: @captain_inbox.settings }
   end
 

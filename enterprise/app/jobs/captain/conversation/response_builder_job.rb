@@ -172,7 +172,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   end
 
   def v2_handoff_tool_fired?
-    @response['handoff_tool_called']
+    @response['handoff_tool_called'] == true
   end
 
   # A credential that just worked (or failed for a reason unrelated to the
@@ -322,7 +322,17 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     status = Conversation.uncached { Conversation.where(id: @conversation.id).pick(:status) }
     return false unless pending_status?(status) || open_status?(status)
 
-    !Captain::HumanTakeoverEvaluator.new(conversation: @conversation).human_takeover?
+    # The LLM may have changed status/assignment during this job (especially
+    # after a V2 handoff). Evaluate against a fresh row, not the object loaded
+    # before the provider call, otherwise a stale assignee or handoff marker can
+    # keep the bot silent on the next customer message.
+    fresh_conversation = Conversation.find(@conversation.id)
+    takeover = Captain::HumanTakeoverEvaluator.new(conversation: fresh_conversation).human_takeover?
+    Rails.logger.info(
+      "[CAPTAIN][decision] conversation=#{fresh_conversation.display_id} status=#{status} " \
+      "captain_v2=true human_takeover=#{takeover} assignee_id=#{fresh_conversation.assignee_id.inspect}"
+    )
+    !takeover
   end
 
   def pending_status?(status)

@@ -38,6 +38,14 @@ RSpec.describe Captain::HumanTakeoverEvaluator do
         expect(evaluator.human_takeover?).to be(true)
       end
 
+      it 'lets the bot resume after the window when an agent was assigned but never replied' do
+        conversation.update!(assignee: agent)
+
+        travel_to((assistant.human_takeover_window_minutes_value + 1).minutes.from_now) do
+          expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(false)
+        end
+      end
+
       # Otherwise a handoff nobody picked up (no agent online, or nobody
       # collaborating on the inbox) left the customer talking to no one:
       # neither the bot nor a human ever replied again.

@@ -47,6 +47,18 @@ class Captain::Assistant::AgentRunnerService
                       'actual text (call a tool first if you need information). Never mention this note or that ' \
                       'you were reminded — just give the answer directly.'.freeze
 
+  # ai-agents uses this text as an internal halt payload while switching from
+  # the assistant to a scenario. RubyLLM can leave that payload in the
+  # conversation history and the scenario may echo it as its final answer.
+  # It is a control message, never customer-facing content, so replay once
+  # with an explicit completion nudge before publishing anything.
+  INTERNAL_HANDOFF_NUDGE = "#{RETRY_NUDGE_MARKER} The previous message was an internal agent-routing " \
+                           'control message, not an answer. Continue as the selected scenario and answer the ' \
+                           'customer\'s last question directly. Never mention routing, scenarios, transfers, ' \
+                           'this note, or your previous message.'.freeze
+
+  INTERNAL_AGENT_HANDOFF_PATTERN = /\bI(?:'|’)ll\s+transfer\s+you\s+to\s+(?:scenario_[a-z0-9_]+|[a-z0-9_]+_agent)\b/i
+
   PROMISE_ONLY_MAX_LENGTH = 240
 
   # Was 100 (10x the gem's own default/recommendation). Verified against the
@@ -172,7 +184,14 @@ class Captain::Assistant::AgentRunnerService
     nudge = retry_nudge_for(result)
     return result unless nudge
 
-    Rails.logger.info "[Captain V2] #{nudge == EMPTY_REPLY_NUDGE ? 'Empty' : 'Promise-only'} reply detected, retrying once"
+    reason = if nudge == EMPTY_REPLY_NUDGE
+               'Empty'
+             elsif nudge == INTERNAL_HANDOFF_NUDGE
+               'Internal handoff payload'
+             else
+               'Promise-only'
+             end
+    Rails.logger.info "[Captain V2] #{reason} reply detected, retrying once"
 
     retry_result = RubyLLM.with_thread_context(resolved_llm_context) do
       runner.run(nudge, context: result.context, max_turns: MAX_TURNS)
@@ -185,7 +204,11 @@ class Captain::Assistant::AgentRunnerService
     return nil if result_errored?(result)
     return nil if result.context&.dig(:captain_v2_handoff_tool_called)
 
-    text = response_text(result.output)
+    retry_nudge_for_text(result, response_text(result.output))
+  end
+
+  def retry_nudge_for_text(result, text)
+    return INTERNAL_HANDOFF_NUDGE if internal_agent_handoff_leak?(text)
     return EMPTY_REPLY_NUDGE if text.blank?
     return nil if content_tool_called?(result)
 
@@ -198,6 +221,7 @@ class Captain::Assistant::AgentRunnerService
     text = response_text(result.output)
     return false if text.blank?
     return false if text.include?(RETRY_NUDGE_MARKER)
+    return false if internal_agent_handoff_leak?(text)
 
     !promise_only_text?(text)
   end
@@ -219,6 +243,10 @@ class Captain::Assistant::AgentRunnerService
     return false if text.blank? || text.length > PROMISE_ONLY_MAX_LENGTH || text.end_with?('?')
 
     PROMISE_ONLY_PATTERNS.any? { |pattern| text.match?(pattern) }
+  end
+
+  def internal_agent_handoff_leak?(text)
+    text.to_s.match?(INTERNAL_AGENT_HANDOFF_PATTERN)
   end
 
   def process_agent_result(result)
@@ -273,6 +301,7 @@ class Captain::Assistant::AgentRunnerService
   # agente humano…", which the original /transferid[oa]/ never matched.
   HANDOFF_ANNOUNCEMENT_LEAK_PATTERN = /
     transferid[oa] | transferred | transferring |
+    (?:i(?:'|’)ll|i\s+will)\s+transfer\s+you\s+to\s+(?:scenario_[a-z0-9_]+|[a-z0-9_]+_agent) |
     te\s+(transfiero|transferir[eé]|paso|pasar[eé]|conecto|conectar[eé]|comunico|derivo|remito)\s+(con|a)\b |
     te\s+voy\s+a\s+(transferir|pasar|conectar|derivar|comunicar) |
     (transferir|pasar|conectar|derivar)(te|le|lo)\s+(con|a)\b |
@@ -399,8 +428,8 @@ class Captain::Assistant::AgentRunnerService
 
     # Tool tracking always runs — process_response in the job consumes the resulting
     # handoff_tool_called flag regardless of whether OTEL is enabled.
-    runner.on_tool_complete do |tool_name, _tool_result, context_wrapper|
-      track_handoff_usage(tool_name, handoff_tool_name, context_wrapper)
+    runner.on_tool_complete do |tool_name, tool_result, context_wrapper|
+      track_handoff_usage(tool_name, tool_result, handoff_tool_name, context_wrapper)
       track_content_tool_usage(tool_name, context_wrapper)
     end
 
@@ -453,14 +482,34 @@ class Captain::Assistant::AgentRunnerService
     @conversation&.account || @assistant&.account
   end
 
-  def track_handoff_usage(tool_name, handoff_tool_name, context_wrapper)
+  def track_handoff_usage(tool_name, tool_result, handoff_tool_name, context_wrapper = nil)
+    # Keep the private helper compatible with callers from older tests/hooks
+    # that passed (tool_name, handoff_tool_name, context_wrapper).
+    if context_wrapper.nil?
+      context_wrapper = handoff_tool_name
+      handoff_tool_name = tool_result
+      tool_result = 'Conversation handed off to human support team'
+    end
     return unless context_wrapper&.context
     return unless tool_name.to_s == handoff_tool_name
+
+    unless handoff_succeeded?(tool_result)
+      context_wrapper.context[:captain_v2_handoff_tool_failed] = true
+      Rails.logger.warn("[Captain V2] Handoff tool failed: #{tool_result}")
+      return
+    end
 
     # Mirror the flag onto the instance so error_response can surface it even when
     # the runner raises before returning a result (the context is unreachable then).
     context_wrapper.context[:captain_v2_handoff_tool_called] = true
     @handoff_tool_called = true
+  end
+
+  def handoff_succeeded?(tool_result)
+    result = tool_result.to_s
+    return false if result.blank?
+
+    !result.match?(/\A(?:Conversation not found|Failed to handoff conversation|ERROR:)/i)
   end
 
   # Counts tool calls that actually do the work of answering the user (search,
