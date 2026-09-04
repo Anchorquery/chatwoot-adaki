@@ -43,11 +43,22 @@ class Captain::Tools::RegistryService
     account.captain_mcp_servers.enabled.flat_map(&:available_tool_metadata)
   end
 
+  # Tools the orchestrator assistant itself can call. Until 2026-09-04 only
+  # the first three were here and the housekeeping tools existed for
+  # scenarios only, so a conversation the orchestrator handled directly could
+  # never be labelled, prioritised or annotated for the human who picks it
+  # up. `resolve_conversation` stays scenario-only on purpose: a premature
+  # close by the orchestrator is the same class of failure as an unsolicited
+  # handoff (§7), and auto-resolve already has its own timed job.
   def built_in_tool_instances
     [
       Captain::Tools::FaqLookupTool.new(assistant),
       Captain::Tools::SearchDocumentationTool.new(assistant),
-      Captain::Tools::HandoffTool.new(assistant)
+      Captain::Tools::HandoffTool.new(assistant),
+      Captain::Tools::AddLabelToConversationTool.new(assistant),
+      Captain::Tools::UpdatePriorityTool.new(assistant),
+      Captain::Tools::AddPrivateNoteTool.new(assistant),
+      Captain::Tools::AddContactNoteTool.new(assistant)
     ]
   end
 
