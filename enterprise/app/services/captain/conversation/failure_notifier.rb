@@ -1,7 +1,7 @@
 # Leaves a private note on a conversation when a Captain handoff was actually
-# caused by a diagnosable infrastructure failure (a dead/expired provider
-# credential, an exhausted billing quota, Adaki's own monthly cap — see
-# Captain::FailurePolicy) rather than the assistant's own decision to escalate.
+# caused by an infrastructure failure (provider credential, exhausted quota,
+# malformed request, unknown tool/provider failure, or Adaki's own monthly cap)
+# rather than the assistant's own decision to escalate.
 #
 # Both produce the exact same customer-facing handoff message, which is what
 # made a bad API key look identical to a legitimate escalation in production
@@ -10,7 +10,7 @@
 # handoff itself actually fires (the conversation may already be `open`, in
 # which case nothing else records that anything went wrong at all).
 class Captain::Conversation::FailureNotifier
-  DIAGNOSABLE_FAILURE_CLASSES = %w[configuration limit_adaki].freeze
+  DIAGNOSABLE_FAILURE_CLASSES = %w[configuration budget limit_adaki unknown].freeze
 
   def initialize(conversation:, assistant:, response:)
     @conversation = conversation

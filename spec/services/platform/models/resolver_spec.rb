@@ -4,6 +4,11 @@ RSpec.describe Platform::Models::Resolver do
   let(:account) { create(:account) }
 
   describe '.resolve' do
+    it 'uses the module-scoped runtime provider allowlist without raising' do
+      expect { described_class.resolve(account: account, feature: 'assistant') }.not_to raise_error
+      expect(Llm::Config::SUPPORTED_RUNTIME_PROVIDERS).to include('openai', 'gemini', 'deepseek')
+    end
+
     it 'returns nil without an account' do
       expect(described_class.resolve(account: nil)).to be_nil
     end
@@ -15,7 +20,7 @@ RSpec.describe Platform::Models::Resolver do
 
         result = described_class.resolve(account: account, feature: 'assistant')
 
-        expect(result[:model_slug]).to eq('gemini-3-flash')
+        expect(result[:model_slug]).to eq('gemini-3-flash-preview')
         expect(result[:credential]).to eq(credential)
         expect(result[:source]).to eq(:feature)
       end
@@ -31,6 +36,22 @@ RSpec.describe Platform::Models::Resolver do
         expect(result[:source]).to eq(:fallback)
         expect(result[:model_slug]).not_to start_with('gpt-')
         expect(Llm::Models.models.dig(result[:model_slug], 'provider')).to eq('gemini')
+      end
+    end
+
+    context 'when the account still stores a retired DeepSeek alias' do
+      it 'routes the preference to the current V4 model' do
+        credential = create(:platform_credential, account: account, provider: 'deepseek')
+
+        result = described_class.resolve(
+          account: account,
+          feature: 'assistant',
+          preferred_slug: 'deepseek-reasoner'
+        )
+
+        expect(result[:credential]).to eq(credential)
+        expect(result[:model_slug]).to eq('deepseek-v4-pro')
+        expect(result[:source]).to eq(:preferred_catalog)
       end
     end
 
@@ -54,6 +75,17 @@ RSpec.describe Platform::Models::Resolver do
 
         expect(result[:credential]).to eq(credential)
         expect(Llm::Models.models.dig(result[:model_slug], 'provider')).to eq('openai')
+      end
+    end
+
+    context 'when no native runtime credential exists' do
+      it 'keeps the first active credential as a legacy fallback' do
+        credential = create(:platform_credential, account: account, provider: 'anthropic')
+
+        result = described_class.resolve(account: account, feature: 'assistant')
+
+        expect(result[:credential]).to eq(credential)
+        expect(result[:source]).to eq(:fallback)
       end
     end
   end

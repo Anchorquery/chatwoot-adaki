@@ -5,6 +5,12 @@ require 'digest'
 module Llm::Config
   DEFAULT_MODEL = 'gpt-4.1-mini'.freeze
 
+  # Providers that have a native per-credential RubyLLM adapter. Keep this at
+  # module scope (not inside `class << self`): callers resolve it as
+  # `Llm::Config::SUPPORTED_RUNTIME_PROVIDERS`, and Ruby constants defined on
+  # the singleton class are not visible through the module namespace.
+  SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini deepseek].freeze
+
   # InstallationConfig name -> RubyLLM config setter mapping for every
   # provider. Add a row here + a matching entry in installation_config.yml
   # to expose a new provider in the Super Admin UI.
@@ -51,10 +57,6 @@ module Llm::Config
     def reset!
       @configured_fingerprint = nil
     end
-
-    # Providers fully wired for per-credential routing. Add a provider here
-    # once its RubyLLM setters are mapped in #apply_provider_credential.
-    SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini deepseek].freeze
 
     # Whether an account with no Platform::Credential of its own may
     # silently fall back to the shared global RubyLLM config (built from

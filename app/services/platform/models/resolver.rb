@@ -47,12 +47,14 @@ module Platform::Models
       return nil if @preferred_slug.blank?
 
       model = enabled_scope.where(slug: @preferred_slug).first
-      return { credential: model.credential, model_slug: model.slug, source: :preferred } if model
+      return { credential: model.credential, model_slug: canonical_slug(model.slug), source: :preferred } if model
 
       provider = Llm::Models.models.dig(@preferred_slug, 'provider')
       return nil if provider.blank?
 
-      credential = active_credentials.find { |candidate| normalized_provider(candidate.provider) == normalized_provider(provider) }
+      credential = supported_active_credentials.find do |candidate|
+        normalized_provider(candidate.provider) == normalized_provider(provider)
+      end
       return nil unless credential
 
       { credential: credential, model_slug: @preferred_slug, source: :preferred_catalog }
@@ -67,7 +69,7 @@ module Platform::Models
       model = enabled_scope.where(slug: feature_models).first
       return nil unless model
 
-      { credential: model.credential, model_slug: model.slug, source: :feature }
+      { credential: model.credential, model_slug: canonical_slug(model.slug), source: :feature }
     end
 
     def resolve_by_kind
@@ -76,18 +78,20 @@ module Platform::Models
       model = enabled_scope.where(kind: @kind).first
       return nil unless model
 
-      { credential: model.credential, model_slug: model.slug, source: :kind }
+      { credential: model.credential, model_slug: canonical_slug(model.slug), source: :kind }
     end
 
     def resolve_any_enabled
       model = enabled_scope.first
       return nil unless model
 
-      { credential: model.credential, model_slug: model.slug, source: :any_enabled }
+      { credential: model.credential, model_slug: canonical_slug(model.slug), source: :any_enabled }
     end
 
     def resolve_fallback
-      credential = active_credentials.first
+      # Prefer a native runtime provider, but preserve the legacy fallback for
+      # accounts that only have an older OpenAI-compatible credential.
+      credential = supported_active_credentials.first || active_credentials.first
       return nil unless credential
 
       { credential: credential, model_slug: fallback_slug_for(credential), source: :fallback }
@@ -104,7 +108,7 @@ module Platform::Models
       provider = normalized_provider(credential.provider)
 
       synced = credential.models.where(kind: 'chat').order(:id).first || credential.models.order(:id).first
-      return synced.slug if synced
+      return canonical_slug(synced.slug) if synced
 
       feature_slug = feature_slug_for_provider(provider)
       return feature_slug if feature_slug.present?
@@ -133,13 +137,21 @@ module Platform::Models
     end
 
     def active_credentials
-      @active_credentials ||= @account.platform_credentials.active.select do |credential|
+      @active_credentials ||= @account.platform_credentials.active.to_a
+    end
+
+    def supported_active_credentials
+      @supported_active_credentials ||= active_credentials.select do |credential|
         Llm::Config::SUPPORTED_RUNTIME_PROVIDERS.include?(normalized_provider(credential.provider))
       end
     end
 
     def normalized_provider(provider)
       provider.to_s == 'google' ? 'gemini' : provider.to_s
+    end
+
+    def canonical_slug(slug)
+      Llm::Models.canonical_model_slug(slug)
     end
 
     def enabled_scope

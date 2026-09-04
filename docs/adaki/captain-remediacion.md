@@ -954,3 +954,30 @@ Es la misma pregunta que ya respondía la ventana para las respuestas humanas
 —cuánto esperamos a que un humano se haga cargo— así que no añade un ajuste
 nuevo. La asignación, la etiqueta de equipo y la notificación del handoff
 siguen ocurriendo igual en los tres modos.
+
+### 7.4 Fallo global de V2 por resolución de proveedor
+
+Cuando todos los mensajes terminan en handoff en menos de un segundo, no es
+una decisión del modelo: `process_v1_handoff` se ejecuta después de que el
+runner captura una excepción. El síntoma se confirma comparando los tiempos:
+una llamada real al proveedor tarda más que la creación inmediata del mensaje
+de handoff y la asignación ocurre después.
+
+La regresión introducida en `71d63e5` fue un `NameError`: el resolver consultaba
+`Llm::Config::SUPPORTED_RUNTIME_PROVIDERS`, pero la constante estaba declarada
+dentro de `class << self` y por tanto no existía en el namespace del módulo.
+El `rescue StandardError` de V2 convertía ese error de código en
+`conversation_handoff` con clase `unknown`, ocultando la causa y evitando la
+nota interna.
+
+La constante vive ahora en el nivel del módulo, el resolver conserva una
+credencial activa como último fallback (prefiriendo proveedores con adaptador
+nativo) y `FailureNotifier` deja una nota privada para las clases
+`configuration`, `budget`, `limit_adaki` y `unknown`. Sólo `transient` queda
+fuera porque Sidekiq lo reintenta antes de escalar.
+
+También se actualizaron los modelos de DeepSeek a `deepseek-v4-flash` y
+`deepseek-v4-pro`: los alias `deepseek-chat` y `deepseek-reasoner` fueron
+retirados por DeepSeek el 24-07-2026. El nivel de razonamiento se envía con
+`thinking.type` y `reasoning_effort` según la API V4; OpenAI usa
+`reasoning_effort` y Gemini 3 usa `generationConfig.thinkingConfig.thinkingLevel`.

@@ -189,7 +189,7 @@
   type: secret
 - name: CAPTAIN_OPEN_AI_MODEL
   display_title: 'Default AI Model'
-  description: 'Model used by Captain AI. Accepts any provider model: OpenAI (gpt-4.1-mini), Google (gemini-2.0-flash), Anthropic (claude-3-5-haiku-20241022), DeepSeek (deepseek-chat), OpenRouter (openrouter/auto), Ollama (llama3.2). The matching provider API key must be configured. Default: gpt-4.1-mini'
+  description: 'Model used by Captain AI. Accepts any provider model: OpenAI (gpt-4.1-mini), Google (gemini-3-flash-preview), Anthropic (claude-3-5-haiku-20241022), DeepSeek (deepseek-v4-flash), OpenRouter (openrouter/auto), Ollama (llama3.2). The matching provider API key must be configured. Default: gpt-4.1-mini'
   locked: false
 - name: CAPTAIN_OPEN_AI_ENDPOINT
   display_title: 'OpenAI API Endpoint (optional)'

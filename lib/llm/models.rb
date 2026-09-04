@@ -2,7 +2,12 @@ module Llm::Models
   CONFIG = YAML.load_file(Rails.root.join('config/llm.yml')).freeze
   MODEL_ALIASES = {
     'gemini-3-flash' => 'gemini-3-flash-preview',
-    'gemini-3-pro' => 'gemini-3-pro-preview'
+    'gemini-3-pro' => 'gemini-3-pro-preview',
+    # DeepSeek retired these aliases on 2026-07-24. Keep existing account
+    # preferences and credential-model rows working while routing them to the
+    # current V4 endpoints.
+    'deepseek-chat' => 'deepseek-v4-flash',
+    'deepseek-reasoner' => 'deepseek-v4-pro'
   }.freeze
 
   class << self
