@@ -49,11 +49,14 @@ module Captain
     # humanas, porque la pregunta es idéntica: cuánto esperamos a que un
     # humano se haga cargo antes de que el bot siga ayudando.
     def handoff_grace_expired?(handoff_at)
-      case mode
-      when 'always' then true
-      when 'never' then false
-      else handoff_at < window_minutes.minutes.ago
-      end
+      # A bot-initiated handoff is a temporary ownership marker, not a human
+      # takeover preference. Even when the assistant is configured as
+      # `never` after a real human reply, an unassigned handoff must release
+      # the bot after the configured grace window or the conversation can be
+      # silenced forever.
+      return true if mode == 'always'
+
+      handoff_at < window_minutes.minutes.ago
     end
 
     private

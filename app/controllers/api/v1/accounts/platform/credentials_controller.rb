@@ -170,7 +170,7 @@ class Api::V1::Accounts::Platform::CredentialsController < Api::V1::Accounts::Ba
 
   def provider_disabled_error
     {
-      error: "Provider '#{credential_params[:provider]}' is not enabled yet. Only OpenAI and Google Gemini are available."
+      error: "Provider '#{credential_params[:provider]}' is not enabled yet. Available providers: OpenAI, Google Gemini and DeepSeek."
     }
   end
 end

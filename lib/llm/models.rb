@@ -1,5 +1,9 @@
 module Llm::Models
   CONFIG = YAML.load_file(Rails.root.join('config/llm.yml')).freeze
+  MODEL_ALIASES = {
+    'gemini-3-flash' => 'gemini-3-flash-preview',
+    'gemini-3-pro' => 'gemini-3-pro-preview'
+  }.freeze
 
   class << self
     def providers = CONFIG['providers']
@@ -18,16 +22,22 @@ module Llm::Models
       meta['enabled'] != false
     end
 
+    def canonical_model_slug(model_name)
+      return model_name if model_name.nil? || model_name.to_s.empty?
+
+      MODEL_ALIASES.fetch(model_name.to_s, model_name.to_s)
+    end
+
     def default_model_for(feature)
-      CONFIG.dig('features', feature.to_s, 'default')
+      canonical_model_slug(CONFIG.dig('features', feature.to_s, 'default'))
     end
 
     def models_for(feature)
-      CONFIG.dig('features', feature.to_s, 'models') || []
+      (CONFIG.dig('features', feature.to_s, 'models') || []).map { |model| canonical_model_slug(model) }.uniq
     end
 
     def valid_model_for?(feature, model_name)
-      models_for(feature).include?(model_name.to_s)
+      models_for(feature).include?(canonical_model_slug(model_name))
     end
 
     def feature_config(feature_key)
@@ -36,6 +46,7 @@ module Llm::Models
 
       {
         models: feature['models'].map do |model_name|
+          model_name = canonical_model_slug(model_name)
           model = models[model_name]
           {
             id: model_name,

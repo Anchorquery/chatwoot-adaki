@@ -35,10 +35,11 @@ module CaptainFeaturable
 
     Llm::Models.feature_keys.each_with_object({}) do |feature_key, result|
       stored_value = stored_models[feature_key]
+      canonical_value = Llm::Models.canonical_model_slug(stored_value) if stored_value.present?
       result[feature_key] = if stored_value.present? &&
                                (Llm::Models.valid_model_for?(feature_key, stored_value) ||
-                                 (enabled_slugs ||= fetch_enabled_platform_slugs).include?(stored_value.to_s))
-                              stored_value
+                                 (enabled_slugs ||= fetch_enabled_platform_slugs).include?(canonical_value))
+                              canonical_value
                             else
                               Llm::Models.default_model_for(feature_key)
                             end
@@ -60,7 +61,7 @@ module CaptainFeaturable
     captain_models.each do |feature_key, model_name|
       next if model_name.blank?
       next if Llm::Models.valid_model_for?(feature_key, model_name)
-      next if (enabled_slugs ||= fetch_enabled_platform_slugs).include?(model_name.to_s)
+      next if (enabled_slugs ||= fetch_enabled_platform_slugs).include?(Llm::Models.canonical_model_slug(model_name))
 
       allowed_models = Llm::Models.models_for(feature_key)
       errors.add(:captain_models, "'#{model_name}' is not a valid model for #{feature_key}. Allowed: #{allowed_models.join(', ')}")

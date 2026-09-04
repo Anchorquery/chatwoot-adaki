@@ -7,7 +7,7 @@ module Concerns::Agentable
       instructions: ->(context) { agent_instructions(context) },
       tools: agent_tools,
       model: agent_model,
-      temperature: temperature.to_f || 0.7,
+      temperature: agent_temperature,
       response_schema: agent_response_schema,
       params: agent_thinking_params
     )
@@ -51,9 +51,9 @@ module Concerns::Agentable
   # Falls back to the legacy InstallationConfig model for installs that have not
   # enabled any model in the platform UI yet.
   def agent_model
-    agent_resolution&.dig(:model_slug).presence ||
+    Llm::Models.canonical_model_slug(agent_resolution&.dig(:model_slug).presence ||
       InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence ||
-      LlmConstants::DEFAULT_MODEL
+      LlmConstants::DEFAULT_MODEL)
   end
 
   # Feature key used to resolve the account's model. Override in including
@@ -75,17 +75,28 @@ module Concerns::Agentable
     return @agent_resolution if defined?(@agent_resolution)
 
     account = try(:account)
-    @agent_resolution = account && Platform::Models::Resolver.resolve(account: account, feature: agent_feature_key)
+    preferred_slug = account&.try(:captain_models)&.[]('assistant')
+    @agent_resolution = account && Platform::Models::Resolver.resolve(
+      account: account,
+      feature: agent_feature_key,
+      preferred_slug: preferred_slug
+    )
+  end
+
+  def agent_temperature
+    return nil if %w[gpt-5 gemini-3].any? { |prefix| agent_model.start_with?(prefix) }
+
+    temperature.present? ? temperature.to_f : 0.7
   end
 
   # Gemini rejects function calling combined with a JSON response mime type, and
-  # a response_schema forces `responseMimeType: application/json`. Captain agents
-  # rely on tools (handoff/search), so for Gemini we skip the structured schema
-  # and let the agent reply in plain text — AgentRunnerService#process_agent_result
-  # already wraps a plain string output into { response:, reasoning: }, and
-  # handoffs are signalled via the HandoffTool, not the schema.
+  # DeepSeek's Captain models do not advertise structured-output support.
+  # Captain agents rely on tools (handoff/search), so Gemini and DeepSeek reply
+  # in plain text — AgentRunnerService#process_agent_result already wraps a
+  # plain string output into { response:, reasoning: }, and handoffs are
+  # signalled via the HandoffTool, not the schema.
   def agent_response_schema
-    return nil if agent_provider == 'gemini'
+    return nil if %w[gemini deepseek].include?(agent_provider)
 
     Captain::ResponseSchema
   end

@@ -54,7 +54,7 @@ module Llm::Config
 
     # Providers fully wired for per-credential routing. Add a provider here
     # once its RubyLLM setters are mapped in #apply_provider_credential.
-    SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini].freeze
+    SUPPORTED_RUNTIME_PROVIDERS = %w[openai gemini deepseek].freeze
 
     # Whether an account with no Platform::Credential of its own may
     # silently fall back to the shared global RubyLLM config (built from
@@ -115,9 +115,9 @@ module Llm::Config
     end
 
     # Maps a credential (provider + key + optional base) onto the right
-    # RubyLLM setters. OpenAI and Google Gemini are supported; any other
-    # provider logs a warning and falls back to the OpenAI-compatible path
-    # so the call still has a chance to work via a custom api_base.
+    # RubyLLM setters. OpenAI, Gemini and DeepSeek use their native clients;
+    # legacy providers retain the existing OpenAI-compatible fallback until
+    # their own runtime adapters are explicitly enabled.
     def apply_provider_credential(config, provider, api_key, effective_base)
       case provider
       when 'gemini', 'google'
@@ -126,10 +126,12 @@ module Llm::Config
       when 'openai'
         config.openai_api_key = api_key
         config.openai_api_base = effective_base if effective_base
+      when 'deepseek'
+        config.deepseek_api_key = api_key
+        config.deepseek_api_base = effective_base if effective_base
       else
         Rails.logger.warn(
           "[Llm::Config] Provider '#{provider}' is not fully supported yet. " \
-          'Only openai and gemini are wired for per-credential routing. ' \
           'Falling back to the OpenAI-compatible client; configure a custom ' \
           'api_base if this provider speaks the OpenAI protocol.'
         )

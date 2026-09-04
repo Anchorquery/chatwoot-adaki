@@ -18,7 +18,7 @@ module Platform::Models
       @account = account
       @feature = feature.to_s.presence
       @kind = kind.to_s.presence
-      @preferred_slug = preferred_slug.to_s.presence
+      @preferred_slug = Llm::Models.canonical_model_slug(preferred_slug).presence
       @fallback_model = fallback_model.to_s.presence || Llm::Config::DEFAULT_MODEL
     end
 
@@ -47,9 +47,15 @@ module Platform::Models
       return nil if @preferred_slug.blank?
 
       model = enabled_scope.where(slug: @preferred_slug).first
-      return nil unless model
+      return { credential: model.credential, model_slug: model.slug, source: :preferred } if model
 
-      { credential: model.credential, model_slug: model.slug, source: :preferred }
+      provider = Llm::Models.models.dig(@preferred_slug, 'provider')
+      return nil if provider.blank?
+
+      credential = active_credentials.find { |candidate| normalized_provider(candidate.provider) == normalized_provider(provider) }
+      return nil unless credential
+
+      { credential: credential, model_slug: @preferred_slug, source: :preferred_catalog }
     end
 
     def resolve_by_feature
@@ -81,7 +87,7 @@ module Platform::Models
     end
 
     def resolve_fallback
-      credential = @account.platform_credentials.active.first
+      credential = active_credentials.first
       return nil unless credential
 
       { credential: credential, model_slug: fallback_slug_for(credential), source: :fallback }
@@ -95,7 +101,7 @@ module Platform::Models
     #   3. a provider-appropriate default (the OpenAI-shaped @fallback_model is
     #      only safe to use when the provider is actually openai).
     def fallback_slug_for(credential)
-      provider = credential.provider.to_s
+      provider = normalized_provider(credential.provider)
 
       synced = credential.models.where(kind: 'chat').order(:id).first || credential.models.order(:id).first
       return synced.slug if synced
@@ -111,18 +117,29 @@ module Platform::Models
     # actually OpenAI; for other providers we pick the first registry model that
     # belongs to them, falling back to @fallback_model only if none exists.
     def provider_default_slug(provider)
+      provider = normalized_provider(provider)
       return @fallback_model if provider == 'openai'
 
-      Llm::Models.models.find { |_slug, meta| meta['provider'] == provider }&.first || @fallback_model
+      Llm::Models.models.find { |_slug, meta| normalized_provider(meta['provider']) == provider }&.first || @fallback_model
     end
 
     def feature_slug_for_provider(provider)
       return nil if @feature.blank?
 
       default = Llm::Models.default_model_for(@feature)
-      return default if default.present? && Llm::Models.models.dig(default, 'provider') == provider
+      return default if default.present? && normalized_provider(Llm::Models.models.dig(default, 'provider')) == normalized_provider(provider)
 
-      Llm::Models.models_for(@feature).find { |slug| Llm::Models.models.dig(slug, 'provider') == provider }
+      Llm::Models.models_for(@feature).find { |slug| normalized_provider(Llm::Models.models.dig(slug, 'provider')) == normalized_provider(provider) }
+    end
+
+    def active_credentials
+      @active_credentials ||= @account.platform_credentials.active.select do |credential|
+        Llm::Config::SUPPORTED_RUNTIME_PROVIDERS.include?(normalized_provider(credential.provider))
+      end
+    end
+
+    def normalized_provider(provider)
+      provider.to_s == 'google' ? 'gemini' : provider.to_s
     end
 
     def enabled_scope

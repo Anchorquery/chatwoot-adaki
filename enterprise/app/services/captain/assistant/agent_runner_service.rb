@@ -551,7 +551,12 @@ class Captain::Assistant::AgentRunnerService
     return @resolved_llm_context if defined?(@resolved_llm_context)
 
     account = @assistant&.account
-    resolved = account && Platform::Models::Resolver.resolve(account: account, feature: 'assistant')
+    preferred_slug = account&.try(:captain_models)&.[]('assistant')
+    resolved = account && Platform::Models::Resolver.resolve(
+      account: account,
+      feature: 'assistant',
+      preferred_slug: preferred_slug
+    )
     @resolved_llm_context = Llm::Config.context_for_credential(resolved&.dig(:credential))
   end
 

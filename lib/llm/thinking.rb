@@ -1,15 +1,12 @@
 # Turns an assistant's "reasoning level" setting into the provider-specific
 # request parameters that cap (or disable) the model's internal reasoning.
 #
-# Why this exists: Gemini 2.5 models reason before answering and those
-# thinking tokens are billed at the output rate and count against the output
-# limit. Neither RubyLLM nor the ai-agents gem sends a thinkingConfig unless
-# something explicitly asks for one, so by default Gemini applies its own
-# dynamic budget with no ceiling. In production (conversation 309,
-# 2026-09-04) that produced a reply made of thought parts only — RubyLLM
-# strips those, the run ended with an empty output, and the job turned the
-# blank message into a handoff the customer never asked for. See
-# docs/adaki/captain-remediacion.md §7.2.
+# Why this exists: reasoning-capable providers use different payloads. Gemini
+# expects `thinkingConfig`, OpenAI expects `reasoning_effort`, and DeepSeek
+# expects its `thinking` toggle plus effort. Leaving each provider's default
+# unrestricted made thought-only Gemini replies possible (RubyLLM strips those
+# parts and Captain then saw an empty output) and made the Captain selector's
+# reasoning setting ineffective for OpenAI/DeepSeek.
 #
 # For a support bot that looks up FAQs and routes to scenarios, unbounded
 # reasoning buys nothing and costs latency and money, so 'off' is the
@@ -42,9 +39,20 @@ module Llm::Thinking
   def params_for(provider:, model:, level:)
     level = normalize_level(level)
     return {} if level == DYNAMIC
-    return {} unless %w[gemini google].include?(provider.to_s)
 
-    { generationConfig: { thinkingConfig: gemini_thinking_config(model.to_s, level) } }
+    provider = provider.to_s
+    model = model.to_s
+
+    case provider
+    when 'gemini', 'google'
+      { generationConfig: { thinkingConfig: gemini_thinking_config(model, level) } }
+    when 'openai'
+      openai_reasoning_params(model, level)
+    when 'deepseek'
+      deepseek_reasoning_params(model, level)
+    else
+      {}
+    end
   end
 
   # Gemini 3 replaced the numeric budget with thinkingLevel. Flash supports a
@@ -63,10 +71,35 @@ module Llm::Thinking
   end
 
   def gemini_3_thinking_config(model, level)
-    # Gemini 3 Pro has no "minimal" level; low is its minimum. Flash models
-    # support minimal, which is the closest provider-supported equivalent to
-    # Captain's default "off" setting.
-    minimum = model.include?('pro') ? 'low' : 'minimal'
+    # Gemini 3 Pro and newer Flash variants have a low minimum. Gemini 3
+    # Flash preview accepts minimal, which is the closest provider-supported
+    # equivalent to Captain's default "off" setting.
+    minimum = model.include?('pro') || model.include?('3.7') ? 'low' : 'minimal'
     { thinkingLevel: level == OFF ? minimum : 'low' }
+  end
+
+  def openai_reasoning_params(model, level)
+    return {} unless model.match?(/\A(?:gpt-5|o[134])/)
+
+    effort = if level == OFF
+               if model.start_with?('gpt-5.1', 'gpt-5.2')
+                 'none'
+               elsif model.start_with?('o')
+                 'low'
+               else
+                 'minimal'
+               end
+             else
+               'low'
+             end
+    { reasoning_effort: effort }
+  end
+
+  def deepseek_reasoning_params(model, level)
+    return {} unless model.include?('reasoner')
+
+    return { thinking: { type: 'disabled' } } if level == OFF
+
+    { thinking: { type: 'enabled' }, reasoning_effort: 'low' }
   end
 end

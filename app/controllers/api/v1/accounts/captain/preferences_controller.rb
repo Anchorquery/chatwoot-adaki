@@ -120,7 +120,7 @@ class Api::V1::Accounts::Captain::PreferencesController < Api::V1::Accounts::Bas
                             end
 
       models = visible_yaml_models + extra_models
-      selected = account_models[feature_key] || config[:default]
+      selected = Llm::Models.canonical_model_slug(account_models[feature_key] || config[:default])
       selected = models.reject { |m| m[:coming_soon] }.first&.dig(:id) if models.none? { |m| m[:id] == selected }
 
       config.merge(
