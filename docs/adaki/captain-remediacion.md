@@ -1032,3 +1032,23 @@ registro (precios, ventana de contexto, capacidades) para decidir nada en el
 chat. `AgentRunnerService` publica el proveedor de la credencial resuelta junto
 al contexto; sin proveedor por hilo (config global legacy) RubyLLM se comporta
 como antes.
+
+### 7.6 Herramientas de housekeeping para el orquestador
+
+Hasta ahora el asistente orquestador de V2 solo disponía de `faq_lookup`,
+`search_documentation` y `handoff`; etiquetas, prioridad, nota privada y nota
+de contacto existían únicamente dentro de un escenario. Una conversación que
+el orquestador atendía directamente (la mayoría) llegaba al humano sin
+etiqueta, sin prioridad y sin contexto más allá de la razón del handoff.
+
+`Captain::Tools::RegistryService#built_in_tool_instances` añade al orquestador
+`add_label_to_conversation`, `update_priority`, `add_private_note` y
+`add_contact_note`. `resolve_conversation` sigue siendo solo de escenarios: un
+cierre prematuro del orquestador es la misma familia de fallo que un handoff
+no solicitado (§7), y el auto-resolve ya tiene su propio job temporizado. El
+prompt `assistant.liquid` incorpora una sección "Background Actions" con la
+regla de uso de cada una (silenciosas, una etiqueta por tema, prioridad solo
+ante bloqueos, nota privada como resumen para el humano, nota de contacto solo
+para datos duraderos). `AgentRunnerService::HOUSEKEEPING_TOOL_NAMES` ya las
+trataba como acciones de fondo, así que no cuentan como "trabajo" para el
+detector de respuestas-promesa.
