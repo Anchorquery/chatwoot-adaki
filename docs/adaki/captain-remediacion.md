@@ -1002,3 +1002,27 @@ preferencias ni las filas existentes de `platform_credential_models`. El
 selector de razonamiento traduce `off`/`low` a los parámetros nativos de cada
 API y deja `dynamic` sin parámetros para conservar el comportamiento del
 proveedor.
+
+### 7.5 "Sigo revisando tu consulta" en bucle: modelo desconocido para el registro de RubyLLM
+
+Tras el fix de §7.4 (y el de `main` que convierte un fallo `unknown` en la
+respuesta genérica en vez de un handoff), cada mensaje de la cuenta 3 recibía
+"Sigo revisando tu consulta, dame un momento por favor." (conv 31 / id 312,
+07:36–07:37). La cápsula `captain` de Sidekiq lo decía claro:
+`RubyLLM::ModelNotFoundError: Unknown model: gemini-3.1-flash-lite`.
+
+Causa: el slug del asistente sale de la lista **en vivo** de modelos de Google
+(`Platform::Models::Importer#fetch_gemini`), pero la gema `ai-agents` crea el
+chat con `RubyLLM::Chat.new(model:)` a secas y RubyLLM busca ese id en su
+registro **estático** (`config/llm_models.json`), que va por detrás de lo que
+el proveedor sirve. Sin `provider:` ni `assume_exists:`, RubyLLM lanza el error
+antes de llamar a Google. Como `Chat#with_model` se vuelve a llamar en cada
+handoff a un escenario, el problema no se limita al primer turno.
+
+Fix (`config/initializers/ruby_llm_thread_context.rb`): `with_thread_context`
+acepta ahora el proveedor al que enruta el contexto, y el prepend de
+`RubyLLM::Chat#with_model` reintenta un `ModelNotFoundError` como modelo
+asumido de ese proveedor (`assume_exists: true`, que RubyLLM ya soporta y que
+asume function calling). `AgentRunnerService` publica el proveedor de la
+credencial resuelta junto al contexto. Un slug que el registro sí conoce no
+cambia, y sin proveedor por hilo el error sigue subiendo como antes.

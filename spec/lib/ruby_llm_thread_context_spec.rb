@@ -29,6 +29,63 @@ RSpec.describe 'RubyLLM thread context patch' do
     end
   end
 
+  describe '.with_thread_context with a provider' do
+    it 'exposes the provider within the block and restores it afterwards' do
+      context = instance_double(RubyLLM::Context)
+
+      RubyLLM.with_thread_context(context, provider: 'gemini') do
+        expect(RubyLLM.thread_provider).to eq('gemini')
+      end
+      expect(RubyLLM.thread_provider).to be_nil
+    end
+  end
+
+  describe 'RubyLLM::Chat.new with a model the static registry does not know' do
+    before do
+      create(:installation_config, name: 'CAPTAIN_OPEN_AI_API_KEY', value: 'global-key')
+      Llm::Config.reset!
+    end
+
+    let(:context) { Llm::Config.context_for('gemini-key', provider: 'gemini') }
+
+    # Regression: Captain's slugs come from the provider's live model list, so a
+    # freshly released model (gemini-3.1-flash-lite, 2026-09-04) is valid at
+    # Google and still ModelNotFoundError for RubyLLM's static registry.
+    it 'assumes the model exists for the thread provider instead of raising' do
+      chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
+        RubyLLM::Chat.new(model: 'gemini-9.9-flash-lite')
+      end
+
+      expect(chat.model.id).to eq('gemini-9.9-flash-lite')
+      expect(chat.model.provider).to eq('gemini')
+      expect(chat.model.supports_functions?).to be(true)
+    end
+
+    it 'also covers a later model switch on the same chat (scenario handoffs)' do
+      chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
+        RubyLLM::Chat.new(model: 'gemini-2.5-flash').with_model('gemini-9.9-pro')
+      end
+
+      expect(chat.model.id).to eq('gemini-9.9-pro')
+      expect(chat.model.provider).to eq('gemini')
+    end
+
+    it 'still raises when no thread provider is published' do
+      expect do
+        RubyLLM.with_thread_context(context) { RubyLLM::Chat.new(model: 'gemini-9.9-flash-lite') }
+      end.to raise_error(RubyLLM::ModelNotFoundError)
+    end
+
+    it 'does not touch a model the registry already knows' do
+      chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
+        RubyLLM::Chat.new(model: 'gemini-2.5-flash')
+      end
+
+      expect(chat.model.id).to eq('gemini-2.5-flash')
+      expect(chat.model.metadata[:warning]).to be_nil
+    end
+  end
+
   describe 'RubyLLM::Chat.new' do
     before do
       create(:installation_config, name: 'CAPTAIN_OPEN_AI_API_KEY', value: 'global-key')
