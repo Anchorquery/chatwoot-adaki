@@ -67,6 +67,14 @@ RSpec.describe Llm::Thinking do
       expect(described_class.params_for(provider: 'openai', model: 'o3-mini', level: 'off')).to eq({ reasoning_effort: 'low' })
     end
 
+    it "lets the model's own row override the family seed" do
+      expect(described_class.params_for(provider: 'openai', model: 'gpt-5.4-mini', level: 'off', supported_efforts: %w[low medium high]))
+        .to eq({ reasoning_effort: 'low' })
+      expect(described_class.params_for(provider: 'openai', model: 'gpt-5.4-mini', level: 'off', supported_efforts: [])).to eq({})
+      expect(described_class.params_for(provider: 'gemini', model: 'gemini-2.5-flash', level: 'off', supported_efforts: %w[low medium]))
+        .to eq({ generationConfig: { thinkingConfig: { thinkingBudget: described_class::FLASH_LOW_BUDGET } } })
+    end
+
     it 'sends nothing at all while .without_params is active' do
       described_class.without_params do
         expect(described_class.params_for(provider: 'openai', model: 'gpt-5.4-mini', level: 'off')).to eq({})

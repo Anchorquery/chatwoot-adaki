@@ -26,6 +26,9 @@ const CAPABILITIES = [
   'json',
   'vision',
 ];
+// Reasoning efforts the provider accepts for this model, lowest to highest
+// (OpenRouter/OpenAI vocabulary). Captain maps "off" to the lowest one.
+const REASONING_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'];
 
 export default {
   components: { NextButton },
@@ -48,6 +51,16 @@ export default {
     },
     capabilityOptions() {
       return CAPABILITIES;
+    },
+    reasoningEffortOptions() {
+      return REASONING_EFFORTS;
+    },
+    reasoningSourceLabel() {
+      const source = this.modelData?.reasoning_config?.source;
+      if (!source) return '';
+      return this.$t(
+        `ADAKI.CAPTAIN.MODELS.REASONING_SOURCE.${source.toUpperCase()}`
+      );
     },
   },
   watch: {
@@ -72,6 +85,11 @@ export default {
         data_cutoff_at: model.data_cutoff_at || '',
         description: model.description || '',
         obsolete: Boolean(model.obsolete),
+        reasoning_efforts: [
+          ...((model.reasoning_config &&
+            model.reasoning_config.supported_efforts) ||
+            []),
+        ],
       };
     },
     toggleCapability(cap) {
@@ -79,8 +97,21 @@ export default {
       if (idx >= 0) this.form.capabilities.splice(idx, 1);
       else this.form.capabilities.push(cap);
     },
+    toggleReasoningEffort(effort) {
+      const idx = this.form.reasoning_efforts.indexOf(effort);
+      if (idx >= 0) this.form.reasoning_efforts.splice(idx, 1);
+      else this.form.reasoning_efforts.push(effort);
+    },
     submit() {
-      this.$emit('save', { ...this.form });
+      const { reasoning_efforts: reasoningEfforts, ...rest } = this.form;
+      this.$emit('save', {
+        ...rest,
+        reasoning_config: {
+          supported_efforts: REASONING_EFFORTS.filter(e =>
+            reasoningEfforts.includes(e)
+          ),
+        },
+      });
     },
     close() {
       this.$emit('close');
@@ -165,6 +196,31 @@ export default {
           <span>{{ cap }}</span>
         </label>
       </div>
+
+      <div class="mb-2 text-body-main">
+        {{ $t('ADAKI.CAPTAIN.MODELS.MODAL.REASONING') }}
+        <span class="text-xs text-n-slate-10">{{
+          $t('ADAKI.CAPTAIN.MODELS.MODAL.REASONING_HINT')
+        }}</span>
+      </div>
+      <div class="mb-1 grid grid-cols-3 gap-2 md:grid-cols-6">
+        <label
+          v-for="effort in reasoningEffortOptions"
+          :key="effort"
+          class="flex items-center gap-2 text-sm"
+        >
+          <input
+            type="checkbox"
+            :checked="form.reasoning_efforts.includes(effort)"
+            @change="toggleReasoningEffort(effort)"
+          />
+          <span class="font-mono">{{ effort }}</span>
+        </label>
+      </div>
+      <p v-if="reasoningSourceLabel" class="mb-4 text-xs text-n-slate-10">
+        {{ reasoningSourceLabel }}
+      </p>
+      <div v-else class="mb-4" />
 
       <label class="mb-4 flex flex-col gap-1">
         <span class="text-body-main">{{

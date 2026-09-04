@@ -137,16 +137,22 @@ class Captain::Assistant::AgentRunnerService
     result.error.message.to_s.match?(REASONING_PARAM_ERROR_PATTERN)
   end
 
-  # Agents are built with the params baked in, so the runner is rebuilt inside
-  # the kill switch; the payload is rebuilt too because the failed run may
-  # have mutated the context it was given.
+  # First, record what the provider just said on the model's row
+  # (Llm::ReasoningCapabilities) so every later turn gets it right first time.
+  # Then replay this turn once: with the learned efforts when the provider
+  # listed them, otherwise with no reasoning params at all. Agents are built
+  # with the params baked in, so the runner is rebuilt; the payload is rebuilt
+  # too because the failed run may have mutated the context it was given.
   def retry_without_reasoning_params(message_history, rejected)
+    learned = Llm::ReasoningCapabilities.learn_from_rejection!(resolved_model_row, rejected.error.message)
     Rails.logger.warn(
       "[Captain V2] Provider rejected the reasoning params for assistant=#{@assistant&.id} " \
-      "(#{rejected.error.message}); retrying once without them"
+      "(#{rejected.error.message}); learned=#{learned.inspect}; retrying once"
     )
     @runner = nil
     message_to_process, context = run_payload(message_history)
+    return run_agents(message_to_process, context) if learned.present?
+
     Llm::Thinking.without_params { run_agents(message_to_process, context) }
   end
 
@@ -617,7 +623,22 @@ class Captain::Assistant::AgentRunnerService
     log_model_resolution(account, resolved)
     credential = resolved.try(:dig, :credential)
     @resolved_llm_provider = credential_provider(credential)
+    @resolved_model_row = model_row_for(credential, resolved.try(:dig, :model_slug))
     @resolved_llm_context = Llm::Config.context_for_credential(credential)
+  end
+
+  # The platform_credential_models row behind the resolved slug — where
+  # Llm::ReasoningCapabilities records what the provider accepts. Nil for
+  # catalog-only slugs or the global-config fallback.
+  def resolved_model_row
+    resolved_llm_context
+    @resolved_model_row
+  end
+
+  def model_row_for(credential, slug)
+    return nil unless credential.respond_to?(:models) && slug.present?
+
+    credential.models.find_by(slug: slug)
   end
 
   def log_model_resolution(account, resolved)

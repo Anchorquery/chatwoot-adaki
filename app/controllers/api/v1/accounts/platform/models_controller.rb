@@ -76,12 +76,25 @@ class Api::V1::Accounts::Platform::ModelsController < Api::V1::Accounts::BaseCon
   end
 
   def model_params
-    params.require(:model).permit(
+    permitted = params.require(:model).permit(
       :slug, :display_name, :kind, :context_window, :max_output_tokens,
       :input_price_per_million, :output_price_per_million, :data_cutoff_at,
       :description, :obsolete, :enabled,
-      capabilities: []
+      capabilities: [],
+      reasoning_config: [{ supported_efforts: [] }]
     )
+    return permitted unless permitted.key?(:reasoning_config)
+
+    # An operator's edit is authoritative: it overrides both the family seed
+    # and whatever the provider taught us (see Llm::ReasoningCapabilities).
+    efforts = Array(permitted[:reasoning_config][:supported_efforts]).map(&:to_s)
+    permitted[:reasoning_config] = {
+      'supported_efforts' => efforts,
+      'source' => 'manual',
+      'updated_by_id' => Current.user&.id,
+      'updated_at' => Time.current.iso8601
+    }
+    permitted
   end
 
   def serialize(model)
@@ -100,6 +113,7 @@ class Api::V1::Accounts::Platform::ModelsController < Api::V1::Accounts::BaseCon
       description: model.description,
       obsolete: model.obsolete,
       enabled: model.enabled,
+      reasoning_config: model.reasoning_config,
       synced_at: model.synced_at,
       updated_at: model.updated_at
     }
