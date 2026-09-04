@@ -228,6 +228,25 @@ RSpec.describe Captain::Scenario, type: :model do
     end
   end
 
+  describe '#agent_tools' do
+    let(:account) { create(:account) }
+    let(:assistant) { create(:captain_assistant, account: account) }
+
+    it 'always gives the scenario agent the human handoff tool, even when the instruction never references it' do
+      scenario = create(:captain_scenario, assistant: assistant, account: account,
+                                           instruction: 'Answer with [@FAQ Lookup](tool://faq_lookup)')
+
+      expect(scenario.send(:agent_tools).map(&:name)).to contain_exactly('faq_lookup', 'handoff')
+    end
+
+    it 'does not duplicate the handoff tool when the instruction references it explicitly' do
+      scenario = create(:captain_scenario, assistant: assistant, account: account,
+                                           instruction: 'Escalate with [@Handoff](tool://handoff)')
+
+      expect(scenario.send(:agent_tools).map(&:name)).to eq(['handoff'])
+    end
+  end
+
   describe 'custom tool integration' do
     let(:account) { create(:account) }
     let(:assistant) { create(:captain_assistant, account: account) }
@@ -324,9 +343,11 @@ RSpec.describe Captain::Scenario, type: :model do
                           account: account,
                           instruction: 'Use [@Fetch Order](tool://custom_fetch-order)')
 
+        # + the always-present human HandoffTool (see Scenario#agent_tools)
         tools = scenario.send(:agent_tools)
-        expect(tools.length).to eq(1)
+        expect(tools.length).to eq(2)
         expect(tools.first).to be_a(Captain::Tools::HttpTool)
+        expect(tools.last).to be_a(Captain::Tools::HandoffTool)
       end
 
       it 'excludes disabled custom tools from execution' do
@@ -339,7 +360,8 @@ RSpec.describe Captain::Scenario, type: :model do
         custom_tool.update!(enabled: false)
 
         tools = scenario.send(:agent_tools)
-        expect(tools).to be_empty
+        expect(tools).to all(be_a(Captain::Tools::HandoffTool))
+        expect(tools.length).to eq(1)
       end
 
       it 'returns mixed static and custom tool instances' do
@@ -356,8 +378,9 @@ RSpec.describe Captain::Scenario, type: :model do
         )
 
         tools = scenario.send(:agent_tools)
-        expect(tools.length).to eq(2)
-        expect(tools.last).to be_a(Captain::Tools::HttpTool)
+        expect(tools.length).to eq(3)
+        expect(tools[1]).to be_a(Captain::Tools::HttpTool)
+        expect(tools.last).to be_a(Captain::Tools::HandoffTool)
       end
     end
   end

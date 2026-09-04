@@ -35,6 +35,30 @@ RSpec.describe Captain::Conversation::HistoryBuilder do
       expect(history.last).to eq({ content: 'Respuesta', role: 'assistant', agent_name: 'ventas' })
     end
 
+    it 'drops the sub-agent tag once the bot reply is older than AGENT_STICKINESS_WINDOW, so the orchestrator takes the next turn' do
+      create(:message, conversation: conversation, content: 'Hola', message_type: :incoming, created_at: 3.hours.ago)
+      create(:message, conversation: conversation, content: 'Respuesta', message_type: :outgoing,
+                       sender: assistant, account: account, additional_attributes: { 'agent_name' => 'ventas' },
+                       created_at: (described_class::AGENT_STICKINESS_WINDOW + 1.minute).ago)
+      create(:message, conversation: conversation, content: 'Hola otra vez', message_type: :incoming)
+
+      history = described_class.new(conversation: conversation, assistant: assistant).call
+
+      expect(history.find { |msg| msg[:role] == 'assistant' }).to eq({ content: 'Respuesta', role: 'assistant' })
+    end
+
+    it 'keeps the sub-agent tag while the bot reply is still within AGENT_STICKINESS_WINDOW' do
+      create(:message, conversation: conversation, content: 'Hola', message_type: :incoming, created_at: 3.hours.ago)
+      create(:message, conversation: conversation, content: 'Respuesta', message_type: :outgoing,
+                       sender: assistant, account: account, additional_attributes: { 'agent_name' => 'ventas' },
+                       created_at: (described_class::AGENT_STICKINESS_WINDOW - 1.minute).ago)
+      create(:message, conversation: conversation, content: 'Hola otra vez', message_type: :incoming)
+
+      history = described_class.new(conversation: conversation, assistant: assistant).call
+
+      expect(history.find { |msg| msg[:role] == 'assistant' }[:agent_name]).to eq('ventas')
+    end
+
     it "marks a human agent's reply as user (never assistant), prefixed so the LLM knows it isn't the customer either" do
       agent = create(:user, account: account)
       create(:message, conversation: conversation, content: 'Hola', message_type: :incoming)

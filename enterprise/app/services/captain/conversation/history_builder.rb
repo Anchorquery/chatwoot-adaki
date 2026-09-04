@@ -15,6 +15,10 @@ class Captain::Conversation::HistoryBuilder
   # which would destroy the turn-by-turn ordering this needs to preserve.
   HUMAN_AGENT_MESSAGE_PREFIX = '[Mensaje de un agente humano, no del asistente]: '.freeze
 
+  # How long a V2 scenario agent stays "current" after its last reply. See
+  # #agent_tag_still_current?.
+  AGENT_STICKINESS_WINDOW = 1.hour
+
   def initialize(conversation:, assistant:)
     @conversation = conversation
     @assistant = assistant
@@ -66,7 +70,7 @@ class Captain::Conversation::HistoryBuilder
 
     # agent_name tracks which Captain sub-agent (V2 multi-agent handoffs)
     # produced a given reply — meaningless, and never set, for a human reply.
-    if bot_authored?(message) && message.additional_attributes&.dig('agent_name').present?
+    if bot_authored?(message) && agent_tag_still_current?(message) && message.additional_attributes&.dig('agent_name').present?
       message_hash[:agent_name] = message.additional_attributes['agent_name']
     end
 
@@ -86,6 +90,18 @@ class Captain::Conversation::HistoryBuilder
 
   def bot_authored?(message)
     message.sender_type == 'Captain::Assistant'
+  end
+
+  # The ai-agents runner resumes whichever sub-agent tagged the most recent
+  # assistant message, with no notion of time — so a conversation handed to
+  # a scenario once stayed there indefinitely (production conversation 120:
+  # every bot reply from 2026-06-11 to 2026-09-04 came from the "products"
+  # scenario, including its answers to "Hola" and "quiero hablar con un
+  # agente"). Tags older than the window are dropped, so after that much
+  # silence the next turn starts at the orchestrator again, which can
+  # re-route to a scenario if it is still relevant.
+  def agent_tag_still_current?(message)
+    message.created_at > AGENT_STICKINESS_WINDOW.ago
   end
 
   def message_content_for_llm(message)

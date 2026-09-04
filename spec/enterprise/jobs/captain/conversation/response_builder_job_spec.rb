@@ -665,12 +665,28 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
           .and_raise(RubyLLM::UnauthorizedError.new('Incorrect API key provided'))
       end
 
+      # One fresh conversation per failure: a failure-triggered handoff now
+      # marks the conversation as handed off (Conversation#bot_handoff! →
+      # Captain::HumanTakeoverEvaluator#captain_handoff_pending?), so the same
+      # conversation would never reach the LLM a second time. The breaker is
+      # account-scoped, which is what this protects — every new conversation
+      # on a dead credential used to pay for a doomed call.
       it 'opens the circuit once the failure threshold is reached' do
         Captain::CredentialCircuitBreaker::FAILURE_THRESHOLD.times do
-          described_class.perform_now(conversation, assistant)
+          failing_conversation = create(:conversation, inbox: inbox, account: account, status: :pending)
+          create(:message, conversation: failing_conversation, content: 'Hello', message_type: :incoming)
+
+          described_class.perform_now(failing_conversation, assistant)
         end
 
         expect(Captain::CredentialCircuitBreaker.open?(account)).to be(true)
+      end
+
+      it 'does not retry the same conversation once its failure handoff has marked it as handed off' do
+        described_class.perform_now(conversation, assistant)
+        described_class.perform_now(conversation, assistant)
+
+        expect(mock_llm_chat_service).to have_received(:generate_response).once
       end
     end
   end

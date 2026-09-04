@@ -97,8 +97,19 @@ class Captain::Scenario < ApplicationRecord
     MAX_AGENT_NAME_LENGTH - handoff_id_key.length - HANDOFF_KEY_SUFFIX.length - 2
   end
 
+  # Every scenario agent can escalate to a human directly, not only the ones
+  # whose instruction happens to reference tool://handoff. Without this, a
+  # scenario that lists just its own lookup tools (e.g. faq_lookup) has no
+  # way to honour "quiero hablar con una persona": the only "transfer" it
+  # can see is handoff_to_<assistant> (back to the AI orchestrator), so it
+  # takes that, and the orchestrator then narrates a transfer it never made
+  # (production, conversation 120, 2026-09-04). Deduplicated for scenarios
+  # that already reference the handoff tool explicitly.
   def agent_tools
-    resolved_tools.map { |tool| resolve_tool_instance(tool) }
+    metadata = resolved_tools
+    tools = metadata.map { |tool| resolve_tool_instance(tool) }
+    tools << Captain::Tools::HandoffTool.new(assistant) if metadata.none? { |tool| tool[:id] == 'handoff' }
+    tools
   end
 
   def resolved_instructions

@@ -5,6 +5,76 @@ RSpec.describe Conversation, type: :model do
     it { is_expected.to belong_to(:sla_policy).optional }
   end
 
+  describe '#bot_handoff! on a conversation that is already open (Adaki: Captain answers open conversations)' do
+    let(:account) { create(:account) }
+    let(:inbox) { create(:inbox, account: account, enable_auto_assignment: true) }
+    let(:agent) { create(:user, account: account) }
+    let(:conversation) { create(:conversation, account: account, inbox: inbox, status: :open) }
+
+    before do
+      create(:inbox_member, inbox: inbox, user: agent)
+      allow(OnlineStatusTracker).to receive(:get_available_users).and_return({ agent.id.to_s => 'online' })
+      allow(Rails.configuration.dispatcher).to receive(:dispatch)
+    end
+
+    it 'stamps captain_handoff_at so HumanTakeoverEvaluator can tell the bot stepped aside' do
+      freeze_time do
+        conversation.bot_handoff!
+
+        expect(conversation.reload.captain_handoff_at).to be_within(1.second).of(Time.current)
+      end
+    end
+
+    it 'still dispatches CONVERSATION_BOT_HANDOFF' do
+      expect(Rails.configuration.dispatcher).to receive(:dispatch)
+        .with(described_class::CONVERSATION_BOT_HANDOFF, anything, hash_including(conversation: conversation))
+
+      conversation.bot_handoff!
+    end
+
+    it 'enqueues the inbox auto-assignment (assignment V2) even though the status did not change' do
+      conversation # created up front: creating it open enqueues an assignment of its own
+      expect(AutoAssignment::AssignmentJob).to receive(:enqueue_for_inbox).with(inbox.id).once
+
+      conversation.bot_handoff!
+    end
+
+    it 'assigns an online inbox member synchronously on the legacy assignment path' do
+      account.disable_features('assignment_v2')
+
+      conversation.bot_handoff!
+
+      expect(conversation.reload.assignee).to eq(agent)
+    end
+
+    it 'does not assign when the inbox has auto-assignment disabled' do
+      inbox.update!(enable_auto_assignment: false)
+
+      conversation.bot_handoff!
+
+      expect(conversation.reload.assignee).to be_nil
+    end
+
+    it 'keeps an existing assignee' do
+      other = create(:user, account: account)
+      create(:inbox_member, inbox: inbox, user: other)
+      conversation.update!(assignee: other)
+
+      conversation.bot_handoff!
+
+      expect(conversation.reload.assignee).to eq(other)
+    end
+
+    it 'stamps the marker on the pending → open path too' do
+      pending = create(:conversation, account: account, inbox: inbox, status: :pending)
+
+      pending.bot_handoff!
+
+      expect(pending.reload).to be_open
+      expect(pending.captain_handoff_at).to be_present
+    end
+  end
+
   describe 'SLA policy updates' do
     let(:conversation) { create(:conversation) }
     let!(:sla_policy) { create(:sla_policy, account: conversation.account) }

@@ -236,7 +236,18 @@ class Captain::Assistant::AgentRunnerService
   # is the same fabricated-tool-call class of failure other LLM agent
   # platforms hit (e.g. voice agents announcing a call transfer that never
   # fires) — see docs/adaki/captain-remediacion.md §Fase 4 (C12).
-  HANDOFF_ANNOUNCEMENT_LEAK_PATTERN = /transferid[oa]|transferred|te (paso|conecto) con|hablar[áa]s con (un|otro)/i
+  #
+  # Verb forms matter: the first production leak was "Se ha transferido…",
+  # the second one (conversation 120, 2026-09-04) was "Te transfiero con un
+  # agente humano…", which the original /transferid[oa]/ never matched.
+  HANDOFF_ANNOUNCEMENT_LEAK_PATTERN = /
+    transferid[oa] | transferred | transferring |
+    te\s+(transfiero|transferir[eé]|paso|pasar[eé]|conecto|conectar[eé]|comunico|derivo|remito)\s+(con|a)\b |
+    te\s+voy\s+a\s+(transferir|pasar|conectar|derivar|comunicar) |
+    (transferir|pasar|conectar|derivar)(te|le|lo)\s+(con|a)\b |
+    (te|le)\s+pongo\s+en\s+contacto |
+    hablar[áa]s\s+con\s+(un|otro)
+  /ix
 
   def suppress_handoff_announcement_leak!(response)
     return if response['handoff_tool_called']

@@ -311,6 +311,52 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       end
     end
 
+    context 'when the reply falsely claims a transfer to a human in the first person (production conversation 120, 2026-09-04)' do
+      let(:mock_result) do
+        instance_double(
+          Agents::RunResult,
+          output: { 'response' => 'Te transfiero con un agente humano para que te pueda ayudar.' },
+          context: {}
+        )
+      end
+
+      it 'suppresses it like any other unbacked handoff announcement' do
+        result = service.generate_response(message_history: message_history)
+
+        expect(result['response']).to eq(I18n.t('conversations.captain.handoff_announcement_leak_fallback'))
+      end
+    end
+
+    describe 'HANDOFF_ANNOUNCEMENT_LEAK_PATTERN' do
+      let(:pattern) { described_class::HANDOFF_ANNOUNCEMENT_LEAK_PATTERN }
+
+      [
+        'Te transfiero con un agente humano para que te pueda ayudar.',
+        'Se ha transferido la conversación al agente de productos.',
+        'Te voy a pasar con un compañero de soporte.',
+        'Voy a transferirte con soporte ahora mismo.',
+        'Le pongo en contacto con un agente.',
+        'Hablarás con un agente en breve.',
+        'Te comunico con una persona del equipo.',
+        "I've transferred you to a human agent."
+      ].each do |leak|
+        it "matches #{leak.inspect}" do
+          expect(leak).to match(pattern)
+        end
+      end
+
+      [
+        'La transferencia bancaria tarda 24 horas en reflejarse.',
+        '¿Quieres que te ayude con la activación de la tarjeta?',
+        'El envío es gratuito en todos los pedidos.',
+        'Puedes transferir el saldo desde tu cuenta.'
+      ].each do |safe|
+        it "leaves #{safe.inspect} alone" do
+          expect(safe).not_to match(pattern)
+        end
+      end
+    end
+
     context 'when the reply mentions a transfer AND the handoff tool actually fired' do
       let(:mock_result) do
         instance_double(

@@ -15,8 +15,27 @@ module Captain
 
     # true si el bot debe ceder a humano (NO responder).
     def human_takeover?
+      return true if captain_handoff_pending?
       return false unless assignee_present? || human_response_exists?
       return false if bot_can_takeover?
+
+      true
+    end
+
+    # Captain se apartó por sí mismo (HandoffTool o process_v1_handoff →
+    # Conversation#bot_handoff!) y ningún humano ha recogido la conversación
+    # desde entonces. Sin esto, en el modo Adaki "el bot responde en open"
+    # un handoff era invisible: la conversación ya estaba abierta y el
+    # siguiente mensaje del cliente devolvía el bot (conv 120, 2026-09-04).
+    # La marca deja de contar cuando un humano responde después de ella
+    # (a partir de ahí aplican las reglas normales de modo) o cuando la
+    # conversación se resolvió después de ella (una reapertura posterior
+    # empieza de cero).
+    def captain_handoff_pending?
+      handoff_at = conversation.respond_to?(:captain_handoff_at) ? conversation.captain_handoff_at : nil
+      return false if handoff_at.blank?
+      return false if human_response_since?(handoff_at)
+      return false if resolved_since?(handoff_at)
 
       true
     end
@@ -24,6 +43,18 @@ module Captain
     private
 
     attr_reader :conversation, :inbox
+
+    def human_response_since?(time)
+      conversation.messages
+                  .outgoing
+                  .where(private: false, sender_type: 'User')
+                  .exists?(['created_at > ?', time])
+    end
+
+    def resolved_since?(time)
+      ReportingEvent.where(conversation_id: conversation.id, name: 'conversation_resolved')
+                    .exists?(['created_at > ?', time])
+    end
 
     def assignee_present?
       conversation.assignee_id.present?

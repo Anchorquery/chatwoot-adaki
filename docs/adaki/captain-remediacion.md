@@ -830,3 +830,29 @@ Orden recomendado: 0 → 1 → 1b → 5 → 2a → 2b → 2c → 3 → 4 (seguid
 Ninguna fase se ha ejecutado contra una BD real — bloqueador de entorno (WSL2/
 Hyper-V deshabilitado en esta máquina), no del código; ver checklist de specs a
 correr antes de mergear en §5 más arriba.
+
+## 7. Incidente 2026-09-04 — "pedí un agente y no me mandó con nadie" (conv 120, cuenta 3)
+
+Reproducido con logs de Rails + Sidekiq y BD de producción. El cliente escribió
+"Quisiera hablar con un agente"; el bot contestó "Te transfiero con un agente
+humano…" y la conversación siguió `open`, sin assignee ni equipo, y el bot
+habría vuelto a responder al siguiente mensaje. Cinco fallos encadenados, todos
+con fix en el mismo commit:
+
+| # | Fallo | Evidencia | Fix |
+|---|-------|-----------|-----|
+| H1 | El turno arrancó en el agente de escenario 34 ("Información sobre Productos"), que **no tiene la tool `handoff`** (solo las que referencia su instrucción: `faq_lookup`, `add_label`). Su única "transferencia" es `handoff_to_<asistente>` (volver al orquestador IA) — y eso llamó. | Log: `tool_calls: handoff_to_asistente_puntua_mi_negocio`; BD: `captain_scenarios.tools` del 34 | `Captain::Scenario#agent_tools` añade siempre `HandoffTool`; `scenario.liquid` explica que `handoff_to_<asistente>` no es un humano |
+| H2 | Tras el hand-back, el orquestador (Gemini) leyó el texto de la tool de la gema ("I'll transfer you to … who can better assist you") y **narró** la transferencia sin llamar `handoff` | `handoff_tool_called=false` en el resultado | `assistant.liquid`: ese resultado es interno y ya terminó; si el usuario pidió humano, llamar `handoff` ahora |
+| H3 | El filtro anti-fuga (C12) solo cubría `transferid[oa]`; "Te transfiero" pasó al cliente | `HANDOFF_ANNOUNCEMENT_LEAK_PATTERN` | Patrón ampliado a formas verbales en primera persona / futuro / enclíticas, con tabla de casos positivos y negativos en el spec |
+| H4 | Aunque `handoff` hubiera disparado, la conversación **ya estaba `open`**: `bot_handoff!` → `open!` sin cambio de estado → `AutoAssignmentHandler` no corre, nadie asignado, y `HumanTakeoverEvaluator` no sabe que el bot se apartó → el bot vuelve al siguiente mensaje. En el modo Adaki "bot responde en open" el handoff era invisible | BD: `status=0, assignee_id=NULL, team_id=NULL`, `enable_auto_assignment=t` | `Enterprise::Conversation#bot_handoff!` estampa `additional_attributes.captain_handoff_at` y dispara la auto-asignación del inbox también cuando ya estaba open; `HumanTakeoverEvaluator#captain_handoff_pending?` silencia al bot hasta que un humano responda o la conversación se resuelva (una reapertura posterior empieza de cero) |
+| H5 | **Escenario pegajoso sin caducidad**: la gema retoma el sub-agente del último mensaje etiquetado, sin noción de tiempo. Desde 2026-06-11 todos los mensajes del bot en la conv 120 llevaban `agent_name=scenario_34…`, incluidas las respuestas a "Hola" y a la petición de humano | BD: `messages.additional_attributes.agent_name` | `HistoryBuilder::AGENT_STICKINESS_WINDOW = 1.hour`: la etiqueta caduca; tras ese silencio el turno vuelve al orquestador, que re-enruta si sigue siendo relevante |
+
+Efecto colateral deliberado de H4: un handoff provocado por un fallo de
+infraestructura (credencial muerta) también silencia al bot en esa conversación
+hasta que un humano responda. El circuit breaker (2b) sigue protegiendo a nivel
+de cuenta (spec ajustado: una conversación nueva por fallo).
+
+Decisión pendiente del operador: la asignación tras handoff usa la
+auto-asignación del inbox (round robin de miembros online, o `AssignmentJob` con
+`assignment_v2`). Si se prefiere asignar siempre al equipo `soporte` (team 1),
+es un `team_id` en `run_handoff_auto_assignment`.
