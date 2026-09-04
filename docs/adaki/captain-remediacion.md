@@ -929,3 +929,28 @@ razonamiento interno solo añadía latencia, coste (unos 3,50 USD por millón de
 tokens de salida con razonamiento frente a 0,60 sin él) y este modo de fallo.
 Quien quiera lo contrario lo cambia desde Captain → Asistente → Ajustes del
 sistema → "Nivel de razonamiento del modelo".
+
+### 7.3 La marca de handoff caduca con la ventana de re-enganche
+
+El fix de §7 (marca `captain_handoff_at`) silenciaba al bot **hasta que un
+humano respondiera o la conversación se resolviera**, sin límite de tiempo. En
+producción eso produjo el fallo contrario al original: conversación 309, a las
+03:08:44 el cliente escribió "Hola" y el job de Captain **no se encoló** — la
+conversación seguía marcada desde la transferencia falsa de las 02:41:58 y
+nadie la había recogido, porque la auto-asignación no encontró candidatos (el
+operador no era colaborador de la bandeja). Ni bot ni humano: silencio.
+
+`Captain::HumanTakeoverEvaluator#captain_handoff_pending?` respeta ahora el
+modo de re-enganche que ya estaba configurado, en vez de imponer un silencio
+absoluto:
+
+| Modo | Tras el handoff |
+|---|---|
+| `after_window` (default) | Silencio durante la ventana configurada (15 min por defecto); si nadie lo recoge, el bot sigue ayudando |
+| `never` | Silencio permanente: el humano es dueño de la conversación |
+| `always` | Sin silencio; el handoff igual asigna, etiqueta con el equipo y notifica |
+
+Es la misma pregunta que ya respondía la ventana para las respuestas humanas
+—cuánto esperamos a que un humano se haga cargo— así que no añade un ajuste
+nuevo. La asignación, la etiqueta de equipo y la notificación del handoff
+siguen ocurriendo igual en los tres modos.

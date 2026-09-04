@@ -38,19 +38,50 @@ RSpec.describe Captain::HumanTakeoverEvaluator do
         expect(evaluator.human_takeover?).to be(true)
       end
 
-      it 'keeps the bot quiet regardless of the takeover mode' do
-        assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'always'))
-
-        expect(evaluator.human_takeover?).to be(true)
+      # Otherwise a handoff nobody picked up (no agent online, or nobody
+      # collaborating on the inbox) left the customer talking to no one:
+      # neither the bot nor a human ever replied again.
+      it 'lets the bot resume once the re-engagement window passes with nobody picking it up' do
+        travel_to((assistant.human_takeover_window_minutes_value + 1).minutes.from_now) do
+          expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(false)
+        end
       end
 
-      it 'stops counting the handoff once a human has replied after it (normal mode rules apply again)' do
+      it 'keeps the bot quiet while that window is still running' do
+        travel_to((assistant.human_takeover_window_minutes_value - 1).minutes.from_now) do
+          expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(true)
+        end
+      end
+
+      it 'never lets the bot back in when the mode says the human owns the conversation' do
+        assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'never'))
+
+        travel_to(30.days.from_now) do
+          expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(true)
+        end
+      end
+
+      it 'does not silence the bot at all when the mode says it always replies' do
         assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'always'))
+
+        expect(evaluator.human_takeover?).to be(false)
+      end
+
+      # Once a human is in the conversation the handoff marker steps aside and
+      # the configured mode takes over: the window is then measured from the
+      # human's own reply, not from the handoff.
+      it 'measures the window from the human reply once someone has answered' do
         travel_to(5.minutes.from_now) do
           create(:message, conversation: conversation, message_type: :outgoing, sender: agent, account: account, content: 'Hola, soy Ana')
         end
 
-        expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(false)
+        travel_to(10.minutes.from_now) do
+          expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(true)
+        end
+
+        travel_to((assistant.human_takeover_window_minutes_value + 10).minutes.from_now) do
+          expect(described_class.new(conversation: conversation.reload).human_takeover?).to be(false)
+        end
       end
 
       it 'ignores a private note from a human as a "reply"' do
