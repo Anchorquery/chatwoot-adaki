@@ -256,6 +256,13 @@ en:
       handoff_announcement_leak_fallback: "I'm still looking into this for you — one moment, please."
       empty_reply_fallback: "Sorry, I didn't quite get that. Could you rephrase your message?"
       provider_error_fallback: 'I cannot respond right now. Please try again in a few minutes.'
+      unattended_handoff_note: '[Captain] Nobody has picked up this conversation since I handed it off to a human (no agent was available). %{mentions} — can someone take it?'
+      unattended_handoff_email:
+        subject: '%{name}, conversation [ID - %{id}] in %{inbox} is waiting for a human'
+        intro: 'Captain handed conversation #%{id} in %{inbox} off to a human agent, but nobody was available to take it.'
+        body: '%{contact} is waiting. Please open the conversation and assign it to yourself.'
+        customer: 'The customer'
+        cta: 'Open the conversation'
     messages:
       instagram_story_content: '%{story_sender} mentioned you in the story: '
       instagram_deleted_story_content: This story is no longer available.

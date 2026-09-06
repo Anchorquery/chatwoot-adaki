@@ -95,15 +95,16 @@ class Captain::Assistant::AgentRunnerService
     @handoff_tool_called = false
   end
 
+  # Provider 400s caused by the reasoning knobs Llm::Thinking guessed for the
+  # model (OpenAI "'reasoning_effort' does not support 'minimal' with this
+  # model", Gemini "thinking is not supported", DeepSeek "thinking"…). Never a
+  # reason to hand off: replay once without those params.
+  REASONING_PARAM_ERROR_PATTERN = /reasoning_effort|reasoning|thinking/i
+
   def generate_response(message_history: [])
     message_to_process, context = run_payload(message_history)
-    # The ai-agents gem builds its chats from the global RubyLLM config and
-    # validates the credential eagerly in Chat.new. Publish the account's
-    # resolved credential as the per-thread context so those chats route to the
-    # configured provider (e.g. Gemini) instead of always hitting OpenAI.
-    result = RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
-      runner.run(message_to_process, context: context, max_turns: MAX_TURNS)
-    end
+    result = run_agents(message_to_process, context)
+    result = retry_without_reasoning_params(message_history, result) if reasoning_params_rejected?(result)
     result = retry_if_unusable(result)
     record_adaki_usage!(result)
 
@@ -118,6 +119,42 @@ class Captain::Assistant::AgentRunnerService
   end
 
   private
+
+  # The ai-agents gem builds its chats from the global RubyLLM config and
+  # validates the credential eagerly in Chat.new. Publish the account's
+  # resolved credential (and provider) as the per-thread context so those
+  # chats route to the configured provider instead of always hitting OpenAI.
+  def run_agents(message_to_process, context)
+    RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
+      runner.run(message_to_process, context: context, max_turns: MAX_TURNS)
+    end
+  end
+
+  def reasoning_params_rejected?(result)
+    return false unless result.respond_to?(:error) && result.error.is_a?(RubyLLM::BadRequestError)
+    return false if Llm::Thinking.suppressed?
+
+    result.error.message.to_s.match?(REASONING_PARAM_ERROR_PATTERN)
+  end
+
+  # First, record what the provider just said on the model's row
+  # (Llm::ReasoningCapabilities) so every later turn gets it right first time.
+  # Then replay this turn once: with the learned efforts when the provider
+  # listed them, otherwise with no reasoning params at all. Agents are built
+  # with the params baked in, so the runner is rebuilt; the payload is rebuilt
+  # too because the failed run may have mutated the context it was given.
+  def retry_without_reasoning_params(message_history, rejected)
+    learned = Llm::ReasoningCapabilities.learn_from_rejection!(resolved_model_row, rejected.error.message)
+    Rails.logger.warn(
+      "[Captain V2] Provider rejected the reasoning params for assistant=#{@assistant&.id} " \
+      "(#{rejected.error.message}); learned=#{learned.inspect}; retrying once"
+    )
+    @runner = nil
+    message_to_process, context = run_payload(message_history)
+    return run_agents(message_to_process, context) if learned.present?
+
+    Llm::Thinking.without_params { run_agents(message_to_process, context) }
+  end
 
   def build_context(message_history)
     conversation_history = message_history.map do |msg|
@@ -602,7 +639,22 @@ class Captain::Assistant::AgentRunnerService
     log_model_resolution(account, resolved)
     credential = resolved.try(:dig, :credential)
     @resolved_llm_provider = credential_provider(credential)
+    @resolved_model_row = model_row_for(credential, resolved.try(:dig, :model_slug))
     @resolved_llm_context = Llm::Config.context_for_credential(credential)
+  end
+
+  # The platform_credential_models row behind the resolved slug — where
+  # Llm::ReasoningCapabilities records what the provider accepts. Nil for
+  # catalog-only slugs or the global-config fallback.
+  def resolved_model_row
+    resolved_llm_context
+    @resolved_model_row
+  end
+
+  def model_row_for(credential, slug)
+    return nil unless credential.respond_to?(:models) && slug.present?
+
+    credential.models.find_by(slug: slug)
   end
 
   def log_model_resolution(account, resolved)

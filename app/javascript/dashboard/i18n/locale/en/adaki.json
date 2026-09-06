@@ -288,7 +288,16 @@
           "OUTPUT_PRICE": "Output $/1M tokens",
           "DATA_CUTOFF": "Data cutoff date",
           "CANCEL": "Cancel",
-          "SAVE": "Save changes"
+          "SAVE": "Save changes",
+          "REASONING": "Reasoning levels this model accepts",
+          "REASONING_HINT": "(Captain sends the lowest one for \"disabled\". Leave all unchecked if the model rejects the parameter. Corrected automatically when the provider answers with an error.)"
+        },
+        "REASONING_LABEL": "reasoning",
+        "REASONING_NONE": "no reasoning parameter",
+        "REASONING_SOURCE": {
+          "SEED": "Guessed from the model family",
+          "PROVIDER": "Learned from the provider's own response",
+          "MANUAL": "Set manually"
         }
       },
       "ALERTS": {

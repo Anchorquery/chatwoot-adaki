@@ -76,13 +76,35 @@ RSpec.describe 'RubyLLM thread context patch' do
       end.to raise_error(RubyLLM::ModelNotFoundError)
     end
 
-    it 'does not touch a model the registry already knows' do
+    it 'keeps the id verbatim for a model the registry also knows' do
       chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
         RubyLLM::Chat.new(model: 'gemini-2.5-flash')
       end
 
       expect(chat.model.id).to eq('gemini-2.5-flash')
-      expect(chat.model.metadata[:warning]).to be_nil
+      expect(chat.model.provider).to eq('gemini')
+    end
+
+    # The credential's provider is the source of truth: the registry's own
+    # provider preference for a shared or misfiled id must never reroute a
+    # chat away from the credential that is actually configured.
+    it 'routes to the thread provider even when the registry files the id under another one' do
+      deepseek_context = Llm::Config.context_for('deepseek-key', provider: 'deepseek')
+
+      chat = RubyLLM.with_thread_context(deepseek_context, provider: 'deepseek') do
+        RubyLLM::Chat.new(model: 'gpt-4.1-mini')
+      end
+
+      expect(chat.model.provider).to eq('deepseek')
+      expect(chat.model.id).to eq('gpt-4.1-mini')
+    end
+
+    it 'leaves an explicit provider or assume_model_exists from the caller untouched' do
+      chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
+        RubyLLM::Chat.new(model: 'gpt-4.1-mini', provider: 'openai')
+      end
+
+      expect(chat.model.provider).to eq('openai')
     end
   end
 

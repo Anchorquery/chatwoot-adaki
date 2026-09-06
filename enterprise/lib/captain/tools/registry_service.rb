@@ -46,15 +46,28 @@ class Captain::Tools::RegistryService
     account.captain_mcp_servers.enabled.flat_map(&:available_tool_metadata)
   end
 
-  # The orchestrator gets faq_lookup only: SearchDocumentationTool runs the
-  # exact same query against the same index, and offering both made the
-  # model "verify" one with the other (an extra embedding + LLM round-trip
-  # per answer). It stays in the registry so scenarios that reference
-  # tool://search_documentation keep working.
+  # Tools the orchestrator assistant itself can call. Until 2026-09-04 only
+  # lookup and handoff were here and the housekeeping tools existed for
+  # scenarios only, so a conversation the orchestrator handled directly could
+  # never be labelled, prioritised, annotated or closed. `resolve_conversation`
+  # is gated by the prompt (explicit customer confirmation only, never after a
+  # handoff) and by the account-level auto-resolve switch the tool already
+  # honours (Account#captain_auto_resolve_disabled?).
+  #
+  # SearchDocumentationTool is deliberately NOT here: it runs the exact same
+  # query against the same index as FaqLookupTool, and offering both made the
+  # model "verify" one with the other, costing an extra embedding plus a full
+  # LLM round-trip per answer. It stays in the registry so scenarios that
+  # reference tool://search_documentation keep resolving.
   def built_in_tool_instances
     [
       Captain::Tools::FaqLookupTool.new(assistant),
-      Captain::Tools::HandoffTool.new(assistant)
+      Captain::Tools::HandoffTool.new(assistant),
+      Captain::Tools::AddLabelToConversationTool.new(assistant),
+      Captain::Tools::UpdatePriorityTool.new(assistant),
+      Captain::Tools::AddPrivateNoteTool.new(assistant),
+      Captain::Tools::AddContactNoteTool.new(assistant),
+      Captain::Tools::ResolveConversationTool.new(assistant)
     ]
   end
 

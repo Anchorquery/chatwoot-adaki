@@ -167,8 +167,17 @@ export default {
       this.editingModel = {
         ...model,
         capabilities: [...(model.capabilities || [])],
+        reasoning_config: { ...(model.reasoning_config || {}) },
       };
       this.showEditModal = true;
+    },
+    reasoningSummary(model) {
+      const efforts = model.reasoning_config?.supported_efforts;
+      if (!Array.isArray(efforts)) return '';
+      if (!efforts.length) {
+        return this.$t('ADAKI.CAPTAIN.MODELS.REASONING_NONE');
+      }
+      return `${this.$t('ADAKI.CAPTAIN.MODELS.REASONING_LABEL')}: ${efforts.join(' · ')}`;
     },
     closeEdit() {
       this.showEditModal = false;
@@ -347,6 +356,19 @@ export default {
                 >
                   {{ cap }}</span
                 >
+                <span
+                  v-if="reasoningSummary(model)"
+                  class="rounded bg-n-iris-3 px-1.5 py-0.5 text-n-iris-11"
+                  :title="
+                    model.reasoning_config && model.reasoning_config.source
+                      ? $t(
+                          `ADAKI.CAPTAIN.MODELS.REASONING_SOURCE.${model.reasoning_config.source.toUpperCase()}`
+                        )
+                      : ''
+                  "
+                >
+                  {{ reasoningSummary(model) }}
+                </span>
               </div>
               <p
                 v-if="model.description"

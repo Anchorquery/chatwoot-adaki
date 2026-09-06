@@ -6,14 +6,28 @@ RSpec.describe Captain::Tools::RegistryService do
   let(:registry) { described_class.new(account: account, assistant: assistant) }
 
   describe '#assistant_tools' do
-    it 'gives the orchestrator faq_lookup and handoff only (search_documentation is the same index)' do
-      expect(registry.assistant_tools.map(&:name)).to eq(%w[faq_lookup handoff])
+    it 'gives the orchestrator lookup, handoff and the housekeeping tools' do
+      expect(registry.assistant_tools.map(&:name)).to contain_exactly(
+        'faq_lookup', 'handoff',
+        'add_label_to_conversation', 'update_priority', 'add_private_note', 'add_contact_note',
+        'resolve_conversation'
+      )
+    end
+
+    # search_documentation queries the same index as faq_lookup; offering both
+    # made the model verify one with the other, an extra embedding plus a full
+    # LLM round-trip per answer.
+    it 'does not offer search_documentation alongside faq_lookup' do
+      expect(registry.assistant_tools.map(&:name)).not_to include('search_documentation')
     end
   end
 
   describe '#available_tool_metadata' do
-    it 'still lists search_documentation so scenarios referencing it keep resolving' do
-      expect(registry.available_tool_metadata.pluck(:id)).to include('faq_lookup', 'search_documentation', 'handoff')
+    it 'still lists every built-in tool for scenario configuration, search_documentation and resolve included' do
+      ids = registry.available_tool_ids
+
+      expect(ids).to include('faq_lookup', 'search_documentation', 'handoff',
+                             'add_label_to_conversation', 'resolve_conversation')
       expect(registry.tool_instance('search_documentation')).to be_a(Captain::Tools::SearchDocumentationTool)
     end
 

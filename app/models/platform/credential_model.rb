@@ -32,7 +32,27 @@ class Platform::CredentialModel < ApplicationRecord
   validates :slug, presence: true, uniqueness: { scope: :credential_id }
   validates :display_name, presence: true
   validates :kind, inclusion: { in: KINDS }
+  validate :reasoning_config_shape
 
   scope :enabled, -> { where(enabled: true) }
   scope :by_kind, ->(kind) { where(kind: kind) }
+
+  # Efforts this model accepts per its own row (see Llm::ReasoningCapabilities);
+  # nil when nothing is recorded yet.
+  def reasoning_supported_efforts
+    Llm::ReasoningCapabilities.stored_efforts(reasoning_config)
+  end
+
+  private
+
+  def reasoning_config_shape
+    return if reasoning_config.blank?
+    return errors.add(:reasoning_config, 'must be an object') unless reasoning_config.is_a?(Hash)
+
+    efforts = reasoning_config['supported_efforts']
+    return if efforts.nil?
+    return if efforts.is_a?(Array) && (efforts.map(&:to_s) - Llm::ReasoningCapabilities::EFFORTS).empty?
+
+    errors.add(:reasoning_config, "supported_efforts must be a subset of #{Llm::ReasoningCapabilities::EFFORTS.join(', ')}")
+  end
 end

@@ -246,6 +246,22 @@ RSpec.describe Concerns::Agentable do
     end
   end
 
+  describe '#agent_thinking_params' do
+    it "reads the efforts the model's own row accepts instead of guessing by family" do
+      account = create(:account)
+      credential = create(:platform_credential, :openai, account: account)
+      create(:platform_credential_model, credential: credential, slug: 'gpt-5.4-mini', kind: 'chat', enabled: true,
+                                         reasoning_config: { 'supported_efforts' => %w[low medium high], 'source' => 'provider' })
+
+      account_aware = Class.new(dummy_class) do
+        define_method(:account) { @account }
+      end.new
+      account_aware.instance_variable_set(:@account, account)
+
+      expect(account_aware.send(:agent_thinking_params)).to eq({ reasoning_effort: 'low' })
+    end
+  end
+
   describe '#agent_response_schema' do
     it 'returns Captain::ResponseSchema for non-gemini providers' do
       expect(dummy_instance.send(:agent_response_schema)).to eq(Captain::ResponseSchema)

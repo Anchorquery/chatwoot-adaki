@@ -18,15 +18,18 @@
 #
 # The same call can publish the provider the context belongs to. The ai-agents
 # gem also creates its chats with `model:` only, and RubyLLM then looks the
-# slug up in its static registry (config/llm_models.json) — a registry that
-# lags behind what the providers actually serve. Captain's model slugs come
-# from the provider's live model list (Platform::Models::Importer), so a
-# freshly released model is a valid id at Google/OpenAI and still
-# `ModelNotFoundError` for RubyLLM (2026-09-04, account 3: `gemini-3.1-flash-lite`
-# turned every customer message into the generic fallback reply without a
-# single provider call). RubyLLM already supports that case via
-# `assume_exists: true`, but only when the provider is known — which is
-# exactly what the thread provider supplies.
+# slug up in its static registry (config/llm_models.json): a snapshot that
+# lags behind what the providers actually serve, and that can even route a
+# shared id to another provider (Models::PROVIDER_PREFERENCE). Captain's
+# model slugs come from the provider's live model list synced into
+# Platform::CredentialModel, and that row (id + credential provider) is the
+# source of truth — so while a thread provider is published the registry is
+# not consulted at all: the chat is built for that provider with the id
+# verbatim (`assume_exists: true`, which RubyLLM supports and which assumes
+# function calling). Without this, a freshly released model was a valid id at
+# Google and still `ModelNotFoundError` here (2026-09-04, account 3:
+# `gemini-3.1-flash-lite` turned every customer message into the generic
+# fallback reply without a single provider call).
 require 'ruby_llm'
 
 module RubyLLM
@@ -69,19 +72,14 @@ module RubyLLM
 
     # Chat#initialize and every later model switch (the ai-agents runner calls
     # #with_model again when it hands off to a scenario agent) funnel through
-    # here. A slug the static registry does not know is retried as an
-    # assumed-existing model of the thread provider, so a model the provider
-    # serves but RubyLLM has not catalogued yet still works.
+    # here. With a thread provider published, the model id is taken as-is for
+    # that provider and the static registry is bypassed; an explicit provider
+    # or assume_exists from the caller is left untouched.
     def with_model(model_id, provider: nil, assume_exists: false)
-      super
-    rescue RubyLLM::ModelNotFoundError => e
-      fallback_provider = RubyLLM.thread_provider
-      raise if provider || assume_exists || fallback_provider.nil?
+      thread_provider = RubyLLM.thread_provider
+      return super if provider || assume_exists || thread_provider.nil?
 
-      RubyLLM.logger.warn(
-        "[RubyLLM] #{e.message}; assuming it exists for provider '#{fallback_provider}' (thread provider)"
-      )
-      super(model_id, provider: fallback_provider, assume_exists: true)
+      super(model_id, provider: thread_provider, assume_exists: true)
     end
   end
 

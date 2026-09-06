@@ -142,8 +142,26 @@ module Concerns::Agentable
     Llm::Thinking.params_for(
       provider: agent_provider,
       model: agent_model,
-      level: reasoning_level_value
+      level: reasoning_level_value,
+      supported_efforts: agent_reasoning_efforts
     )
+  end
+
+  # Efforts the model's own row says it accepts (seeded on import, corrected
+  # from provider rejections, editable in the providers view). Nil when there
+  # is no row or it says nothing yet, in which case Llm::Thinking falls back
+  # to the family seed. Deliberately not memoized: AgentRunnerService may
+  # learn from a rejection and rebuild the agents within the same request.
+  def agent_reasoning_efforts
+    Llm::ReasoningCapabilities.stored_efforts(agent_model_row&.reasoning_config)
+  end
+
+  def agent_model_row
+    credential = agent_resolution&.dig(:credential)
+    return nil unless credential.respond_to?(:models)
+
+    slugs = [agent_resolution[:model_slug], agent_model].compact.uniq
+    credential.models.find_by(slug: slugs)
   end
 
   def prompt_context

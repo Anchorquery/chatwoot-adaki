@@ -1020,9 +1020,121 @@ antes de llamar a Google. Como `Chat#with_model` se vuelve a llamar en cada
 handoff a un escenario, el problema no se limita al primer turno.
 
 Fix (`config/initializers/ruby_llm_thread_context.rb`): `with_thread_context`
-acepta ahora el proveedor al que enruta el contexto, y el prepend de
-`RubyLLM::Chat#with_model` reintenta un `ModelNotFoundError` como modelo
-asumido de ese proveedor (`assume_exists: true`, que RubyLLM ya soporta y que
-asume function calling). `AgentRunnerService` publica el proveedor de la
-credencial resuelta junto al contexto. Un slug que el registro sí conoce no
-cambia, y sin proveedor por hilo el error sigue subiendo como antes.
+acepta ahora el proveedor al que enruta el contexto, y mientras hay un
+proveedor por hilo el prepend de `RubyLLM::Chat#with_model` **no consulta el
+registro estático**: crea el chat para ese proveedor con el id tal cual
+(`assume_exists: true`, que RubyLLM ya soporta y que asume function calling).
+La fila de `platform_credential_models` (id + proveedor de la credencial) es la
+única fuente de verdad; el registro de RubyLLM es legacy y ni puede rechazar un
+modelo ni desviarlo a otro proveedor por su lista de preferencia
+(`Models::PROVIDER_PREFERENCE`). Ni RubyLLM ni la app usan los metadatos del
+registro (precios, ventana de contexto, capacidades) para decidir nada en el
+chat. `AgentRunnerService` publica el proveedor de la credencial resuelta junto
+al contexto; sin proveedor por hilo (config global legacy) RubyLLM se comporta
+como antes.
+
+### 7.6 Herramientas de housekeeping para el orquestador
+
+Hasta ahora el asistente orquestador de V2 solo disponía de `faq_lookup`,
+`search_documentation` y `handoff`; etiquetas, prioridad, nota privada y nota
+de contacto existían únicamente dentro de un escenario. Una conversación que
+el orquestador atendía directamente (la mayoría) llegaba al humano sin
+etiqueta, sin prioridad y sin contexto más allá de la razón del handoff.
+
+`Captain::Tools::RegistryService#built_in_tool_instances` añade al orquestador
+`add_label_to_conversation`, `update_priority`, `add_private_note` y
+`add_contact_note`, y (a petición del operador, PR #35) también
+`resolve_conversation`. Como un cierre prematuro del orquestador es la misma
+familia de fallo que un handoff no solicitado (§7), el prompt lo acota a
+confirmación explícita del cliente o despedida sin nada pendiente, nunca una
+conversación transferida ni atendida por un humano; además la herramienta
+respeta el interruptor de auto-resolve de la cuenta. El prompt
+`assistant.liquid` incorpora una sección "Background Actions" con la regla de
+uso de cada una (silenciosas, una etiqueta por tema, prioridad solo ante
+bloqueos, nota privada como resumen para el humano, nota de contacto solo para
+datos duraderos). `AgentRunnerService::HOUSEKEEPING_TOOL_NAMES` ya las
+trataba como acciones de fondo, así que no cuentan como "trabajo" para el
+detector de respuestas-promesa.
+
+### 7.7 Handoff sin nadie disponible: aviso a todo el equipo
+
+La auto-asignación tras un handoff solo reparte entre agentes **online y con
+capacidad**. Fuera de horario, o con el equipo ocupado, la conversación queda
+`open` sin assignee, y como por defecto los agentes solo tienen activado el
+email de "conversación asignada", nadie recibía nada: el cliente esperaba a un
+humano que no sabía que lo esperaban.
+
+`Enterprise::Conversation#bot_handoff!` encola ahora
+`Captain::Conversation::UnattendedHandoffJob` con una gracia de
+`UNATTENDED_HANDOFF_GRACE` (1 minuto, suficiente para el `AssignmentJob` de
+assignment_v2 y para que alguien que esté mirando la bandeja la coja). Si al
+cumplirse la conversación sigue abierta, sin assignee y sin respuesta humana:
+
+1. Deja una **nota privada que @menciona al equipo de handoff** (o a cada
+   colaborador de la bandeja si no hay equipo). La mención coloca la
+   conversación en la carpeta "Menciones" de cada uno, los añade como
+   participantes y dispara la notificación in-app.
+2. Envía un **email directo a cada miembro** (`captain_unattended_handoff` en
+   el mailer de notificaciones, plantilla y asunto en el idioma de la cuenta),
+   a propósito fuera de los ajustes personales de notificación, respetando
+   solo la confirmación del email y el rate limit de la cuenta.
+
+Idempotente por handoff (`captain_unattended_notified_at`), y un check
+obsoleto nunca anuncia un handoff que otro posterior sustituyó. No decide
+quién atiende: eso sigue siendo del equipo; solo garantiza que todos se
+enteran. Siguiente paso natural si hiciera falta: repetir el aviso (o escalar
+a administradores) si tras N minutos sigue sin dueño.
+
+### 7.8 El proveedor rechaza los parámetros de razonamiento: reintento sin ellos
+
+Playground de la cuenta 4 (asistente 12, `gpt-5.4-mini`), 09:39 UTC:
+`RubyLLM::BadRequestError: Unsupported value: 'reasoning_effort' does not
+support 'minimal' with this model. Supported values are: 'none', 'low',
+'medium', 'high', and 'xhigh'.` `Llm::Thinking` traducía `off` a `minimal`
+para cualquier `gpt-5*` salvo 5.1 y 5.2; OpenAI retiró `minimal` a partir de
+5.1. El 400 se clasificaba como `unknown` y acababa en handoff: otra vez una
+tabla estática sobre modelos que cambian más rápido que el código.
+
+Dos capas:
+
+1. **Mapeo por familia, no por lista**: `minimal` solo para la familia 5.0
+   (`gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5-chat`), `none` para 5.1 y
+   cualquier versión posterior, `low` para la serie o.
+2. **Red de seguridad**: si el proveedor responde 400 mencionando
+   `reasoning`/`thinking`, `AgentRunnerService` reconstruye los agentes dentro
+   de `Llm::Thinking.without_params` (kill switch por hilo) y repite el turno
+   una vez sin ningún parámetro de razonamiento. Un knob rechazado cuesta un
+   reintento, nunca la conversación.
+
+### 7.9 Capacidades de razonamiento como dato por modelo
+
+Cierre de §7.8. Qué niveles de razonamiento acepta cada modelo deja de vivir
+solo en una tabla en código y pasa a ser un dato de la fila del modelo
+(`platform_credential_models.reasoning_config`), con la forma que usa
+OpenRouter en su catálogo:
+
+```json
+{ "supported_efforts": ["none", "low", "medium", "high", "xhigh"], "source": "seed" }
+```
+
+Vocabulario único (`none minimal low medium high xhigh`, de menor a mayor);
+`Llm::Thinking` traduce el effort elegido al payload de cada proveedor
+(`thinkingBudget`/`thinkingLevel` en Gemini, `thinking` en DeepSeek,
+`reasoning_effort` en OpenAI). Tres capas, en orden:
+
+1. **Semilla por familia** (`Llm::ReasoningCapabilities.seed_for`): la tabla
+   pública de Vercel AI Gateway y las docs de Google/DeepSeek. Se escribe en
+   la fila al importar (`Importer#upsert`, solo si está vacía) y sirve de
+   respaldo cuando la fila no dice nada. `source: seed`.
+2. **Aprendido del proveedor** (`learn_from_rejection!`): ante un 400 por los
+   parámetros de razonamiento, `AgentRunnerService` guarda en la fila lo que
+   el proveedor enumeró ("Supported values are: …") o `[]` si no enumeró nada
+   (el modelo no admite el parámetro), y repite el turno con lo aprendido.
+   `source: provider`. El siguiente turno ya sale bien a la primera.
+3. **Manual** (vista de proveedores → editar modelo): checkboxes con los
+   niveles aceptados; un cambio del operador pisa lo anterior. `source: manual`.
+
+"Desactivado" significa siempre **el nivel más bajo que el modelo acepte**
+(`none` → `minimal` → `low`); "bajo" es `low` o lo más cercano; "dinámico" no
+envía nada. Un modelo sin niveles (`[]`) no recibe parámetro alguno. El kill
+switch de §7.8 (`Llm::Thinking.without_params`) queda como última red.

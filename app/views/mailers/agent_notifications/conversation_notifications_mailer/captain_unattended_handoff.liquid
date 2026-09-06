@@ -1,0 +1,21 @@
+<p>{{ user.available_name }},</p>
+
+<p>{{ captain_unattended.intro }}</p>
+
+<p>{{ captain_unattended.body }}</p>
+
+{% for chat_message in conversation.recent_messages %}
+  <div>
+    <h4 style="margin: 0;">{{ chat_message.sender }}</h4>
+  </div>
+
+  <div style="padding: 10px 20px; margin: 5px 0 20px 0; background: #F2F3F7; border-radius: 10px; display: inline-block; font-family: 'Helvetica Neue',Tahoma,Arial,sans-serif; text-align: start; unicode-bidi: plaintext;">
+    {% if chat_message.content %}
+      {{ chat_message.content }}
+    {% endif %}
+  </div>
+{% endfor %}
+
+<p>
+  <a href="{{ action_url }}">{{ captain_unattended.cta }}</a>
+</p>
