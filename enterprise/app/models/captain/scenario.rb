@@ -39,7 +39,7 @@ class Captain::Scenario < ApplicationRecord
 
   self.table_name = 'captain_scenarios'
 
-  belongs_to :assistant, class_name: 'Captain::Assistant'
+  belongs_to :assistant, class_name: 'Captain::Assistant', inverse_of: :scenarios
   belongs_to :account
 
   validates :title, presence: true
@@ -52,7 +52,7 @@ class Captain::Scenario < ApplicationRecord
   scope :enabled, -> { where(enabled: true) }
 
   delegate :temperature, :feature_faq, :feature_memory, :product_name, :response_guidelines, :guardrails,
-           :reasoning_level_value, to: :assistant
+           :reasoning_level_value, :max_response_tokens_value, to: :assistant
 
   before_save :resolve_tool_references
 
@@ -124,8 +124,11 @@ class Captain::Scenario < ApplicationRecord
     tools.filter_map { |tool_id| available_tools.find { |tool| tool[:id] == tool_id } }
   end
 
+  # One registry per assistant instance (see Captain::Assistant#tool_registry),
+  # not one per tool: each fresh RegistryService re-queried custom tools and
+  # MCP servers just to map an id back to a class.
   def resolve_tool_instance(tool_metadata)
-    Captain::Tools::RegistryService.new(account: account, assistant: assistant).tool_instance(tool_metadata[:id])
+    assistant.tool_registry.tool_instance(tool_metadata[:id])
   end
 
   # Validates that all tool references in the instruction are valid.

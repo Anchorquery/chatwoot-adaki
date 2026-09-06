@@ -59,7 +59,24 @@ RSpec.describe Concerns::Agentable do
         model: 'gpt-4-turbo',
         temperature: 0.8,
         response_schema: Captain::ResponseSchema,
-        params: {}
+        # No thinking params for gpt-4-turbo (not a reasoning model), just the
+        # reply-length cap — see Llm::OutputLimit.
+        params: { max_tokens: Llm::OutputLimit::DEFAULT_MAX_TOKENS }
+      )
+
+      dummy_instance.agent
+    end
+
+    it 'caps the reply length alongside the thinking params, without either clobbering the other' do
+      allow(InstallationConfig).to receive(:find_by).with(name: 'CAPTAIN_OPEN_AI_MODEL').and_return(
+        instance_double(InstallationConfig, value: 'gemini-2.5-flash')
+      )
+      allow(dummy_instance).to receive_messages(agent_provider: 'gemini',
+                                                agent_thinking_params: { generationConfig: { thinkingConfig: { thinkingBudget: 0 } } })
+
+      expect(Agents::Agent).to receive(:new).with(
+        hash_including(params: { generationConfig: { thinkingConfig: { thinkingBudget: 0 },
+                                                     maxOutputTokens: Llm::OutputLimit::DEFAULT_MAX_TOKENS } })
       )
 
       dummy_instance.agent
@@ -119,6 +136,34 @@ RSpec.describe Concerns::Agentable do
       )
 
       dummy_instance.agent_instructions(context_double)
+    end
+
+    # Pre-fetched FAQs deliberately do NOT reach the system prompt — they ride
+    # on the user message so the prompt stays cacheable across turns. See
+    # Captain::KnowledgePrefetcher.
+    it 'never puts per-message knowledge into the prompt context' do
+      context = instance_double(Agents::RunContext, context: { state: { knowledge: "Question: q\nAnswer: a\n" } })
+
+      expect(Captain::PromptRenderer).to receive(:render) do |_template, rendered|
+        expect(rendered).not_to have_key('knowledge')
+      end
+
+      dummy_instance.agent_instructions(context)
+    end
+
+    it 'tells the prompt whether the channel renders plain text (WhatsApp/SMS) or Markdown' do
+      whatsapp_context = instance_double(Agents::RunContext, context: { state: { channel_type: 'Channel::Api' } })
+      widget_context = instance_double(Agents::RunContext, context: { state: { channel_type: 'Channel::WebWidget' } })
+
+      expect(Captain::PromptRenderer).to receive(:render).with(
+        'dummy_class', hash_including(channel_type: 'Channel::Api', plain_text_channel: true)
+      )
+      dummy_instance.agent_instructions(whatsapp_context)
+
+      expect(Captain::PromptRenderer).to receive(:render).with(
+        'dummy_class', hash_including(channel_type: 'Channel::WebWidget', plain_text_channel: false)
+      )
+      dummy_instance.agent_instructions(widget_context)
     end
 
     it 'merges campaign data from context state' do

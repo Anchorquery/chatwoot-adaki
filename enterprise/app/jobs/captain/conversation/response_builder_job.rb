@@ -15,13 +15,37 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   # provider again within milliseconds.
   retry_on Captain::FailurePolicy::TransientProviderError, wait: :polynomially_longer, attempts: 3
 
-  def perform(conversation, assistant)
+  # Held for the whole LLM run. Longer than the worst realistic turn
+  # (RubyLLM request_timeout 60s x a couple of tool round-trips) so it is a
+  # deadlock guard, not a timeout: if a worker dies mid-run the lock frees
+  # itself instead of silencing the conversation forever.
+  LOCK_TTL = 3.minutes
+  LOCK_RETRY_WAIT = 5.seconds
+  # LOCK_RETRY_WAIT x this is comfortably past LOCK_TTL, so a job only gives
+  # up if something is genuinely wrong rather than merely slow.
+  MAX_LOCK_ATTEMPTS = 40
+
+  def perform(conversation, assistant, lock_attempt: 0)
     @conversation = conversation
     @inbox = conversation.inbox
     @assistant = assistant
+    @lock_attempt = lock_attempt
 
+    return if superseded_by_newer_message?
     return unless conversation_captain_controllable?
 
+    with_conversation_lock { perform_locked }
+  end
+
+  private
+
+  delegate :account, :inbox, to: :@conversation
+
+  # The original body. Errors are handled inside the lock so a handoff
+  # message written by handle_error cannot interleave with another run's
+  # reply; a re-raised (retryable) error still releases the lock on its way
+  # out through #with_conversation_lock.
+  def perform_locked
     Current.executed_by = @assistant
 
     dispatch_response
@@ -34,9 +58,56 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     Current.executed_by = nil
   end
 
-  private
+  # One Captain run at a time per conversation. Two runs could otherwise
+  # overlap — a retry alongside a fresh message, or an attachment job whose
+  # extra wait let the next message's job start first — and produce two
+  # replies to the same question, out of order, each having read a history
+  # the other was about to change.
+  #
+  # A job that cannot take the lock re-enqueues itself instead of dropping
+  # the message: whatever arrived while the LLM was busy still gets answered,
+  # right after the reply it was waiting on.
+  def with_conversation_lock(&)
+    lock_key = "captain:conversation:#{@conversation.id}"
+    return if Redis::LockManager.new.with_lock(lock_key, LOCK_TTL, &)
 
-  delegate :account, :inbox, to: :@conversation
+    requeue_after_lock_contention(lock_key)
+  end
+
+  def requeue_after_lock_contention(lock_key)
+    if @lock_attempt >= MAX_LOCK_ATTEMPTS
+      error = StandardError.new("Captain could not acquire #{lock_key} after #{MAX_LOCK_ATTEMPTS} attempts")
+      ChatwootExceptionTracker.new(error, account: account).capture_exception
+      return
+    end
+
+    Rails.logger.info(
+      "[CAPTAIN][requeue] account=#{account.id} conversation=#{@conversation.display_id} " \
+      "reason=conversation_locked attempt=#{@lock_attempt + 1}"
+    )
+    self.class.set(wait: LOCK_RETRY_WAIT).perform_later(@conversation, @assistant, lock_attempt: @lock_attempt + 1)
+  end
+
+  # WhatsApp users send thoughts as several short messages in a row ("hola",
+  # "una pregunta", "cuánto vale el pack de 3"). Each one enqueues this job;
+  # without this guard three LLM runs would start almost at once (occupying
+  # the whole 3-thread captain capsule), reply three times, and the first
+  # replies would answer an incomplete question. The hook delays the enqueue
+  # a little (see HookExecutionService#captain_debounce_wait) so the LAST
+  # message's job sees the whole burst in the history; every earlier job
+  # finds a newer incoming message than the one that enqueued it and stands
+  # down. `enqueued_at` is nil under perform_now (specs, console): never skip.
+  def superseded_by_newer_message?
+    return false if enqueued_at.blank?
+
+    newer = @conversation.messages.incoming.where(private: false).exists?(['created_at > ?', enqueued_at])
+    return false unless newer
+
+    Rails.logger.info(
+      "[CAPTAIN][skip] account=#{account.id} conversation=#{@conversation.display_id} reason=superseded_by_newer_message"
+    )
+    true
+  end
 
   def dispatch_response
     if Captain::CredentialCircuitBreaker.open?(account)
@@ -259,7 +330,10 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
       account_id: account.id,
       inbox_id: inbox.id,
       sender: @assistant,
-      content: message_content,
+      # The LLM writes Markdown; on WhatsApp/SMS headings and [text](url)
+      # links arrive as literal symbols. See Captain::ChatTextFormatter —
+      # a no-op for channels that render Markdown themselves.
+      content: Captain::ChatTextFormatter.format(message_content, channel_type: inbox.channel_type),
       additional_attributes: additional_attrs,
       preserve_waiting_since: preserve_waiting_since
     )

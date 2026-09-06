@@ -75,14 +75,26 @@ models:
     display_name: 'Claude Sonnet 4.5'
     coming_soon: true
     credit_multiplier: 3
+  # Google's current stable Gemini line. gemini-3-pro-preview used to be listed
+  # here and Google has shut it down — see Llm::Models::RETIRED_MODEL_ALIASES,
+  # which reroutes accounts that still store it.
+  gemini-3.5-flash:
+    provider: gemini
+    display_name: 'Gemini 3.5 Flash'
+    credit_multiplier: 1
+  gemini-3.1-flash-lite:
+    provider: gemini
+    display_name: 'Gemini 3.1 Flash Lite'
+    credit_multiplier: 1
+  gemini-3.1-pro-preview:
+    provider: gemini
+    display_name: 'Gemini 3.1 Pro'
+    credit_multiplier: 3
+  # Still served by Google, kept for accounts already pointing at it.
   gemini-3-flash-preview:
     provider: gemini
     display_name: 'Gemini 3 Flash'
     credit_multiplier: 1
-  gemini-3-pro-preview:
-    provider: gemini
-    display_name: 'Gemini 3 Pro'
-    credit_multiplier: 3
   deepseek-v4-flash:
     provider: deepseek
     display_name: 'DeepSeek V4 Flash'
@@ -114,8 +126,10 @@ features:
         gpt-4.1,
         gpt-5.1,
         gpt-5.2,
+        gemini-3.5-flash,
+        gemini-3.1-flash-lite,
         gemini-3-flash-preview,
-        gemini-3-pro-preview,
+        gemini-3.1-pro-preview,
         deepseek-v4-flash,
         deepseek-v4-pro,
       ]
@@ -127,8 +141,10 @@ features:
         gpt-4.1,
         gpt-5.1,
         gpt-5.2,
+        gemini-3.5-flash,
+        gemini-3.1-flash-lite,
         gemini-3-flash-preview,
-        gemini-3-pro-preview,
+        gemini-3.1-pro-preview,
         deepseek-v4-flash,
         deepseek-v4-pro,
       ]
@@ -140,15 +156,17 @@ features:
         gpt-4.1,
         gpt-5.1,
         gpt-5.2,
+        gemini-3.5-flash,
+        gemini-3.1-flash-lite,
         gemini-3-flash-preview,
-        gemini-3-pro-preview,
+        gemini-3.1-pro-preview,
         deepseek-v4-flash,
         deepseek-v4-pro,
       ]
     default: gpt-5.1
   label_suggestion:
     models:
-      [gpt-4.1-nano, gpt-4.1-mini, gpt-5-mini, gemini-3-flash-preview, deepseek-v4-flash]
+      [gpt-4.1-nano, gpt-4.1-mini, gpt-5-mini, gemini-3.1-flash-lite, gemini-3-flash-preview, deepseek-v4-flash]
     default: gpt-4.1-nano
   audio_transcription:
     models: [whisper-1]
@@ -163,8 +181,10 @@ features:
         gpt-4.1,
         gpt-5-mini,
         gpt-5.1,
+        gemini-3.5-flash,
+        gemini-3.1-flash-lite,
         gemini-3-flash-preview,
-        gemini-3-pro-preview,
+        gemini-3.1-pro-preview,
         deepseek-v4-flash,
         deepseek-v4-pro,
       ]

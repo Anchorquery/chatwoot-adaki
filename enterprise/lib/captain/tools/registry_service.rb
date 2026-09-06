@@ -4,8 +4,11 @@ class Captain::Tools::RegistryService
     @assistant = assistant
   end
 
+  # Memoized: building the agent graph for one Captain turn asks for this
+  # list once per scenario tool (custom tools + MCP servers are two queries
+  # each time), all inside a single job.
   def available_tool_metadata
-    built_in_tools + custom_tool_metadata + mcp_tool_metadata
+    @available_tool_metadata ||= built_in_tools + custom_tool_metadata + mcp_tool_metadata
   end
 
   def available_tool_ids
@@ -44,16 +47,21 @@ class Captain::Tools::RegistryService
   end
 
   # Tools the orchestrator assistant itself can call. Until 2026-09-04 only
-  # the first three were here and the housekeeping tools existed for
+  # lookup and handoff were here and the housekeeping tools existed for
   # scenarios only, so a conversation the orchestrator handled directly could
   # never be labelled, prioritised, annotated or closed. `resolve_conversation`
   # is gated by the prompt (explicit customer confirmation only, never after a
   # handoff) and by the account-level auto-resolve switch the tool already
   # honours (Account#captain_auto_resolve_disabled?).
+  #
+  # SearchDocumentationTool is deliberately NOT here: it runs the exact same
+  # query against the same index as FaqLookupTool, and offering both made the
+  # model "verify" one with the other, costing an extra embedding plus a full
+  # LLM round-trip per answer. It stays in the registry so scenarios that
+  # reference tool://search_documentation keep resolving.
   def built_in_tool_instances
     [
       Captain::Tools::FaqLookupTool.new(assistant),
-      Captain::Tools::SearchDocumentationTool.new(assistant),
       Captain::Tools::HandoffTool.new(assistant),
       Captain::Tools::AddLabelToConversationTool.new(assistant),
       Captain::Tools::UpdatePriorityTool.new(assistant),

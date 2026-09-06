@@ -9,7 +9,7 @@ module Concerns::Agentable
       model: agent_model,
       temperature: agent_temperature,
       response_schema: agent_response_schema,
-      params: agent_thinking_params
+      params: agent_params
     )
   end
 
@@ -22,7 +22,12 @@ module Concerns::Agentable
       enhanced_context = enhanced_context.merge(
         conversation: state[:conversation] || {},
         contact: config['feature_contact_attributes'].present? ? state[:contact] : nil,
-        campaign: state[:campaign] || {}
+        campaign: state[:campaign] || {},
+        channel_type: state[:channel_type],
+        # Lets the prompt switch to plain-text formatting rules on WhatsApp/SMS
+        # (see prompts/snippets/formatting.liquid). Captain::ChatTextFormatter
+        # still flattens whatever Markdown slips through on the way out.
+        plain_text_channel: Captain::ChatTextFormatter.chat_channel?(state[:channel_type])
       )
     end
 
@@ -50,10 +55,17 @@ module Concerns::Agentable
   # API key is injected separately by AgentRunnerService (per-thread context).
   # Falls back to the legacy InstallationConfig model for installs that have not
   # enabled any model in the platform UI yet.
+  # A slug the resolver returned already came from the provider's own model
+  # list, so it is used verbatim — running it through the catalog aliases here
+  # would undo exactly what Platform::Models::Resolver guarantees. Only the
+  # legacy InstallationConfig/default values, which are ours, are canonicalised.
   def agent_model
-    Llm::Models.canonical_model_slug(agent_resolution&.dig(:model_slug).presence ||
-      InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence ||
-      LlmConstants::DEFAULT_MODEL)
+    resolved_slug = agent_resolution&.dig(:model_slug).presence
+    return resolved_slug if resolved_slug
+
+    Llm::Models.canonical_model_slug(
+      InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence || LlmConstants::DEFAULT_MODEL
+    )
   end
 
   # Feature key used to resolve the account's model. Override in including
@@ -99,6 +111,27 @@ module Concerns::Agentable
     return nil if %w[gemini deepseek].include?(agent_provider)
 
     Captain::ResponseSchema
+  end
+
+  # Provider-specific request params for this agent. Agents::Agent forwards
+  # them to the chat and RubyLLM deep-merges them into the payload, so the
+  # nested Gemini `generationConfig` from both halves below combines instead
+  # of one replacing the other.
+  def agent_params
+    thinking = agent_thinking_params
+    thinking.deep_merge(
+      Llm::OutputLimit.params_for(
+        provider: agent_provider,
+        model: agent_model,
+        max_tokens: max_response_tokens_value,
+        thinking_params: thinking
+      )
+    )
+  end
+
+  # Per-assistant override for the reply length cap. Scenarios inherit it.
+  def max_response_tokens_value
+    Llm::OutputLimit::DEFAULT_MAX_TOKENS
   end
 
   # Caps (or disables) the model's internal reasoning — see Llm::Thinking for

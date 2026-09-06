@@ -1,36 +1,76 @@
 # Resolves the (credential, model_slug) pair to use at runtime for a given
-# account/feature. Consults the new platform_credential_models table so the
-# UI toggle is honored, with safe fallbacks for installs that have not
-# enabled any model yet.
+# account/feature.
+#
+# The ONLY source of model identity is the database: platform_credential_models
+# rows, written verbatim by Platform::Models::Importer from the provider's own
+# live model list. config/llm.yml is a product catalog (which providers we
+# support, display names, credit multipliers, what the dropdown offers) and is
+# deliberately NOT consulted here — it lags behind what providers actually
+# serve, so letting it name a model produced two failure modes in production:
+#
+#   * a valid, freshly synced slug rewritten into a catalog shorthand the
+#     provider no longer serves (gemini-3-pro-preview was shut down by Google),
+#   * a slug invented for an account that had never synced its models, which
+#     then 404s at the provider and surfaces as a Captain handoff.
+#
+# Providers only classify models by KIND, so a Chatwoot feature maps to the
+# kinds that can serve it (FEATURE_KINDS) rather than to a list of slugs.
+#
+# Returns nil when the account has no synced model to name. Callers fall back
+# to their own legacy default (InstallationConfig / the global RubyLLM config);
+# inventing a slug here is what this class exists to stop.
 class Platform::Models::Resolver
-  def self.resolve(account:, feature: nil, kind: nil, preferred_slug: nil, fallback_model: nil)
+  # Gemini/Claude chat models are stored as 'multimodal' by the importer
+  # (Importer#classify_kind), so any chat-shaped feature must accept both or it
+  # can never match a Gemini model.
+  CHAT_KINDS = %w[chat multimodal].freeze
+
+  FEATURE_KINDS = {
+    'assistant' => CHAT_KINDS,
+    'copilot' => CHAT_KINDS,
+    'editor' => CHAT_KINDS,
+    'label_suggestion' => CHAT_KINDS,
+    'document_faq' => CHAT_KINDS,
+    'audio_transcription' => %w[transcription multimodal],
+    'help_center_search' => %w[embedding]
+  }.freeze
+
+  def self.resolve(account:, feature: nil, kind: nil, preferred_slug: nil, fallback_model: nil, allow_credential_only: false) # rubocop:disable Metrics/ParameterLists
     new(
       account: account,
       feature: feature,
       kind: kind,
       preferred_slug: preferred_slug,
-      fallback_model: fallback_model
+      fallback_model: fallback_model,
+      allow_credential_only: allow_credential_only
     ).resolve
   end
 
-  def initialize(account:, feature: nil, kind: nil, preferred_slug: nil, fallback_model: nil)
+  # `fallback_model` is accepted for backwards compatibility and ignored: a
+  # slug that does not come from the account's own credentials is exactly what
+  # this resolver must not return.
+  #
+  # `allow_credential_only` is for callers that route by PROVIDER and carry
+  # their own per-provider model default (Captain::Documents::PdfProvider).
+  # They still get the account's credential — which is database data — when it
+  # has no synced model, instead of silently falling back to another provider.
+  # Callers that need a model slug leave it off and treat nil as "not
+  # configured", because no honest slug exists for an account that never
+  # synced its models.
+  def initialize(account:, feature: nil, kind: nil, preferred_slug: nil, fallback_model: nil, allow_credential_only: false) # rubocop:disable Lint/UnusedMethodArgument,Metrics/ParameterLists
     @account = account
     @feature = feature.to_s.presence
     @kind = kind.to_s.presence
+    @allow_credential_only = allow_credential_only
+    # A stored preference is OUR value, so catalog shorthand applies to it.
     @preferred_slug = Llm::Models.canonical_model_slug(preferred_slug).presence
-    @fallback_model = fallback_model.to_s.presence || Llm::Config::DEFAULT_MODEL
   end
 
   # Returns a Hash { credential:, model_slug:, source: } or nil.
   def resolve
     return nil if @account.nil?
 
-    pair = resolve_by_preferred_slug ||
-           resolve_by_feature ||
-           resolve_by_kind ||
-           resolve_any_enabled ||
-           resolve_fallback
-
+    pair = resolve_pair
     return nil unless pair
 
     {
@@ -42,101 +82,102 @@ class Platform::Models::Resolver
 
   private
 
+  # Most specific first: the admin's explicit pick, then what the feature
+  # needs, then an explicit kind, then anything enabled, then anything synced.
+  def resolve_pair
+    resolve_by_preferred_slug ||
+      resolve_by_feature ||
+      resolve_by_kind ||
+      resolve_any_enabled ||
+      resolve_synced_but_disabled ||
+      resolve_credential_only
+  end
+
   def resolve_by_preferred_slug
     return nil if @preferred_slug.blank?
 
-    model = enabled_scope.where(slug: @preferred_slug).first
-    return { credential: model.credential, model_slug: canonical_slug(model.slug), source: :preferred } if model
-
-    provider = Llm::Models.models.dig(@preferred_slug, 'provider')
-    return nil if provider.blank?
-
-    credential = supported_active_credentials.find do |candidate|
-      normalized_provider(candidate.provider) == normalized_provider(provider)
-    end
-    return nil unless credential
-
-    { credential: credential, model_slug: @preferred_slug, source: :preferred_catalog }
+    result_for(enabled_scope.find { |model| model.slug == @preferred_slug }, :preferred)
   end
 
   def resolve_by_feature
     return nil if @feature.blank?
 
-    feature_models = Llm::Models.models_for(@feature)
-    return nil if feature_models.blank?
-
-    model = enabled_scope.where(slug: feature_models).first
-    return nil unless model
-
-    { credential: model.credential, model_slug: canonical_slug(model.slug), source: :feature }
+    result_for(first_enabled_of_kinds(kinds_for_feature), :feature)
   end
 
   def resolve_by_kind
     return nil if @kind.blank?
 
-    model = enabled_scope.where(kind: @kind).first
-    return nil unless model
-
-    { credential: model.credential, model_slug: canonical_slug(model.slug), source: :kind }
+    result_for(first_enabled_of_kinds(expand_kind(@kind)), :kind)
   end
 
   def resolve_any_enabled
-    model = enabled_scope.first
-    return nil unless model
-
-    { credential: model.credential, model_slug: canonical_slug(model.slug), source: :any_enabled }
+    result_for(enabled_scope.first, :any_enabled)
   end
 
-  def resolve_fallback
-    # Prefer a native runtime provider, but preserve the legacy fallback for
-    # accounts that only have an older OpenAI-compatible credential.
+  # Last resort: the account synced models but enabled none of them. Better to
+  # use a model the provider really serves than to name one it may not.
+  # Preference order still honours the requested feature/kind.
+  def resolve_synced_but_disabled
+    kinds = kinds_for_feature.presence || expand_kind(@kind)
+    result_for(first_synced_of_kinds(kinds) || synced_scope.first, :synced)
+  end
+
+  # Opt-in (see #initialize). The account has an active credential but nothing
+  # synced, so the provider is known and the model is not.
+  def resolve_credential_only
+    return nil unless @allow_credential_only
+
     credential = supported_active_credentials.first || active_credentials.first
     return nil unless credential
 
-    { credential: credential, model_slug: fallback_slug_for(credential), source: :fallback }
+    { credential: credential, model_slug: nil, source: :credential_only }
   end
 
-  # RubyLLM routes by the model slug, so the fallback slug MUST belong to the
-  # chosen credential's provider — otherwise a Gemini key would be sent to
-  # OpenAI (the slug is gpt-*) and rejected. Precedence:
-  #   1. a model already synced onto this credential (prefer chat kind),
-  #   2. the feature's default/first model that matches the provider,
-  #   3. a provider-appropriate default (the OpenAI-shaped @fallback_model is
-  #      only safe to use when the provider is actually openai).
-  def fallback_slug_for(credential)
-    provider = normalized_provider(credential.provider)
+  def result_for(model, source)
+    return nil unless model
 
-    synced = credential.models.where(kind: 'chat').order(:id).first || credential.models.order(:id).first
-    return canonical_slug(synced.slug) if synced
-
-    feature_slug = feature_slug_for_provider(provider)
-    return feature_slug if feature_slug.present?
-
-    provider_default_slug(provider)
+    { credential: credential_for(model), model_slug: Llm::Models.current_model_slug(model.slug), source: source }
   end
 
-  # Last-resort slug for a provider with no synced or feature model. The
-  # OpenAI-shaped @fallback_model (gpt-*) is only safe when the provider is
-  # actually OpenAI; for other providers we pick the first registry model that
-  # belongs to them, falling back to @fallback_model only if none exists.
-  def provider_default_slug(provider)
-    provider = normalized_provider(provider)
-    return @fallback_model if provider == 'openai'
+  # An explicit kind of 'chat' must also see the 'multimodal' rows Gemini and
+  # Claude models are stored as.
+  def expand_kind(kind)
+    return [] if kind.blank?
 
-    Llm::Models.models.find { |_slug, meta| normalized_provider(meta['provider']) == provider }&.first || @fallback_model
+    kind.to_s == 'chat' ? CHAT_KINDS : [kind.to_s]
   end
 
-  def feature_slug_for_provider(provider)
-    return nil if @feature.blank?
+  def kinds_for_feature
+    return [] if @feature.blank?
 
-    default = Llm::Models.default_model_for(@feature)
-    return default if default.present? && normalized_provider(Llm::Models.models.dig(default, 'provider')) == normalized_provider(provider)
-
-    Llm::Models.models_for(@feature).find { |slug| normalized_provider(Llm::Models.models.dig(slug, 'provider')) == normalized_provider(provider) }
+    FEATURE_KINDS.fetch(@feature, CHAT_KINDS)
   end
 
-  def active_credentials
-    @active_credentials ||= @account.platform_credentials.active.to_a
+  # Ordered by the caller's kind preference, then deterministically by id, the
+  # same way Platform::Models::CapabilityResolver picks a winner.
+  def first_enabled_of_kinds(kinds)
+    first_of_kinds(enabled_scope, kinds)
+  end
+
+  def first_synced_of_kinds(kinds)
+    first_of_kinds(synced_scope, kinds)
+  end
+
+  # `scope` is an Array (see #scope_for). The credential ranking comes first:
+  # an account with both a supported and a legacy OpenAI-compatible credential
+  # must route through the supported one even when the legacy credential
+  # happens to hold the kind listed first (a Gemini chat model is stored as
+  # 'multimodal', so kind order alone would pick the legacy 'chat' row).
+  def first_of_kinds(scope, kinds)
+    return nil if kinds.blank?
+
+    scope.select { |model| kinds.include?(model.kind) }
+         .min_by { |model| [credential_rank(model), kinds.index(model.kind) || kinds.size, model.id] }
+  end
+
+  def credential_rank(model)
+    ordered_credential_ids.index(model.credential_id) || ordered_credential_ids.size
   end
 
   def supported_active_credentials
@@ -145,19 +186,50 @@ class Platform::Models::Resolver
     end
   end
 
+  def active_credentials
+    @active_credentials ||= @account.platform_credentials.active.to_a
+  end
+
   def normalized_provider(provider)
     provider.to_s == 'google' ? 'gemini' : provider.to_s
   end
 
-  def canonical_slug(slug)
-    Llm::Models.canonical_model_slug(slug)
+  # Credentials whose provider has a native runtime adapter come first, so an
+  # account with both a supported and a legacy OpenAI-compatible credential
+  # routes through the supported one.
+  def ordered_credential_ids
+    @ordered_credential_ids ||= begin
+      supported_ids = supported_active_credentials.map(&:id)
+      supported_ids + (active_credentials.map(&:id) - supported_ids)
+    end
+  end
+
+  def synced_scope
+    @synced_scope ||= scope_for(Platform::CredentialModel.all)
   end
 
   def enabled_scope
-    Platform::CredentialModel.enabled
-                             .joins(:credential)
-                             .where(platform_credentials: { account_id: @account.id })
-                             .merge(Platform::Credential.active)
-                             .order(:kind, :display_name, :id)
+    @enabled_scope ||= scope_for(Platform::CredentialModel.enabled)
+  end
+
+  # Scoped to this account's active credentials (ordered_credential_ids is
+  # built from them) and sorted so the winner is deterministic and prefers a
+  # credential whose provider has a native runtime adapter.
+  def scope_for(relation)
+    ids = ordered_credential_ids
+    return [] if ids.empty?
+
+    relation.where(credential_id: ids)
+            .to_a
+            .sort_by { |model| [ids.index(model.credential_id) || ids.size, model.id] }
+  end
+
+  # Reuses the already-loaded credential objects instead of one query per model.
+  def credential_for(model)
+    credentials_by_id[model.credential_id]
+  end
+
+  def credentials_by_id
+    @credentials_by_id ||= active_credentials.index_by(&:id)
   end
 end

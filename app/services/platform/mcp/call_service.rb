@@ -1,8 +1,11 @@
 class Platform::Mcp::CallService
-  def initialize(server:, tool_name:, arguments: {})
+  # `client` lets a caller that makes several calls in a row (Captain's
+  # McpTool during one agent turn) reuse an already-initialized session.
+  def initialize(server:, tool_name:, arguments: {}, client: nil)
     @server = server
     @tool_name = tool_name
     @arguments = arguments
+    @client = client
   end
 
   def call

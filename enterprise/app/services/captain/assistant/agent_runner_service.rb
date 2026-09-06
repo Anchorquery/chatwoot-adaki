@@ -177,17 +177,29 @@ class Captain::Assistant::AgentRunnerService
     }
   end
 
-  def extract_last_user_message(message_history)
+  # `text_transform` rewrites only the text half of the message, leaving the
+  # image attachments alone. Used to attach the pre-fetched knowledge (see
+  # #attach_prefetched_knowledge): RubyLLM::Content re-wraps whatever it is
+  # given as an attachment *source*, so an already-built Content cannot be
+  # rebuilt from its own attachments — the text has to be final before it.
+  def extract_last_user_message(message_history, text_transform: nil)
     last_user_msg = message_history.reverse.find { |msg| msg[:role] == 'user' }
     return '' if last_user_msg.blank?
 
     content = last_user_msg[:content]
-    return extract_text_from_content(content) unless content.is_a?(Array)
+    return transform_message_text(extract_text_from_content(content), text_transform) unless content.is_a?(Array)
 
     text, attachments = Captain::OpenAiMessageBuilderService.extract_text_and_attachments(content)
+    text = transform_message_text(text, text_transform)
     return text if attachments.blank?
 
     RubyLLM::Content.new(text, attachments)
+  end
+
+  def transform_message_text(text, text_transform)
+    return text if text_transform.nil? || text.blank?
+
+    text_transform.call(text)
   end
 
   def message_history_without_last_user_message(message_history)
@@ -442,14 +454,18 @@ class Captain::Assistant::AgentRunnerService
     record.attributes.symbolize_keys.slice(*keys)
   end
 
+  # See Captain::Assistant#cache_tool_registry: one tool registry for the
+  # whole graph build instead of a fresh one (two queries) per scenario tool.
   def build_and_wire_agents
-    assistant_agent = @assistant.agent
-    scenario_agents = @assistant.scenarios.enabled.map(&:agent)
+    @assistant.cache_tool_registry do
+      assistant_agent = @assistant.agent
+      scenario_agents = @assistant.scenarios.enabled.map(&:agent)
 
-    assistant_agent.register_handoffs(*scenario_agents) if scenario_agents.any?
-    scenario_agents.each { |scenario_agent| scenario_agent.register_handoffs(assistant_agent) }
+      assistant_agent.register_handoffs(*scenario_agents) if scenario_agents.any?
+      scenario_agents.each { |scenario_agent| scenario_agent.register_handoffs(assistant_agent) }
 
-    [assistant_agent] + scenario_agents
+      [assistant_agent] + scenario_agents
+    end
   end
 
   def install_instrumentation(runner)
@@ -668,9 +684,21 @@ class Captain::Assistant::AgentRunnerService
   end
 
   def run_payload(message_history)
-    message_to_process = extract_last_user_message(message_history)
+    message_to_process = extract_last_user_message(message_history, text_transform: knowledge_transform)
     context = build_context(message_history_without_last_user_message(message_history))
     enrich_context_with_trace_payload!(context, message_history, message_to_process)
     [message_to_process, context]
+  end
+
+  # See Captain::KnowledgePrefetcher: the FAQ entries for the latest message
+  # ride on that message so most answers need one LLM call instead of a tool
+  # round-trip, while the system prompt stays byte-identical across turns and
+  # the provider can reuse its cached prefix. Only for real conversations —
+  # playground/copilot runs without a conversation keep the tool-only path.
+  def knowledge_transform
+    return nil if @conversation.nil?
+
+    prefetcher = Captain::KnowledgePrefetcher.new(@assistant)
+    ->(text) { prefetcher.attach(text) }
   end
 end

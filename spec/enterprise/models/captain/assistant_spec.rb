@@ -28,13 +28,22 @@ RSpec.describe Captain::Assistant do
     end
 
     it 'passes the thinking params to the agent so they reach the provider payload' do
-      expect(assistant.agent.params).to eq({ generationConfig: { thinkingConfig: { thinkingBudget: 0 } } })
+      expect(assistant.agent.params).to eq(
+        { generationConfig: { thinkingConfig: { thinkingBudget: 0 },
+                              maxOutputTokens: Llm::OutputLimit::DEFAULT_MAX_TOKENS } }
+      )
     end
 
-    it 'passes no params when the level is dynamic' do
+    it 'passes only the reply-length cap when the reasoning level is dynamic' do
       assistant.update!(config: assistant.config.merge('reasoning_level' => 'dynamic'))
 
-      expect(assistant.agent.params).to eq({})
+      expect(assistant.agent.params).to eq({ generationConfig: { maxOutputTokens: Llm::OutputLimit::DEFAULT_MAX_TOKENS } })
+    end
+
+    it 'honours a per-assistant max_response_tokens and adds the thinking budget on top for Gemini' do
+      assistant.update!(config: assistant.config.merge('reasoning_level' => 'low', 'max_response_tokens' => 300))
+
+      expect(assistant.agent.params.dig(:generationConfig, :maxOutputTokens)).to eq(300 + Llm::Thinking::FLASH_LOW_BUDGET)
     end
 
     it 'gives a scenario agent the same level as its assistant' do

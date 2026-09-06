@@ -269,6 +269,20 @@ RSpec.describe Captain::OpenAiMessageBuilderService do
       end
     end
 
+    context 'with a transcript already stored on the attachment' do
+      it 'reads it from attachment.meta without instantiating the transcription service' do
+        attachment = message.attachments.build(account_id: message.account_id, file_type: :audio,
+                                               meta: { 'transcribed_text' => 'Ya transcrito' })
+        attachment.save!
+        allow(Messages::AudioTranscriptionService).to receive(:new)
+
+        result = service.send(:extract_audio_transcriptions, message.attachments)
+
+        expect(result).to eq('Ya transcrito')
+        expect(Messages::AudioTranscriptionService).not_to have_received(:new)
+      end
+    end
+
     context 'with failed audio transcriptions' do
       let(:audio_attachment) do
         attachment = message.attachments.build(account_id: message.account_id, file_type: :audio)

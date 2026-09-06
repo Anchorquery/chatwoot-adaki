@@ -43,15 +43,23 @@ module Enterprise::MessageTemplates::HookExecutionService
     true
   end
 
+  # Every incoming message waits CAPTAIN_RESPONSE_DEBOUNCE_SECONDS before its
+  # job runs (attachments wait a bit longer, see below). When the customer
+  # sends a burst of messages, all but the last job stand down
+  # (ResponseBuilderJob#superseded_by_newer_message?) and the last one answers
+  # the whole burst with one LLM run. Set the env var to 0 to reply
+  # immediately to each message, as before.
   def schedule_captain_response
     job_args = [conversation, conversation.resolved_captain_assistant]
+    wait_time = captain_debounce_wait
+    wait_time += calculate_attachment_wait_time if message.attachments.present?
 
-    if message.attachments.blank?
-      Captain::Conversation::ResponseBuilderJob.perform_later(*job_args)
-    else
-      wait_time = calculate_attachment_wait_time
-      Captain::Conversation::ResponseBuilderJob.set(wait: wait_time).perform_later(*job_args)
-    end
+    Captain::Conversation::ResponseBuilderJob.set(wait: wait_time).perform_later(*job_args)
+  end
+
+  def captain_debounce_wait
+    seconds = ENV.fetch('CAPTAIN_RESPONSE_DEBOUNCE_SECONDS', 2).to_f
+    seconds.positive? ? seconds.seconds : 0.seconds
   end
 
   def calculate_attachment_wait_time

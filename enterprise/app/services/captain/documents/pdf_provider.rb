@@ -52,11 +52,16 @@ module Captain::Documents::PdfProvider
     account = document&.account
     return nil if account.nil?
 
+    # allow_credential_only: this module routes by PROVIDER and already falls
+    # back to its own per-provider model default, so an account that added a
+    # credential but never synced its models must still be recognised as (say)
+    # Gemini rather than silently sent to the OpenAI Files API.
     Platform::Models::Resolver.resolve(
       account: account,
       feature: FEATURE,
       preferred_slug: selected_model(account),
-      kind: RESOLVER_KIND
+      kind: RESOLVER_KIND,
+      allow_credential_only: true
     )
   end
 
