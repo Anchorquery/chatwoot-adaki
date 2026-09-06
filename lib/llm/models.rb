@@ -4,10 +4,14 @@ module Llm::Models
   # provably not what the provider serves any more, so it is remapped
   # everywhere — including rows in platform_credential_models, which are
   # otherwise authoritative (see Platform::Models::Resolver).
-  # DeepSeek retired these on 2026-07-24.
+  # DeepSeek retired its two aliases on 2026-07-24; Google shut down
+  # gemini-3-pro-preview (checked against ai.google.dev on 2026-09-06, where it
+  # is listed under shut-down models). Both reroute to the provider's current
+  # equivalent so a stored preference or a stale synced row keeps working.
   RETIRED_MODEL_ALIASES = {
     'deepseek-chat' => 'deepseek-v4-flash',
-    'deepseek-reasoner' => 'deepseek-v4-pro'
+    'deepseek-reasoner' => 'deepseek-v4-pro',
+    'gemini-3-pro-preview' => 'gemini-3.1-pro-preview'
   }.freeze
 
   # Shorthand this catalog and the model dropdown have used for slugs whose
@@ -17,7 +21,9 @@ module Llm::Models
   # rewrite a valid id into one the provider may not serve.
   CATALOG_MODEL_ALIASES = {
     'gemini-3-flash' => 'gemini-3-flash-preview',
-    'gemini-3-pro' => 'gemini-3-pro-preview'
+    # Points at the current pro model, not the shut-down preview it named when
+    # this shorthand was introduced.
+    'gemini-3-pro' => 'gemini-3.1-pro-preview'
   }.freeze
 
   MODEL_ALIASES = RETIRED_MODEL_ALIASES.merge(CATALOG_MODEL_ALIASES).freeze

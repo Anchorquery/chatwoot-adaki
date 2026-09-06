@@ -144,6 +144,22 @@ RSpec.describe Platform::Models::Resolver do
         expect(result[:model_slug]).to eq('deepseek-v4-pro')
       end
 
+      it 'routes a row still holding the shut-down Gemini pro preview to the current one' do
+        credential = create(:platform_credential, :gemini, account: account)
+        create(:platform_credential_model, credential: credential, slug: 'gemini-3-pro-preview', kind: 'multimodal', enabled: true)
+
+        result = described_class.resolve(account: account, feature: 'assistant')
+
+        expect(result[:model_slug]).to eq('gemini-3.1-pro-preview')
+      end
+
+      it 'leaves a model the provider still serves untouched' do
+        credential = create(:platform_credential, :gemini, account: account)
+        create(:platform_credential_model, credential: credential, slug: 'gemini-3-flash-preview', kind: 'multimodal', enabled: true)
+
+        expect(described_class.resolve(account: account, feature: 'assistant')[:model_slug]).to eq('gemini-3-flash-preview')
+      end
+
       it 'routes a retired stored preference to the current V4 model' do
         credential = create(:platform_credential, account: account, provider: 'deepseek')
         create(:platform_credential_model, credential: credential, slug: 'deepseek-v4-pro', kind: 'chat', enabled: true)
