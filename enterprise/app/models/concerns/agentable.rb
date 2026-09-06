@@ -55,10 +55,17 @@ module Concerns::Agentable
   # API key is injected separately by AgentRunnerService (per-thread context).
   # Falls back to the legacy InstallationConfig model for installs that have not
   # enabled any model in the platform UI yet.
+  # A slug the resolver returned already came from the provider's own model
+  # list, so it is used verbatim — running it through the catalog aliases here
+  # would undo exactly what Platform::Models::Resolver guarantees. Only the
+  # legacy InstallationConfig/default values, which are ours, are canonicalised.
   def agent_model
-    Llm::Models.canonical_model_slug(agent_resolution&.dig(:model_slug).presence ||
-      InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence ||
-      LlmConstants::DEFAULT_MODEL)
+    resolved_slug = agent_resolution&.dig(:model_slug).presence
+    return resolved_slug if resolved_slug
+
+    Llm::Models.canonical_model_slug(
+      InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_MODEL')&.value.presence || LlmConstants::DEFAULT_MODEL
+    )
   end
 
   # Feature key used to resolve the account's model. Override in including

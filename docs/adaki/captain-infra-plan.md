@@ -3,6 +3,51 @@
 Fecha: 2026-09-05. Complementa `captain-latencia.md` (cambios ya hechos en código).
 Aquí va lo que queda: infraestructura, Redis, proveedor y observabilidad, por prioridad.
 
+## Resolución de modelos: la base de datos manda (2026-09-06)
+
+`platform_credential_models` lo escribe `Platform::Models::Importer` **literal**
+desde la lista en vivo del proveedor. Es la única fuente de identidad de modelo.
+`config/llm.yml` es catálogo de producto (qué proveedores soportamos, nombres
+visibles, multiplicadores de crédito, qué ofrece el desplegable) y ya no nombra
+ningún modelo en tiempo de ejecución.
+
+Qué se quitó de `Platform::Models::Resolver`:
+
+- `provider_default_slug` y `feature_slug_for_provider`: inventaban un slug del
+  catálogo para cuentas sin modelos sincronizados.
+- La rama `:preferred_catalog`: emparejaba un slug del catálogo con una
+  credencial del mismo proveedor sin fila en base de datos.
+- `canonical_slug` sobre filas de base de datos. Lo introdujo `aef830b` y era
+  una regresión: reescribía un identificador válido del proveedor con una
+  abreviatura nuestra. `gemini-3-pro` apuntaba a `gemini-3-pro-preview`, que
+  Google tiene **apagado**.
+- `fallback_model` se sigue aceptando por compatibilidad y se ignora.
+
+Qué entró:
+
+- `FEATURE_KINDS`: una feature de Chatwoot mapea a los *kinds* que puede
+  servirla, no a una lista de slugs. Los proveedores solo clasifican por kind.
+- `CHAT_KINDS = %w[chat multimodal]`. **Importante**: `Importer#classify_kind`
+  guarda todo lo que contiene "gemini" o "claude" como `multimodal`, así que una
+  búsqueda por `kind: 'chat'` a secas no podía encontrar jamás un modelo Gemini.
+  Era un fallo latente.
+- `Llm::Models.current_model_slug`: solo remapea endpoints **retirados** por el
+  proveedor (los alias V4 de DeepSeek). Es lo único que puede reescribir una
+  fila de base de datos, porque un slug retirado es demostrablemente falso.
+  `canonical_model_slug` (con las abreviaturas del catálogo) queda para
+  preferencias guardadas y para el catálogo.
+- `allow_credential_only`: para quien enruta por proveedor y trae su propio
+  modelo por defecto (`Captain::Documents::PdfProvider`). Devuelve la credencial
+  sin slug, para que una cuenta con clave de Gemini sin sincronizar no acabe en
+  la API de archivos de OpenAI.
+
+**Cambio de comportamiento a vigilar.** Una cuenta con credencial activa pero
+**cero modelos sincronizados** ya no recibe un slug inventado: el resolver
+devuelve `nil` y el llamador cae a su ruta heredada (InstallationConfig y la
+configuración global de RubyLLM). El arreglo es un clic: Configuración → Captain
+→ sincronizar modelos. Antes "funcionaba" solo mientras el catálogo estuviera
+fresco, y ya no lo está.
+
 ## Estado actual verificado
 
 | Pieza | Cómo está | Riesgo / oportunidad |

@@ -1,14 +1,26 @@
 module Llm::Models
   CONFIG = YAML.load_file(Rails.root.join('config/llm.yml')).freeze
-  MODEL_ALIASES = {
-    'gemini-3-flash' => 'gemini-3-flash-preview',
-    'gemini-3-pro' => 'gemini-3-pro-preview',
-    # DeepSeek retired these aliases on 2026-07-24. Keep existing account
-    # preferences and credential-model rows working while routing them to the
-    # current V4 endpoints.
+  # Slugs the provider RETIRED. A stored value pointing at one of these is
+  # provably not what the provider serves any more, so it is remapped
+  # everywhere — including rows in platform_credential_models, which are
+  # otherwise authoritative (see Platform::Models::Resolver).
+  # DeepSeek retired these on 2026-07-24.
+  RETIRED_MODEL_ALIASES = {
     'deepseek-chat' => 'deepseek-v4-flash',
     'deepseek-reasoner' => 'deepseek-v4-pro'
   }.freeze
+
+  # Shorthand this catalog and the model dropdown have used for slugs whose
+  # real provider id is longer. These describe OUR naming, not the provider's,
+  # so they are only ever applied to catalog entries and stored preferences —
+  # never to a slug synced from the provider's live model list, which would
+  # rewrite a valid id into one the provider may not serve.
+  CATALOG_MODEL_ALIASES = {
+    'gemini-3-flash' => 'gemini-3-flash-preview',
+    'gemini-3-pro' => 'gemini-3-pro-preview'
+  }.freeze
+
+  MODEL_ALIASES = RETIRED_MODEL_ALIASES.merge(CATALOG_MODEL_ALIASES).freeze
 
   class << self
     def providers = CONFIG['providers']
@@ -27,10 +39,21 @@ module Llm::Models
       meta['enabled'] != false
     end
 
+    # For catalog entries and stored user preferences.
     def canonical_model_slug(model_name)
       return model_name if model_name.nil? || model_name.to_s.empty?
 
       MODEL_ALIASES.fetch(model_name.to_s, model_name.to_s)
+    end
+
+    # For slugs that came from the provider itself (platform_credential_models).
+    # Only rewrites endpoints the provider retired; anything else is passed
+    # through untouched because the provider, not this catalog, is the
+    # authority on what it serves.
+    def current_model_slug(model_name)
+      return model_name if model_name.nil? || model_name.to_s.empty?
+
+      RETIRED_MODEL_ALIASES.fetch(model_name.to_s, model_name.to_s)
     end
 
     def default_model_for(feature)
