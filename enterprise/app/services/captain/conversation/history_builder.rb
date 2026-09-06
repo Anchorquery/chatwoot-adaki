@@ -19,6 +19,16 @@ class Captain::Conversation::HistoryBuilder
   # #agent_tag_still_current?.
   AGENT_STICKINESS_WINDOW = 1.hour
 
+  # Only the most recent messages keep their image parts. Every image in the
+  # window is re-fetched and re-sent on EVERY turn (RubyLLM downloads URL
+  # attachments and inlines them as base64 for Gemini; OpenAI fetches the
+  # URL itself), so a WhatsApp thread with a few photos paid that download
+  # and upload again for each new "hola". Older images become a text
+  # placeholder — the model still knows a photo was sent, and the bot's own
+  # reply about it is in the history anyway.
+  RECENT_IMAGE_MESSAGES = 4
+  OLDER_IMAGE_PLACEHOLDER = '[imagen adjunta]'.freeze
+
   def initialize(conversation:, assistant:)
     @conversation = conversation
     @assistant = assistant
@@ -49,22 +59,23 @@ class Captain::Conversation::HistoryBuilder
   # messages in the wrong order (or the wrong messages entirely, under
   # LIMIT) prior to this fix.
   def call
-    @conversation
-      .messages
-      .where(message_type: [:incoming, :outgoing])
-      .where(private: false)
-      .reorder(created_at: :desc, id: :desc)
-      .limit(@assistant.history_window_messages_value)
-      .to_a
-      .reverse
-      .map { |message| message_hash_for(message) }
+    messages = @conversation
+               .messages
+               .where(message_type: [:incoming, :outgoing])
+               .where(private: false)
+               .reorder(created_at: :desc, id: :desc)
+               .limit(@assistant.history_window_messages_value(channel_type: @conversation.inbox&.channel_type))
+               .to_a
+               .reverse
+    recent_from = [messages.size - RECENT_IMAGE_MESSAGES, 0].max
+    messages.each_with_index.map { |message, index| message_hash_for(message, keep_images: index >= recent_from) }
   end
 
   private
 
-  def message_hash_for(message)
+  def message_hash_for(message, keep_images: true)
     message_hash = {
-      content: message_content_for_llm(message),
+      content: message_content_for_llm(message, keep_images: keep_images),
       role: determine_role(message)
     }
 
@@ -104,14 +115,26 @@ class Captain::Conversation::HistoryBuilder
     message.created_at > AGENT_STICKINESS_WINDOW.ago
   end
 
-  def message_content_for_llm(message)
+  def message_content_for_llm(message, keep_images: true)
     content = prepare_multimodal_message_content(message)
+    content = drop_image_parts(content) unless keep_images
     prefix = HUMAN_AGENT_MESSAGE_PREFIX unless message.message_type == 'incoming' || bot_authored?(message)
 
     transform_text_parts(content) do |text|
       text = truncate_message_text(text)
       prefix ? "#{prefix}#{text}" : text
     end
+  end
+
+  # Replaces every image part with one text placeholder. Collapses back to a
+  # plain String when nothing multimodal is left, which is the shape a
+  # text-only message would have had in the first place.
+  def drop_image_parts(content)
+    return content unless content.is_a?(Array) && content.any? { |part| part[:type] == 'image_url' }
+
+    texts = content.select { |part| part[:type] == 'text' }.pluck(:text)
+    texts << OLDER_IMAGE_PLACEHOLDER
+    texts.join("\n")
   end
 
   # `content` is either a String or the multimodal Array shape produced by

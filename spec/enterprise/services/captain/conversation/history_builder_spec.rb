@@ -125,6 +125,32 @@ RSpec.describe Captain::Conversation::HistoryBuilder do
       end
     end
 
+    describe 'history window per channel' do
+      it 'keeps fewer messages on a chat channel (WhatsApp bridge) than on the web widget' do
+        chat_inbox = create(:inbox, account: account, channel: create(:channel_api, account: account))
+        chat_conversation = create(:conversation, inbox: chat_inbox, account: account)
+        40.times { |i| create(:message, conversation: chat_conversation, content: "m#{i}", message_type: :incoming) }
+        40.times { |i| create(:message, conversation: conversation, content: "m#{i}", message_type: :incoming) }
+
+        chat_history = described_class.new(conversation: chat_conversation, assistant: assistant).call
+        widget_history = described_class.new(conversation: conversation, assistant: assistant).call
+
+        expect(chat_history.size).to eq(Captain::Assistant::DEFAULT_CHAT_HISTORY_WINDOW_MESSAGES)
+        expect(widget_history.size).to eq(Captain::Assistant::DEFAULT_HISTORY_WINDOW_MESSAGES)
+      end
+
+      it 'honours an explicitly configured window on a chat channel' do
+        assistant.update!(config: assistant.config.merge('history_window_messages' => 25))
+        chat_inbox = create(:inbox, account: account, channel: create(:channel_api, account: account))
+        chat_conversation = create(:conversation, inbox: chat_inbox, account: account)
+        40.times { |i| create(:message, conversation: chat_conversation, content: "m#{i}", message_type: :incoming) }
+
+        history = described_class.new(conversation: chat_conversation, assistant: assistant).call
+
+        expect(history.size).to eq(25)
+      end
+    end
+
     context 'with multimodal content (text + image)' do
       it 'truncates/prefixes only the text part, leaving image parts untouched' do
         message = create(:message, conversation: conversation, content: 'look at this', message_type: :incoming)
@@ -136,6 +162,22 @@ RSpec.describe Captain::Conversation::HistoryBuilder do
         expect(content).to be_an(Array)
         expect(content.find { |part| part[:type] == 'text' }[:text]).to eq('look at this')
         expect(content.find { |part| part[:type] == 'image_url' }[:image_url][:url]).to eq('https://example.com/x.jpg')
+      end
+
+      it 'keeps images only on the last RECENT_IMAGE_MESSAGES messages and turns older ones into a text placeholder' do
+        old_photo = create(:message, conversation: conversation, content: 'mira esta', message_type: :incoming)
+        old_photo.attachments.create!(account: account, file_type: :image, external_url: 'https://example.com/old.jpg')
+        described_class::RECENT_IMAGE_MESSAGES.times do |i|
+          create(:message, conversation: conversation, content: "msg #{i}", message_type: :incoming)
+        end
+        recent_photo = create(:message, conversation: conversation, content: nil, message_type: :incoming)
+        recent_photo.attachments.create!(account: account, file_type: :image, external_url: 'https://example.com/new.jpg')
+
+        history = described_class.new(conversation: conversation, assistant: assistant).call
+
+        expect(history.first[:content]).to eq("mira esta\n#{described_class::OLDER_IMAGE_PLACEHOLDER}")
+        expect(history.last[:content]).to be_an(Array)
+        expect(history.last[:content].find { |part| part[:type] == 'image_url' }[:image_url][:url]).to eq('https://example.com/new.jpg')
       end
     end
   end

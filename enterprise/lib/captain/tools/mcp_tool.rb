@@ -17,7 +17,8 @@ class Captain::Tools::McpTool < Agents::Tool
     response = Platform::Mcp::CallService.new(
       server: @server,
       tool_name: @tool_metadata[:tool_name],
-      arguments: params
+      arguments: params,
+      client: mcp_client
     ).call
 
     response.to_s
@@ -33,4 +34,12 @@ class Captain::Tools::McpTool < Agents::Tool
   private
 
   attr_reader :assistant, :server, :tool_metadata
+
+  # A tool instance lives for one Captain turn (built by
+  # AgentRunnerService#runner). Sharing the MCP client across its calls
+  # keeps the session, so the initialize handshake (two HTTP round-trips)
+  # happens once per turn instead of before every tool call.
+  def mcp_client
+    @mcp_client ||= Platform::Mcp::Client.new(server: @server)
+  end
 end

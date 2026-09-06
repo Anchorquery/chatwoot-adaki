@@ -4,8 +4,11 @@ class Captain::Tools::RegistryService
     @assistant = assistant
   end
 
+  # Memoized: building the agent graph for one Captain turn asks for this
+  # list once per scenario tool (custom tools + MCP servers are two queries
+  # each time), all inside a single job.
   def available_tool_metadata
-    built_in_tools + custom_tool_metadata + mcp_tool_metadata
+    @available_tool_metadata ||= built_in_tools + custom_tool_metadata + mcp_tool_metadata
   end
 
   def available_tool_ids
@@ -43,10 +46,14 @@ class Captain::Tools::RegistryService
     account.captain_mcp_servers.enabled.flat_map(&:available_tool_metadata)
   end
 
+  # The orchestrator gets faq_lookup only: SearchDocumentationTool runs the
+  # exact same query against the same index, and offering both made the
+  # model "verify" one with the other (an extra embedding + LLM round-trip
+  # per answer). It stays in the registry so scenarios that reference
+  # tool://search_documentation keep working.
   def built_in_tool_instances
     [
       Captain::Tools::FaqLookupTool.new(assistant),
-      Captain::Tools::SearchDocumentationTool.new(assistant),
       Captain::Tools::HandoffTool.new(assistant)
     ]
   end

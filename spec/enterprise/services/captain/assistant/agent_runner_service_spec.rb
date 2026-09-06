@@ -721,6 +721,48 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     end
   end
 
+  describe '#run_payload knowledge pre-fetch' do
+    let(:prefetcher) { instance_double(Captain::KnowledgePrefetcher) }
+    let(:history_with_image) do
+      [{ role: 'user',
+         content: [{ type: 'text', text: 'What does this error mean?' },
+                   { type: 'image_url', image_url: { url: 'https://example.com/error.png' } }] }]
+    end
+
+    before do
+      allow(Captain::KnowledgePrefetcher).to receive(:new).with(assistant).and_return(prefetcher)
+      allow(prefetcher).to receive(:attach) { |text| "KB\n#{text}" }
+    end
+
+    it 'attaches the pre-fetched FAQs to the user message, never to the system prompt state' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      message, context = service.send(:run_payload, message_history)
+
+      expect(message).to eq("KB\nI need help with my account")
+      expect(context[:state]).not_to have_key(:knowledge)
+    end
+
+    it 'keeps image attachments while enriching only the text of a multimodal message' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      message, = service.send(:run_payload, history_with_image)
+
+      expect(message).to be_a(RubyLLM::Content)
+      expect(message.text).to start_with("KB\n")
+      expect(message.attachments.size).to eq(1)
+    end
+
+    it 'skips the pre-fetch when there is no conversation (playground/copilot)' do
+      service = described_class.new(assistant: assistant, conversation: nil)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).to eq('I need help with my account')
+      expect(Captain::KnowledgePrefetcher).not_to have_received(:new)
+    end
+  end
+
   describe '#build_state' do
     subject(:service) { described_class.new(assistant: assistant, conversation: conversation) }
 

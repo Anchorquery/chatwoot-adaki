@@ -9,6 +9,35 @@ RSpec.describe MessageTemplates::HookExecutionService do
 
   before do
     create(:captain_inbox, captain_assistant: assistant, inbox: inbox)
+    # Every enqueue now goes through .set(wait: debounce) (see
+    # Enterprise::MessageTemplates::HookExecutionService#schedule_captain_response);
+    # collapse it so the `.perform_later.with(conversation, assistant)`
+    # expectations below keep asserting the arguments.
+    allow(Captain::Conversation::ResponseBuilderJob).to receive(:set).and_return(Captain::Conversation::ResponseBuilderJob)
+  end
+
+  describe 'debounce before the Captain job runs' do
+    it 'delays the job by CAPTAIN_RESPONSE_DEBOUNCE_SECONDS (default 2) so a burst of messages gets one reply' do
+      expect(Captain::Conversation::ResponseBuilderJob).to receive(:set).with(wait: 2.seconds)
+
+      create(:message, conversation: conversation, message_type: :incoming, account: account)
+    end
+
+    it 'adds the attachment wait on top of the debounce' do
+      expect(Captain::Conversation::ResponseBuilderJob).to receive(:set).with(wait: 2.seconds + 2.seconds)
+
+      message = build(:message, conversation: conversation, message_type: :incoming, account: account)
+      message.attachments.build(account_id: account.id, file_type: :image, external_url: 'https://example.com/x.jpg')
+      message.save!
+    end
+
+    it 'enqueues immediately when the env var is 0' do
+      with_modified_env CAPTAIN_RESPONSE_DEBOUNCE_SECONDS: '0' do
+        expect(Captain::Conversation::ResponseBuilderJob).to receive(:set).with(wait: 0.seconds)
+
+        create(:message, conversation: conversation, message_type: :incoming, account: account)
+      end
+    end
   end
 
   context 'when captain assistant is configured' do

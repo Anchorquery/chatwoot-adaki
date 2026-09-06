@@ -238,6 +238,102 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         account.reload
         expect(account.usage_limits[:captain][:responses][:consumed]).to eq(1)
       end
+
+      context 'when the inbox is a WhatsApp bridge on a Channel::Api inbox' do
+        let(:inbox) { create(:inbox, account: account, channel: create(:channel_api, account: account)) }
+
+        before do
+          allow(mock_agent_runner_service).to receive(:generate_response).and_return(
+            { 'response' => "### Tarjetas NFC\n* **1 Tarjeta:** 18,90 €\n[https://x.io/p](https://x.io/p)" }
+          )
+        end
+
+        it 'flattens Markdown the phone cannot render before saving the reply' do
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.messages.last.content).to eq("**Tarjetas NFC**\n* **1 Tarjeta:** 18,90 €\nhttps://x.io/p")
+        end
+
+        it 'flattens the handoff message too' do
+          assistant.update!(config: assistant.config.merge('handoff_message' => "## Un momento\n[web](https://x.io)"))
+          allow(mock_agent_runner_service).to receive(:generate_response).and_return(
+            { 'response' => 'conversation_handoff', 'handoff_tool_called' => true }
+          )
+          conversation.update!(status: :open)
+
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.messages.last.content).to eq("**Un momento**\nweb (https://x.io)")
+        end
+      end
+
+      context 'when a newer incoming message arrived after this job was enqueued (message burst)' do
+        it 'stands down and lets the newer message\'s job answer the whole burst' do
+          job = described_class.new(conversation, assistant)
+          job.enqueued_at = Time.current
+          create(:message, conversation: conversation, content: 'y otra cosa', message_type: :incoming, created_at: 1.second.from_now)
+
+          job.perform_now
+
+          expect(conversation.messages.outgoing.count).to eq(0)
+          expect(mock_agent_runner_service).not_to have_received(:generate_response)
+        end
+
+        it 'still answers when the only newer messages are outgoing or private' do
+          job = described_class.new(conversation, assistant)
+          job.enqueued_at = Time.current
+          create(:message, conversation: conversation, content: 'nota', message_type: :incoming, private: true, created_at: 1.second.from_now)
+
+          job.perform_now
+
+          expect(conversation.messages.outgoing.where(private: false).count).to eq(1)
+        end
+      end
+
+      context 'when another Captain run already holds the conversation lock' do
+        let(:lock_key) { "captain:conversation:#{conversation.id}" }
+
+        it 'does not answer twice and re-enqueues itself to answer right after the run in progress' do
+          Redis::LockManager.new.lock(lock_key, 60)
+
+          expect { described_class.perform_now(conversation, assistant) }
+            .to have_enqueued_job(described_class).with(conversation, assistant, lock_attempt: 1)
+          expect(conversation.messages.outgoing.count).to eq(0)
+        ensure
+          Redis::LockManager.new.unlock(lock_key)
+        end
+
+        it 'gives up (and reports) instead of re-enqueuing forever' do
+          Redis::LockManager.new.lock(lock_key, 60)
+          allow(ChatwootExceptionTracker).to receive(:new).and_return(instance_double(ChatwootExceptionTracker,
+                                                                                      capture_exception: true))
+
+          expect { described_class.perform_now(conversation, assistant, lock_attempt: described_class::MAX_LOCK_ATTEMPTS) }
+            .not_to have_enqueued_job(described_class)
+          expect(ChatwootExceptionTracker).to have_received(:new)
+        ensure
+          Redis::LockManager.new.unlock(lock_key)
+        end
+
+        it 'releases the lock once the run finishes, so the next message is answered' do
+          described_class.perform_now(conversation, assistant)
+
+          expect(Redis::LockManager.new.locked?(lock_key)).to be(false)
+          expect(conversation.messages.outgoing.count).to eq(1)
+        end
+      end
+
+      context 'when the inbox renders Markdown itself (web widget)' do
+        before do
+          allow(mock_agent_runner_service).to receive(:generate_response).and_return({ 'response' => "### Título\n[web](https://x.io)" })
+        end
+
+        it 'leaves the reply untouched' do
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.messages.last.content).to eq("### Título\n[web](https://x.io)")
+        end
+      end
     end
 
     context 'when captain_v2 handoff tool fires during agent execution' do

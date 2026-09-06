@@ -37,7 +37,10 @@ class Captain::Assistant < ApplicationRecord
            dependent: :destroy_async
   has_many :messages, as: :sender, dependent: :nullify
   has_many :copilot_threads, dependent: :destroy_async
-  has_many :scenarios, class_name: 'Captain::Scenario', dependent: :destroy_async
+  # inverse_of: scenarios loaded through this association share this very
+  # instance as their `assistant`, so the memoized tool registry below is
+  # built once per Captain turn instead of once per scenario tool.
+  has_many :scenarios, class_name: 'Captain::Scenario', inverse_of: :assistant, dependent: :destroy_async
 
   HUMAN_TAKEOVER_MODES = %w[always after_window never].freeze
   DEFAULT_HUMAN_TAKEOVER_MODE = 'after_window'
@@ -50,11 +53,17 @@ class Captain::Assistant < ApplicationRecord
   # (incorrectly) treats as a handoff-worthy failure.
   DEFAULT_HISTORY_WINDOW_MESSAGES = 30
 
+  # Chat channels (WhatsApp, SMS) are short-turn conversations: 30 messages of
+  # history is mostly small talk the model re-reads — and re-pays for — on
+  # every turn. Used only when the admin has not set history_window_messages
+  # explicitly, so an explicit choice always wins.
+  DEFAULT_CHAT_HISTORY_WINDOW_MESSAGES = 16
+
   store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes,
                  :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number,
                  :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
                  :human_takeover_mode, :human_takeover_window_minutes, :history_window_messages,
-                 :handoff_team_id, :reasoning_level
+                 :handoff_team_id, :reasoning_level, :max_response_tokens
 
   validates :name, presence: true
   validates :description, presence: true
@@ -131,14 +140,48 @@ class Captain::Assistant < ApplicationRecord
   end
 
   # How many recent messages to include as LLM context. See
-  # DEFAULT_HISTORY_WINDOW_MESSAGES.
-  def history_window_messages_value
+  # DEFAULT_HISTORY_WINDOW_MESSAGES. `channel_type` only selects the default
+  # for chat channels; an explicitly configured value is always honoured.
+  def history_window_messages_value(channel_type: nil)
     value = config['history_window_messages'].to_i
-    value.positive? ? value : DEFAULT_HISTORY_WINDOW_MESSAGES
+    return value if value.positive?
+
+    if Captain::ChatTextFormatter.chat_channel?(channel_type)
+      DEFAULT_CHAT_HISTORY_WINDOW_MESSAGES
+    else
+      DEFAULT_HISTORY_WINDOW_MESSAGES
+    end
+  end
+
+  # Cap on the tokens a reply may generate. See Llm::OutputLimit.
+  def max_response_tokens_value
+    value = config['max_response_tokens'].to_i
+    value.positive? ? value : Llm::OutputLimit::DEFAULT_MAX_TOKENS
   end
 
   def available_agent_tools
-    Captain::Tools::RegistryService.new(account: account, assistant: self).available_tool_metadata
+    tool_registry.available_tool_metadata
+  end
+
+  # Outside #cache_tool_registry every call gets a fresh registry (so a tool
+  # disabled a moment ago is gone on the next lookup). Inside it — the agent
+  # graph build for one Captain turn — the assistant and all its scenarios
+  # (same instance via inverse_of) share one registry, whose tool list is
+  # memoized: custom tools and MCP servers are queried once per turn instead
+  # of once per scenario tool.
+  def tool_registry
+    return Captain::Tools::RegistryService.new(account: account, assistant: self) unless @tool_registry_cached
+
+    @tool_registry ||= Captain::Tools::RegistryService.new(account: account, assistant: self)
+  end
+
+  def cache_tool_registry
+    @tool_registry_cached = true
+    @tool_registry = nil
+    yield
+  ensure
+    @tool_registry_cached = false
+    @tool_registry = nil
   end
 
   def available_tool_ids

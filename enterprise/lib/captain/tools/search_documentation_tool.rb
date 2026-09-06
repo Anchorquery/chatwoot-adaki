@@ -1,7 +1,13 @@
 require 'agents'
 
 class Captain::Tools::SearchDocumentationTool < Captain::Tools::BasePublicTool
-  description 'Search the account knowledge base for documentation and product answers'
+  # Same vector index and query as FaqLookupTool — kept for backwards
+  # compatibility with prompts/scenarios that name it. The description tells
+  # the model so it does not "verify" one tool with the other: each extra call
+  # costs an embedding request plus a full LLM round-trip while the customer
+  # waits.
+  description 'Search the account knowledge base for documentation and product answers. ' \
+              'Same index as faq_lookup: call only one of them per question, never both.'
   param :query, type: 'string', desc: 'The question or topic to search for in the documentation'
 
   def perform(_tool_context, query:)

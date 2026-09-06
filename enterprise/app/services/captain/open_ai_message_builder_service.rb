@@ -62,6 +62,14 @@ class Captain::OpenAiMessageBuilderService
     return '' if audio_attachments.blank?
 
     audio_attachments.map do |attachment|
+      # The history builder rebuilds every message in the window on every
+      # Captain turn. A transcript already stored by AudioTranscriptionJob is
+      # read straight from the attachment: instantiating the service just to
+      # find that out re-initialised RubyLLM and checked the account's usage
+      # limits per voice note per turn.
+      cached = attachment.meta&.dig('transcribed_text')
+      next cached if cached.present?
+
       result = Messages::AudioTranscriptionService.new(attachment).perform
       result[:success] ? result[:transcriptions] : ''
     end.join
