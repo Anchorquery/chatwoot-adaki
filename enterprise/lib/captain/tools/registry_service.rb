@@ -26,8 +26,10 @@ class Captain::Tools::RegistryService
     build_tool_from_metadata(metadata)
   end
 
+  # .build, not .new: each MCP tool needs its own subclass to carry its
+  # description and argument schema. See Captain::Tools::McpTool.
   def self.build_mcp_tool(assistant:, server:, tool_metadata:)
-    Captain::Tools::McpTool.new(assistant, server, tool_metadata)
+    Captain::Tools::McpTool.build(assistant, server, tool_metadata)
   end
 
   private
@@ -84,7 +86,7 @@ class Captain::Tools::RegistryService
       server = account.captain_mcp_servers.find_by(id: metadata[:server_id])
       return nil if server.blank?
 
-      return Captain::Tools::McpTool.new(assistant, server, metadata)
+      return Captain::Tools::McpTool.build(assistant, server, metadata)
     end
 
     if metadata[:custom]
