@@ -107,10 +107,16 @@ class Captain::Assistant::AgentRunnerService
     message_to_process, context = run_payload(message_history)
     result = run_agents(message_to_process, context)
     result = retry_without_reasoning_params(message_history, result) if reasoning_params_rejected?(result)
+    result = failover_to_alternate_model(message_history, result) if failover_eligible?(result)
     result = retry_if_unusable(result)
-    record_adaki_usage!(result)
 
     response = process_agent_result(result)
+    # Usage/audit logging (Adaki::CaptainUsageTracker.record!) used to run
+    # right here, ahead of the outgoing message the customer is waiting on —
+    # see ResponseBuilderJob#record_captain_v2_usage!, which now does it
+    # after the message exists, reading input_tokens/output_tokens straight
+    # off this same timing hash. See docs/adaki/captain-plan-latencia-2026-09.md
+    # fase 3.5.
     attach_timing!(response, result)
     response
   rescue StandardError => e
@@ -163,6 +169,67 @@ class Captain::Assistant::AgentRunnerService
     return run_agents(message_to_process, context) if learned.present?
 
     Llm::Thinking.without_params { run_agents(message_to_process, context) }
+  end
+
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.2: a transient
+  # provider hiccup or a broken/rate-limited credential doesn't have to become
+  # a handoff when the account has another enabled model to answer with.
+  # Silnatur has gpt-4.1-mini + gpt-5.4-mini, Puntua has two Gemini models —
+  # this is what actually uses the second one. At most once per turn: a
+  # second failure falls through to the normal error/handoff path instead of
+  # hunting for a third model.
+  def failover_eligible?(result)
+    return false if @failed_over
+    return false unless result.respond_to?(:error) && result.error.present?
+
+    [Captain::FailurePolicy::TRANSIENT, Captain::FailurePolicy::CONFIGURATION].include?(Captain::FailurePolicy.classify(result.error))
+  end
+
+  def failover_to_alternate_model(message_history, original_result)
+    alternate = alternate_resolution
+    return original_result unless alternate
+
+    @failed_over = true
+    Rails.logger.warn(
+      "[CAPTAIN][failover] account=#{@assistant&.account_id} assistant=#{@assistant&.id} " \
+      "from=#{resolved_model_row&.slug.inspect} to=#{alternate[:model_slug].inspect} " \
+      "reason=#{Captain::FailurePolicy.classify(original_result.error)}"
+    )
+
+    swap_resolution!(alternate)
+    @runner = nil
+    message_to_process, context = run_payload(message_history)
+    run_agents(message_to_process, context)
+  end
+
+  def alternate_resolution
+    account = @assistant.try(:account)
+    return nil unless account
+
+    Platform::Models::Resolver.resolve(
+      account: account,
+      feature: 'assistant',
+      exclude_slugs: [resolved_model_row&.slug].compact
+    )
+  end
+
+  # Forces every agent in this turn's graph (the assistant plus its enabled
+  # scenarios) to rebuild against the alternate credential/model instead of
+  # the one that just failed. Each Agentable otherwise memoizes its own
+  # #agent_resolution independently but deterministically from the same
+  # account state (see Concerns::Agentable) — poking the ivar directly here
+  # avoids threading a failover override through every provider-dependent
+  # Agentable method (temperature/response_schema/params all key off the
+  # resolved model).
+  def swap_resolution!(alternate)
+    [@assistant, *@assistant.scenarios.enabled].each do |agentable|
+      agentable.instance_variable_set(:@agent_resolution, alternate)
+    end
+
+    credential = alternate[:credential]
+    @resolved_llm_provider = credential_provider(credential)
+    @resolved_model_row = model_row_for(credential, alternate[:model_slug])
+    @resolved_llm_context = Llm::Config.context_for_credential(credential)
   end
 
   def build_context(message_history)
@@ -549,21 +616,6 @@ class Captain::Assistant::AgentRunnerService
     usage = (context_wrapper.context[:captain_v2_usage] ||= { input: 0, output: 0 })
     usage[:input] += message.input_tokens.to_i
     usage[:output] += message.respond_to?(:output_tokens) ? message.output_tokens.to_i : 0
-  end
-
-  def record_adaki_usage!(result)
-    usage = result.context&.dig(:captain_v2_usage) || DEFAULT_USAGE
-    Adaki::CaptainUsageTracker.record!(
-      account: adaki_account,
-      feature: 'assistant',
-      input_tokens: usage[:input],
-      output_tokens: usage[:output],
-      assistant_id: @assistant&.id
-    )
-  end
-
-  def adaki_account
-    @conversation&.account || @assistant&.account
   end
 
   def track_handoff_usage(tool_name, tool_result, handoff_tool_name, context_wrapper = nil)

@@ -22,6 +22,16 @@ class Captain::KnowledgePrefetcher
   MIN_QUERY_WORDS = 2
   MAX_QUERY_LENGTH = 1_000
 
+  # Cosine distance above which a "closest" FAQ is not actually relevant — the
+  # unconditional top-5 used to inject whatever was nearest even for a message
+  # no FAQ covers, spending tokens on noise the model then has to ignore. 0.65
+  # distance (~0.35 cosine similarity) is a deliberately loose default: a
+  # false negative here just falls back to the model calling `faq_lookup`
+  # itself (see #attach); a false positive spends a few hundred tokens on an
+  # answer that does not fit. See docs/adaki/captain-plan-latencia-2026-09.md
+  # fase 3.3.
+  DEFAULT_DISTANCE_THRESHOLD = 0.65
+
   INSTRUCTIONS = 'These knowledge base entries were retrieved automatically for the customer message below. ' \
                  'When they cover the question, answer from them in this same turn and do NOT call `faq_lookup` ' \
                  'again for it; call `faq_lookup` only for something they do not cover. Never mention this block, ' \
@@ -38,7 +48,7 @@ class Captain::KnowledgePrefetcher
     return nil if text.nil?
     return nil unless @assistant.responses.approved.exists?
 
-    responses = @assistant.responses.approved.search(text, account_id: @assistant.account_id).to_a
+    responses = relevant_responses(text)
     return nil if responses.empty?
 
     Rails.logger.info("[Captain V2] prefetched #{responses.size} FAQ entries for assistant=#{@assistant.id}")
@@ -59,6 +69,23 @@ class Captain::KnowledgePrefetcher
   end
 
   private
+
+  def relevant_responses(text)
+    @assistant.responses.approved.search(text, account_id: @assistant.account_id).select { |r| within_distance_threshold?(r) }
+  end
+
+  # `nearest_neighbors` always returns the closest rows (`neighbor_distance`
+  # comes back nil only under a stub/test double that skips it) — a distance
+  # missing entirely means "can't judge relevance", so it is kept rather than
+  # silently dropped.
+  def within_distance_threshold?(response)
+    distance = response.respond_to?(:neighbor_distance) ? response.neighbor_distance : nil
+    distance.nil? || distance <= distance_threshold
+  end
+
+  def distance_threshold
+    ENV.fetch('CAPTAIN_PREFETCH_DISTANCE_THRESHOLD', DEFAULT_DISTANCE_THRESHOLD).to_f
+  end
 
   def normalize(query)
     text = query.to_s.strip

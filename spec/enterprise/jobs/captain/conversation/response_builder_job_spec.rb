@@ -239,6 +239,33 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(account.usage_limits[:captain][:responses][:consumed]).to eq(1)
       end
 
+      context 'usage/audit tracking (fase 3.5: moved here from AgentRunnerService)' do
+        before do
+          allow(mock_agent_runner_service).to receive(:generate_response).and_return(
+            { 'response' => 'Hey, welcome to Captain V2',
+              'timing' => { prefetch_ms: 1, llm_ms: 2, tools_calls: 0, input_tokens: 30, output_tokens: 13 } }
+          )
+        end
+
+        it 'records usage after the outgoing message already exists' do
+          expect(Adaki::CaptainUsageTracker).to receive(:record!) do |**kwargs|
+            expect(kwargs).to include(account: account, feature: 'assistant', input_tokens: 30, output_tokens: 13,
+                                      assistant_id: assistant.id)
+            # The reply must already be persisted by the time usage/audit records.
+            expect(conversation.messages.outgoing.count).to eq(1)
+          end
+
+          described_class.perform_now(conversation, assistant)
+        end
+
+        it 'does not record usage when the response carries no timing (e.g. V1 path)' do
+          allow(mock_agent_runner_service).to receive(:generate_response).and_return({ 'response' => 'Hey, welcome to Captain V2' })
+          expect(Adaki::CaptainUsageTracker).not_to receive(:record!)
+
+          described_class.perform_now(conversation, assistant)
+        end
+      end
+
       context 'when the inbox is a WhatsApp bridge on a Channel::Api inbox' do
         let(:inbox) { create(:inbox, account: account, channel: create(:channel_api, account: account)) }
 

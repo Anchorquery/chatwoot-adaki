@@ -15,8 +15,13 @@ RSpec.describe Captain::KnowledgePrefetcher do
     let(:document) { create(:captain_document, assistant: assistant, external_link: 'https://example.com/precios') }
 
     before do
+      # Same vector the stubbed EmbeddingService returns for the query, so
+      # neighbor_distance is ~0 regardless of the distance-threshold gate
+      # (see Captain::KnowledgePrefetcher::DEFAULT_DISTANCE_THRESHOLD) — the
+      # factory's random embedding would otherwise make this flaky.
       create(:captain_assistant_response, assistant: assistant, question: '¿Cuánto cuesta el pack de 3?',
-                                          answer: '37,90 €', documentable: document, status: 'approved')
+                                          answer: '37,90 €', documentable: document, status: 'approved',
+                                          embedding: Array.new(1536, 0.1))
       create(:captain_assistant_response, assistant: assistant, question: 'Pendiente', answer: 'no', status: 'pending')
     end
 
@@ -53,6 +58,25 @@ RSpec.describe Captain::KnowledgePrefetcher do
       allow(Captain::AssistantResponse).to receive(:search).and_raise(Captain::Llm::EmbeddingService::EmbeddingsError, 'down')
 
       expect(prefetcher.call('cuánto cuesta el pack')).to be_nil
+    end
+  end
+
+  context 'when the closest FAQ is not actually relevant (distance above the threshold)' do
+    before do
+      # Opposite vector to the stubbed query embedding: cosine distance ~2,
+      # well past DEFAULT_DISTANCE_THRESHOLD (0.65).
+      create(:captain_assistant_response, assistant: assistant, question: 'Something unrelated',
+                                          answer: 'unrelated', status: 'approved', embedding: Array.new(1536, -0.1))
+    end
+
+    it 'does not inject it' do
+      expect(prefetcher.call('cuánto cuesta el pack de 3 tarjetas')).to be_nil
+    end
+
+    it 'is injected anyway when the threshold env var is opened all the way up' do
+      with_modified_env CAPTAIN_PREFETCH_DISTANCE_THRESHOLD: '2' do
+        expect(prefetcher.call('cuánto cuesta el pack de 3 tarjetas')).to include('Something unrelated')
+      end
     end
   end
 

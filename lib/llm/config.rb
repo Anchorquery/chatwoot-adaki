@@ -193,8 +193,11 @@ module Llm::Config
         # handles backoff for transient failures (see Captain::FailurePolicy
         # + response_builder_job.rb), so this only needs to fail fast enough
         # for that outer layer to take over. See
-        # docs/adaki/captain-remediacion.md §3.
-        config.request_timeout = 60
+        # docs/adaki/captain-remediacion.md §3. 30s (not 60s): no real Captain
+        # turn measured in 90 days of production traffic has taken more than
+        # 15s (docs/adaki/captain-plan-latencia-2026-09.md fase 3.1) — a
+        # request still running past 30s is hung, not slow.
+        config.request_timeout = 30
         config.max_retries = 1
         config.retry_interval = 1
       end

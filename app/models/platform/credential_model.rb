@@ -37,6 +37,12 @@ class Platform::CredentialModel < ApplicationRecord
   scope :enabled, -> { where(enabled: true) }
   scope :by_kind, ->(kind) { where(kind: kind) }
 
+  # See Platform::Models::ResolutionCache (docs/adaki/captain-plan-latencia-2026-09.md
+  # fase 3.6): toggling `enabled`, a model sync, or a reasoning-capability
+  # learn (Llm::ReasoningCapabilities.learn_from_rejection!) must not keep
+  # serving a stale resolution for up to 5 minutes.
+  after_commit :bust_model_resolution_cache
+
   # Efforts this model accepts per its own row (see Llm::ReasoningCapabilities);
   # nil when nothing is recorded yet.
   def reasoning_supported_efforts
@@ -44,6 +50,10 @@ class Platform::CredentialModel < ApplicationRecord
   end
 
   private
+
+  def bust_model_resolution_cache
+    Platform::Models::ResolutionCache.bump(credential&.account_id)
+  end
 
   def reasoning_config_shape
     return if reasoning_config.blank?

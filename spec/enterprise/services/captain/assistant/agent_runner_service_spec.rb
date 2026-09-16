@@ -106,6 +106,85 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       end
     end
 
+    # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.2.
+    context 'when the run fails with a transient or configuration error' do
+      let(:failed_result) do
+        instance_double(Agents::RunResult, output: nil, context: {}, error: RubyLLM::ServerError.new('boom'))
+      end
+      let(:retry_result) { instance_double(Agents::RunResult, output: { 'response' => 'Respuesta con el modelo alterno' }, context: {}) }
+
+      before do
+        alternate_credential = create(:platform_credential, :openai, account: account)
+        allow(mock_runner).to receive(:run).and_return(failed_result, retry_result)
+        allow(Platform::Models::Resolver).to receive(:resolve).and_return(
+          { credential: alternate_credential, model_slug: 'gpt-4.1-mini', source: :feature }
+        )
+      end
+
+      it 'retries once with the next enabled model instead of handing off' do
+        response = service.generate_response(message_history: message_history)
+
+        expect(response['response']).to eq('Respuesta con el modelo alterno')
+        expect(mock_runner).to have_received(:run).twice
+        expect(Agents::Runner).to have_received(:with_agents).twice
+      end
+
+      it 'excludes the model that just failed from the alternate resolution' do
+        service.generate_response(message_history: message_history)
+
+        expect(Platform::Models::Resolver).to have_received(:resolve).with(
+          hash_including(account: account, feature: 'assistant', exclude_slugs: anything)
+        )
+      end
+
+      it 'logs the failover with from/to' do
+        allow(Rails.logger).to receive(:warn).and_call_original
+
+        service.generate_response(message_history: message_history)
+
+        expect(Rails.logger).to have_received(:warn).with(a_string_matching(/\[CAPTAIN\]\[failover\].*to="gpt-4\.1-mini"/))
+      end
+
+      it 'does not fail over a second time in the same turn' do
+        allow(mock_runner).to receive(:run).and_return(failed_result, failed_result)
+
+        response = service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).twice
+        expect(response['response']).not_to eq('Respuesta con el modelo alterno')
+      end
+
+      context 'when no alternate model is available' do
+        before { allow(Platform::Models::Resolver).to receive(:resolve).and_return(nil) }
+
+        it 'does not retry' do
+          service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).once
+        end
+      end
+    end
+
+    context 'when the run fails with a non-retryable error (e.g. context length)' do
+      let(:failed_result) do
+        instance_double(Agents::RunResult, output: nil, context: {}, error: RubyLLM::ContextLengthExceededError.new('too long'))
+      end
+
+      before do
+        allow(mock_runner).to receive(:run).and_return(failed_result)
+        allow(Platform::Models::Resolver).to receive(:resolve).and_call_original
+      end
+
+      it 'does not attempt failover' do
+        service.generate_response(message_history: message_history)
+
+        # Only the ordinary (non-failover) resolution call, never a second
+        # one with exclude_slugs.
+        expect(Platform::Models::Resolver).not_to have_received(:resolve).with(hash_including(:exclude_slugs))
+        expect(mock_runner).to have_received(:run).once
+      end
+    end
+
     it 'builds agents and wires them together' do
       expect(assistant).to receive(:agent).and_return(mock_agent)
       scenarios_relation = instance_double(Captain::Scenario)
@@ -1063,27 +1142,31 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     end
   end
 
-  describe '#record_adaki_usage!' do
-    it 'records the accumulated usage from the final result context' do
+  describe '#attach_timing!' do
+    # Adaki::CaptainUsageTracker.record! itself moved to
+    # ResponseBuilderJob#record_captain_v2_usage! (fase 3.5: it used to run
+    # here, ahead of the outgoing message). This service's job now is just to
+    # expose the tokens for the job to read.
+    it 'exposes the accumulated usage from the final result context' do
       service = described_class.new(assistant: assistant, conversation: conversation)
       result = instance_double(Agents::RunResult, context: { captain_v2_usage: { input: 30, output: 13 } })
+      response = {}
 
-      expect(Adaki::CaptainUsageTracker).to receive(:record!).with(
-        hash_including(account: account, feature: 'assistant', input_tokens: 30, output_tokens: 13, assistant_id: assistant.id)
-      )
+      service.instance_variable_set(:@timing, { prefetch_ms: 1, llm_ms: 2 })
+      service.send(:attach_timing!, response, result)
 
-      service.send(:record_adaki_usage!, result)
+      expect(response['timing']).to include(input_tokens: 30, output_tokens: 13)
     end
 
-    it 'records zero usage instead of raising when the run never reached a chat (e.g. failed before any LLM call)' do
+    it 'exposes zero usage instead of raising when the run never reached a chat' do
       service = described_class.new(assistant: assistant, conversation: conversation)
       result = instance_double(Agents::RunResult, context: nil)
+      response = {}
 
-      expect(Adaki::CaptainUsageTracker).to receive(:record!).with(
-        hash_including(input_tokens: 0, output_tokens: 0)
-      )
+      service.instance_variable_set(:@timing, {})
+      service.send(:attach_timing!, response, result)
 
-      service.send(:record_adaki_usage!, result)
+      expect(response['timing']).to include(input_tokens: 0, output_tokens: 0)
     end
   end
 
