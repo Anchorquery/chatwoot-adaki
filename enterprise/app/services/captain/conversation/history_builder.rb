@@ -16,8 +16,14 @@ class Captain::Conversation::HistoryBuilder
   HUMAN_AGENT_MESSAGE_PREFIX = '[Mensaje de un agente humano, no del asistente]: '.freeze
 
   # How long a V2 scenario agent stays "current" after its last reply. See
-  # #agent_tag_still_current?.
-  AGENT_STICKINESS_WINDOW = 1.hour
+  # #agent_tag_still_current?. Lowered from 1h now that
+  # Captain::Conversation::ScenarioRouter re-confirms the scenario by content
+  # every turn instead of relying purely on this timer (see docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 4.3) — this window only matters for
+  # a turn the router doesn't confidently match to anything (a bare "ok",
+  # "gracias"), where it's still worth finishing out a recent exchange without
+  # bouncing back to the orchestrator.
+  AGENT_STICKINESS_WINDOW = 15.minutes
 
   # Only the most recent messages keep their image parts. Every image in the
   # window is re-fetched and re-sent on EVERY turn (RubyLLM downloads URL
@@ -28,6 +34,16 @@ class Captain::Conversation::HistoryBuilder
   # reply about it is in the history anyway.
   RECENT_IMAGE_MESSAGES = 4
   OLDER_IMAGE_PLACEHOLDER = '[imagen adjunta]'.freeze
+
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 5.3: once a
+  # conversation outgrows the window above, the messages that fall off used
+  # to just disappear from what the bot can see. #maybe_enqueue_summary!
+  # keeps a running compression of them instead, re-queued only every this
+  # many additional old messages — not every single turn, which would mean
+  # one extra LLM call per message on a long thread for no benefit.
+  SUMMARY_RESUMMARIZE_DELTA = 10
+  SUMMARY_PENDING_TTL = 2.minutes
+  SUMMARY_PREFIX = '[Resumen de mensajes anteriores, ya fuera de este historial]: '.freeze
 
   def initialize(conversation:, assistant:)
     @conversation = conversation
@@ -59,19 +75,44 @@ class Captain::Conversation::HistoryBuilder
   # messages in the wrong order (or the wrong messages entirely, under
   # LIMIT) prior to this fix.
   def call
-    messages = @conversation
-               .messages
-               .where(message_type: [:incoming, :outgoing])
-               .where(private: false)
-               .reorder(created_at: :desc, id: :desc)
-               .limit(@assistant.history_window_messages_value(channel_type: @conversation.inbox&.channel_type))
-               .to_a
-               .reverse
+    scope = eligible_messages_scope
+    window = @assistant.history_window_messages_value(channel_type: @conversation.inbox&.channel_type)
+    messages = scope.reorder(created_at: :desc, id: :desc).limit(window).to_a.reverse
     recent_from = [messages.size - RECENT_IMAGE_MESSAGES, 0].max
-    messages.each_with_index.map { |message, index| message_hash_for(message, keep_images: index >= recent_from) }
+    hashes = messages.each_with_index.map { |message, index| message_hash_for(message, keep_images: index >= recent_from) }
+
+    old_count = scope.count - messages.size
+    return hashes unless old_count.positive?
+
+    maybe_enqueue_summary!(old_count)
+    prepend_summary(hashes)
   end
 
   private
+
+  def eligible_messages_scope
+    @conversation.messages.where(message_type: [:incoming, :outgoing]).where(private: false)
+  end
+
+  # Only re-queues when the coverage is missing or meaningfully stale, and a
+  # short Redis flag keeps a burst of turns before the async job lands from
+  # each queuing their own duplicate summarization.
+  def maybe_enqueue_summary!(old_count)
+    covered = @conversation.additional_attributes['captain_summary_covers'].to_i
+    return if covered.positive? && (old_count - covered) < SUMMARY_RESUMMARIZE_DELTA
+
+    lock_key = "captain:summary_pending:#{@conversation.id}"
+    return unless Redis::Alfred.set(lock_key, 1, nx: true, ex: SUMMARY_PENDING_TTL)
+
+    Captain::Conversation::SummarizeOldMessagesJob.perform_later(@conversation, old_count)
+  end
+
+  def prepend_summary(hashes)
+    summary = @conversation.additional_attributes['captain_summary']
+    return hashes if summary.blank?
+
+    [{ content: "#{SUMMARY_PREFIX}#{summary}", role: 'user' }] + hashes
+  end
 
   def message_hash_for(message, keep_images: true)
     message_hash = {

@@ -29,18 +29,14 @@ RSpec.describe 'RubyLLM thread context patch' do
     end
   end
 
-  describe '.with_thread_context with a provider' do
-    it 'exposes the provider within the block and restores it afterwards' do
-      context = instance_double(RubyLLM::Context)
-
-      RubyLLM.with_thread_context(context, provider: 'gemini') do
-        expect(RubyLLM.thread_provider).to eq('gemini')
-      end
-      expect(RubyLLM.thread_provider).to be_nil
-    end
-  end
-
-  describe 'RubyLLM::Chat.new with a model the static registry does not know' do
+  # Provider routing (as opposed to the credential context above) moved to
+  # Concerns::Agentable#agent passing provider:/assume_model_exists: on each
+  # Agents::Agent directly (ai-agents >= 0.11/0.12, see docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 6) — see spec/enterprise/models/
+  # concerns/agentable_spec.rb for that behavior. This patch now only injects
+  # the context (API key), which RubyLLM::Chat.new still needs regardless of
+  # who supplies provider/assume_model_exists.
+  describe 'RubyLLM::Chat.new with an explicit provider/assume_model_exists (as ai-agents now supplies)' do
     before do
       create(:installation_config, name: 'CAPTAIN_OPEN_AI_API_KEY', value: 'global-key')
       Llm::Config.reset!
@@ -48,63 +44,20 @@ RSpec.describe 'RubyLLM thread context patch' do
 
     let(:context) { Llm::Config.context_for('gemini-key', provider: 'gemini') }
 
-    # Regression: Captain's slugs come from the provider's live model list, so a
-    # freshly released model (gemini-3.1-flash-lite, 2026-09-04) is valid at
-    # Google and still ModelNotFoundError for RubyLLM's static registry.
-    it 'assumes the model exists for the thread provider instead of raising' do
-      chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
-        RubyLLM::Chat.new(model: 'gemini-9.9-flash-lite')
+    it 'inherits the thread context for its api key while honoring the caller-supplied provider/assume_model_exists' do
+      chat = RubyLLM.with_thread_context(context) do
+        RubyLLM::Chat.new(model: 'gemini-9.9-flash-lite', provider: 'gemini', assume_model_exists: true)
       end
 
       expect(chat.model.id).to eq('gemini-9.9-flash-lite')
       expect(chat.model.provider).to eq('gemini')
-      expect(chat.model.supports_functions?).to be(true)
+      expect(chat.instance_variable_get(:@config).gemini_api_key).to eq('gemini-key')
     end
 
-    it 'also covers a later model switch on the same chat (scenario handoffs)' do
-      chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
-        RubyLLM::Chat.new(model: 'gemini-2.5-flash').with_model('gemini-9.9-pro')
-      end
-
-      expect(chat.model.id).to eq('gemini-9.9-pro')
-      expect(chat.model.provider).to eq('gemini')
-    end
-
-    it 'still raises when no thread provider is published' do
+    it 'still raises for an unknown model when the caller does not assume it exists' do
       expect do
-        RubyLLM.with_thread_context(context) { RubyLLM::Chat.new(model: 'gemini-9.9-flash-lite') }
+        RubyLLM.with_thread_context(context) { RubyLLM::Chat.new(model: 'gemini-9.9-flash-lite', provider: 'gemini') }
       end.to raise_error(RubyLLM::ModelNotFoundError)
-    end
-
-    it 'keeps the id verbatim for a model the registry also knows' do
-      chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
-        RubyLLM::Chat.new(model: 'gemini-2.5-flash')
-      end
-
-      expect(chat.model.id).to eq('gemini-2.5-flash')
-      expect(chat.model.provider).to eq('gemini')
-    end
-
-    # The credential's provider is the source of truth: the registry's own
-    # provider preference for a shared or misfiled id must never reroute a
-    # chat away from the credential that is actually configured.
-    it 'routes to the thread provider even when the registry files the id under another one' do
-      deepseek_context = Llm::Config.context_for('deepseek-key', provider: 'deepseek')
-
-      chat = RubyLLM.with_thread_context(deepseek_context, provider: 'deepseek') do
-        RubyLLM::Chat.new(model: 'gpt-4.1-mini')
-      end
-
-      expect(chat.model.provider).to eq('deepseek')
-      expect(chat.model.id).to eq('gpt-4.1-mini')
-    end
-
-    it 'leaves an explicit provider or assume_model_exists from the caller untouched' do
-      chat = RubyLLM.with_thread_context(context, provider: 'gemini') do
-        RubyLLM::Chat.new(model: 'gpt-4.1-mini', provider: 'openai')
-      end
-
-      expect(chat.model.provider).to eq('openai')
     end
   end
 

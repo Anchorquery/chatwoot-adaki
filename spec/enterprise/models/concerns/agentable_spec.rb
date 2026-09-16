@@ -57,6 +57,8 @@ RSpec.describe Concerns::Agentable do
         instructions: instance_of(Proc),
         tools: [],
         model: 'gpt-4-turbo',
+        provider: 'openai',
+        assume_model_exists: true,
         temperature: 0.8,
         response_schema: Captain::ResponseSchema,
         # No thinking params for gpt-4-turbo (not a reasoning model), just the

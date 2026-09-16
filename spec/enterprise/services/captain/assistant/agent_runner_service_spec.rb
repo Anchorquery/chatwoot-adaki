@@ -359,6 +359,53 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
           expect(result['response']).to eq('Let me check that for you')
         end
       end
+
+      # See docs/adaki/captain-plan-latencia-2026-09.md fase 5.2.
+      context 'with the promise-only judge (fase 5.2)' do
+        let(:judge) { instance_double(Captain::Llm::PromiseOnlyJudgeService) }
+
+        before do
+          allow(Captain::Llm::PromiseOnlyJudgeService).to receive(:new)
+            .with(account: account, reply_text: 'Let me check that for you', conversation_display_id: conversation.display_id)
+            .and_return(judge)
+        end
+
+        it 'does not retry when the judge overrules the regex-only verdict' do
+          allow(judge).to receive(:perform).and_return(false)
+
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).once
+          expect(result['response']).to eq('Let me check that for you')
+        end
+
+        it 'retries when the judge confirms the regex verdict' do
+          allow(judge).to receive(:perform).and_return(true)
+
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).twice
+          expect(result['response']).to eq('Here is the answer: 42')
+        end
+
+        it 'fails open (retries) when the judge itself errors' do
+          allow(judge).to receive(:perform).and_raise(StandardError, 'provider down')
+
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).twice
+          expect(result['response']).to eq('Here is the answer: 42')
+        end
+
+        it 'fails open (retries) when the judge returns a non-boolean (the enterprise wrapper short-circuit)' do
+          allow(judge).to receive(:perform).and_return({ error: 'Captain AI is disabled for this account.' })
+
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).twice
+          expect(result['response']).to eq('Here is the answer: 42')
+        end
+      end
     end
 
     context 'when the agent replies with an empty message (production conversation 309, 2026-09-04)' do
@@ -935,6 +982,55 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     end
   end
 
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 4.1: Agents::AgentRunner
+  # (the gem) starts the turn at whichever agent tagged the last
+  # `role: :assistant` entry with `agent_name` in conversation_history — a
+  # synthetic entry here makes the pre-router's pick win that lookup without
+  # an orchestrator call.
+  describe '#run_payload scenario pre-route' do
+    let(:router) { instance_double(Captain::Conversation::ScenarioRouter) }
+
+    before do
+      allow(Captain::Conversation::ScenarioRouter).to receive(:new).with(assistant).and_return(router)
+    end
+
+    it "appends a synthetic assistant tag for the matched scenario, after the customer's message" do
+      allow(router).to receive(:route).with('I need help with my account').and_return(scenario)
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      _, context = service.send(:run_payload, message_history)
+
+      expect(context[:conversation_history].last).to eq(role: :assistant, content: '', agent_name: scenario.handoff_key)
+    end
+
+    it 'leaves history untouched when nothing matches' do
+      allow(router).to receive(:route).and_return(nil)
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      _, context = service.send(:run_payload, message_history)
+
+      expect(context[:conversation_history].filter_map { |m| m[:agent_name] }).not_to include(scenario.handoff_key)
+    end
+
+    it 'skips pre-routing when there is no conversation (playground/copilot)' do
+      expect(Captain::Conversation::ScenarioRouter).not_to receive(:new)
+      service = described_class.new(assistant: assistant, conversation: nil)
+
+      service.send(:run_payload, message_history)
+    end
+
+    it 'does not route on a multimodal last message' do
+      multimodal_history = [
+        { role: 'user', content: [{ type: 'text', text: 'What does this error mean?' },
+                                  { type: 'image_url', image_url: { url: 'https://example.com/error.png' } }] }
+      ]
+      expect(router).not_to receive(:route)
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      service.send(:run_payload, multimodal_history)
+    end
+  end
+
   describe '#build_state' do
     subject(:service) { described_class.new(assistant: assistant, conversation: conversation) }
 
@@ -1211,6 +1307,34 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       service.send(:attach_timing!, response, result)
 
       expect(response['timing']).to include(input_tokens: 0, output_tokens: 0)
+    end
+
+    # See config/initializers/ruby_llm_request_instrumentation.rb (fase 6).
+    it 'exposes the accumulated provider request time from Thread.current' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      result = instance_double(Agents::RunResult, context: {})
+      response = {}
+      Thread.current[:captain_provider_request_ms] = 42.7
+
+      service.instance_variable_set(:@timing, {})
+      service.send(:attach_timing!, response, result)
+
+      expect(response['timing'][:provider_ms]).to eq(43)
+    ensure
+      Thread.current[:captain_provider_request_ms] = nil
+    end
+  end
+
+  describe '#generate_response provider_ms reset' do
+    it "resets Thread.current's accumulator at the start of a turn, so it never inherits a previous turn on the same reused thread" do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      Thread.current[:captain_provider_request_ms] = 999
+
+      response = service.generate_response(message_history: message_history)
+
+      expect(response['timing'][:provider_ms]).to eq(0)
+    ensure
+      Thread.current[:captain_provider_request_ms] = nil
     end
   end
 

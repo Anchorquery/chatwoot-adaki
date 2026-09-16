@@ -6,8 +6,20 @@ Continúa `captain-latencia.md` (05-09).
 Estado: fase 0 (medir) y fase 1 (cola) con código listo y specs en verde
 localmente, sin desplegar (PR #40). Fase 2 (Evolution) investigada — ver §8.
 Fase 3 completa (3.1-3.6) con código listo y specs en verde localmente, sin
-desplegar (PR de fase 3, rama `captain-latencia-fase3` sobre la de fase 0+1).
-Fases 4-6 sin empezar.
+desplegar (PR #41, rama `captain-latencia-fase3` sobre la de fase 0+1).
+Fase 4: 4.1 (pre-enrutado por embeddings) y 4.3 (pegajosidad a 15 min) con
+código listo y specs en verde localmente, sin desplegar (PR #42, rama
+`captain-latencia-fase4` sobre la de fase 3). Falta 4.2 (`load_scenario`
+como tool, sustituye los `handoff_to_*`) — más grande y arriesgada, no
+empezada; 4.4 (tools diferidas) sigue opcional.
+Fase 5 completa (5.1-5.3) con código listo y specs en verde localmente, sin
+desplegar (PR #43 para 5.1+5.2, PR #44 para 5.3, rama
+`captain-latencia-fase5b`). Fase 6 completa (código listo, sin desplegar,
+rama `captain-latencia-fase6` sobre la de 5.3) — suite completa
+`spec/enterprise` + `spec/lib` en verde (2619 ejemplos) tras subir
+`ai-agents` a 0.12.0 y `ruby_llm` a 1.16.0. Sigue pendiente 4.2
+(`load_scenario` como tool) — más grande y arriesgada, aparcada a
+propósito; es lo único que queda del plan de código.
 
 ## 1. Diagnóstico (datos de producción)
 
@@ -187,7 +199,27 @@ pegajoso 1 h. Objetivo: 1 llamada en la mayoría de turnos y sin pegajosidad cie
 
 Esperado: Puntua primer turno de 7–10 s a 3–4 s; tokens por respuesta a la mitad.
 
+**Estado (16-09): 1 y 3 implementados, código listo y specs en verde localmente
+(rama `captain-latencia-fase4`), sin desplegar. 2 y 4 pendientes.**
+
 ### Fase 5 — Calidad y robustez (2 días)
+
+Corrección sobre el mecanismo real (verificado en el código fuente instalado de
+`ai-agents` 0.10.0, `lib/agents/agent_runner.rb#determine_conversation_agent`):
+no existe `context[:current_agent]` como parámetro de entrada — el runner
+decide el agente inicial buscando, en `context[:conversation_history]` en
+reversa, la última entrada con `role: :assistant` que tenga `agent_name`. El
+pre-enrutado (`Captain::Conversation::ScenarioRouter`,
+`AgentRunnerService#apply_scenario_preroute`) añade una entrada sintética
+`{ role: 'assistant', content: '', agent_name: <handoff_key> }` al final del
+historial que se pasa a `build_context` cuando el router encuentra un
+escenario por encima del umbral (`CAPTAIN_SCENARIO_PREROUTE_DISTANCE_THRESHOLD`,
+default 0.55 — más estricto que el 0.65 del prefetch de FAQs, porque acertar
+mal aquí desvía el turno entero, no solo añade ruido). Esa entrada nunca llega
+al proveedor: `Runner#restorable_message?` descarta los mensajes `assistant`
+con contenido vacío y sin `tool_calls` antes de reconstruir el chat real, así
+que solo sirve para decidir el agente inicial. Cero cambios en la gema, tal
+como preveía la investigación de la sección 7.
 
 - **Modelo utilitario por rol**: resolver un modelo "barato" por cuenta (nuevo `feature`
   en `Platform::Models::Resolver`, p. ej. `utility`) para clasificadores V1, generación de
@@ -202,6 +234,42 @@ Esperado: Puntua primer turno de 7–10 s a 3–4 s; tokens por respuesta a la m
   prefijo de los mensajes recientes.
 - **Reintento de entrega**: ya en fase 2.
 
+**Estado (16-09): 5.2 implementada (código listo, specs en verde localmente,
+rama `captain-latencia-fase5` sobre la de fase 4). El "modelo utilitario"
+(punto 1) resultó ser más simple de lo que sonaba: `Captain::BaseTaskService`
+(base de `LabelSuggestionService`, `SummaryService`, etc.) ya resuelve su
+modelo vía `Platform::Models::Resolver.resolve(feature: event_name, ...)` sin
+que `event_name` necesite estar registrado en `config/llm.yml` — `summarize`
+tampoco lo está y funciona igual. `Captain::Llm::PromiseOnlyJudgeService`
+(subclase de `BaseTaskService`, `event_name = 'utility'`) hereda esa
+resolución gratis: si el admin fija `account.captain_models['utility']` a un
+modelo barato ya habilitado, el juez lo usa; si no, cae al mismo modelo que
+`assistant` resolvería (ningún cambio de comportamiento por defecto). No se
+tocó `config/llm.yml` ni `Platform::Models::Resolver::FEATURE_KINDS` — no
+hacía falta: features desconocidos ya caen a `CHAT_KINDS` (ver `resolver.rb`).
+El juez se conecta en `AgentRunnerService#retry_nudge_for_text`: la regex
+sigue siendo el primer filtro (barato, sobre-inclusivo); solo cuando matchea
+se llama al juez, que da el veredicto final antes de gastar el turno de
+reintento. Falla abierto (reintenta, comportamiento de hoy) ante cualquier
+error del proveedor o si el wrapper enterprise corta `#perform` antes de
+tiempo (cuota agotada, `captain_tasks` desactivado) — ver el comentario en
+`AgentRunnerService#promise_only_confirmed?`.
+
+5.3 también implementada: `Captain::Conversation::HistoryBuilder#call` compara
+el total de mensajes elegibles contra la ventana; si sobran mensajes, encola
+`Captain::Conversation::SummarizeOldMessagesJob` (cola `low`, fuera del camino
+crítico) con un lock corto en Redis (`SUMMARY_PENDING_TTL`, 2 min) para no
+duplicar el encolado en ráfagas de turnos. El job resume solo los mensajes más
+antiguos que la ventana (`Captain::Llm::ConversationSummarizerService`,
+`event_name = 'utility'`, mismo modelo barato que el juez) y lo guarda en
+`conversation.additional_attributes['captain_summary']` +
+`captain_summary_covers` (cuántos mensajes viejos cubre, para decidir cuándo
+re-resumir: solo cuando se acumulan `SUMMARY_RESUMMARIZE_DELTA` — 10 —
+mensajes viejos más desde la última vez, no en cada turno). `HistoryBuilder`
+antepone el resumen guardado como un mensaje `user` sintético con el prefijo
+`SUMMARY_PREFIX`, antes de los mensajes de la ventana — nunca se persiste
+como mensaje real.**
+
 ### Fase 6 — Gemas (1 día + verificación)
 
 - `Gemfile`: `ai-agents '>= 0.12.0'`, `ruby_llm '>= 1.16.0'`. Ejecutar la suite de
@@ -214,6 +282,43 @@ Esperado: Puntua primer turno de 7–10 s a 3–4 s; tokens por respuesta a la m
 - Suscribirse a `request.ruby_llm` para alimentar la línea de timing de la fase 0 con el
   tiempo real de cada petición al proveedor.
 - `config.tool_concurrency = true`: sin efecto hoy (una tool por turno), gratis para el futuro.
+
+**Estado (16-09): completa, código listo, sin desplegar** (rama
+`captain-latencia-fase6` sobre la de 5.3). `bundle update ai-agents ruby_llm`
+resolvió sin conflictos (`ai-agents` 0.10.0→0.12.0, `ruby_llm` 1.15.0→1.16.0);
+`Gemfile.lock` solo cambia esas dos líneas.
+
+- **Parche de Gemini retirado — no.** Leí el código fuente instalado de
+  `ruby_llm` 1.16.0 (`RubyLLM::Providers::Gemini::Tools#format_tool_call` /
+  `#format_tool_result`): sigue sin poner `id` en `functionCall`/
+  `functionResponse` de forma nativa. La nota del changelog ("Gemini function
+  call responses now adhere to spec") no cubre esto — el parche
+  (`config/initializers/ruby_llm_gemini_tool_call_ids.rb`) sigue haciendo
+  falta. Añadí `spec/lib/ruby_llm_gemini_tool_call_ids_spec.rb`, que no
+  existía antes (el parche llevaba en producción sin test propio).
+- **`provider:`/`assume_model_exists: true` en `Agents::Agent.new`**:
+  confirmado en el código fuente de `ai-agents` 0.12.0
+  (`lib/agents/runner.rb`) que el `Runner` los pasa tal cual a
+  `RubyLLM::Chat.new` y a `#with_model` en cada handoff — exactamente lo que
+  `ChatThreadContext#with_model` (el parche) hacía a mano. `with_model` se
+  retira de `config/initializers/ruby_llm_thread_context.rb`; solo queda el
+  contexto por hilo (la api key), que sigue haciendo falta porque el
+  `Runner` no pasa `context:` a `Chat.new`. `Captain::Assistant::AgentRunnerService`
+  pierde `resolved_llm_provider`/`credential_provider` (ahora cada
+  `Agentable#agent_provider` resuelve su propio provider, incluido el
+  failover de fase 3.2 — se verificó que `swap_resolution!` lo sigue
+  reflejando bien sin ellos).
+- **`request.ruby_llm`**: un solo suscriptor global en
+  `config/initializers/ruby_llm_request_instrumentation.rb` (no uno por
+  turno — un `.subscribed` por turno multiplicaría el conteo bajo
+  concurrencia de Sidekiq, ver el comentario en el archivo) acumula en
+  `Thread.current`, que en el momento del callback es siempre el hilo que
+  hizo la petición real. `AgentRunnerService#generate_response` lo resetea a
+  0 al empezar el turno; `[CAPTAIN][timing]` gana el campo `provider_ms=`
+  (tiempo real de red al proveedor, incluye las llamadas del juez de fase
+  5.2 y del resumen de fase 5.3 si corren en el mismo turno — es correcto,
+  es tiempo de proveedor real gastado en ese turno).
+- `config.tool_concurrency = true` añadido en `lib/llm/config.rb`.
 
 ## 4. Orden y expectativa
 

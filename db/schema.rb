@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_04_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_09_16_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -541,9 +541,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_04_120000) do
     t.bigint "account_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.vector "embedding", limit: 1536
+    t.string "embedding_model"
     t.index ["account_id"], name: "index_captain_scenarios_on_account_id"
     t.index ["assistant_id", "enabled"], name: "index_captain_scenarios_on_assistant_id_and_enabled"
     t.index ["assistant_id"], name: "index_captain_scenarios_on_assistant_id"
+    t.index ["embedding_model"], name: "index_captain_scenarios_on_embedding_model"
     t.index ["enabled"], name: "index_captain_scenarios_on_enabled"
   end
 

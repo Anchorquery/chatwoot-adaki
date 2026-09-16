@@ -180,5 +180,75 @@ RSpec.describe Captain::Conversation::HistoryBuilder do
         expect(history.last[:content].find { |part| part[:type] == 'image_url' }[:image_url][:url]).to eq('https://example.com/new.jpg')
       end
     end
+
+    # See docs/adaki/captain-plan-latencia-2026-09.md fase 5.3.
+    context 'when the conversation has outgrown the history window' do
+      before { assistant.update!(config: assistant.config.merge('history_window_messages' => 2)) }
+
+      it 'prepends the stored summary, ahead of the windowed messages, when one already exists' do
+        conversation.update!(additional_attributes: { 'captain_summary' => 'El cliente preguntó por precios.', 'captain_summary_covers' => 1 })
+        create(:message, conversation: conversation, content: 'first', message_type: :incoming)
+        create(:message, conversation: conversation, content: 'second', message_type: :incoming)
+        create(:message, conversation: conversation, content: 'third', message_type: :incoming)
+
+        history = described_class.new(conversation: conversation, assistant: assistant).call
+
+        expect(history.first).to eq(
+          content: "#{described_class::SUMMARY_PREFIX}El cliente preguntó por precios.", role: 'user'
+        )
+        expect(history[1..]).to eq([
+                                     { content: 'second', role: 'user' },
+                                     { content: 'third', role: 'user' }
+                                   ])
+      end
+
+      it 'does not prepend anything when there is no summary yet' do
+        create(:message, conversation: conversation, content: 'first', message_type: :incoming)
+        create(:message, conversation: conversation, content: 'second', message_type: :incoming)
+        create(:message, conversation: conversation, content: 'third', message_type: :incoming)
+
+        history = described_class.new(conversation: conversation, assistant: assistant).call
+
+        expect(history.size).to eq(2)
+      end
+
+      it 'enqueues the summarization job the first time the window is exceeded' do
+        create(:message, conversation: conversation, content: 'first', message_type: :incoming)
+        create(:message, conversation: conversation, content: 'second', message_type: :incoming)
+        create(:message, conversation: conversation, content: 'third', message_type: :incoming)
+
+        expect(Captain::Conversation::SummarizeOldMessagesJob).to receive(:perform_later).with(conversation, 1)
+
+        described_class.new(conversation: conversation, assistant: assistant).call
+      end
+
+      it 'does not re-enqueue for the same conversation within SUMMARY_PENDING_TTL' do
+        3.times { |i| create(:message, conversation: conversation, content: "m#{i}", message_type: :incoming) }
+
+        expect(Captain::Conversation::SummarizeOldMessagesJob).to receive(:perform_later).once
+
+        2.times { described_class.new(conversation: conversation, assistant: assistant).call }
+      end
+
+      it 'does not re-enqueue once covered until at least SUMMARY_RESUMMARIZE_DELTA more old messages pile up' do
+        conversation.update!(additional_attributes: { 'captain_summary' => 'resumen', 'captain_summary_covers' => 5 })
+        # old_count ends up at 6 (8 messages - window of 2): only 1 more than covered, below the delta.
+        8.times { |i| create(:message, conversation: conversation, content: "m#{i}", message_type: :incoming) }
+
+        expect(Captain::Conversation::SummarizeOldMessagesJob).not_to receive(:perform_later)
+
+        described_class.new(conversation: conversation, assistant: assistant).call
+      end
+
+      it 're-enqueues once SUMMARY_RESUMMARIZE_DELTA more old messages have piled up since the last summary' do
+        conversation.update!(additional_attributes: { 'captain_summary' => 'resumen', 'captain_summary_covers' => 1 })
+        # old_count ends up at 12 (14 messages - window of 2): 11 more than covered, past the delta of 10.
+        14.times { |i| create(:message, conversation: conversation, content: "m#{i}", message_type: :incoming) }
+
+        expect(Captain::Conversation::SummarizeOldMessagesJob).to receive(:perform_later).with(conversation, 12)
+
+        described_class.new(conversation: conversation, assistant: assistant).call
+      end
+    end
   end
 end
