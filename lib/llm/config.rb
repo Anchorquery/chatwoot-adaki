@@ -200,6 +200,10 @@ module Llm::Config
         config.request_timeout = 30
         config.max_retries = 1
         config.retry_interval = 1
+        # No effect on Captain today (never more than one tool call queued in
+        # the same turn), but free to enable ahead of fase 4.2/4.4 needing it
+        # (docs/adaki/captain-plan-latencia-2026-09.md fase 6, ruby_llm >= 1.16).
+        config.tool_concurrency = true
       end
     end
 

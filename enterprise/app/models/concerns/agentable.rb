@@ -1,12 +1,21 @@
 module Concerns::Agentable
   extend ActiveSupport::Concern
 
+  # provider:/assume_model_exists: (ai-agents >= 0.11) let the gem's own
+  # Runner route each chat to the right provider and skip RubyLLM's static
+  # model registry — Captain's slugs come from the provider's live model
+  # list (Platform::CredentialModel), which is ahead of that registry by
+  # design. See config/initializers/ruby_llm_thread_context.rb, which used
+  # to do this routing via a thread-local before ai-agents supported it
+  # natively (docs/adaki/captain-plan-latencia-2026-09.md fase 6).
   def agent
     Agents::Agent.new(
       name: agent_name,
       instructions: ->(context) { agent_instructions(context) },
       tools: agent_tools,
       model: agent_model,
+      provider: agent_provider,
+      assume_model_exists: true,
       temperature: agent_temperature,
       response_schema: agent_response_schema,
       params: agent_params

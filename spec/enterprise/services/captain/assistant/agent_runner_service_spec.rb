@@ -1308,6 +1308,34 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       expect(response['timing']).to include(input_tokens: 0, output_tokens: 0)
     end
+
+    # See config/initializers/ruby_llm_request_instrumentation.rb (fase 6).
+    it 'exposes the accumulated provider request time from Thread.current' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      result = instance_double(Agents::RunResult, context: {})
+      response = {}
+      Thread.current[:captain_provider_request_ms] = 42.7
+
+      service.instance_variable_set(:@timing, {})
+      service.send(:attach_timing!, response, result)
+
+      expect(response['timing'][:provider_ms]).to eq(43)
+    ensure
+      Thread.current[:captain_provider_request_ms] = nil
+    end
+  end
+
+  describe '#generate_response provider_ms reset' do
+    it "resets Thread.current's accumulator at the start of a turn, so it never inherits a previous turn on the same reused thread" do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+      Thread.current[:captain_provider_request_ms] = 999
+
+      response = service.generate_response(message_history: message_history)
+
+      expect(response['timing'][:provider_ms]).to eq(0)
+    ensure
+      Thread.current[:captain_provider_request_ms] = nil
+    end
   end
 
   describe 'constants' do

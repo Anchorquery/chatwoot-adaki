@@ -1,10 +1,15 @@
 # frozen_string_literal: true
 
-# RubyLLM 1.15 generates an internal UUID for Gemini function calls but drops
-# it when serializing the request/response pair. Gemini's current API requires
+# RubyLLM generates an internal UUID for Gemini function calls but drops it
+# when serializing the request/response pair. Gemini's current API requires
 # the same call id in the function response; without it, tool turns can end in
 # finishReason=STOP with no text. Keep this compatibility shim local so a gem
 # upgrade can remove it once RubyLLM includes the fix.
+#
+# Re-verified against ruby_llm 1.16.0 (docs/adaki/captain-plan-latencia-2026-09.md
+# fase 6): RubyLLM::Providers::Gemini::Tools#format_tool_call/#format_tool_result
+# still build functionCall/functionResponse without an `id` key — still needed.
+# See spec/lib/ruby_llm_gemini_tool_call_ids_spec.rb.
 module AdakiGeminiToolCallIds
   def format_tool_call(message)
     parts = super

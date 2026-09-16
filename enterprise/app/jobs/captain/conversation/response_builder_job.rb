@@ -101,16 +101,19 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   # See docs/adaki/captain-plan-latencia-2026-09.md fase 0: one line per
   # response to see where a turn's time actually goes without guessing.
   def log_timing
+    Rails.logger.info(timing_log_line)
+  end
+
+  def timing_log_line
     timing = @response.is_a?(Hash) ? (@response['timing'] || {}) : {}
     total_ms = ((Time.current - @perform_started_at) * 1000).round
 
-    Rails.logger.info(
-      "[CAPTAIN][timing] conversation=#{@conversation.display_id} queue_wait_ms=#{@queue_wait_ms.inspect} " \
+    "[CAPTAIN][timing] conversation=#{@conversation.display_id} queue_wait_ms=#{@queue_wait_ms.inspect} " \
       "lock_ms=#{lock_wait_ms} history_ms=#{@history_ms.inspect} prefetch_ms=#{timing[:prefetch_ms].inspect} " \
-      "llm_ms=#{timing[:llm_ms].inspect} tools_calls=#{timing[:tools_calls].inspect} " \
+      "llm_ms=#{timing[:llm_ms].inspect} provider_ms=#{timing[:provider_ms].inspect} " \
+      "tools_calls=#{timing[:tools_calls].inspect} " \
       "agent=#{@response['agent_name'].inspect} input_tokens=#{timing[:input_tokens].inspect} " \
       "output_tokens=#{timing[:output_tokens].inspect} total_ms=#{total_ms}"
-    )
   end
 
   def lock_wait_ms
