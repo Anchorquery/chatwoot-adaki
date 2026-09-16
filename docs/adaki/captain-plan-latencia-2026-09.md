@@ -6,8 +6,12 @@ Continúa `captain-latencia.md` (05-09).
 Estado: fase 0 (medir) y fase 1 (cola) con código listo y specs en verde
 localmente, sin desplegar (PR #40). Fase 2 (Evolution) investigada — ver §8.
 Fase 3 completa (3.1-3.6) con código listo y specs en verde localmente, sin
-desplegar (PR de fase 3, rama `captain-latencia-fase3` sobre la de fase 0+1).
-Fases 4-6 sin empezar.
+desplegar (PR #41, rama `captain-latencia-fase3` sobre la de fase 0+1).
+Fase 4: 4.1 (pre-enrutado por embeddings) y 4.3 (pegajosidad a 15 min) con
+código listo y specs en verde localmente, sin desplegar (rama
+`captain-latencia-fase4` sobre la de fase 3). Falta 4.2 (`load_scenario`
+como tool, sustituye los `handoff_to_*`) — más grande y arriesgada, no
+empezada; 4.4 (tools diferidas) sigue opcional. Fases 5-6 sin empezar.
 
 ## 1. Diagnóstico (datos de producción)
 
@@ -187,7 +191,25 @@ pegajoso 1 h. Objetivo: 1 llamada en la mayoría de turnos y sin pegajosidad cie
 
 Esperado: Puntua primer turno de 7–10 s a 3–4 s; tokens por respuesta a la mitad.
 
-### Fase 5 — Calidad y robustez (2 días)
+**Estado (16-09): 1 y 3 implementados, código listo y specs en verde localmente
+(rama `captain-latencia-fase4`), sin desplegar. 2 y 4 pendientes.**
+
+Corrección sobre el mecanismo real (verificado en el código fuente instalado de
+`ai-agents` 0.10.0, `lib/agents/agent_runner.rb#determine_conversation_agent`):
+no existe `context[:current_agent]` como parámetro de entrada — el runner
+decide el agente inicial buscando, en `context[:conversation_history]` en
+reversa, la última entrada con `role: :assistant` que tenga `agent_name`. El
+pre-enrutado (`Captain::Conversation::ScenarioRouter`,
+`AgentRunnerService#apply_scenario_preroute`) añade una entrada sintética
+`{ role: 'assistant', content: '', agent_name: <handoff_key> }` al final del
+historial que se pasa a `build_context` cuando el router encuentra un
+escenario por encima del umbral (`CAPTAIN_SCENARIO_PREROUTE_DISTANCE_THRESHOLD`,
+default 0.55 — más estricto que el 0.65 del prefetch de FAQs, porque acertar
+mal aquí desvía el turno entero, no solo añade ruido). Esa entrada nunca llega
+al proveedor: `Runner#restorable_message?` descarta los mensajes `assistant`
+con contenido vacío y sin `tool_calls` antes de reconstruir el chat real, así
+que solo sirve para decidir el agente inicial. Cero cambios en la gema, tal
+como preveía la investigación de la sección 7.
 
 - **Modelo utilitario por rol**: resolver un modelo "barato" por cuenta (nuevo `feature`
   en `Platform::Models::Resolver`, p. ej. `utility`) para clasificadores V1, generación de

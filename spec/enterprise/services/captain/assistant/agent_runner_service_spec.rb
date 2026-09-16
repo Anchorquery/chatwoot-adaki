@@ -935,6 +935,55 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     end
   end
 
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 4.1: Agents::AgentRunner
+  # (the gem) starts the turn at whichever agent tagged the last
+  # `role: :assistant` entry with `agent_name` in conversation_history — a
+  # synthetic entry here makes the pre-router's pick win that lookup without
+  # an orchestrator call.
+  describe '#run_payload scenario pre-route' do
+    let(:router) { instance_double(Captain::Conversation::ScenarioRouter) }
+
+    before do
+      allow(Captain::Conversation::ScenarioRouter).to receive(:new).with(assistant).and_return(router)
+    end
+
+    it "appends a synthetic assistant tag for the matched scenario, after the customer's message" do
+      allow(router).to receive(:route).with('I need help with my account').and_return(scenario)
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      _, context = service.send(:run_payload, message_history)
+
+      expect(context[:conversation_history].last).to eq(role: :assistant, content: '', agent_name: scenario.handoff_key)
+    end
+
+    it 'leaves history untouched when nothing matches' do
+      allow(router).to receive(:route).and_return(nil)
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      _, context = service.send(:run_payload, message_history)
+
+      expect(context[:conversation_history].filter_map { |m| m[:agent_name] }).not_to include(scenario.handoff_key)
+    end
+
+    it 'skips pre-routing when there is no conversation (playground/copilot)' do
+      expect(Captain::Conversation::ScenarioRouter).not_to receive(:new)
+      service = described_class.new(assistant: assistant, conversation: nil)
+
+      service.send(:run_payload, message_history)
+    end
+
+    it 'does not route on a multimodal last message' do
+      multimodal_history = [
+        { role: 'user', content: [{ type: 'text', text: 'What does this error mean?' },
+                                  { type: 'image_url', image_url: { url: 'https://example.com/error.png' } }] }
+      ]
+      expect(router).not_to receive(:route)
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      service.send(:run_payload, multimodal_history)
+    end
+  end
+
   describe '#build_state' do
     subject(:service) { described_class.new(assistant: assistant, conversation: conversation) }
 

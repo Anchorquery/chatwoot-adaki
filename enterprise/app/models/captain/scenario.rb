@@ -2,22 +2,25 @@
 #
 # Table name: captain_scenarios
 #
-#  id           :bigint           not null, primary key
-#  description  :text
-#  enabled      :boolean          default(TRUE), not null
-#  instruction  :text
-#  title        :string
-#  tools        :jsonb
-#  created_at   :datetime         not null
-#  updated_at   :datetime         not null
-#  account_id   :bigint           not null
-#  assistant_id :bigint           not null
+#  id              :bigint           not null, primary key
+#  description     :text
+#  embedding       :vector(1536)
+#  embedding_model :string
+#  enabled         :boolean          default(TRUE), not null
+#  instruction     :text
+#  title           :string
+#  tools           :jsonb
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  account_id      :bigint           not null
+#  assistant_id    :bigint           not null
 #
 # Indexes
 #
 #  index_captain_scenarios_on_account_id                (account_id)
 #  index_captain_scenarios_on_assistant_id              (assistant_id)
 #  index_captain_scenarios_on_assistant_id_and_enabled  (assistant_id,enabled)
+#  index_captain_scenarios_on_embedding_model            (embedding_model)
 #  index_captain_scenarios_on_enabled                   (enabled)
 #
 class Captain::Scenario < ApplicationRecord
@@ -41,6 +44,7 @@ class Captain::Scenario < ApplicationRecord
 
   belongs_to :assistant, class_name: 'Captain::Assistant', inverse_of: :scenarios
   belongs_to :account
+  has_neighbors :embedding, normalize: true
 
   validates :title, presence: true
   validates :description, presence: true
@@ -55,9 +59,18 @@ class Captain::Scenario < ApplicationRecord
            :reasoning_level_value, :max_response_tokens_value, to: :assistant
 
   before_save :resolve_tool_references
+  after_commit :update_scenario_embedding
 
   def handoff_key
     [handoff_id_key, compact_handoff_slug, HANDOFF_KEY_SUFFIX].compact.join('_')
+  end
+
+  # What gets embedded for the pre-router (see docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 4.1) — title carries the topic,
+  # description carries the disambiguating detail an orchestrator would
+  # otherwise need a full LLM call to weigh.
+  def embedding_text
+    "#{title}: #{description}"
   end
 
   def prompt_context
@@ -72,6 +85,15 @@ class Captain::Scenario < ApplicationRecord
   end
 
   private
+
+  # Same pattern as Captain::AssistantResponse#update_response_embedding: only
+  # re-embed when the text that feeds the vector actually changed, and never
+  # let a slow/failed embedding call block saving the scenario itself.
+  def update_scenario_embedding
+    return unless saved_change_to_title? || saved_change_to_description? || embedding.nil?
+
+    Captain::Llm::UpdateEmbeddingJob.perform_later(self, embedding_text)
+  end
 
   def agent_name
     handoff_key

@@ -743,10 +743,35 @@ class Captain::Assistant::AgentRunnerService
   end
 
   def run_payload(message_history)
+    message_history = apply_scenario_preroute(message_history)
     context = build_context(message_history_without_last_user_message(message_history))
     message_to_process = extract_last_user_message(message_history, text_transform: combined_message_transform(context[:state]))
     enrich_context_with_trace_payload!(context, message_history, message_to_process)
     [message_to_process, context]
+  end
+
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 4.1. Agents::AgentRunner
+  # #determine_conversation_agent (the gem) always starts the turn at whichever
+  # agent tagged the LAST `role: :assistant` entry with an `agent_name` in
+  # conversation_history — that is exactly how a scenario already stays
+  # "current" turn to turn. Appending one synthetic entry here makes the
+  # pre-router's pick win that lookup, without an orchestrator call. Empty
+  # content + no tool_calls means Runner#restorable_message? drops it before
+  # replaying history into the actual chat — the provider never sees it.
+  def apply_scenario_preroute(message_history)
+    return message_history if @conversation.nil?
+
+    match = scenario_prematch(message_history)
+    return message_history if match.nil?
+
+    message_history + [{ role: 'assistant', content: '', agent_name: match.handoff_key }]
+  end
+
+  def scenario_prematch(message_history)
+    query = extract_last_user_message(message_history)
+    return nil unless query.is_a?(String)
+
+    Captain::Conversation::ScenarioRouter.new(@assistant).route(query)
   end
 
   # Runs the conversation-metadata wrap OUTSIDE the knowledge one, so
