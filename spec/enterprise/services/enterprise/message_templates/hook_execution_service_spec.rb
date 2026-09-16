@@ -9,31 +9,30 @@ RSpec.describe MessageTemplates::HookExecutionService do
 
   before do
     create(:captain_inbox, captain_assistant: assistant, inbox: inbox)
-    # Every enqueue now goes through .set(wait: debounce) (see
-    # Enterprise::MessageTemplates::HookExecutionService#schedule_captain_response);
-    # collapse it so the `.perform_later.with(conversation, assistant)`
-    # expectations below keep asserting the arguments.
-    allow(Captain::Conversation::ResponseBuilderJob).to receive(:set).and_return(Captain::Conversation::ResponseBuilderJob)
   end
 
   describe 'debounce before the Captain job runs' do
-    it 'delays the job by CAPTAIN_RESPONSE_DEBOUNCE_SECONDS (default 2) so a burst of messages gets one reply' do
-      expect(Captain::Conversation::ResponseBuilderJob).to receive(:set).with(wait: 2.seconds)
+    # See Enterprise::MessageTemplates::HookExecutionService#schedule_captain_response
+    # (docs/adaki/captain-plan-latencia-2026-09.md fase 1): the job is
+    # enqueued immediately, the debounce travels as a `debounce_wait:` kwarg
+    # and the job itself sleeps it off before doing anything else.
+    it 'passes CAPTAIN_RESPONSE_DEBOUNCE_SECONDS (default 2) as debounce_wait so a burst of messages gets one reply' do
+      expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 2.0)
 
       create(:message, conversation: conversation, message_type: :incoming, account: account)
     end
 
     it 'adds the attachment wait on top of the debounce' do
-      expect(Captain::Conversation::ResponseBuilderJob).to receive(:set).with(wait: 2.seconds + 2.seconds)
+      expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 4.0)
 
       message = build(:message, conversation: conversation, message_type: :incoming, account: account)
       message.attachments.build(account_id: account.id, file_type: :image, external_url: 'https://example.com/x.jpg')
       message.save!
     end
 
-    it 'enqueues immediately when the env var is 0' do
+    it 'enqueues with a zero debounce_wait when the env var is 0' do
       with_modified_env CAPTAIN_RESPONSE_DEBOUNCE_SECONDS: '0' do
-        expect(Captain::Conversation::ResponseBuilderJob).to receive(:set).with(wait: 0.seconds)
+        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 0.0)
 
         create(:message, conversation: conversation, message_type: :incoming, account: account)
       end
@@ -51,7 +50,7 @@ RSpec.describe MessageTemplates::HookExecutionService do
       end
 
       it 'schedules captain response job for incoming messages on pending conversations' do
-        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant)
+        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 2.0)
 
         create(:message, conversation: conversation, message_type: :incoming, account: account)
       end
@@ -70,7 +69,7 @@ RSpec.describe MessageTemplates::HookExecutionService do
       end
 
       it 'schedules captain response job outside business hours (Captain always responds when configured)' do
-        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant)
+        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 2.0)
 
         create(:message, conversation: conversation, message_type: :incoming, account: account)
       end
@@ -103,7 +102,7 @@ RSpec.describe MessageTemplates::HookExecutionService do
       end
 
       it 'schedules captain response job regardless of time' do
-        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant)
+        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 2.0)
 
         create(:message, conversation: conversation, message_type: :incoming, account: account)
       end
@@ -179,7 +178,7 @@ RSpec.describe MessageTemplates::HookExecutionService do
     end
 
     it 'schedules captain response job' do
-      expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant)
+      expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 2.0)
 
       create(:message, conversation: conversation, message_type: :incoming, account: account)
     end
@@ -326,7 +325,7 @@ RSpec.describe MessageTemplates::HookExecutionService do
     let(:campaign_conversation) { create(:conversation, inbox: inbox, account: account, contact: contact, status: :pending, campaign: campaign) }
 
     it 'schedules captain response job for incoming messages on pending campaign conversations' do
-      expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(campaign_conversation, assistant)
+      expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(campaign_conversation, assistant, debounce_wait: 2.0)
 
       create(:message, conversation: campaign_conversation, message_type: :incoming, account: account)
     end

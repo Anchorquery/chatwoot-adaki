@@ -216,7 +216,8 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     it 'processes and formats agent result' do
       result = service.generate_response(message_history: message_history)
 
-      expect(result).to eq({ 'response' => 'Test response', 'agent_name' => nil, 'handoff_tool_called' => false })
+      expect(result).to include('response' => 'Test response', 'agent_name' => nil, 'handoff_tool_called' => false)
+      expect(result['timing']).to include(:llm_ms, :prefetch_ms, :tools_calls, :input_tokens, :output_tokens)
     end
 
     context 'when the agent replies with only a promise and calls no content tool' do
@@ -390,11 +391,11 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       it 'includes handoff_tool_called flag in response' do
         result = service.generate_response(message_history: message_history)
 
-        expect(result).to eq({
-                               'response' => 'Let me connect you',
-                               'agent_name' => nil,
-                               'handoff_tool_called' => true
-                             })
+        expect(result).to include(
+          'response' => 'Let me connect you',
+          'agent_name' => nil,
+          'handoff_tool_called' => true
+        )
       end
     end
 
@@ -507,12 +508,12 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       it 'formats string response correctly' do
         result = service.generate_response(message_history: message_history)
 
-        expect(result).to eq({
-                               'response' => 'Simple string response',
-                               'reasoning' => 'Processed by agent',
-                               'agent_name' => nil,
-                               'handoff_tool_called' => false
-                             })
+        expect(result).to include(
+          'response' => 'Simple string response',
+          'reasoning' => 'Processed by agent',
+          'agent_name' => nil,
+          'handoff_tool_called' => false
+        )
       end
     end
 

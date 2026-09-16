@@ -1,3 +1,5 @@
+require 'benchmark'
+
 class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   include Captain::Conversation::V1ActionClassifier
 
@@ -20,16 +22,29 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   # deadlock guard, not a timeout: if a worker dies mid-run the lock frees
   # itself instead of silencing the conversation forever.
   LOCK_TTL = 3.minutes
-  LOCK_RETRY_WAIT = 5.seconds
-  # LOCK_RETRY_WAIT x this is comfortably past LOCK_TTL, so a job only gives
-  # up if something is genuinely wrong rather than merely slow.
-  MAX_LOCK_ATTEMPTS = 40
+  # Polled in-process instead of re-enqueued: upstream Chatwoot's
+  # ResponseSchedulerService enqueues instantly and only ever discards by
+  # newer message, never by a Sidekiq scheduled-set wait (see docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 1). LOCK_POLL_INTERVAL x
+  # MAX_LOCK_ATTEMPTS is comfortably past LOCK_TTL, so this only gives up if
+  # something is genuinely wrong rather than merely slow.
+  LOCK_POLL_INTERVAL = 1.second
+  MAX_LOCK_ATTEMPTS = 60
 
-  def perform(conversation, assistant, lock_attempt: 0)
+  def perform(conversation, assistant, debounce_wait: 0)
     @conversation = conversation
     @inbox = conversation.inbox
     @assistant = assistant
-    @lock_attempt = lock_attempt
+    @perform_started_at = Time.current
+    @queue_wait_ms = enqueued_at.present? ? ((@perform_started_at - enqueued_at) * 1000).round : nil
+    @lock_wait_ms = 0
+
+    # See Enterprise::MessageTemplates::HookExecutionService#schedule_captain_response:
+    # the job is enqueued immediately now, so the debounce (coalescing a
+    # customer's message burst into one run) happens here instead of on
+    # Sidekiq's scheduled set, which used to add 2.5-7.5s of poller latency
+    # on top of every wait.
+    sleep(debounce_wait) if debounce_wait.to_f.positive?
 
     return if superseded_by_newer_message?
     return unless conversation_captain_controllable?
@@ -55,7 +70,27 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   rescue StandardError => e
     handle_error(e)
   ensure
+    log_timing
     Current.executed_by = nil
+  end
+
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 0: one line per
+  # response to see where a turn's time actually goes without guessing.
+  def log_timing
+    timing = @response.is_a?(Hash) ? (@response['timing'] || {}) : {}
+    total_ms = ((Time.current - @perform_started_at) * 1000).round
+
+    Rails.logger.info(
+      "[CAPTAIN][timing] conversation=#{@conversation.display_id} queue_wait_ms=#{@queue_wait_ms.inspect} " \
+      "lock_ms=#{lock_wait_ms} history_ms=#{@history_ms.inspect} prefetch_ms=#{timing[:prefetch_ms].inspect} " \
+      "llm_ms=#{timing[:llm_ms].inspect} tools_calls=#{timing[:tools_calls].inspect} " \
+      "agent=#{@response['agent_name'].inspect} input_tokens=#{timing[:input_tokens].inspect} " \
+      "output_tokens=#{timing[:output_tokens].inspect} total_ms=#{total_ms}"
+    )
+  end
+
+  def lock_wait_ms
+    @lock_wait_ms.round
   end
 
   # One Captain run at a time per conversation. Two runs could otherwise
@@ -64,28 +99,31 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   # replies to the same question, out of order, each having read a history
   # the other was about to change.
   #
-  # A job that cannot take the lock re-enqueues itself instead of dropping
-  # the message: whatever arrived while the LLM was busy still gets answered,
-  # right after the reply it was waiting on.
+  # A job that cannot take the lock polls for it in-process instead of
+  # re-enqueuing itself: re-enqueuing paid the same Sidekiq scheduled-set
+  # poller latency the fase-1 debounce fix removed (see perform above), for
+  # the same conversation-lock case. Whatever arrived while the LLM was busy
+  # still gets answered, right after the reply it was waiting on.
   def with_conversation_lock(&)
     lock_key = "captain:conversation:#{@conversation.id}"
-    return if Redis::LockManager.new.with_lock(lock_key, LOCK_TTL, &)
+    manager = Redis::LockManager.new
+    attempt = 0
 
-    requeue_after_lock_contention(lock_key)
+    loop do
+      return if manager.with_lock(lock_key, LOCK_TTL, &)
+
+      attempt += 1
+      return report_lock_timeout(lock_key) if attempt >= MAX_LOCK_ATTEMPTS
+
+      wait_start = Time.current
+      sleep(LOCK_POLL_INTERVAL)
+      @lock_wait_ms += (Time.current - wait_start) * 1000
+    end
   end
 
-  def requeue_after_lock_contention(lock_key)
-    if @lock_attempt >= MAX_LOCK_ATTEMPTS
-      error = StandardError.new("Captain could not acquire #{lock_key} after #{MAX_LOCK_ATTEMPTS} attempts")
-      ChatwootExceptionTracker.new(error, account: account).capture_exception
-      return
-    end
-
-    Rails.logger.info(
-      "[CAPTAIN][requeue] account=#{account.id} conversation=#{@conversation.display_id} " \
-      "reason=conversation_locked attempt=#{@lock_attempt + 1}"
-    )
-    self.class.set(wait: LOCK_RETRY_WAIT).perform_later(@conversation, @assistant, lock_attempt: @lock_attempt + 1)
+  def report_lock_timeout(lock_key)
+    error = StandardError.new("Captain could not acquire #{lock_key} after #{MAX_LOCK_ATTEMPTS} attempts")
+    ChatwootExceptionTracker.new(error, account: account).capture_exception
   end
 
   # WhatsApp users send thoughts as several short messages in a row ("hola",
@@ -227,7 +265,12 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   # See Captain::Conversation::HistoryBuilder for the message-shaping rules
   # (history window, per-message truncation, human-vs-bot role attribution).
   def collect_previous_messages
-    Captain::Conversation::HistoryBuilder.new(conversation: @conversation, assistant: @assistant).call
+    history = nil
+    elapsed = Benchmark.realtime do
+      history = Captain::Conversation::HistoryBuilder.new(conversation: @conversation, assistant: @assistant).call
+    end
+    @history_ms = (elapsed * 1000).round
+    history
   end
 
   def v1_handoff_requested?
