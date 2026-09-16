@@ -1,0 +1,11 @@
+{% if conversation -%}
+{% render 'conversation', conversation: conversation %}
+{% endif -%}
+
+{% if contact -%}
+{% render 'contact', contact: contact %}
+{% endif -%}
+
+{% if campaign.id -%}
+{% render 'campaign', campaign: campaign %}
+{% endif -%}

@@ -107,10 +107,16 @@ class Captain::Assistant::AgentRunnerService
     message_to_process, context = run_payload(message_history)
     result = run_agents(message_to_process, context)
     result = retry_without_reasoning_params(message_history, result) if reasoning_params_rejected?(result)
+    result = failover_to_alternate_model(message_history, result) if failover_eligible?(result)
     result = retry_if_unusable(result)
-    record_adaki_usage!(result)
 
     response = process_agent_result(result)
+    # Usage/audit logging (Adaki::CaptainUsageTracker.record!) used to run
+    # right here, ahead of the outgoing message the customer is waiting on —
+    # see ResponseBuilderJob#record_captain_v2_usage!, which now does it
+    # after the message exists, reading input_tokens/output_tokens straight
+    # off this same timing hash. See docs/adaki/captain-plan-latencia-2026-09.md
+    # fase 3.5.
     attach_timing!(response, result)
     response
   rescue StandardError => e
@@ -163,6 +169,67 @@ class Captain::Assistant::AgentRunnerService
     return run_agents(message_to_process, context) if learned.present?
 
     Llm::Thinking.without_params { run_agents(message_to_process, context) }
+  end
+
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.2: a transient
+  # provider hiccup or a broken/rate-limited credential doesn't have to become
+  # a handoff when the account has another enabled model to answer with.
+  # Silnatur has gpt-4.1-mini + gpt-5.4-mini, Puntua has two Gemini models —
+  # this is what actually uses the second one. At most once per turn: a
+  # second failure falls through to the normal error/handoff path instead of
+  # hunting for a third model.
+  def failover_eligible?(result)
+    return false if @failed_over
+    return false unless result.respond_to?(:error) && result.error.present?
+
+    [Captain::FailurePolicy::TRANSIENT, Captain::FailurePolicy::CONFIGURATION].include?(Captain::FailurePolicy.classify(result.error))
+  end
+
+  def failover_to_alternate_model(message_history, original_result)
+    alternate = alternate_resolution
+    return original_result unless alternate
+
+    @failed_over = true
+    Rails.logger.warn(
+      "[CAPTAIN][failover] account=#{@assistant&.account_id} assistant=#{@assistant&.id} " \
+      "from=#{resolved_model_row&.slug.inspect} to=#{alternate[:model_slug].inspect} " \
+      "reason=#{Captain::FailurePolicy.classify(original_result.error)}"
+    )
+
+    swap_resolution!(alternate)
+    @runner = nil
+    message_to_process, context = run_payload(message_history)
+    run_agents(message_to_process, context)
+  end
+
+  def alternate_resolution
+    account = @assistant.try(:account)
+    return nil unless account
+
+    Platform::Models::Resolver.resolve(
+      account: account,
+      feature: 'assistant',
+      exclude_slugs: [resolved_model_row&.slug].compact
+    )
+  end
+
+  # Forces every agent in this turn's graph (the assistant plus its enabled
+  # scenarios) to rebuild against the alternate credential/model instead of
+  # the one that just failed. Each Agentable otherwise memoizes its own
+  # #agent_resolution independently but deterministically from the same
+  # account state (see Concerns::Agentable) — poking the ivar directly here
+  # avoids threading a failover override through every provider-dependent
+  # Agentable method (temperature/response_schema/params all key off the
+  # resolved model).
+  def swap_resolution!(alternate)
+    [@assistant, *@assistant.scenarios.enabled].each do |agentable|
+      agentable.instance_variable_set(:@agent_resolution, alternate)
+    end
+
+    credential = alternate[:credential]
+    @resolved_llm_provider = credential_provider(credential)
+    @resolved_model_row = model_row_for(credential, alternate[:model_slug])
+    @resolved_llm_context = Llm::Config.context_for_credential(credential)
   end
 
   def build_context(message_history)
@@ -551,21 +618,6 @@ class Captain::Assistant::AgentRunnerService
     usage[:output] += message.respond_to?(:output_tokens) ? message.output_tokens.to_i : 0
   end
 
-  def record_adaki_usage!(result)
-    usage = result.context&.dig(:captain_v2_usage) || DEFAULT_USAGE
-    Adaki::CaptainUsageTracker.record!(
-      account: adaki_account,
-      feature: 'assistant',
-      input_tokens: usage[:input],
-      output_tokens: usage[:output],
-      assistant_id: @assistant&.id
-    )
-  end
-
-  def adaki_account
-    @conversation&.account || @assistant&.account
-  end
-
   def track_handoff_usage(tool_name, tool_result, handoff_tool_name, context_wrapper = nil)
     # Keep the private helper compatible with callers from older tests/hooks
     # that passed (tool_name, handoff_tool_name, context_wrapper).
@@ -691,10 +743,22 @@ class Captain::Assistant::AgentRunnerService
   end
 
   def run_payload(message_history)
-    message_to_process = extract_last_user_message(message_history, text_transform: knowledge_transform)
     context = build_context(message_history_without_last_user_message(message_history))
+    message_to_process = extract_last_user_message(message_history, text_transform: combined_message_transform(context[:state]))
     enrich_context_with_trace_payload!(context, message_history, message_to_process)
     [message_to_process, context]
+  end
+
+  # Runs the conversation-metadata wrap OUTSIDE the knowledge one, so
+  # `<customer_message>` (see Captain::KnowledgePrefetcher#attach) stays the
+  # innermost tag around the actual customer text.
+  def combined_message_transform(state)
+    turn = turn_context_transform(state)
+    knowledge = knowledge_transform
+    return knowledge if turn.nil?
+    return turn if knowledge.nil?
+
+    ->(text) { turn.call(knowledge.call(text)) }
   end
 
   # See Captain::KnowledgePrefetcher: the FAQ entries for the latest message
@@ -712,6 +776,34 @@ class Captain::Assistant::AgentRunnerService
       (@timing ||= {})[:prefetch_ms] = (@timing[:prefetch_ms] || 0) + (elapsed * 1000).round
       attached
     end
+  end
+
+  # See Concerns::Agentable#agent_instructions and docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 3.4: conversation/contact/campaign
+  # metadata used to render inside the system prompt, where it changed every
+  # turn (status, waiting_since, labels...) and broke the provider's
+  # prompt-prefix cache. It rides on the user message instead now — same
+  # technique the knowledge prefetcher already uses.
+  def turn_context_transform(state)
+    return nil if @conversation.nil?
+
+    rendered = render_turn_context(state)
+    return nil if rendered.blank?
+
+    ->(text) { "<conversation_context>\n#{rendered}\n</conversation_context>\n\n#{text}" }
+  end
+
+  def render_turn_context(state)
+    config = state[:assistant_config] || {}
+    payload = {
+      conversation: state[:conversation],
+      contact: config['feature_contact_attributes'].present? ? state[:contact] : nil,
+      campaign: state[:campaign]
+    }
+    Captain::PromptRenderer.render('turn_context', payload).strip.presence
+  rescue StandardError => e
+    Rails.logger.warn("[Captain V2] turn context render skipped: #{e.class}: #{e.message}")
+    nil
   end
 
   # See Captain::Conversation::ResponseBuilderJob's [CAPTAIN][timing] line

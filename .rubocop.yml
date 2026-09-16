@@ -107,6 +107,11 @@ Metrics/ModuleLength:
     # single-responsibility module for a line-count metric isn't worth the
     # indirection. See docs/adaki/captain-remediacion.md §2c.
     - lib/llm/config.rb
+    # prompt_cache_key (fase 3.4 of docs/adaki/captain-plan-latencia-2026-09.md)
+    # pushed this over 100 — one cohesive concern (how an Assistant/Scenario
+    # builds its Agents::Agent), splitting it for a line-count metric would
+    # just add indirection between tightly coupled private methods.
+    - enterprise/app/models/concerns/agentable.rb
     # Already 124/100 before this session — the real-token-count fix (§Fase
     # 4, C10) added the accumulator this module needed. See
     # docs/adaki/captain-remediacion.md §Fase 4.

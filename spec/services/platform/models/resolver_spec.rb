@@ -134,6 +134,97 @@ RSpec.describe Platform::Models::Resolver do
       end
     end
 
+    context 'when caching a resolution (fase 3.6)' do
+      it 'caches the resolution so a second identical call skips the credential-model scan' do
+        credential = create(:platform_credential, :openai, account: account)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-5.1', kind: 'chat', enabled: true)
+
+        expect(Platform::CredentialModel).to receive(:enabled).once.and_call_original
+
+        first = described_class.resolve(account: account, feature: 'assistant')
+        second = described_class.resolve(account: account, feature: 'assistant')
+
+        expect(first[:model_slug]).to eq('gpt-5.1')
+        expect(second[:model_slug]).to eq('gpt-5.1')
+      end
+
+      it 'caches a nil resolution too, instead of re-scanning every turn for an unconfigured account' do
+        expect(Platform::CredentialModel).to receive(:enabled).once.and_call_original
+
+        expect(described_class.resolve(account: account, feature: 'assistant')).to be_nil
+        expect(described_class.resolve(account: account, feature: 'assistant')).to be_nil
+      end
+
+      it 'busts the cache when a credential model is edited' do
+        credential = create(:platform_credential, :openai, account: account)
+        model = create(:platform_credential_model, credential: credential, slug: 'gpt-5.1', kind: 'chat', enabled: true)
+
+        expect(described_class.resolve(account: account, feature: 'assistant')[:source]).to eq(:feature)
+
+        model.update!(enabled: false)
+
+        # Disabling the only model falls through to resolve_synced_but_disabled
+        # (still returns it, :synced instead of :feature) — the point here is
+        # that the source changed at all, proving the edit busted the cache
+        # instead of replaying the stale :feature resolution.
+        expect(described_class.resolve(account: account, feature: 'assistant')[:source]).to eq(:synced)
+      end
+
+      it 'busts the cache when the credential itself changes (e.g. revoked)' do
+        credential = create(:platform_credential, :openai, account: account)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-5.1', kind: 'chat', enabled: true)
+
+        expect(described_class.resolve(account: account, feature: 'assistant')[:model_slug]).to eq('gpt-5.1')
+
+        credential.update!(status: :revoked)
+
+        expect(described_class.resolve(account: account, feature: 'assistant')).to be_nil
+      end
+
+      it 'does not cache a failover (exclude_slugs) call' do
+        credential = create(:platform_credential, :openai, account: account)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-5.1', kind: 'chat', enabled: true)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-4.1-mini', kind: 'chat', enabled: true)
+        described_class.resolve(account: account, feature: 'assistant') # warm the plain cache entry
+
+        expect(Platform::CredentialModel).to receive(:enabled).once.and_call_original
+
+        result = described_class.resolve(account: account, feature: 'assistant', exclude_slugs: ['gpt-5.1'])
+
+        expect(result[:model_slug]).to eq('gpt-4.1-mini')
+      end
+    end
+
+    context 'with exclude_slugs (fase 3.2: model failover)' do
+      it 'skips the excluded slug and picks the next enabled model for the feature' do
+        credential = create(:platform_credential, :openai, account: account)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-5.1', kind: 'chat', enabled: true)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-4.1-mini', kind: 'chat', enabled: true)
+
+        result = described_class.resolve(account: account, feature: 'assistant', exclude_slugs: ['gpt-5.1'])
+
+        expect(result[:model_slug]).to eq('gpt-4.1-mini')
+      end
+
+      it 'ignores an excluded preferred_slug and falls through to the feature match instead of returning it anyway' do
+        credential = create(:platform_credential, :openai, account: account)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-5.1', kind: 'chat', enabled: true)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-4.1-mini', kind: 'chat', enabled: true)
+
+        result = described_class.resolve(account: account, feature: 'assistant', preferred_slug: 'gpt-5.1', exclude_slugs: ['gpt-5.1'])
+
+        expect(result[:model_slug]).to eq('gpt-4.1-mini')
+        expect(result[:source]).to eq(:feature)
+      end
+
+      it 'returns nil when the only enabled model is excluded' do
+        credential = create(:platform_credential, :openai, account: account)
+        create(:platform_credential_model, credential: credential, slug: 'gpt-5.1', kind: 'chat', enabled: true)
+
+        expect(described_class.resolve(account: account, feature: 'assistant', exclude_slugs: ['gpt-5.1'])).to be_nil
+      end
+    end
+
     context 'when the provider retired the slug stored on the row' do
       it 'routes a stale DeepSeek row to the current V4 model' do
         credential = create(:platform_credential, account: account, provider: 'deepseek')

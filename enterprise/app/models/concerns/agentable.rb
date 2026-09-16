@@ -13,16 +13,17 @@ module Concerns::Agentable
     )
   end
 
+  # Conversation/contact/campaign metadata deliberately does NOT ride here any
+  # more: it changed every turn (status, labels...) and broke the provider's
+  # prompt-prefix cache. It rides on the user message instead — see
+  # AgentRunnerService#turn_context_transform (docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 3.4).
   def agent_instructions(context = nil)
     enhanced_context = prompt_context
 
     if context
       state = context.context[:state] || {}
-      config = state[:assistant_config] || {}
       enhanced_context = enhanced_context.merge(
-        conversation: state[:conversation] || {},
-        contact: config['feature_contact_attributes'].present? ? state[:contact] : nil,
-        campaign: state[:campaign] || {},
         channel_type: state[:channel_type],
         # Lets the prompt switch to plain-text formatting rules on WhatsApp/SMS
         # (see prompts/snippets/formatting.liquid). Captain::ChatTextFormatter
@@ -119,7 +120,7 @@ module Concerns::Agentable
   # of one replacing the other.
   def agent_params
     thinking = agent_thinking_params
-    thinking.deep_merge(
+    merged = thinking.deep_merge(
       Llm::OutputLimit.params_for(
         provider: agent_provider,
         model: agent_model,
@@ -127,6 +128,19 @@ module Concerns::Agentable
         thinking_params: thinking
       )
     )
+    prompt_cache_key.present? ? merged.merge(prompt_cache_key: prompt_cache_key) : merged
+  end
+
+  # OpenAI's hint for routing repeats to the same cache partition, now that
+  # the system prompt is byte-identical across turns (see #agent_instructions).
+  # Shared across an assistant and its scenarios, not split per scenario.
+  def prompt_cache_key
+    return nil unless agent_provider == 'openai'
+
+    scope_id = try(:assistant_id) || try(:id)
+    return nil if scope_id.blank?
+
+    "captain:#{scope_id}"
   end
 
   # Per-assistant override for the reply length cap. Scenarios inherit it.

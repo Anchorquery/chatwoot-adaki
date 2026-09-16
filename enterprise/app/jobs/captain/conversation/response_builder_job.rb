@@ -18,7 +18,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   retry_on Captain::FailurePolicy::TransientProviderError, wait: :polynomially_longer, attempts: 3
 
   # Held for the whole LLM run. Longer than the worst realistic turn
-  # (RubyLLM request_timeout 60s x a couple of tool round-trips) so it is a
+  # (RubyLLM request_timeout 30s x a couple of tool round-trips) so it is a
   # deadlock guard, not a timeout: if a worker dies mid-run the lock frees
   # itself instead of silencing the conversation forever.
   LOCK_TTL = 3.minutes
@@ -64,6 +64,7 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
     Current.executed_by = @assistant
 
     dispatch_response
+    record_captain_v2_usage!
   rescue ActiveStorage::FileNotFoundError, Faraday::BadRequestError => e
     handle_error(e)
     raise e
@@ -72,6 +73,29 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   ensure
     log_timing
     Current.executed_by = nil
+  end
+
+  # See Captain::Assistant::AgentRunnerService: this used to run inside
+  # #generate_response, before dispatch_response had created the outgoing
+  # message — 2 transactions plus a retrying advisory lock
+  # (Adaki::AuditLogger#acquire_advisory_lock!) on the customer's critical
+  # path for no reason, since neither write affects what gets replied. Moved
+  # here, after the message already exists, reading the tokens off the same
+  # timing hash log_timing uses. A no-op outside V2 (V1 usage goes through
+  # Captain::ChatHelperAdaki instead) or when dispatch_response raised before
+  # ever reaching AgentRunnerService#attach_timing!. See docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 3.5.
+  def record_captain_v2_usage!
+    timing = @response.is_a?(Hash) ? @response['timing'] : nil
+    return if timing.blank?
+
+    Adaki::CaptainUsageTracker.record!(
+      account: account,
+      feature: 'assistant',
+      input_tokens: timing[:input_tokens].to_i,
+      output_tokens: timing[:output_tokens].to_i,
+      assistant_id: @assistant&.id
+    )
   end
 
   # See docs/adaki/captain-plan-latencia-2026-09.md fase 0: one line per

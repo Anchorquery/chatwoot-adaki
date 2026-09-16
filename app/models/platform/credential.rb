@@ -50,6 +50,11 @@ class Platform::Credential < ApplicationRecord
   scope :active, -> { where(status: :active) }
   scope :for_account, ->(account) { where(account: account) }
 
+  # See Platform::Models::ResolutionCache (docs/adaki/captain-plan-latencia-2026-09.md
+  # fase 3.6): a status change (revoked/expired) or key rotation must not
+  # keep serving a cached resolution of this credential for up to 5 minutes.
+  after_commit :bust_model_resolution_cache
+
   def payload
     encrypted_payload.with_indifferent_access
   end
@@ -64,5 +69,11 @@ class Platform::Credential < ApplicationRecord
 
   def token_hint
     metadata['token_hint']
+  end
+
+  private
+
+  def bust_model_resolution_cache
+    Platform::Models::ResolutionCache.bump(account_id)
   end
 end

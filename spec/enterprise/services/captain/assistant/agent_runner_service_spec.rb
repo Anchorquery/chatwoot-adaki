@@ -106,6 +106,85 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       end
     end
 
+    # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.2.
+    context 'when the run fails with a transient or configuration error' do
+      let(:failed_result) do
+        instance_double(Agents::RunResult, output: nil, context: {}, error: RubyLLM::ServerError.new('boom'))
+      end
+      let(:retry_result) { instance_double(Agents::RunResult, output: { 'response' => 'Respuesta con el modelo alterno' }, context: {}) }
+
+      before do
+        alternate_credential = create(:platform_credential, :openai, account: account)
+        allow(mock_runner).to receive(:run).and_return(failed_result, retry_result)
+        allow(Platform::Models::Resolver).to receive(:resolve).and_return(
+          { credential: alternate_credential, model_slug: 'gpt-4.1-mini', source: :feature }
+        )
+      end
+
+      it 'retries once with the next enabled model instead of handing off' do
+        response = service.generate_response(message_history: message_history)
+
+        expect(response['response']).to eq('Respuesta con el modelo alterno')
+        expect(mock_runner).to have_received(:run).twice
+        expect(Agents::Runner).to have_received(:with_agents).twice
+      end
+
+      it 'excludes the model that just failed from the alternate resolution' do
+        service.generate_response(message_history: message_history)
+
+        expect(Platform::Models::Resolver).to have_received(:resolve).with(
+          hash_including(account: account, feature: 'assistant', exclude_slugs: anything)
+        )
+      end
+
+      it 'logs the failover with from/to' do
+        allow(Rails.logger).to receive(:warn).and_call_original
+
+        service.generate_response(message_history: message_history)
+
+        expect(Rails.logger).to have_received(:warn).with(a_string_matching(/\[CAPTAIN\]\[failover\].*to="gpt-4\.1-mini"/))
+      end
+
+      it 'does not fail over a second time in the same turn' do
+        allow(mock_runner).to receive(:run).and_return(failed_result, failed_result)
+
+        response = service.generate_response(message_history: message_history)
+
+        expect(mock_runner).to have_received(:run).twice
+        expect(response['response']).not_to eq('Respuesta con el modelo alterno')
+      end
+
+      context 'when no alternate model is available' do
+        before { allow(Platform::Models::Resolver).to receive(:resolve).and_return(nil) }
+
+        it 'does not retry' do
+          service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).once
+        end
+      end
+    end
+
+    context 'when the run fails with a non-retryable error (e.g. context length)' do
+      let(:failed_result) do
+        instance_double(Agents::RunResult, output: nil, context: {}, error: RubyLLM::ContextLengthExceededError.new('too long'))
+      end
+
+      before do
+        allow(mock_runner).to receive(:run).and_return(failed_result)
+        allow(Platform::Models::Resolver).to receive(:resolve).and_call_original
+      end
+
+      it 'does not attempt failover' do
+        service.generate_response(message_history: message_history)
+
+        # Only the ordinary (non-failover) resolution call, never a second
+        # one with exclude_slugs.
+        expect(Platform::Models::Resolver).not_to have_received(:resolve).with(hash_including(:exclude_slugs))
+        expect(mock_runner).to have_received(:run).once
+      end
+    end
+
     it 'builds agents and wires them together' do
       expect(assistant).to receive(:agent).and_return(mock_agent)
       scenarios_relation = instance_double(Captain::Scenario)
@@ -140,7 +219,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       )
 
       expect(mock_runner).to receive(:run).with(
-        'I need help with my account',
+        a_string_ending_with('I need help with my account'),
         context: expected_context,
         max_turns: described_class::MAX_TURNS
       )
@@ -165,7 +244,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       it 'passes image attachments to the runner input' do
         expect(mock_runner).to receive(:run) do |input, context:, max_turns:|
           expect(input).to be_a(RubyLLM::Content)
-          expect(input.text).to eq('What does this error mean?')
+          expect(input.text).to end_with('What does this error mean?')
           expect(input.attachments.first.source.to_s).to eq('https://example.com/error.png')
           expect(context[:conversation_history]).to eq([{ role: :assistant, content: 'Please share a screenshot', agent_name: nil }])
           expect(max_turns).to eq(described_class::MAX_TURNS)
@@ -188,7 +267,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         ]
 
         expect(mock_runner).to receive(:run) do |input, context:, max_turns:|
-          expect(input).to eq('It still does not work')
+          expect(input).to end_with('It still does not work')
           # The earlier user message with the image should preserve the multimodal array
           first_history_msg = context[:conversation_history].first
           expect(first_history_msg[:content]).to be_a(Array)
@@ -788,7 +867,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       message, context = service.send(:run_payload, message_history)
 
-      expect(message).to eq("KB\nI need help with my account")
+      expect(message).to end_with("KB\nI need help with my account")
       expect(context[:state]).not_to have_key(:knowledge)
     end
 
@@ -798,7 +877,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       message, = service.send(:run_payload, history_with_image)
 
       expect(message).to be_a(RubyLLM::Content)
-      expect(message.text).to start_with("KB\n")
+      expect(message.text).to include("KB\n")
       expect(message.attachments.size).to eq(1)
     end
 
@@ -809,6 +888,50 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       expect(message).to eq('I need help with my account')
       expect(Captain::KnowledgePrefetcher).not_to have_received(:new)
+    end
+  end
+
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.4: conversation/
+  # contact/campaign metadata rides on the user message now, not the system
+  # prompt (Concerns::Agentable#agent_instructions never sees it any more —
+  # see spec/enterprise/models/concerns/agentable_spec.rb).
+  describe '#run_payload turn context' do
+    it 'wraps the user message with the conversation metadata, outside the knowledge-base wrap' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).to match(%r{\A<conversation_context>\n.*</conversation_context>\n\nI need help with my account\z}m)
+      expect(message).to include("Conversation ID: #{conversation.display_id}")
+      expect(message).to include("Status: #{conversation.status}")
+    end
+
+    # feature_contact_attributes defaults off — contact details are only
+    # worth the tokens when the assistant admin opted in.
+    it 'omits contact details by default' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).not_to include('# Contact Information')
+    end
+
+    it 'includes contact details when feature_contact_attributes is enabled' do
+      assistant.update!(config: assistant.config.merge('feature_contact_attributes' => true))
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).to include('# Contact Information')
+      expect(message).to include("Contact ID: #{contact.id}")
+    end
+
+    it 'skips the wrap entirely when there is no conversation (playground/copilot)' do
+      service = described_class.new(assistant: assistant, conversation: nil)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).to eq('I need help with my account')
     end
   end
 
@@ -1063,27 +1186,31 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
     end
   end
 
-  describe '#record_adaki_usage!' do
-    it 'records the accumulated usage from the final result context' do
+  describe '#attach_timing!' do
+    # Adaki::CaptainUsageTracker.record! itself moved to
+    # ResponseBuilderJob#record_captain_v2_usage! (fase 3.5: it used to run
+    # here, ahead of the outgoing message). This service's job now is just to
+    # expose the tokens for the job to read.
+    it 'exposes the accumulated usage from the final result context' do
       service = described_class.new(assistant: assistant, conversation: conversation)
       result = instance_double(Agents::RunResult, context: { captain_v2_usage: { input: 30, output: 13 } })
+      response = {}
 
-      expect(Adaki::CaptainUsageTracker).to receive(:record!).with(
-        hash_including(account: account, feature: 'assistant', input_tokens: 30, output_tokens: 13, assistant_id: assistant.id)
-      )
+      service.instance_variable_set(:@timing, { prefetch_ms: 1, llm_ms: 2 })
+      service.send(:attach_timing!, response, result)
 
-      service.send(:record_adaki_usage!, result)
+      expect(response['timing']).to include(input_tokens: 30, output_tokens: 13)
     end
 
-    it 'records zero usage instead of raising when the run never reached a chat (e.g. failed before any LLM call)' do
+    it 'exposes zero usage instead of raising when the run never reached a chat' do
       service = described_class.new(assistant: assistant, conversation: conversation)
       result = instance_double(Agents::RunResult, context: nil)
+      response = {}
 
-      expect(Adaki::CaptainUsageTracker).to receive(:record!).with(
-        hash_including(input_tokens: 0, output_tokens: 0)
-      )
+      service.instance_variable_set(:@timing, {})
+      service.send(:attach_timing!, response, result)
 
-      service.send(:record_adaki_usage!, result)
+      expect(response['timing']).to include(input_tokens: 0, output_tokens: 0)
     end
   end
 

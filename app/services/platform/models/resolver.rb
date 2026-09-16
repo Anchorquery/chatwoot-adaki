@@ -35,15 +35,25 @@ class Platform::Models::Resolver
     'help_center_search' => %w[embedding]
   }.freeze
 
-  def self.resolve(account:, feature: nil, kind: nil, preferred_slug: nil, fallback_model: nil, allow_credential_only: false) # rubocop:disable Metrics/ParameterLists
-    new(
+  def self.resolve(account:, feature: nil, kind: nil, preferred_slug: nil, fallback_model: nil, allow_credential_only: false, exclude_slugs: []) # rubocop:disable Metrics/ParameterLists
+    resolver = new(
       account: account,
       feature: feature,
       kind: kind,
       preferred_slug: preferred_slug,
       fallback_model: fallback_model,
-      allow_credential_only: allow_credential_only
-    ).resolve
+      allow_credential_only: allow_credential_only,
+      exclude_slugs: exclude_slugs
+    )
+
+    # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.6. exclude_slugs
+    # (AgentRunnerService's model failover, see #failover_to_alternate_model)
+    # always wants the freshest state and is not part of the normal hot path,
+    # so it skips the cache entirely rather than needing its own key shape.
+    return resolver.resolve if account.nil? || Array(exclude_slugs).any?
+
+    cache_params = { feature: feature, kind: kind, preferred_slug: preferred_slug, allow_credential_only: allow_credential_only }
+    Platform::Models::ResolutionCache.fetch(account.id, cache_params) { resolver.resolve }
   end
 
   # `fallback_model` is accepted for backwards compatibility and ignored: a
@@ -57,13 +67,18 @@ class Platform::Models::Resolver
   # Callers that need a model slug leave it off and treat nil as "not
   # configured", because no honest slug exists for an account that never
   # synced its models.
-  def initialize(account:, feature: nil, kind: nil, preferred_slug: nil, fallback_model: nil, allow_credential_only: false) # rubocop:disable Lint/UnusedMethodArgument,Metrics/ParameterLists
+  def initialize(account:, feature: nil, kind: nil, preferred_slug: nil, fallback_model: nil, allow_credential_only: false, exclude_slugs: []) # rubocop:disable Lint/UnusedMethodArgument,Metrics/ParameterLists
     @account = account
     @feature = feature.to_s.presence
     @kind = kind.to_s.presence
     @allow_credential_only = allow_credential_only
     # A stored preference is OUR value, so catalog shorthand applies to it.
     @preferred_slug = Llm::Models.canonical_model_slug(preferred_slug).presence
+    # See Captain::Assistant::AgentRunnerService#failover_to_alternate_model
+    # (docs/adaki/captain-plan-latencia-2026-09.md fase 3.2): the model that
+    # just failed, so the next resolution skips it instead of picking the
+    # same broken/rate-limited model again.
+    @exclude_slugs = Array(exclude_slugs).filter_map { |slug| Llm::Models.current_model_slug(slug).presence }
   end
 
   # Returns a Hash { credential:, model_slug:, source: } or nil.
@@ -221,6 +236,7 @@ class Platform::Models::Resolver
 
     relation.where(credential_id: ids)
             .to_a
+            .reject { |model| @exclude_slugs.include?(Llm::Models.current_model_slug(model.slug)) }
             .sort_by { |model| [ids.index(model.credential_id) || ids.size, model.id] }
   end
 

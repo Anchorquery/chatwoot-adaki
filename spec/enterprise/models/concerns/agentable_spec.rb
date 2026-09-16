@@ -103,6 +103,42 @@ RSpec.describe Concerns::Agentable do
     end
   end
 
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.4.
+  describe '#prompt_cache_key' do
+    it 'is nil for a non-openai provider' do
+      allow(dummy_instance).to receive(:agent_provider).and_return('gemini')
+
+      expect(dummy_instance.send(:prompt_cache_key)).to be_nil
+    end
+
+    it 'is nil when the agentable has neither an id nor an assistant_id (e.g. this bare test double)' do
+      allow(dummy_instance).to receive(:agent_provider).and_return('openai')
+
+      expect(dummy_instance.send(:prompt_cache_key)).to be_nil
+    end
+
+    it "keys off its own id (Captain::Assistant's shape)" do
+      assistant_like = Class.new(dummy_class) do
+        define_method(:id) { 42 }
+      end.new
+
+      allow(assistant_like).to receive(:agent_provider).and_return('openai')
+
+      expect(assistant_like.send(:prompt_cache_key)).to eq('captain:42')
+    end
+
+    it "prefers assistant_id over its own id (Captain::Scenario's shape, shares the assistant's cache key)" do
+      scenario_like = Class.new(dummy_class) do
+        define_method(:id) { 99 }
+        define_method(:assistant_id) { 7 }
+      end.new
+
+      allow(scenario_like).to receive(:agent_provider).and_return('openai')
+
+      expect(scenario_like.send(:prompt_cache_key)).to eq('captain:7')
+    end
+  end
+
   describe '#agent_instructions' do
     it 'calls Captain::PromptRenderer with base context' do
       expect(Captain::PromptRenderer).to receive(:render).with(
@@ -111,31 +147,6 @@ RSpec.describe Concerns::Agentable do
       )
 
       dummy_instance.agent_instructions
-    end
-
-    it 'merges context state when provided' do
-      context_double = instance_double(Agents::RunContext,
-                                       context: {
-                                         state: {
-                                           assistant_config: { 'feature_contact_attributes' => true },
-                                           conversation: { id: 123 },
-                                           contact: { name: 'John' }
-                                         }
-                                       })
-
-      expected_context = {
-        base_key: 'base_value',
-        conversation: { id: 123 },
-        contact: { name: 'John' },
-        campaign: {}
-      }
-
-      expect(Captain::PromptRenderer).to receive(:render).with(
-        'dummy_class',
-        hash_including(expected_context)
-      )
-
-      dummy_instance.agent_instructions(context_double)
     end
 
     # Pre-fetched FAQs deliberately do NOT reach the system prompt — they ride
@@ -149,6 +160,32 @@ RSpec.describe Concerns::Agentable do
       end
 
       dummy_instance.agent_instructions(context)
+    end
+
+    # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.4: this used to
+    # merge conversation/contact/campaign from context state into the system
+    # prompt, which changes every turn (status, waiting_since, labels...) and
+    # broke the provider's prompt-prefix cache. It now rides on the user
+    # message instead — see Captain::Assistant::AgentRunnerService
+    # #turn_context_transform.
+    it 'never puts conversation, contact or campaign metadata into the system prompt' do
+      context_double = instance_double(Agents::RunContext,
+                                       context: {
+                                         state: {
+                                           assistant_config: { 'feature_contact_attributes' => true },
+                                           conversation: { id: 123 },
+                                           contact: { name: 'John' },
+                                           campaign: { id: 10, title: 'Summer Sale' }
+                                         }
+                                       })
+
+      expect(Captain::PromptRenderer).to receive(:render) do |_template, rendered|
+        expect(rendered).not_to have_key('conversation')
+        expect(rendered).not_to have_key('contact')
+        expect(rendered).not_to have_key('campaign')
+      end
+
+      dummy_instance.agent_instructions(context_double)
     end
 
     it 'tells the prompt whether the channel renders plain text (WhatsApp/SMS) or Markdown' do
@@ -166,37 +203,12 @@ RSpec.describe Concerns::Agentable do
       dummy_instance.agent_instructions(widget_context)
     end
 
-    it 'merges campaign data from context state' do
-      context_double = instance_double(Agents::RunContext,
-                                       context: {
-                                         state: {
-                                           conversation: { id: 123 },
-                                           contact: { name: 'John' },
-                                           campaign: { id: 10, title: 'Summer Sale', message: 'Check it out' }
-                                         }
-                                       })
-
-      expect(Captain::PromptRenderer).to receive(:render).with(
-        'dummy_class',
-        hash_including(
-          campaign: { id: 10, title: 'Summer Sale', message: 'Check it out' }
-        )
-      )
-
-      dummy_instance.agent_instructions(context_double)
-    end
-
     it 'handles context without state' do
       context_double = instance_double(Agents::RunContext, context: {})
 
       expect(Captain::PromptRenderer).to receive(:render).with(
         'dummy_class',
-        hash_including(
-          base_key: 'base_value',
-          conversation: {},
-          contact: nil,
-          campaign: {}
-        )
+        hash_including(base_key: 'base_value')
       )
 
       dummy_instance.agent_instructions(context_double)

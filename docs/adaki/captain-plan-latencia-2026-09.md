@@ -4,8 +4,10 @@ Fecha: 2026-09-16. Origen: quejas de "Captain tarda un minuto en responder".
 Continúa `captain-latencia.md` (05-09).
 
 Estado: fase 0 (medir) y fase 1 (cola) con código listo y specs en verde
-localmente, sin desplegar. Fase 2 (Evolution) investigada — ver §8. El resto
-del plan (fases 3-6) sigue sin empezar.
+localmente, sin desplegar (PR #40). Fase 2 (Evolution) investigada — ver §8.
+Fase 3 completa (3.1-3.6) con código listo y specs en verde localmente, sin
+desplegar (PR de fase 3, rama `captain-latencia-fase3` sobre la de fase 0+1).
+Fases 4-6 sin empezar.
 
 ## 1. Diagnóstico (datos de producción)
 
