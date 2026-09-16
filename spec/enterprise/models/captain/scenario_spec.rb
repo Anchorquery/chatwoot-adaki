@@ -40,6 +40,35 @@ RSpec.describe Captain::Scenario, type: :model do
         scenario.save
       end
     end
+
+    # See docs/adaki/captain-plan-latencia-2026-09.md fase 4.1: the scenario
+    # pre-router matches on this vector, so it has to stay in sync with
+    # title/description.
+    describe 'after_commit :update_scenario_embedding' do
+      it 'schedules an embedding job with title + description when created' do
+        scenario = build(:captain_scenario, assistant: assistant, account: account, title: 'Refunds', description: 'Handle refund requests')
+
+        expect(Captain::Llm::UpdateEmbeddingJob).to receive(:perform_later).with(scenario, 'Refunds: Handle refund requests')
+
+        scenario.save!
+      end
+
+      it 're-embeds when the title or description changes' do
+        scenario = create(:captain_scenario, assistant: assistant, account: account)
+
+        expect(Captain::Llm::UpdateEmbeddingJob).to receive(:perform_later).with(scenario, "#{scenario.title}: New description")
+
+        scenario.update!(description: 'New description')
+      end
+
+      it 'does not re-embed on an unrelated update once already embedded' do
+        scenario = create(:captain_scenario, assistant: assistant, account: account, embedding: Array.new(1536, 0.1))
+
+        expect(Captain::Llm::UpdateEmbeddingJob).not_to receive(:perform_later)
+
+        scenario.update!(enabled: false)
+      end
+    end
   end
 
   describe '#handoff_key' do

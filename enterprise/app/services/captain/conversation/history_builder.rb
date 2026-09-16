@@ -16,8 +16,14 @@ class Captain::Conversation::HistoryBuilder
   HUMAN_AGENT_MESSAGE_PREFIX = '[Mensaje de un agente humano, no del asistente]: '.freeze
 
   # How long a V2 scenario agent stays "current" after its last reply. See
-  # #agent_tag_still_current?.
-  AGENT_STICKINESS_WINDOW = 1.hour
+  # #agent_tag_still_current?. Lowered from 1h now that
+  # Captain::Conversation::ScenarioRouter re-confirms the scenario by content
+  # every turn instead of relying purely on this timer (see docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 4.3) — this window only matters for
+  # a turn the router doesn't confidently match to anything (a bare "ok",
+  # "gracias"), where it's still worth finishing out a recent exchange without
+  # bouncing back to the orchestrator.
+  AGENT_STICKINESS_WINDOW = 15.minutes
 
   # Only the most recent messages keep their image parts. Every image in the
   # window is re-fetched and re-sent on EVERY turn (RubyLLM downloads URL
