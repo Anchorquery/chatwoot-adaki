@@ -335,7 +335,25 @@ class Captain::Assistant::AgentRunnerService
     return EMPTY_REPLY_NUDGE if text.blank?
     return nil if content_tool_called?(result)
 
-    RETRY_NUDGE if promise_only_text?(text)
+    RETRY_NUDGE if promise_only_text?(text) && promise_only_confirmed?(text)
+  end
+
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 5.2: the regex is a
+  # cheap, over-inclusive first pass — only spend the judge call on what it
+  # already flagged, and only spend the retry turn on what the judge confirms.
+  def promise_only_confirmed?(text)
+    # Enterprise::Captain::BaseTaskService (prepended into every
+    # Captain::BaseTaskService, see PromiseOnlyJudgeService) can short-circuit
+    # #perform into an { error: } hash before the judge's own body ever runs
+    # (quota exhausted, captain_tasks disabled) — anything other than a
+    # literal `false` is treated as "confirmed", i.e. fails open to today's
+    # regex-only behavior.
+    Captain::Llm::PromiseOnlyJudgeService.new(
+      account: @assistant.account, reply_text: text, conversation_display_id: @conversation&.display_id
+    ).perform != false
+  rescue StandardError => e
+    Rails.logger.warn("[Captain V2] promise-only judge skipped, falling back to the regex verdict: #{e.class}: #{e.message}")
+    true
   end
 
   def usable_retry?(result)

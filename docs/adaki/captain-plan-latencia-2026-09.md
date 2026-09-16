@@ -8,10 +8,15 @@ localmente, sin desplegar (PR #40). Fase 2 (Evolution) investigada — ver §8.
 Fase 3 completa (3.1-3.6) con código listo y specs en verde localmente, sin
 desplegar (PR #41, rama `captain-latencia-fase3` sobre la de fase 0+1).
 Fase 4: 4.1 (pre-enrutado por embeddings) y 4.3 (pegajosidad a 15 min) con
-código listo y specs en verde localmente, sin desplegar (rama
+código listo y specs en verde localmente, sin desplegar (PR #42, rama
 `captain-latencia-fase4` sobre la de fase 3). Falta 4.2 (`load_scenario`
 como tool, sustituye los `handoff_to_*`) — más grande y arriesgada, no
-empezada; 4.4 (tools diferidas) sigue opcional. Fases 5-6 sin empezar.
+empezada; 4.4 (tools diferidas) sigue opcional.
+Fase 5: 5.2 (juez de dos capas para promesas vacías, con 5.1 modelo
+utilitario como infraestructura que reutiliza) con código listo y specs en
+verde localmente, sin desplegar (rama `captain-latencia-fase5` sobre la de
+fase 4). Falta 5.3 (resumen en vez de truncar historial largo). Fase 6 sin
+empezar.
 
 ## 1. Diagnóstico (datos de producción)
 
@@ -194,6 +199,8 @@ Esperado: Puntua primer turno de 7–10 s a 3–4 s; tokens por respuesta a la m
 **Estado (16-09): 1 y 3 implementados, código listo y specs en verde localmente
 (rama `captain-latencia-fase4`), sin desplegar. 2 y 4 pendientes.**
 
+### Fase 5 — Calidad y robustez (2 días)
+
 Corrección sobre el mecanismo real (verificado en el código fuente instalado de
 `ai-agents` 0.10.0, `lib/agents/agent_runner.rb#determine_conversation_agent`):
 no existe `context[:current_agent]` como parámetro de entrada — el runner
@@ -223,6 +230,28 @@ como preveía la investigación de la sección 7.
   lo inyecta como bloque volátil. Mantiene contexto en hilos largos de WhatsApp y el
   prefijo de los mensajes recientes.
 - **Reintento de entrega**: ya en fase 2.
+
+**Estado (16-09): 5.2 implementada (código listo, specs en verde localmente,
+rama `captain-latencia-fase5` sobre la de fase 4). El "modelo utilitario"
+(punto 1) resultó ser más simple de lo que sonaba: `Captain::BaseTaskService`
+(base de `LabelSuggestionService`, `SummaryService`, etc.) ya resuelve su
+modelo vía `Platform::Models::Resolver.resolve(feature: event_name, ...)` sin
+que `event_name` necesite estar registrado en `config/llm.yml` — `summarize`
+tampoco lo está y funciona igual. `Captain::Llm::PromiseOnlyJudgeService`
+(subclase de `BaseTaskService`, `event_name = 'utility'`) hereda esa
+resolución gratis: si el admin fija `account.captain_models['utility']` a un
+modelo barato ya habilitado, el juez lo usa; si no, cae al mismo modelo que
+`assistant` resolvería (ningún cambio de comportamiento por defecto). No se
+tocó `config/llm.yml` ni `Platform::Models::Resolver::FEATURE_KINDS` — no
+hacía falta: features desconocidos ya caen a `CHAT_KINDS` (ver `resolver.rb`).
+El juez se conecta en `AgentRunnerService#retry_nudge_for_text`: la regex
+sigue siendo el primer filtro (barato, sobre-inclusivo); solo cuando matchea
+se llama al juez, que da el veredicto final antes de gastar el turno de
+reintento. Falla abierto (reintenta, comportamiento de hoy) ante cualquier
+error del proveedor o si el wrapper enterprise corta `#perform` antes de
+tiempo (cuota agotada, `captain_tasks` desactivado) — ver el comentario en
+`AgentRunnerService#promise_only_confirmed?`. Pendiente: el resumen en vez de
+truncar (punto 3).**
 
 ### Fase 6 — Gemas (1 día + verificación)
 
