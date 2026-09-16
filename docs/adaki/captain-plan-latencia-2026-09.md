@@ -13,9 +13,13 @@ código listo y specs en verde localmente, sin desplegar (PR #42, rama
 como tool, sustituye los `handoff_to_*`) — más grande y arriesgada, no
 empezada; 4.4 (tools diferidas) sigue opcional.
 Fase 5 completa (5.1-5.3) con código listo y specs en verde localmente, sin
-desplegar (PR #43 para 5.1+5.2, rama `captain-latencia-fase5b` sobre esa
-para 5.3). Fase 6 sin empezar. Sigue pendiente 4.2 (`load_scenario` como
-tool) — más grande y arriesgada, aparcada a propósito.
+desplegar (PR #43 para 5.1+5.2, PR #44 para 5.3, rama
+`captain-latencia-fase5b`). Fase 6 completa (código listo, sin desplegar,
+rama `captain-latencia-fase6` sobre la de 5.3) — suite completa
+`spec/enterprise` + `spec/lib` en verde (2619 ejemplos) tras subir
+`ai-agents` a 0.12.0 y `ruby_llm` a 1.16.0. Sigue pendiente 4.2
+(`load_scenario` como tool) — más grande y arriesgada, aparcada a
+propósito; es lo único que queda del plan de código.
 
 ## 1. Diagnóstico (datos de producción)
 
@@ -278,6 +282,43 @@ como mensaje real.**
 - Suscribirse a `request.ruby_llm` para alimentar la línea de timing de la fase 0 con el
   tiempo real de cada petición al proveedor.
 - `config.tool_concurrency = true`: sin efecto hoy (una tool por turno), gratis para el futuro.
+
+**Estado (16-09): completa, código listo, sin desplegar** (rama
+`captain-latencia-fase6` sobre la de 5.3). `bundle update ai-agents ruby_llm`
+resolvió sin conflictos (`ai-agents` 0.10.0→0.12.0, `ruby_llm` 1.15.0→1.16.0);
+`Gemfile.lock` solo cambia esas dos líneas.
+
+- **Parche de Gemini retirado — no.** Leí el código fuente instalado de
+  `ruby_llm` 1.16.0 (`RubyLLM::Providers::Gemini::Tools#format_tool_call` /
+  `#format_tool_result`): sigue sin poner `id` en `functionCall`/
+  `functionResponse` de forma nativa. La nota del changelog ("Gemini function
+  call responses now adhere to spec") no cubre esto — el parche
+  (`config/initializers/ruby_llm_gemini_tool_call_ids.rb`) sigue haciendo
+  falta. Añadí `spec/lib/ruby_llm_gemini_tool_call_ids_spec.rb`, que no
+  existía antes (el parche llevaba en producción sin test propio).
+- **`provider:`/`assume_model_exists: true` en `Agents::Agent.new`**:
+  confirmado en el código fuente de `ai-agents` 0.12.0
+  (`lib/agents/runner.rb`) que el `Runner` los pasa tal cual a
+  `RubyLLM::Chat.new` y a `#with_model` en cada handoff — exactamente lo que
+  `ChatThreadContext#with_model` (el parche) hacía a mano. `with_model` se
+  retira de `config/initializers/ruby_llm_thread_context.rb`; solo queda el
+  contexto por hilo (la api key), que sigue haciendo falta porque el
+  `Runner` no pasa `context:` a `Chat.new`. `Captain::Assistant::AgentRunnerService`
+  pierde `resolved_llm_provider`/`credential_provider` (ahora cada
+  `Agentable#agent_provider` resuelve su propio provider, incluido el
+  failover de fase 3.2 — se verificó que `swap_resolution!` lo sigue
+  reflejando bien sin ellos).
+- **`request.ruby_llm`**: un solo suscriptor global en
+  `config/initializers/ruby_llm_request_instrumentation.rb` (no uno por
+  turno — un `.subscribed` por turno multiplicaría el conteo bajo
+  concurrencia de Sidekiq, ver el comentario en el archivo) acumula en
+  `Thread.current`, que en el momento del callback es siempre el hilo que
+  hizo la petición real. `AgentRunnerService#generate_response` lo resetea a
+  0 al empezar el turno; `[CAPTAIN][timing]` gana el campo `provider_ms=`
+  (tiempo real de red al proveedor, incluye las llamadas del juez de fase
+  5.2 y del resumen de fase 5.3 si corren en el mismo turno — es correcto,
+  es tiempo de proveedor real gastado en ese turno).
+- `config.tool_concurrency = true` añadido en `lib/llm/config.rb`.
 
 ## 4. Orden y expectativa
 
