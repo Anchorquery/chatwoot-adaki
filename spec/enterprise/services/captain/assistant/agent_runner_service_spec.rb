@@ -359,6 +359,53 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
           expect(result['response']).to eq('Let me check that for you')
         end
       end
+
+      # See docs/adaki/captain-plan-latencia-2026-09.md fase 5.2.
+      context 'with the promise-only judge (fase 5.2)' do
+        let(:judge) { instance_double(Captain::Llm::PromiseOnlyJudgeService) }
+
+        before do
+          allow(Captain::Llm::PromiseOnlyJudgeService).to receive(:new)
+            .with(account: account, reply_text: 'Let me check that for you', conversation_display_id: conversation.display_id)
+            .and_return(judge)
+        end
+
+        it 'does not retry when the judge overrules the regex-only verdict' do
+          allow(judge).to receive(:perform).and_return(false)
+
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).once
+          expect(result['response']).to eq('Let me check that for you')
+        end
+
+        it 'retries when the judge confirms the regex verdict' do
+          allow(judge).to receive(:perform).and_return(true)
+
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).twice
+          expect(result['response']).to eq('Here is the answer: 42')
+        end
+
+        it 'fails open (retries) when the judge itself errors' do
+          allow(judge).to receive(:perform).and_raise(StandardError, 'provider down')
+
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).twice
+          expect(result['response']).to eq('Here is the answer: 42')
+        end
+
+        it 'fails open (retries) when the judge returns a non-boolean (the enterprise wrapper short-circuit)' do
+          allow(judge).to receive(:perform).and_return({ error: 'Captain AI is disabled for this account.' })
+
+          result = service.generate_response(message_history: message_history)
+
+          expect(mock_runner).to have_received(:run).twice
+          expect(result['response']).to eq('Here is the answer: 42')
+        end
+      end
     end
 
     context 'when the agent replies with an empty message (production conversation 309, 2026-09-04)' do
