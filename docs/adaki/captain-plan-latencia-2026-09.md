@@ -12,11 +12,10 @@ código listo y specs en verde localmente, sin desplegar (PR #42, rama
 `captain-latencia-fase4` sobre la de fase 3). Falta 4.2 (`load_scenario`
 como tool, sustituye los `handoff_to_*`) — más grande y arriesgada, no
 empezada; 4.4 (tools diferidas) sigue opcional.
-Fase 5: 5.2 (juez de dos capas para promesas vacías, con 5.1 modelo
-utilitario como infraestructura que reutiliza) con código listo y specs en
-verde localmente, sin desplegar (rama `captain-latencia-fase5` sobre la de
-fase 4). Falta 5.3 (resumen en vez de truncar historial largo). Fase 6 sin
-empezar.
+Fase 5 completa (5.1-5.3) con código listo y specs en verde localmente, sin
+desplegar (PR #43 para 5.1+5.2, rama `captain-latencia-fase5b` sobre esa
+para 5.3). Fase 6 sin empezar. Sigue pendiente 4.2 (`load_scenario` como
+tool) — más grande y arriesgada, aparcada a propósito.
 
 ## 1. Diagnóstico (datos de producción)
 
@@ -250,8 +249,22 @@ se llama al juez, que da el veredicto final antes de gastar el turno de
 reintento. Falla abierto (reintenta, comportamiento de hoy) ante cualquier
 error del proveedor o si el wrapper enterprise corta `#perform` antes de
 tiempo (cuota agotada, `captain_tasks` desactivado) — ver el comentario en
-`AgentRunnerService#promise_only_confirmed?`. Pendiente: el resumen en vez de
-truncar (punto 3).**
+`AgentRunnerService#promise_only_confirmed?`.
+
+5.3 también implementada: `Captain::Conversation::HistoryBuilder#call` compara
+el total de mensajes elegibles contra la ventana; si sobran mensajes, encola
+`Captain::Conversation::SummarizeOldMessagesJob` (cola `low`, fuera del camino
+crítico) con un lock corto en Redis (`SUMMARY_PENDING_TTL`, 2 min) para no
+duplicar el encolado en ráfagas de turnos. El job resume solo los mensajes más
+antiguos que la ventana (`Captain::Llm::ConversationSummarizerService`,
+`event_name = 'utility'`, mismo modelo barato que el juez) y lo guarda en
+`conversation.additional_attributes['captain_summary']` +
+`captain_summary_covers` (cuántos mensajes viejos cubre, para decidir cuándo
+re-resumir: solo cuando se acumulan `SUMMARY_RESUMMARIZE_DELTA` — 10 —
+mensajes viejos más desde la última vez, no en cada turno). `HistoryBuilder`
+antepone el resumen guardado como un mensaje `user` sintético con el prefijo
+`SUMMARY_PREFIX`, antes de los mensajes de la ventana — nunca se persiste
+como mensaje real.**
 
 ### Fase 6 — Gemas (1 día + verificación)
 
