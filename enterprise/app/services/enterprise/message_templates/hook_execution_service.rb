@@ -43,18 +43,21 @@ module Enterprise::MessageTemplates::HookExecutionService
     true
   end
 
-  # Every incoming message waits CAPTAIN_RESPONSE_DEBOUNCE_SECONDS before its
-  # job runs (attachments wait a bit longer, see below). When the customer
-  # sends a burst of messages, all but the last job stand down
-  # (ResponseBuilderJob#superseded_by_newer_message?) and the last one answers
-  # the whole burst with one LLM run. Set the env var to 0 to reply
-  # immediately to each message, as before.
+  # The job is enqueued immediately — no Sidekiq `wait:`, which used to add
+  # its scheduled-set poller latency (2.5-7.5s for a 2s wait, see docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 1) on top of every debounce. The
+  # debounce itself (coalescing a customer's message burst into one LLM run)
+  # now happens as a plain sleep inside the job: when the customer sends a
+  # burst, all but the last job's sleep sees a newer message and stands down
+  # (ResponseBuilderJob#superseded_by_newer_message?), so only the last one
+  # answers the whole burst. Set the env var to 0 to reply immediately to
+  # each message, as before.
   def schedule_captain_response
     job_args = [conversation, conversation.resolved_captain_assistant]
     wait_time = captain_debounce_wait
     wait_time += calculate_attachment_wait_time if message.attachments.present?
 
-    Captain::Conversation::ResponseBuilderJob.set(wait: wait_time).perform_later(*job_args)
+    Captain::Conversation::ResponseBuilderJob.perform_later(*job_args, debounce_wait: wait_time.to_f)
   end
 
   def captain_debounce_wait

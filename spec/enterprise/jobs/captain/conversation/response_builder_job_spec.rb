@@ -267,6 +267,27 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         end
       end
 
+      context 'with a debounce_wait' do
+        it 'sleeps it off before checking for a newer message' do
+          job = described_class.new(conversation, assistant, debounce_wait: 2.5)
+          allow(job).to receive(:sleep)
+
+          job.perform_now
+
+          expect(job).to have_received(:sleep).with(2.5)
+          expect(conversation.messages.outgoing.count).to eq(1)
+        end
+
+        it 'does not sleep when zero (default)' do
+          job = described_class.new(conversation, assistant)
+          allow(job).to receive(:sleep)
+
+          job.perform_now
+
+          expect(job).not_to have_received(:sleep)
+        end
+      end
+
       context 'when a newer incoming message arrived after this job was enqueued (message burst)' do
         it 'stands down and lets the newer message\'s job answer the whole burst' do
           job = described_class.new(conversation, assistant)
@@ -293,24 +314,31 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
       context 'when another Captain run already holds the conversation lock' do
         let(:lock_key) { "captain:conversation:#{conversation.id}" }
 
-        it 'does not answer twice and re-enqueues itself to answer right after the run in progress' do
+        it 'does not answer twice and polls in-process to answer right after the run in progress' do
           Redis::LockManager.new.lock(lock_key, 60)
+          job = described_class.new(conversation, assistant)
+          # Simulate the other run releasing the lock while this job is waiting,
+          # instead of actually sleeping described_class::LOCK_POLL_INTERVAL.
+          allow(job).to receive(:sleep) { Redis::LockManager.new.unlock(lock_key) }
 
-          expect { described_class.perform_now(conversation, assistant) }
-            .to have_enqueued_job(described_class).with(conversation, assistant, lock_attempt: 1)
-          expect(conversation.messages.outgoing.count).to eq(0)
+          job.perform_now
+
+          expect(conversation.messages.outgoing.count).to eq(1)
         ensure
           Redis::LockManager.new.unlock(lock_key)
         end
 
-        it 'gives up (and reports) instead of re-enqueuing forever' do
+        it 'gives up (and reports) instead of polling forever' do
           Redis::LockManager.new.lock(lock_key, 60)
           allow(ChatwootExceptionTracker).to receive(:new).and_return(instance_double(ChatwootExceptionTracker,
                                                                                       capture_exception: true))
+          job = described_class.new(conversation, assistant)
+          allow(job).to receive(:sleep)
 
-          expect { described_class.perform_now(conversation, assistant, lock_attempt: described_class::MAX_LOCK_ATTEMPTS) }
-            .not_to have_enqueued_job(described_class)
+          job.perform_now
+
           expect(ChatwootExceptionTracker).to have_received(:new)
+          expect(conversation.messages.outgoing.count).to eq(0)
         ensure
           Redis::LockManager.new.unlock(lock_key)
         end

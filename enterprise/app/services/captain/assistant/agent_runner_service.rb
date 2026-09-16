@@ -1,5 +1,6 @@
 require 'agents'
 require 'agents/instrumentation'
+require 'benchmark'
 
 class Captain::Assistant::AgentRunnerService
   include Integrations::LlmInstrumentationConstants
@@ -102,13 +103,16 @@ class Captain::Assistant::AgentRunnerService
   REASONING_PARAM_ERROR_PATTERN = /reasoning_effort|reasoning|thinking/i
 
   def generate_response(message_history: [])
+    @timing = { prefetch_ms: 0, llm_ms: 0 }
     message_to_process, context = run_payload(message_history)
     result = run_agents(message_to_process, context)
     result = retry_without_reasoning_params(message_history, result) if reasoning_params_rejected?(result)
     result = retry_if_unusable(result)
     record_adaki_usage!(result)
 
-    process_agent_result(result)
+    response = process_agent_result(result)
+    attach_timing!(response, result)
+    response
   rescue StandardError => e
     # In rake/local runs, conversation may not be present, so account is optional here.
     ChatwootExceptionTracker.new(e, account: @conversation&.account).capture_exception
@@ -125,9 +129,14 @@ class Captain::Assistant::AgentRunnerService
   # resolved credential (and provider) as the per-thread context so those
   # chats route to the configured provider instead of always hitting OpenAI.
   def run_agents(message_to_process, context)
-    RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
-      runner.run(message_to_process, context: context, max_turns: MAX_TURNS)
+    result = nil
+    elapsed = Benchmark.realtime do
+      result = RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
+        runner.run(message_to_process, context: context, max_turns: MAX_TURNS)
+      end
     end
+    (@timing ||= {})[:llm_ms] = (@timing[:llm_ms] || 0) + (elapsed * 1000).round
+    result
   end
 
   def reasoning_params_rejected?(result)
@@ -242,9 +251,7 @@ class Captain::Assistant::AgentRunnerService
              end
     Rails.logger.info "[Captain V2] #{reason} reply detected, retrying once"
 
-    retry_result = RubyLLM.with_thread_context(resolved_llm_context, provider: resolved_llm_provider) do
-      runner.run(nudge, context: result.context, max_turns: MAX_TURNS)
-    end
+    retry_result = run_agents(nudge, result.context)
 
     usable_retry?(retry_result) ? retry_result : result
   end
@@ -699,6 +706,32 @@ class Captain::Assistant::AgentRunnerService
     return nil if @conversation.nil?
 
     prefetcher = Captain::KnowledgePrefetcher.new(@assistant)
-    ->(text) { prefetcher.attach(text) }
+    lambda do |text|
+      attached = nil
+      elapsed = Benchmark.realtime { attached = prefetcher.attach(text) }
+      (@timing ||= {})[:prefetch_ms] = (@timing[:prefetch_ms] || 0) + (elapsed * 1000).round
+      attached
+    end
+  end
+
+  # See Captain::Conversation::ResponseBuilderJob's [CAPTAIN][timing] line
+  # (fase 0 of docs/adaki/captain-plan-latencia-2026-09.md): this is the only
+  # place that knows the LLM/prefetch split, so it rides on the response hash
+  # instead of a second round-trip through the job.
+  def attach_timing!(response, result)
+    return unless response.is_a?(Hash)
+
+    usage = context_dig(result, :captain_v2_usage) || DEFAULT_USAGE
+    response['timing'] = {
+      prefetch_ms: @timing[:prefetch_ms] || 0,
+      llm_ms: @timing[:llm_ms] || 0,
+      tools_calls: context_dig(result, :captain_v2_content_tool_calls) || 0,
+      input_tokens: usage[:input],
+      output_tokens: usage[:output]
+    }
+  end
+
+  def context_dig(result, key)
+    result.context&.dig(key)
   end
 end
