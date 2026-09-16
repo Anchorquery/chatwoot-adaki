@@ -239,7 +239,7 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(account.usage_limits[:captain][:responses][:consumed]).to eq(1)
       end
 
-      context 'usage/audit tracking (fase 3.5: moved here from AgentRunnerService)' do
+      context 'when tracking usage/audit (fase 3.5: moved here from AgentRunnerService)' do
         before do
           allow(mock_agent_runner_service).to receive(:generate_response).and_return(
             { 'response' => 'Hey, welcome to Captain V2',

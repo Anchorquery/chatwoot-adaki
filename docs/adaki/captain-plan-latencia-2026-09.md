@@ -5,10 +5,9 @@ Continúa `captain-latencia.md` (05-09).
 
 Estado: fase 0 (medir) y fase 1 (cola) con código listo y specs en verde
 localmente, sin desplegar (PR #40). Fase 2 (Evolution) investigada — ver §8.
-Fase 3: 3.1 (timeout 30s), 3.2 (failover de modelo), 3.3 (umbral de
-distancia en el prefetch), 3.5 (usage/audit después de responder) y 3.6
-(caché del resolver) con código listo y specs en verde localmente, sin PR
-aún. Falta 3.4 (prompt estable / `prompt_cache_key`). Fases 4-6 sin empezar.
+Fase 3 completa (3.1-3.6) con código listo y specs en verde localmente, sin
+desplegar (PR de fase 3, rama `captain-latencia-fase3` sobre la de fase 0+1).
+Fases 4-6 sin empezar.
 
 ## 1. Diagnóstico (datos de producción)
 

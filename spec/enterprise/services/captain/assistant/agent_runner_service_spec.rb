@@ -219,7 +219,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       )
 
       expect(mock_runner).to receive(:run).with(
-        'I need help with my account',
+        a_string_ending_with('I need help with my account'),
         context: expected_context,
         max_turns: described_class::MAX_TURNS
       )
@@ -244,7 +244,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       it 'passes image attachments to the runner input' do
         expect(mock_runner).to receive(:run) do |input, context:, max_turns:|
           expect(input).to be_a(RubyLLM::Content)
-          expect(input.text).to eq('What does this error mean?')
+          expect(input.text).to end_with('What does this error mean?')
           expect(input.attachments.first.source.to_s).to eq('https://example.com/error.png')
           expect(context[:conversation_history]).to eq([{ role: :assistant, content: 'Please share a screenshot', agent_name: nil }])
           expect(max_turns).to eq(described_class::MAX_TURNS)
@@ -267,7 +267,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
         ]
 
         expect(mock_runner).to receive(:run) do |input, context:, max_turns:|
-          expect(input).to eq('It still does not work')
+          expect(input).to end_with('It still does not work')
           # The earlier user message with the image should preserve the multimodal array
           first_history_msg = context[:conversation_history].first
           expect(first_history_msg[:content]).to be_a(Array)
@@ -867,7 +867,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       message, context = service.send(:run_payload, message_history)
 
-      expect(message).to eq("KB\nI need help with my account")
+      expect(message).to end_with("KB\nI need help with my account")
       expect(context[:state]).not_to have_key(:knowledge)
     end
 
@@ -877,7 +877,7 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
       message, = service.send(:run_payload, history_with_image)
 
       expect(message).to be_a(RubyLLM::Content)
-      expect(message.text).to start_with("KB\n")
+      expect(message.text).to include("KB\n")
       expect(message.attachments.size).to eq(1)
     end
 
@@ -888,6 +888,50 @@ RSpec.describe Captain::Assistant::AgentRunnerService do
 
       expect(message).to eq('I need help with my account')
       expect(Captain::KnowledgePrefetcher).not_to have_received(:new)
+    end
+  end
+
+  # See docs/adaki/captain-plan-latencia-2026-09.md fase 3.4: conversation/
+  # contact/campaign metadata rides on the user message now, not the system
+  # prompt (Concerns::Agentable#agent_instructions never sees it any more —
+  # see spec/enterprise/models/concerns/agentable_spec.rb).
+  describe '#run_payload turn context' do
+    it 'wraps the user message with the conversation metadata, outside the knowledge-base wrap' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).to match(%r{\A<conversation_context>\n.*</conversation_context>\n\nI need help with my account\z}m)
+      expect(message).to include("Conversation ID: #{conversation.display_id}")
+      expect(message).to include("Status: #{conversation.status}")
+    end
+
+    # feature_contact_attributes defaults off — contact details are only
+    # worth the tokens when the assistant admin opted in.
+    it 'omits contact details by default' do
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).not_to include('# Contact Information')
+    end
+
+    it 'includes contact details when feature_contact_attributes is enabled' do
+      assistant.update!(config: assistant.config.merge('feature_contact_attributes' => true))
+      service = described_class.new(assistant: assistant, conversation: conversation)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).to include('# Contact Information')
+      expect(message).to include("Contact ID: #{contact.id}")
+    end
+
+    it 'skips the wrap entirely when there is no conversation (playground/copilot)' do
+      service = described_class.new(assistant: assistant, conversation: nil)
+
+      message, = service.send(:run_payload, message_history)
+
+      expect(message).to eq('I need help with my account')
     end
   end
 

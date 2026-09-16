@@ -18,24 +18,12 @@ Your FIRST priority is to answer the user's actual question. When they ask for f
 
 Background actions (adding labels, handing off, internal notes) are SILENT housekeeping. NEVER tell the user about them, never say "I added the label" or "I'm tagging this conversation" — the user must not see these. Add the label quietly and keep talking about their question only.
 
-{% if conversation || contact || campaign.id %}
-# Current Context
-
-Here's the metadata we have about the current conversation and the contact associated with it:
-
-{% if conversation -%}
-{% render 'conversation', conversation: conversation %}
-{% endif -%}
-
-{% if contact -%}
-{% render 'contact', contact: contact %}
-{% endif -%}
-
-{% if campaign.id -%}
-{% render 'campaign', campaign: campaign %}
-{% endif -%}
-{% endif -%}
-
+{% comment %}
+Conversation/contact/campaign metadata used to render here ("# Current
+Context"). See the matching note in assistant.liquid — it now rides on the
+user message instead (turn_context.liquid), so this system prompt stays
+byte-identical across turns and the provider can reuse its cached prefix.
+{% endcomment %}
 
 {% if response_guidelines.size > 0 -%}
 # Response Guidelines

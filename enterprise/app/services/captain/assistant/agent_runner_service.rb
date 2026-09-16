@@ -743,10 +743,22 @@ class Captain::Assistant::AgentRunnerService
   end
 
   def run_payload(message_history)
-    message_to_process = extract_last_user_message(message_history, text_transform: knowledge_transform)
     context = build_context(message_history_without_last_user_message(message_history))
+    message_to_process = extract_last_user_message(message_history, text_transform: combined_message_transform(context[:state]))
     enrich_context_with_trace_payload!(context, message_history, message_to_process)
     [message_to_process, context]
+  end
+
+  # Runs the conversation-metadata wrap OUTSIDE the knowledge one, so
+  # `<customer_message>` (see Captain::KnowledgePrefetcher#attach) stays the
+  # innermost tag around the actual customer text.
+  def combined_message_transform(state)
+    turn = turn_context_transform(state)
+    knowledge = knowledge_transform
+    return knowledge if turn.nil?
+    return turn if knowledge.nil?
+
+    ->(text) { turn.call(knowledge.call(text)) }
   end
 
   # See Captain::KnowledgePrefetcher: the FAQ entries for the latest message
@@ -764,6 +776,34 @@ class Captain::Assistant::AgentRunnerService
       (@timing ||= {})[:prefetch_ms] = (@timing[:prefetch_ms] || 0) + (elapsed * 1000).round
       attached
     end
+  end
+
+  # See Concerns::Agentable#agent_instructions and docs/adaki/
+  # captain-plan-latencia-2026-09.md fase 3.4: conversation/contact/campaign
+  # metadata used to render inside the system prompt, where it changed every
+  # turn (status, waiting_since, labels...) and broke the provider's
+  # prompt-prefix cache. It rides on the user message instead now — same
+  # technique the knowledge prefetcher already uses.
+  def turn_context_transform(state)
+    return nil if @conversation.nil?
+
+    rendered = render_turn_context(state)
+    return nil if rendered.blank?
+
+    ->(text) { "<conversation_context>\n#{rendered}\n</conversation_context>\n\n#{text}" }
+  end
+
+  def render_turn_context(state)
+    config = state[:assistant_config] || {}
+    payload = {
+      conversation: state[:conversation],
+      contact: config['feature_contact_attributes'].present? ? state[:contact] : nil,
+      campaign: state[:campaign]
+    }
+    Captain::PromptRenderer.render('turn_context', payload).strip.presence
+  rescue StandardError => e
+    Rails.logger.warn("[Captain V2] turn context render skipped: #{e.class}: #{e.message}")
+    nil
   end
 
   # See Captain::Conversation::ResponseBuilderJob's [CAPTAIN][timing] line
