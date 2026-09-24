@@ -50,7 +50,7 @@ export default {
         {
           path: 'captain',
           name: 'adaki_captain_settings',
-          meta,
+          meta: { permissions: ['administrator', 'captain_manage'] },
           redirect: to => ({
             name: 'adaki_providers_index',
             params: to.params,
@@ -59,13 +59,13 @@ export default {
         {
           path: 'providers',
           name: 'adaki_providers_index',
-          meta,
+          meta: { permissions: ['administrator', 'captain_manage'] },
           component: ProvidersIndex,
         },
         {
           path: 'providers/:credentialId/models',
           name: 'adaki_provider_models',
-          meta,
+          meta: { permissions: ['administrator', 'captain_manage'] },
           component: ProviderModelsPage,
           props: true,
         },

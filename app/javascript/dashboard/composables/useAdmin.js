@@ -10,8 +10,14 @@ export function useAdmin() {
 
   const currentUserRole = computed(() => getters.getCurrentRole.value);
   const isAdmin = computed(() => currentUserRole.value === 'administrator');
+  const canManageAgentSettings = computed(
+    () =>
+      isAdmin.value ||
+      getters.getCurrentPermissions.value.includes('agent_settings_manage')
+  );
 
   return {
     isAdmin,
+    canManageAgentSettings,
   };
 }

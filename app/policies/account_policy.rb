@@ -15,6 +15,14 @@ class AccountPolicy < ApplicationPolicy
     @account_user.administrator?
   end
 
+  def update_captain_preferences?
+    administrator_or_custom_role_permission?('captain_manage')
+  end
+
+  def manage_platform_credentials?
+    administrator_or_custom_role_permission?('captain_manage')
+  end
+
   def update_active_at?
     true
   end

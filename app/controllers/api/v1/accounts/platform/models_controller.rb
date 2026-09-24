@@ -56,7 +56,7 @@ class Api::V1::Accounts::Platform::ModelsController < Api::V1::Accounts::BaseCon
   private
 
   def authorize_account_update
-    authorize @current_account, :update?
+    authorize @current_account, :manage_platform_credentials?
   end
 
   def reconcile_embeddings

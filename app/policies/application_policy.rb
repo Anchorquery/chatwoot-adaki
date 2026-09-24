@@ -41,6 +41,11 @@ class ApplicationPolicy
     Pundit.policy_scope!(user_context, record.class)
   end
 
+  def administrator_or_custom_role_permission?(permission)
+    account_user&.administrator? ||
+      account_user&.permissions&.include?(permission)
+  end
+
   class Scope
     attr_reader :user_context, :user, :scope, :account, :account_user
 

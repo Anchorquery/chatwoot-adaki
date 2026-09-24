@@ -11,6 +11,8 @@ class InboxPolicy < ApplicationPolicy
     end
 
     def resolve
+      return account.inboxes if account_user.permissions.include?('agent_settings_manage')
+
       user.assigned_inboxes
     end
   end
@@ -21,7 +23,7 @@ class InboxPolicy < ApplicationPolicy
 
   def show?
     # FIXME: for agent bots, lets bring this validation to policies as well in future
-    return true if @user.is_a?(AgentBot)
+    return true if @user.is_a?(AgentBot) || agent_settings_manager?
 
     Current.user.assigned_inboxes.include? record
   end
@@ -35,58 +37,60 @@ class InboxPolicy < ApplicationPolicy
   end
 
   def campaigns?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('campaign_manage')
   end
 
   def create?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def update?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def destroy?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def set_agent_bot?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def avatar?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def sync_templates?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def health?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def reset_secret?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def evolution_audience_options?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
   def evolution_test_connection?
-    @account_user.administrator?
+    agent_settings_manager?
   end
 
-  # A diferencia de evolution_audience_options/evolution_test_connection (solo
-  # admin — tocan la config de conexion de la bandeja), el filtro de
-  # privacidad lo puede operar cualquier agente asignado a esta bandeja, sin
-  # necesitar acceso de administrador ni al Manager de Evolution.
   def evolution_privacy_filter?
-    Current.user.assigned_inboxes.include? record
+    agent_settings_manager? || Current.user.assigned_inboxes.include?(record)
   end
 
   def evolution_update_privacy_filter?
-    Current.user.assigned_inboxes.include? record
+    agent_settings_manager? || Current.user.assigned_inboxes.include?(record)
+  end
+
+  private
+
+  def agent_settings_manager?
+    administrator_or_custom_role_permission?('agent_settings_manage')
   end
 end

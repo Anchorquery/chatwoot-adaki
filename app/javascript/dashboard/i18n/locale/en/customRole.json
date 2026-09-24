@@ -40,6 +40,10 @@
       "REPORT_MANAGE": "Manage reports",
       "KNOWLEDGE_BASE_MANAGE": "Manage knowledge base"
     },
+    "SIDEBAR_PROFILES": {
+      "AI_AGENT": "AI support agent (manage Captain, agents, teams, assignment, inboxes, and labels)",
+      "COMMUNICATION": "Community communications (manage campaigns)"
+    },
     "FORM": {
       "NAME": {
         "LABEL": "Name",
@@ -54,6 +58,10 @@
       "PERMISSIONS": {
         "LABEL": "Permissions",
         "ERROR": "Permissions are required."
+      },
+      "SIDEBAR_PROFILE": {
+        "LABEL": "Sidebar profile",
+        "NONE": "Default sidebar"
       },
       "CANCEL_BUTTON_TEXT": "Cancel",
       "API": {

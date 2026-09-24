@@ -12,23 +12,23 @@ class Captain::AssistantPolicy < ApplicationPolicy
   end
 
   def tools?
-    @account_user.administrator?
+    captain_manager?
   end
 
   def create?
-    @account_user.administrator?
+    captain_manager?
   end
 
   def update?
-    @account_user.administrator?
+    captain_manager?
   end
 
   def destroy?
-    @account_user.administrator?
+    captain_manager?
   end
 
   def sync?
-    @account_user.administrator?
+    captain_manager?
   end
 
   def playground?
@@ -36,6 +36,12 @@ class Captain::AssistantPolicy < ApplicationPolicy
   end
 
   def generate_config?
-    @account_user.administrator?
+    captain_manager?
+  end
+
+  private
+
+  def captain_manager?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 end

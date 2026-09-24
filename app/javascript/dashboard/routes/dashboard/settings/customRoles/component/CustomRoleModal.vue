@@ -34,6 +34,7 @@ const { t } = useI18n();
 const name = ref('');
 const description = ref('');
 const selectedPermissions = ref([]);
+const sidebarProfile = ref('');
 
 const nameInput = ref(null);
 
@@ -48,12 +49,20 @@ const rules = computed(() => ({
   selectedPermissions: { required, minLength: minLength(1) },
 }));
 
+const hasConversationPermission = permissions =>
+  [
+    MANAGE_ALL_CONVERSATION_PERMISSIONS,
+    CONVERSATION_UNASSIGNED_PERMISSIONS,
+    CONVERSATION_PARTICIPATING_PERMISSIONS,
+  ].some(permission => permissions.includes(permission));
+
 const v$ = useVuelidate(rules, { name, description, selectedPermissions });
 
 const resetForm = () => {
   name.value = '';
   description.value = '';
   selectedPermissions.value = [];
+  sidebarProfile.value = '';
   v$.value.$reset();
 };
 
@@ -61,6 +70,7 @@ const populateEditForm = () => {
   name.value = props.selectedRole.name || '';
   description.value = props.selectedRole.description || '';
   selectedPermissions.value = props.selectedRole.permissions || [];
+  sidebarProfile.value = props.selectedRole.sidebar_profile || '';
 };
 
 watch(
@@ -91,9 +101,28 @@ watch(
         p => p !== MANAGE_ALL_CONVERSATION_PERMISSIONS
       );
     }
+
+    if (
+      sidebarProfile.value &&
+      !hasConversationPermission(selectedPermissions.value)
+    ) {
+      selectedPermissions.value = [
+        ...selectedPermissions.value,
+        CONVERSATION_PARTICIPATING_PERMISSIONS,
+      ];
+    }
   },
   { deep: true }
 );
+
+watch(sidebarProfile, profile => {
+  if (profile && !hasConversationPermission(selectedPermissions.value)) {
+    selectedPermissions.value = [
+      ...selectedPermissions.value,
+      CONVERSATION_PARTICIPATING_PERMISSIONS,
+    ];
+  }
+});
 
 onMounted(() => {
   if (props.mode === 'edit') {
@@ -123,6 +152,7 @@ const handleCustomRole = async () => {
       name: name.value,
       description: description.value,
       permissions: selectedPermissions.value,
+      sidebar_profile: sidebarProfile.value || null,
     };
 
     if (props.mode === 'edit') {
@@ -182,6 +212,23 @@ const isSubmitDisabled = computed(
             :placeholder="$t('CUSTOM_ROLE.FORM.DESCRIPTION.PLACEHOLDER')"
             @blur="v$.description.$touch"
           />
+        </label>
+      </div>
+
+      <div class="w-full">
+        <label>
+          {{ $t('CUSTOM_ROLE.FORM.SIDEBAR_PROFILE.LABEL') }}
+          <select v-model="sidebarProfile">
+            <option value="">
+              {{ $t('CUSTOM_ROLE.FORM.SIDEBAR_PROFILE.NONE') }}
+            </option>
+            <option value="ai_agent">
+              {{ $t('CUSTOM_ROLE.SIDEBAR_PROFILES.AI_AGENT') }}
+            </option>
+            <option value="communication">
+              {{ $t('CUSTOM_ROLE.SIDEBAR_PROFILES.COMMUNICATION') }}
+            </option>
+          </select>
         </label>
       </div>
 

@@ -27,7 +27,7 @@ export default {
           component: AssignmentPolicyIndex,
           meta: {
             featureFlag: FEATURE_FLAGS.ASSIGNMENT_V2,
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
         },
         {
@@ -36,7 +36,7 @@ export default {
           component: AgentAssignmentIndex,
           meta: {
             featureFlag: FEATURE_FLAGS.ASSIGNMENT_V2,
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
         },
         {
@@ -45,7 +45,7 @@ export default {
           component: AgentAssignmentCreate,
           meta: {
             featureFlag: FEATURE_FLAGS.ASSIGNMENT_V2,
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
         },
         {
@@ -54,7 +54,7 @@ export default {
           component: AgentAssignmentEdit,
           meta: {
             featureFlag: FEATURE_FLAGS.ASSIGNMENT_V2,
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
         },
         {
@@ -63,7 +63,7 @@ export default {
           component: AgentCapacityIndex,
           meta: {
             featureFlag: FEATURE_FLAGS.ADVANCED_ASSIGNMENT,
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
         },
         {
@@ -72,7 +72,7 @@ export default {
           component: AgentCapacityCreate,
           meta: {
             featureFlag: FEATURE_FLAGS.ADVANCED_ASSIGNMENT,
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
         },
         {
@@ -81,7 +81,7 @@ export default {
           component: AgentCapacityEdit,
           meta: {
             featureFlag: FEATURE_FLAGS.ADVANCED_ASSIGNMENT,
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
         },
       ],

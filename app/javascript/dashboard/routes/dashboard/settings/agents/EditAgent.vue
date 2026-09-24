@@ -70,6 +70,7 @@ const pageTitle = computed(
 
 const uiFlags = useMapGetter('agents/getUIFlags');
 const getCustomRoles = useMapGetter('customRole/getCustomRoles');
+const sidebarProfile = useMapGetter('getCurrentSidebarProfile');
 
 const roles = computed(() => {
   const defaultRoles = [
@@ -91,7 +92,12 @@ const roles = computed(() => {
     label: role.name,
   }));
 
-  return [...defaultRoles, ...customRoles];
+  const availableDefaultRoles =
+    sidebarProfile.value === 'ai_agent'
+      ? defaultRoles.filter(role => role.name !== 'administrator')
+      : defaultRoles;
+
+  return [...availableDefaultRoles, ...customRoles];
 });
 
 const selectedRole = computed(() =>

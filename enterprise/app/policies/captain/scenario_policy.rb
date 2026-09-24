@@ -8,18 +8,18 @@ class Captain::ScenarioPolicy < ApplicationPolicy
   end
 
   def create?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 
   def update?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 
   def destroy?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 
   def generate?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 end

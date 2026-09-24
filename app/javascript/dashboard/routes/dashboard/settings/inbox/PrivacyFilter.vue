@@ -5,10 +5,8 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import EvolutionPrivacyFilter from './components/EvolutionPrivacyFilter.vue';
 
-// Pagina propia (no una pestaña mas de Settings.vue) porque esa ruta entera
-// es admin-only (`permissions: ['administrator']`) y este control es
-// justamente lo que un agente sin acceso de administrador (ni al Manager de
-// Evolution) necesita poder operar solo.
+// Pagina propia para que agentes asignados y roles con permisos de inbox
+// configuren este filtro sin abrir toda la configuracion general del inbox.
 const { t } = useI18n();
 const route = useRoute();
 const store = useStore();

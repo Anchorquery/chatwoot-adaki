@@ -48,6 +48,7 @@ const filteredAgentList = computed(() => {
 
 const uiFlags = computed(() => getters['agents/getUIFlags'].value);
 const currentUserId = computed(() => getters.getCurrentUserID.value);
+const currentUserRole = computed(() => getters.getCurrentRole.value);
 const customRoles = useMapGetter('customRole/getCustomRoles');
 
 onMounted(() => {
@@ -81,11 +82,22 @@ const verifiedAdministrators = computed(() => {
 });
 
 const showEditAction = agent => {
-  return currentUserId.value !== agent.id;
+  return (
+    currentUserId.value !== agent.id &&
+    (currentUserRole.value === 'administrator' ||
+      agent.role !== 'administrator')
+  );
 };
 
 const showDeleteAction = agent => {
   if (currentUserId.value === agent.id) {
+    return false;
+  }
+
+  if (
+    currentUserRole.value !== 'administrator' &&
+    agent.role === 'administrator'
+  ) {
     return false;
   }
 

@@ -8,22 +8,22 @@ class Captain::McpServerPolicy < ApplicationPolicy
   end
 
   def create?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 
   def test?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 
   def discover?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 
   def update?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 
   def destroy?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('captain_manage')
   end
 end

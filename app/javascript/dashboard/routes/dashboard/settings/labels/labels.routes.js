@@ -14,7 +14,7 @@ export default {
           path: '',
           name: 'labels_wrapper',
           meta: {
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
           redirect: to => {
             return { name: 'labels_list', params: to.params };
@@ -25,7 +25,7 @@ export default {
           name: 'labels_list',
           meta: {
             featureFlag: FEATURE_FLAGS.LABELS,
-            permissions: ['administrator'],
+            permissions: ['administrator', 'agent_settings_manage'],
           },
           component: Index,
         },

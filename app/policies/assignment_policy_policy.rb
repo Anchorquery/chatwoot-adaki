@@ -1,21 +1,21 @@
 class AssignmentPolicyPolicy < ApplicationPolicy
   def index?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_settings_manage')
   end
 
   def show?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_settings_manage')
   end
 
   def create?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_settings_manage')
   end
 
   def update?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_settings_manage')
   end
 
   def destroy?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_settings_manage')
   end
 end

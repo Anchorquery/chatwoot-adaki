@@ -50,7 +50,7 @@ class Api::V1::Accounts::Captain::PreferencesController < Api::V1::Accounts::Bas
   end
 
   def authorize_account_update
-    authorize @current_account, :update?
+    authorize @current_account, :update_captain_preferences?
   end
 
   def captain_params

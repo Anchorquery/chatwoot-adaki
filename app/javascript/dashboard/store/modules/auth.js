@@ -67,12 +67,28 @@ export const getters = {
     return currentAccount.role;
   },
 
+  getCurrentPermissions($state, $getters) {
+    const { accounts = [] } = $state.currentUser;
+    const [currentAccount = {}] = accounts.filter(
+      account => account.id === $getters.getCurrentAccountId
+    );
+    return currentAccount.permissions || [];
+  },
+
   getCurrentCustomRoleId($state, $getters) {
     const { accounts = [] } = $state.currentUser;
     const [currentAccount = {}] = accounts.filter(
       account => account.id === $getters.getCurrentAccountId
     );
     return currentAccount.custom_role_id;
+  },
+
+  getCurrentSidebarProfile($state, $getters) {
+    const { accounts = [] } = $state.currentUser;
+    const [currentAccount = {}] = accounts.filter(
+      account => account.id === $getters.getCurrentAccountId
+    );
+    return currentAccount.custom_role?.sidebar_profile || null;
   },
 
   getCurrentUser($state) {

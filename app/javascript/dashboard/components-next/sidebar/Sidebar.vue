@@ -50,6 +50,7 @@ const { width: windowWidth } = useWindowSize();
 const isMobile = computed(() => windowWidth.value < 768);
 
 const accountId = useMapGetter('getCurrentAccountId');
+const sidebarProfile = useMapGetter('getCurrentSidebarProfile');
 const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
@@ -242,7 +243,7 @@ const newReportRoutes = () => [
 const reportRoutes = computed(() => newReportRoutes());
 
 const menuItems = computed(() => {
-  return [
+  const items = [
     {
       name: 'Inbox',
       label: t('SIDEBAR.INBOX'),
@@ -795,6 +796,40 @@ const menuItems = computed(() => {
       ],
     },
   ];
+
+  if (sidebarProfile.value === 'communication') {
+    return items.filter(item =>
+      ['Conversation', 'Campaigns'].includes(item.name)
+    );
+  }
+
+  if (sidebarProfile.value === 'ai_agent') {
+    const settingsItems = new Set([
+      'Settings Captain',
+      'Settings Agents',
+      'Settings Teams',
+      'Settings Agent Assignment',
+      'Settings Inboxes',
+      'Settings Labels',
+    ]);
+
+    return items
+      .filter(item =>
+        ['Conversation', 'Captain', 'Settings'].includes(item.name)
+      )
+      .map(item =>
+        item.name === 'Settings'
+          ? {
+              ...item,
+              children: item.children.filter(child =>
+                settingsItems.has(child.name)
+              ),
+            }
+          : item
+      );
+  }
+
+  return items;
 });
 </script>
 

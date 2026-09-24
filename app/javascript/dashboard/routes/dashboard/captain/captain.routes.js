@@ -19,25 +19,25 @@ import CustomToolsIndex from './tools/Index.vue';
 import McpServersIndex from './mcp/Index.vue';
 
 const meta = {
-  permissions: ['administrator', 'agent'],
+  permissions: ['administrator', 'agent', 'captain_manage'],
   featureFlag: FEATURE_FLAGS.CAPTAIN,
   installationTypes: [INSTALLATION_TYPES.CLOUD, INSTALLATION_TYPES.ENTERPRISE],
 };
 
 const metaCustomTools = {
-  permissions: ['administrator', 'agent'],
+  permissions: ['administrator', 'agent', 'captain_manage'],
   featureFlag: FEATURE_FLAGS.CAPTAIN_CUSTOM_TOOLS,
   installationTypes: [INSTALLATION_TYPES.CLOUD, INSTALLATION_TYPES.ENTERPRISE],
 };
 
 const metaMcp = {
-  permissions: ['administrator', 'agent'],
+  permissions: ['administrator', 'agent', 'captain_manage'],
   featureFlag: FEATURE_FLAGS.CAPTAIN_MCP,
   installationTypes: [INSTALLATION_TYPES.CLOUD, INSTALLATION_TYPES.ENTERPRISE],
 };
 
 const metaV2 = {
-  permissions: ['administrator', 'agent'],
+  permissions: ['administrator', 'agent', 'captain_manage'],
   featureFlag: FEATURE_FLAGS.CAPTAIN_V2,
   installationTypes: [INSTALLATION_TYPES.CLOUD, INSTALLATION_TYPES.ENTERPRISE],
 };
@@ -119,7 +119,7 @@ const assistantRoutes = [
     component: AssistantEmptyStateIndex,
     name: 'captain_assistants_create_index',
     meta: {
-      permissions: ['administrator', 'agent'],
+      permissions: ['administrator', 'agent', 'captain_manage'],
       installationTypes: [
         INSTALLATION_TYPES.CLOUD,
         INSTALLATION_TYPES.ENTERPRISE,

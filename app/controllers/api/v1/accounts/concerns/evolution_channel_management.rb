@@ -4,9 +4,9 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
   included do
     # Las acciones del filtro de privacidad no pueden pasar por el
     # check_authorization genérico del controller: ese autoriza la CLASE Inbox,
-    # y las políticas de estas dos acciones son por instancia
-    # (assigned_inboxes.include?(record)) — con la clase fallan para todo el
-    # mundo, admin incluido. Autorizan la instancia dentro de la propia acción.
+    # y las políticas de estas dos acciones son por instancia (bandejas
+    # asignadas o permiso de gestión de inboxes). Autorizan la instancia dentro
+    # de la propia acción.
     skip_before_action :check_authorization, only: [:evolution_privacy_filter, :evolution_update_privacy_filter]
   end
 

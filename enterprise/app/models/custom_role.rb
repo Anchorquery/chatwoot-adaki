@@ -37,6 +37,21 @@ class CustomRole < ApplicationRecord
     knowledge_base_manage
   ].freeze
 
+  SIDEBAR_PROFILES = %w[ai_agent communication].freeze
+
+  SIDEBAR_PROFILE_PERMISSIONS = {
+    'ai_agent' => %w[
+      agent_settings_manage
+      captain_manage
+    ],
+    'communication' => %w[campaign_manage]
+  }.freeze
+
   validates :name, presence: true
   validates :permissions, inclusion: { in: PERMISSIONS }
+  validates :sidebar_profile, inclusion: { in: SIDEBAR_PROFILES }, allow_nil: true
+
+  def profile_permissions
+    SIDEBAR_PROFILE_PERMISSIONS.fetch(sidebar_profile, [])
+  end
 end

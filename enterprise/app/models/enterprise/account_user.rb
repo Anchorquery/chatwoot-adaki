@@ -1,5 +1,7 @@
 module Enterprise::AccountUser
   def permissions
-    custom_role.present? ? (custom_role.permissions + ['custom_role']) : super
+    return super if custom_role.blank?
+
+    (custom_role.permissions + custom_role.profile_permissions + ['custom_role']).uniq
   end
 end
