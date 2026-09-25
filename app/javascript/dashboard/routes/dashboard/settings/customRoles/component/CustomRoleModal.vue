@@ -49,13 +49,6 @@ const rules = computed(() => ({
   selectedPermissions: { required, minLength: minLength(1) },
 }));
 
-const hasConversationPermission = permissions =>
-  [
-    MANAGE_ALL_CONVERSATION_PERMISSIONS,
-    CONVERSATION_UNASSIGNED_PERMISSIONS,
-    CONVERSATION_PARTICIPATING_PERMISSIONS,
-  ].some(permission => permissions.includes(permission));
-
 const v$ = useVuelidate(rules, { name, description, selectedPermissions });
 
 const resetForm = () => {
@@ -104,11 +97,11 @@ watch(
 
     if (
       sidebarProfile.value &&
-      !hasConversationPermission(selectedPermissions.value)
+      !selectedPermissions.value.includes(MANAGE_ALL_CONVERSATION_PERMISSIONS)
     ) {
       selectedPermissions.value = [
         ...selectedPermissions.value,
-        CONVERSATION_PARTICIPATING_PERMISSIONS,
+        MANAGE_ALL_CONVERSATION_PERMISSIONS,
       ];
     }
   },
@@ -116,10 +109,13 @@ watch(
 );
 
 watch(sidebarProfile, profile => {
-  if (profile && !hasConversationPermission(selectedPermissions.value)) {
+  if (
+    profile &&
+    !selectedPermissions.value.includes(MANAGE_ALL_CONVERSATION_PERMISSIONS)
+  ) {
     selectedPermissions.value = [
       ...selectedPermissions.value,
-      CONVERSATION_PARTICIPATING_PERMISSIONS,
+      MANAGE_ALL_CONVERSATION_PERMISSIONS,
     ];
   }
 });

@@ -43,8 +43,9 @@ class CustomRole < ApplicationRecord
     'ai_agent' => %w[
       agent_settings_manage
       captain_manage
+      conversation_manage
     ],
-    'communication' => %w[campaign_manage]
+    'communication' => %w[campaign_manage conversation_manage]
   }.freeze
 
   validates :name, presence: true

@@ -37,6 +37,6 @@ module Enterprise::ConversationPolicy
   end
 
   def custom_role_permissions
-    account_user&.custom_role&.permissions || []
+    account_user&.permissions || []
   end
 end
