@@ -133,7 +133,7 @@
         "OPTION_LABEL": "Csatorna kiválasztása",
         "UPDATE": "Frissítés",
         "BUTTON_TEXT": "Csatlakozás a csatornához",
-        "DESCRIPTION": "A Slack munkaterülete mostantól összekapcsolódik a chatwoot-tal. Az integráció azonban jelenleg inaktív. Az aktiválásához és egy chatwoot-hoz való csatlakoztatásához kattintson az alábbi gombra.\n\n**Figyelem:** Ha egy privát csatornát próbál csatlakoztatni, akkor a Adaki alkalmazást adja hozzá a Slack-csatornához, mielőtt ezt a lépést folytatná.",
+        "DESCRIPTION": "A Slack munkaterülete mostantól összekapcsolódik a Adaki-tal. Az integráció azonban jelenleg inaktív. Az aktiválásához és egy Adaki-hoz való csatlakoztatásához kattintson az alábbi gombra.\n\n**Figyelem:** Ha egy privát csatornát próbál csatlakoztatni, akkor a Adaki alkalmazást adja hozzá a Slack-csatornához, mielőtt ezt a lépést folytatná.",
         "ATTENTION_REQUIRED": "Figyelem szükséges",
         "EXPIRED": "A Slack integráció lejárt. Ha továbbra is szeretne üzeneteket kapni a Slacken, törölje az integrációt, és csatlakoztassa újra a munkaterületét."
       },

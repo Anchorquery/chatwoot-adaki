@@ -419,7 +419,7 @@
         "SLUG": {
           "LABEL": "Slug",
           "PLACEHOLDER": "URL-lər üçün kateqoriya slug-u",
-          "HELP_TEXT": "app.chatwoot.com/hc/my-portal/en-US/categories/my-slug",
+          "HELP_TEXT": "chat.adaki.com/hc/my-portal/en-US/categories/my-slug",
           "ERROR": "Slug tələb olunur"
         },
         "DESCRIPTION": {
@@ -450,7 +450,7 @@
         "SLUG": {
           "LABEL": "Slug",
           "PLACEHOLDER": "URL-lər üçün kateqoriya slug-u",
-          "HELP_TEXT": "app.chatwoot.com/hc/my-portal/en-US/categories/my-slug",
+          "HELP_TEXT": "chat.adaki.com/hc/my-portal/en-US/categories/my-slug",
           "ERROR": "Slug tələb olunur"
         },
         "DESCRIPTION": {
@@ -670,7 +670,7 @@
             "LABEL": "Slug",
             "PLACEHOLDER": "Category slug for urls",
             "ERROR": "Slug is required",
-            "HELP_TEXT": "app.chatwoot.com/hc/{portalSlug}/{localeCode}/categories/{categorySlug}"
+            "HELP_TEXT": "chat.adaki.com/hc/{portalSlug}/{localeCode}/categories/{categorySlug}"
           },
           "DESCRIPTION": {
             "LABEL": "Description",

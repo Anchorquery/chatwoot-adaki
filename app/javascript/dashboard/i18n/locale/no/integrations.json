@@ -44,7 +44,7 @@
       "NO_RESULTS": "No webhooks found matching your search",
       "FORM": {
         "CANCEL": "Avbryt",
-        "DESC": "Webhook-hendelser gir deg sanntidsinformasjon om hva som skjer i din chatwoot-konto. Skriv inn en gyldig nettadresse for å konfigurere en callback.",
+        "DESC": "Webhook-hendelser gir deg sanntidsinformasjon om hva som skjer i din Adaki-konto. Skriv inn en gyldig nettadresse for å konfigurere en callback.",
         "SUBSCRIPTIONS": {
           "LABEL": "Events",
           "EVENTS": {

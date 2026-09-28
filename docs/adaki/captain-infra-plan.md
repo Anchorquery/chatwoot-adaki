@@ -25,7 +25,7 @@ Qué se quitó de `Platform::Models::Resolver`:
 
 Qué entró:
 
-- `FEATURE_KINDS`: una feature de Chatwoot mapea a los *kinds* que puede
+- `FEATURE_KINDS`: una feature de Adaki mapea a los *kinds* que puede
   servirla, no a una lista de slugs. Los proveedores solo clasifican por kind.
 - `CHAT_KINDS = %w[chat multimodal]`. **Importante**: `Importer#classify_kind`
   guarda todo lo que contiene "gemini" o "claude" como `multimodal`, así que una
@@ -78,8 +78,8 @@ fresco, y ya no lo está.
 4. **Sidekiq**: `SIDEKIQ_CONCURRENCY=13`, `SIDEKIQ_CAPTAIN_CONCURRENCY=6`. Vigilar la
    latencia de la cola `captain` en `/monitoring/sidekiq`.
 5. **Evolution**: `CACHE_REDIS_ENABLED=true` (puede usar el mismo Redis con otro
-   `CACHE_REDIS_PREFIX_KEY` y DB index, o el suyo) → 1 llamada API a Chatwoot por mensaje
-   entrante en vez de 3–4. Hostname interno de Coolify para hablar con Chatwoot.
+   `CACHE_REDIS_PREFIX_KEY` y DB index, o el suyo) → 1 llamada API a Adaki por mensaje
+   entrante en vez de 3–4. Hostname interno de Coolify para hablar con Adaki.
 
 ### P1 — HECHO (2026-09-05)
 

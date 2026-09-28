@@ -10,7 +10,7 @@ describe Messages::Instagram::MessageBuilder do
   end
 
   let!(:account) { create(:account) }
-  let!(:instagram_channel) { create(:channel_instagram, account: account, instagram_id: 'chatwoot-app-user-id-1') }
+  let!(:instagram_channel) { create(:channel_instagram, account: account, instagram_id: 'adaki-app-user-id-1') }
   let!(:instagram_inbox) { create(:inbox, channel: instagram_channel, account: account, greeting_enabled: false) }
   let!(:dm_params) { build(:instagram_message_create_event).with_indifferent_access }
   let!(:story_mention_params) { build(:instagram_story_mention_event).with_indifferent_access }
@@ -30,7 +30,7 @@ describe Messages::Instagram::MessageBuilder do
             {
               name: 'Jane',
               username: 'some_user_name',
-              profile_pic: 'https://chatwoot-assets.local/sample.png',
+              profile_pic: 'https://adaki-assets.local/sample.png',
               id: sender_id,
               follower_count: 100,
               is_user_follow_business: true,
@@ -114,7 +114,7 @@ describe Messages::Instagram::MessageBuilder do
 
       expect(message.content).to eq('This is the story reply')
       expect(message.content_attributes[:story_sender]).to eq(instagram_inbox.channel.instagram_id)
-      expect(message.content_attributes[:story_id]).to eq('chatwoot-app-user-id-1')
+      expect(message.content_attributes[:story_id]).to eq('adaki-app-user-id-1')
       expect(message.content_attributes[:image_type]).to eq('ig_story_reply')
       expect(message.attachments.first.file_type).to eq('ig_story')
       expect(message.attachments.first.external_url).to eq(story_url)

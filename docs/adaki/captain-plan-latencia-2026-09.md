@@ -112,7 +112,7 @@ Sin esto el resto es fe.
   `queue_wait` = `Time.current - enqueued_at`. `llm_ms` medido alrededor de `runner.run`.
 - `ENABLE_SIDEKIQ_DEQUEUE_LOGGER=true` en el servicio sidekiq de Coolify.
 - Guardar la query SQL de `captain-latencia.md` como baseline; repetir tras cada fase.
-- Criterio de éxito global: p50 Chatwoot < 4 s, p90 < 7 s, 0 mensajes sin respuesta.
+- Criterio de éxito global: p50 Adaki < 4 s, p90 < 7 s, 0 mensajes sin respuesta.
 
 ### Fase 1 — Cola: recuperar los 5–7 s del poller (½ día)
 
@@ -134,7 +134,7 @@ Sin esto el resto es fe.
   (428 connectionLost, 515 restartRequired, 440 conflict). Sin eso, cualquier fix es a ciegas.
 - Comprobar que el fix "de hace unos días" hace bajar la query diaria de reconexiones
   (ver `captain-latencia.md`, contacto +123456). La semana del 14-09 seguía a 9–10/día.
-- Una instancia por número, `CACHE_REDIS_ENABLED=true`, Chatwoot por hostname interno.
+- Una instancia por número, `CACHE_REDIS_ENABLED=true`, Adaki por hostname interno.
 - `WEBHOOK_TIMEOUT` (GlobalConfig) a 10 s: 5 s es corto cuando Evolution está reconectando.
 - `Webhooks::Trigger`: reintentar el webhook de api inbox en `Net::ReadTimeout`/
   `ConnectionFailed` (3 intentos, backoff) antes de marcar el mensaje `failed`. Hoy la
@@ -326,14 +326,14 @@ resolvió sin conflictos (`ai-agents` 0.10.0→0.12.0, `ruby_llm` 1.15.0→1.16.
 |---|---|---|---|---|
 | 1 | 0 Medir | ½ d | 0 (visibilidad) | nulo |
 | 2 | 1 Cola | ½ d | 4–7 s | bajo |
-| 3 | 2 Evolution | ops | el "minuto" del cliente | fuera de Chatwoot |
+| 3 | 2 Evolution | ops | el "minuto" del cliente | fuera de Adaki |
 | 4 | 3.1–3.3 timeout, failover, prefetch | 1 d | fiabilidad + 0.3–0.5 s | bajo |
 | 5 | 3.4–3.6 prompt estable, usage después, caché | 1–2 d | 0.5–1 s (caché de prefijo) | medio (specs de prompt) |
 | 6 | 4 Escenarios | 3–5 d | 3–5 s en el primer turno de Puntua | medio |
 | 7 | 5 Calidad | 2 d | menos repeticiones y handoffs falsos | bajo |
 | 8 | 6 Gemas | 1 d | instrumentación; retirar parches | medio (regresión de proveedor) |
 
-Meta: de p50 9–11 s a 2–4 s dentro de Chatwoot; el resto depende de Evolution.
+Meta: de p50 9–11 s a 2–4 s dentro de Adaki; el resto depende de Evolution.
 
 ## 5. Lo que no se toca
 
@@ -356,7 +356,7 @@ Meta: de p50 9–11 s a 2–4 s dentro de Chatwoot; el resto depende de Evolutio
 ### La comunidad de la gema
 
 Ecosistema pequeño: 1 issue abierta (#21 streaming, desde jul-2025), 65 PRs cerrados, sin
-guía de rendimiento en la documentación (ai-agents.chatwoot.dev). Nadie publica
+guía de rendimiento en la documentación (ai-agents.adaki.dev). Nadie publica
 optimizaciones de latencia sobre esta gema. Lo que sí hay en el repo y sirve:
 
 - **`Agent#as_tool`** (docs/concepts/agent-tool.md): el sub-agente recibe solo el
@@ -377,7 +377,7 @@ optimizaciones de latencia sobre esta gema. Lo que sí hay en el repo y sirve:
   handoffs con esquema propio y hooks `on_handoff`. Si se fusionan, el enrutado por
   handoff mejora; no cambian el coste de la segunda llamada.
 
-### Chatwoot upstream (rama develop)
+### Proyecto original (rama develop)
 
 - **No hay debounce.** `Captain::Conversation::ResponseSchedulerService` encola al
   instante; solo espera 1–5 s si el mensaje trae adjuntos. Pasa `message.id` al job y
@@ -434,7 +434,7 @@ tocó la causa real.**
 ### Hallazgo nuevo: no son solo reconexiones — hay caídas de sesión completas
 
 De los 260 eventos "Connection successfully established" en 21 días, la enorme mayoría
-llega **sin** un `instance status: closed` previo en Chatwoot (solo 3 casos): son blips
+llega **sin** un `instance status: closed` previo en Adaki (solo 3 casos): son blips
 cortos, Baileys reconecta solo, probablemente `428 connectionLost` de red — consistentes
 con el "5-12/día, independientes por instancia" ya documentado.
 
@@ -455,7 +455,7 @@ Pero hay un patrón distinto y más grave, visto 2 veces en 21 días:
 sesión** (equivalente a `401 loggedOut`), no en una caída de red transitoria —
 `515 restartRequired` o `428 connectionLost` reconectan con la sesión existente, sin
 pedir escanear nada. Esto es el "minuto" (en realidad hasta 35 minutos) que reporta el
-cliente: no es la cola de Chatwoot ni el LLM, es la instancia de WhatsApp completamente
+cliente: no es la cola de Adaki ni el LLM, es la instancia de WhatsApp completamente
 caída y sin poder recibir mensajes.
 
 **Causa probable**: algo fuerza un logout de sesión (no solo una desconexión) en
@@ -474,7 +474,7 @@ log de Evolution en el momento exacto (14:19 del 15-09 y 13:13 del 04-09).
 2. Confirmar si la sesión (`auth_info_baileys` o equivalente) persiste en volumen
    montado o en Redis, y si sobrevive a un redeploy/reinicio del contenedor.
 3. Confirmar `CACHE_REDIS_ENABLED`, versión de Evolution/Baileys, una instancia por
-   número, y si Chatwoot se llama por hostname interno (todo pendiente, ver plan
+   número, y si Adaki se llama por hostname interno (todo pendiente, ver plan
    original §3 fase 2).
 
 ### Acciones concretas (no bloqueadas por logs)
@@ -484,7 +484,7 @@ log de Evolution en el momento exacto (14:19 del 15-09 y 13:13 del 04-09).
    que un cliente se queja. Más barato y accionable que la alerta genérica de "más de 5
    reconexiones/día" del plan original.
 2. **`WEBHOOK_TIMEOUT` a 10 s y reintento en `Webhooks::Trigger`** (ya en el plan,
-   fase 2): durante los 22-35 minutos de bucle de QR, cualquier webhook de Chatwoot hacia
+   fase 2): durante los 22-35 minutos de bucle de QR, cualquier webhook de Adaki hacia
    Evolution falla con `Net::ReadTimeout` y hoy se pierde en silencio.
 3. Pedir al usuario acceso a los logs de Coolify (UI o SSH) para el punto "Qué falta" —
    sin eso, fase 2 no puede ir más allá de la correlación hecha aquí.

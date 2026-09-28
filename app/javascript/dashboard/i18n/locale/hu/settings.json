@@ -611,7 +611,7 @@
     }
   },
   "CREATE_ACCOUNT": {
-    "NO_ACCOUNT_WARNING": "Uppsz! Nem találtunk egyetlen chatwoot-fiókot sem. A folytatáshoz kérlek hozz létre egy új fiókot.",
+    "NO_ACCOUNT_WARNING": "Uppsz! Nem találtunk egyetlen Adaki-fiókot sem. A folytatáshoz kérlek hozz létre egy új fiókot.",
     "NEW_ACCOUNT": "Új fiók",
     "SELECTOR_SUBTITLE": "Új fiók létrehozása",
     "API": {

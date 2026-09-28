@@ -4,7 +4,7 @@ require 'securerandom'
 
 class Platform::Mcp::Client
   PROTOCOL_VERSION = '2024-11-05'.freeze
-  CLIENT_NAME = 'Chatwoot'.freeze
+  CLIENT_NAME = 'Adaki'.freeze
 
   def initialize(server:)
     @server = server

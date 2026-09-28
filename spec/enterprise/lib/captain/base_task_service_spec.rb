@@ -116,7 +116,7 @@ RSpec.describe Captain::BaseTaskService, type: :model do
         allow(account).to receive(:feature_enabled?).with('captain_tasks').and_return(false)
       end
 
-      context 'when on Chatwoot Cloud' do
+      context 'when on Adaki Cloud' do
         before do
           allow(ChatwootApp).to receive(:chatwoot_cloud?).and_return(true)
         end

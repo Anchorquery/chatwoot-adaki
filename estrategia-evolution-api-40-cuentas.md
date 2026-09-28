@@ -1,13 +1,13 @@
-# Estrategia: 40 cuentas WhatsApp con Evolution API + Chatwoot
+# Estrategia: 40 cuentas WhatsApp con Evolution API + Adaki
 
 **Fecha:** 2026-06-09
-**Objetivo:** Conectar 40 números WhatsApp (40 entidades independientes) a Chatwoot mediante Evolution API, de forma estable y escalable.
+**Objetivo:** Conectar 40 números WhatsApp (40 entidades independientes) a Adaki mediante Evolution API, de forma estable y escalable.
 
 ---
 
 ## 1. Resumen ejecutivo
 
-40 números WhatsApp = 40 **instances** en Evolution API = 40 **inboxes** en Chatwoot.
+40 números WhatsApp = 40 **instances** en Evolution API = 40 **inboxes** en Adaki.
 
 **Decisión central:** NO usar un solo proceso Evolution para las 40 instancias. El límite real es el **heap de Node.js por proceso** (no la RAM del servidor). Un caso documentado crasheó a 79 instancias / ~4 GB en un servidor de 64 GB.
 
@@ -54,7 +54,7 @@
           ┌────────────────────┼────────────────────┐
           │                    │                     │
    ┌──────▼──────┐      ┌──────▼──────┐       ┌──────▼──────┐
-   │ PostgreSQL  │      │    Redis    │       │  Chatwoot   │
+   │ PostgreSQL  │      │    Redis    │       │  Adaki   │
    │ (compartido)│      │ (compartido)│       │ (Rails+SK)  │
    └─────────────┘      └─────────────┘       └─────────────┘
 ```
@@ -74,7 +74,7 @@
 - Node.js (imagen oficial Evolution ≥ **v2.3.7**)
 - Conexión a PostgreSQL y Redis compartidos
 
-### Chatwoot
+### Adaki
 - Rails + Sidekiq (workers)
 - PostgreSQL + Redis (pueden ser los mismos, bases separadas)
 - Storage externo (S3/compatible) para media
@@ -93,14 +93,14 @@
 |---|---|
 | Evolution #1 | 8 GB / 2 vCPU |
 | Evolution #2 | 8 GB / 2 vCPU |
-| Chatwoot | 4-8 GB / 4 vCPU |
+| Adaki | 4-8 GB / 4 vCPU |
 | PostgreSQL | 4-8 GB / 4 vCPU |
 | Redis | 2 GB |
 | **Total** | **~32 GB / 12 vCPU / 100+ GB SSD** |
 
 ### Opción B — Separado (producción / mucho volumen)
 - VPS Evolution (×2 contenedores): 16 GB / 4 vCPU
-- VPS Chatwoot + DB: 16 GB / 4 vCPU
+- VPS Adaki + DB: 16 GB / 4 vCPU
 - Mismo datacenter (latencia webhook crítica)
 
 ### Presupuesto por contenedor Evolution
@@ -154,16 +154,16 @@
 - **Baneo WhatsApp:** Baileys = no oficial = riesgo de baneo, especialmente con spam/bulk. 40 números no oficiales = riesgo agregado.
 - **Sin rate limiter nativo:** Evolution NO trae rate limiting ni cola de envío. Cada instancia envía independiente. **Añadir rate limit en capa de proxy/gateway** obligatorio para bulk.
 - **Fragilidad de protocolo:** Baileys se rompe cuando Meta cambia el protocolo WhatsApp Web, hasta que la comunidad parchea.
-- **Media crece rápido:** imágenes/audio/video. Usar storage externo (S3) en Chatwoot desde día 1. 100+ GB previsto.
+- **Media crece rápido:** imágenes/audio/video. Usar storage externo (S3) en Adaki desde día 1. 100+ GB previsto.
 
 ---
 
 ## 9. Plan de implementación por fases
 
 ### Fase 1 — Piloto (1-2 semanas)
-- 1 contenedor Evolution + Chatwoot + Postgres + Redis (docker-compose)
+- 1 contenedor Evolution + Adaki + Postgres + Redis (docker-compose)
 - Conectar 5 números de prueba
-- Validar integración Evolution → Chatwoot (webhooks)
+- Validar integración Evolution → Adaki (webhooks)
 - Medir RAM/CPU real por instancia en tu carga
 
 ### Fase 2 — Escala parcial (semana 3-4)

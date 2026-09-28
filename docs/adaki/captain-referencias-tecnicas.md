@@ -217,7 +217,7 @@ jitter; nunca 400/403.
 
 ---
 
-## 4. Evolution API v2 × Chatwoot (proyecto renombrado a Evolution Foundation)
+## 4. Evolution API v2 × Adaki (proyecto renombrado a Evolution Foundation)
 
 ### Opciones de `POST /chatwoot/set/{instance}`
 
@@ -239,12 +239,12 @@ daysLimitImportMessages, autoCreate, organization, logo, ignoreJids, number`.
   **global al servidor**, default `true`, requiere reinicio). Solo documentado en
   `.env.example`.
 - ⚠️ Caveat de código: `createBotMessage` no consulta la flag — solo falla si no
-  encuentra el contacto. Si el +123456 **ya existe** en Chatwoot, los avisos siguen
+  encuentra el contacto. Si el +123456 **ya existe** en Adaki, los avisos siguen
   llegando: hay que **borrar el contacto** además de poner la variable.
-- Coste de desactivarlo: se pierde el QR y los comandos desde Chatwoot (usar el
+- Coste de desactivarlo: se pierde el QR y los comandos desde Adaki (usar el
   Manager/API de Evolution).
 - **`ignoreJids` NO filtra al bot**: solo aplica a mensajes reales de WhatsApp
-  (`eventWhatsapp`); los avisos del bot entran directo por la API de Chatwoot.
+  (`eventWhatsapp`); los avisos del bot entran directo por la API de Adaki.
   Formato: array de strings; literales `'@g.us'` (todos los grupos) y
   `'@s.whatsapp.net'` (todos los individuales), o JID exacto. Sin wildcards.
 - El webhook configurable por instancia tampoco controla estos avisos (van por otra
@@ -301,7 +301,7 @@ daysLimitImportMessages, autoCreate, organization, logo, ignoreJids, number`.
    de sus tool-results (correlación por nombre en Gemini; el restore ya descarta
    huérfanos).
 6. **Fase 1 (Evolution)**: la defensa externa es `CHATWOOT_BOT_CONTACT=false` +
-   borrar el contacto; `ignoreJids` no sirve. La guarda en Chatwoot sigue siendo la
+   borrar el contacto; `ignoreJids` no sirve. La guarda en Adaki sigue siendo la
    primaria (issue #1603 lo confirma).
 7. **Test de contrato** para el parche `with_thread_context` (se rompe en silencio si
    cambia la firma de `Chat#initialize` al actualizar la gema).

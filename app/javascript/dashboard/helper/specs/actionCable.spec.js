@@ -14,7 +14,7 @@ vi.mock('dashboard/composables/useImpersonation', () => ({
 }));
 
 global.chatwootConfig = {
-  websocketURL: 'wss://test.chatwoot.com',
+  websocketURL: 'wss://test.adaki.net',
 };
 
 describe('ActionCableConnector - Copilot Tests', () => {
@@ -107,7 +107,7 @@ describe('ActionCableConnector - Copilot Tests', () => {
       );
     });
 
-    it('does not refetch unread counts outside Chatwoot Cloud', () => {
+    it('does not refetch unread counts outside Adaki Cloud', () => {
       store.$store.getters['globalConfig/isOnChatwootCloud'] = false;
 
       actionCable.onReceived({

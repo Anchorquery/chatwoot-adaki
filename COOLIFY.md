@@ -1,4 +1,4 @@
-# Deploy Chatwoot Adaki en Coolify
+# Deploy Adaki Adaki en Coolify
 
 Stack: rails + sidekiq + postgres (pgvector) + redis. Imagen build vía GH Actions → GHCR → Coolify pulls.
 

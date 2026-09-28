@@ -3,7 +3,7 @@
 
 ___
 
-# Chatwoot
+# Adaki
 
 The modern customer support platform, an open-source alternative to Intercom, Zendesk, Salesforce Service Cloud etc.
 
@@ -14,8 +14,8 @@ The modern customer support platform, an open-source alternative to Intercom, Ze
   <img src="https://img.shields.io/github/commit-activity/m/chatwoot/chatwoot" alt="Commits-per-month">
   <a title="Crowdin" target="_self" href="https://chatwoot.crowdin.com/chatwoot"><img src="https://badges.crowdin.net/e/37ced7eba411064bd792feb3b7a28b16/localized.svg"></a>
   <a href="https://discord.gg/cJXdrwS"><img src="https://img.shields.io/discord/647412545203994635" alt="Discord"></a>
-  <a href="https://status.chatwoot.com"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fchatwoot%2Fstatus%2Fmaster%2Fapi%2Fchatwoot%2Fuptime.json" alt="uptime"></a>
-  <a href="https://status.chatwoot.com"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fchatwoot%2Fstatus%2Fmaster%2Fapi%2Fchatwoot%2Fresponse-time.json" alt="response time"></a>
+  <a href="https://status.adaki.net"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fchatwoot%2Fstatus%2Fmaster%2Fapi%2Fchatwoot%2Fuptime.json" alt="uptime"></a>
+  <a href="https://status.adaki.net"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fchatwoot%2Fstatus%2Fmaster%2Fapi%2Fchatwoot%2Fresponse-time.json" alt="response time"></a>
   <a href="https://artifacthub.io/packages/helm/chatwoot/chatwoot"><img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/artifact-hub" alt="Artifact HUB"></a>
 </p>
 
@@ -34,15 +34,15 @@ The modern customer support platform, an open-source alternative to Intercom, Ze
 
 ---
 
-Chatwoot is the modern, open-source, and self-hosted customer support platform designed to help businesses deliver exceptional customer support experience. Built for scale and flexibility, Chatwoot gives you full control over your customer data while providing powerful tools to manage conversations across channels.
+Adaki is the modern, open-source, and self-hosted customer support platform designed to help businesses deliver exceptional customer support experience. Built for scale and flexibility, Adaki gives you full control over your customer data while providing powerful tools to manage conversations across channels.
 
 ### ✨ Captain – AI Agent for Support
 
-Supercharge your support with Captain, Chatwoot’s AI agent. Captain helps automate responses, handle common queries, and reduce agent workload—ensuring customers get instant, accurate answers. With Captain, your team can focus on complex conversations while routine questions are resolved automatically. Read more about Captain [here](https://chwt.app/captain-docs).
+Supercharge your support with Captain, Adaki’s AI agent. Captain helps automate responses, handle common queries, and reduce agent workload—ensuring customers get instant, accurate answers. With Captain, your team can focus on complex conversations while routine questions are resolved automatically. Read more about Captain [here](https://chwt.app/captain-docs).
 
 ### 💬 Omnichannel Support Desk
 
-Chatwoot centralizes all customer conversations into one powerful inbox, no matter where your customers reach out from. It supports live chat on your website, email, Facebook, Instagram, Twitter, WhatsApp, Telegram, Line, SMS etc.
+Adaki centralizes all customer conversations into one powerful inbox, no matter where your customers reach out from. It supports live chat on your website, email, Facebook, Instagram, Twitter, WhatsApp, Telegram, Line, SMS etc.
 
 ### 📚 Help center portal
 
@@ -73,10 +73,10 @@ Publish help articles, FAQs, and guides through the built-in Help Center Portal.
 #### Integrations
 - Slack Integration to manage conversations directly from Slack.
 - Dialogflow Integration for chatbot automation.
-- Dashboard Apps to embed internal tools within Chatwoot.
-- Shopify Integration to view and manage customer orders right within Chatwoot.
+- Dashboard Apps to embed internal tools within Adaki.
+- Shopify Integration to view and manage customer orders right within Adaki.
 - Use Google Translate to translate messages from your customers in realtime.
-- Create and manage Linear tickets within Chatwoot.
+- Create and manage Linear tickets within Adaki.
 
 #### Reports & Insights
 - Live View of ongoing conversations for real-time monitoring.
@@ -87,11 +87,11 @@ Publish help articles, FAQs, and guides through the built-in Help Center Portal.
 
 ## Documentation
 
-Detailed documentation is available at [chatwoot.com/help-center](https://www.chatwoot.com/help-center).
+Detailed documentation is available at [adaki.net/help-center](https://www.adaki.net/help-center).
 
 ## Translation process
 
-The translation process for Chatwoot web and mobile app is managed at [https://translate.chatwoot.com](https://translate.chatwoot.com) using Crowdin. Please read the [translation guide](https://www.chatwoot.com/docs/contributing/translating-chatwoot-to-your-language) for contributing to Chatwoot.
+The translation process for Adaki web and mobile app is managed at [https://translate.adaki.net](https://translate.adaki.net) using Crowdin. Please read the [translation guide](https://www.adaki.net/docs/contributing/translating-chatwoot-to-your-language) for contributing to Adaki.
 
 ## Branching model
 
@@ -102,16 +102,16 @@ If you are looking for a stable version, please use the `master` or tags labelle
 
 ### Heroku one-click deploy
 
-Deploying Chatwoot to Heroku is a breeze. It's as simple as clicking this button:
+Deploying Adaki to Heroku is a breeze. It's as simple as clicking this button:
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/chatwoot/chatwoot/tree/master)
 
-Follow this [link](https://www.chatwoot.com/docs/environment-variables) to understand setting the correct environment variables for the app to work with all the features. There might be breakages if you do not set the relevant environment variables.
+Follow this [link](https://www.adaki.net/docs/environment-variables) to understand setting the correct environment variables for the app to work with all the features. There might be breakages if you do not set the relevant environment variables.
 
 
 ### DigitalOcean 1-Click Kubernetes deployment
 
-Chatwoot now supports 1-Click deployment to DigitalOcean as a kubernetes app.
+Adaki now supports 1-Click deployment to DigitalOcean as a kubernetes app.
 
 <a href="https://marketplace.digitalocean.com/apps/chatwoot?refcode=f2238426a2a8" alt="Deploy to DigitalOcean">
   <img width="200" alt="Deploy to DO" src="https://www.deploytodo.com/do-btn-blue.svg"/>
@@ -119,7 +119,7 @@ Chatwoot now supports 1-Click deployment to DigitalOcean as a kubernetes app.
 
 ### Other deployment options
 
-For other supported options, checkout our [deployment page](https://chatwoot.com/deploy).
+For other supported options, checkout our [deployment page](https://adaki.net/deploy).
 
 ## Security
 
@@ -131,9 +131,9 @@ If you need help or just want to hang out, come, say hi on our [Discord](https:/
 
 ## Contributors
 
-Thanks goes to all these [wonderful people](https://www.chatwoot.com/docs/contributors):
+Thanks goes to all these [wonderful people](https://www.adaki.net/docs/contributors):
 
 <a href="https://github.com/chatwoot/chatwoot/graphs/contributors"><img src="https://opencollective.com/chatwoot/contributors.svg?width=890&button=false" /></a>
 
 
-*Chatwoot* &copy; 2017-2026, Chatwoot Inc - Released under the MIT License.
+Released under the MIT License — see [LICENSE](LICENSE).

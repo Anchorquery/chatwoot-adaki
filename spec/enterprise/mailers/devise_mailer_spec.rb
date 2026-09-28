@@ -21,7 +21,7 @@ RSpec.describe 'Devise::Mailer' do
       end
 
       it 'preserves the blank brand override' do
-        expect(mail_body).not_to include('Chatwoot')
+        expect(mail_body).not_to include('Adaki')
       end
     end
 

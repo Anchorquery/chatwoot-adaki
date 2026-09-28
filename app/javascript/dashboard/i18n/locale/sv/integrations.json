@@ -44,7 +44,7 @@
       "NO_RESULTS": "No webhooks found matching your search",
       "FORM": {
         "CANCEL": "Avbryt",
-        "DESC": "Webbhook-händelser ger dig realtidsinformation om vad som händer i ditt chatwoot-konto. Ange en giltig URL för att konfigurera en callback.",
+        "DESC": "Webbhook-händelser ger dig realtidsinformation om vad som händer i ditt Adaki-konto. Ange en giltig URL för att konfigurera en callback.",
         "SUBSCRIPTIONS": {
           "LABEL": "Events",
           "EVENTS": {

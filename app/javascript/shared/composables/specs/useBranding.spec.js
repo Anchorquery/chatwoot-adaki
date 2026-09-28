@@ -24,17 +24,17 @@ describe('useBranding', () => {
   });
 
   describe('replaceInstallationName', () => {
-    it('should replace "Chatwoot" with installation name when both text and installation name are provided', () => {
+    it('should replace "Adaki" with installation name when both text and installation name are provided', () => {
       const { replaceInstallationName } = useBranding();
-      const result = replaceInstallationName('Welcome to Chatwoot');
+      const result = replaceInstallationName('Welcome to Adaki');
 
       expect(result).toBe('Welcome to MyCompany');
     });
 
-    it('should replace multiple occurrences of "Chatwoot"', () => {
+    it('should replace multiple occurrences of "Adaki"', () => {
       const { replaceInstallationName } = useBranding();
       const result = replaceInstallationName(
-        'Chatwoot is great! Use Chatwoot today.'
+        'Adaki is great! Use Adaki today.'
       );
 
       expect(result).toBe('MyCompany is great! Use MyCompany today.');
@@ -44,7 +44,7 @@ describe('useBranding', () => {
       mockGlobalConfig.value = {};
 
       const { replaceInstallationName } = useBranding();
-      const result = replaceInstallationName('Welcome to Chatwoot');
+      const result = replaceInstallationName('Welcome to Adaki');
 
       expect(result).toBe('Welcome to Adaki');
     });
@@ -53,7 +53,7 @@ describe('useBranding', () => {
       mockGlobalConfig.value = undefined;
 
       const { replaceInstallationName } = useBranding();
-      const result = replaceInstallationName('Welcome to Chatwoot');
+      const result = replaceInstallationName('Welcome to Adaki');
 
       expect(result).toBe('Welcome to Adaki');
     });
@@ -66,20 +66,18 @@ describe('useBranding', () => {
       expect(replaceInstallationName(undefined)).toBe(undefined);
     });
 
-    it('should handle text without "Chatwoot" gracefully', () => {
+    it('should handle text without "Adaki" gracefully', () => {
       const { replaceInstallationName } = useBranding();
       const result = replaceInstallationName('Welcome to our platform');
 
       expect(result).toBe('Welcome to our platform');
     });
 
-    it('should be case-sensitive for "Chatwoot"', () => {
+    it('should be case-sensitive for "Adaki"', () => {
       const { replaceInstallationName } = useBranding();
-      const result = replaceInstallationName(
-        'Welcome to chatwoot and CHATWOOT'
-      );
+      const result = replaceInstallationName('Welcome to adaki and ADAKI');
 
-      expect(result).toBe('Welcome to chatwoot and CHATWOOT');
+      expect(result).toBe('Welcome to adaki and ADAKI');
     });
 
     it('should handle special characters in installation name', () => {
@@ -88,7 +86,7 @@ describe('useBranding', () => {
       };
 
       const { replaceInstallationName } = useBranding();
-      const result = replaceInstallationName('Welcome to Chatwoot');
+      const result = replaceInstallationName('Welcome to Adaki');
 
       expect(result).toBe('Welcome to My-Company & Co.');
     });

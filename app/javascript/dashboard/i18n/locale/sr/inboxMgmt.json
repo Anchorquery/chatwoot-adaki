@@ -16,7 +16,7 @@
     "CREATE_FLOW": {
       "CHANNEL": {
         "TITLE": "Izaberite kanal",
-        "BODY": "Izaberte provajdera kojeg želite da integrišete sa chatwoot-om."
+        "BODY": "Izaberte provajdera kojeg želite da integrišete sa Adaki-om."
       },
       "INBOX": {
         "TITLE": "Napravi prijemno sanduče",
@@ -507,11 +507,11 @@
       },
       "DETAILS": {
         "TITLE": "Detalji prijemnog sandučeta",
-        "DESC": "Iz padajućeg menija ispod, izaberite Fejsbuk stranicu koju želite da povežete sa chatwoot-om. Takođe možete navesti proizvoljan naziv prijemnog sandučeta za bolju identifikaciju."
+        "DESC": "Iz padajućeg menija ispod, izaberite Fejsbuk stranicu koju želite da povežete sa Adaki-om. Takođe možete navesti proizvoljan naziv prijemnog sandučeta za bolju identifikaciju."
       },
       "FINISH": {
         "TITLE": "Uspeli ste!",
-        "DESC": "Uspešno ste završili integraciju vaše Fejsbuk stranice sa Chatwoo-om. Kada potrošač sledeći put pošalje poruku na tvojoj stranici, razgovor će se automatski pojaviti u prijemnom sandučetu.<br>Takođe vam pružamo skriptu za vidžet koju možete jednostavno dodati na veb sajt. Onda kada je postavljen na veb sajt, potrošači mogu da vam pošalju poruku direktno sa veb sajta bez pomoći eksternih alata i razgovor će se pojaviti ovde, na chatwoot-u.<br>Kul, zar ne? Pa, svakako se trudimo da bude :)"
+        "DESC": "Uspešno ste završili integraciju vaše Fejsbuk stranice sa Adaki-om. Kada potrošač sledeći put pošalje poruku na tvojoj stranici, razgovor će se automatski pojaviti u prijemnom sandučetu.<br>Takođe vam pružamo skriptu za vidžet koju možete jednostavno dodati na veb sajt. Onda kada je postavljen na veb sajt, potrošači mogu da vam pošalju poruku direktno sa veb sajta bez pomoći eksternih alata i razgovor će se pojaviti ovde, na Adaki-u.<br>Kul, zar ne? Pa, svakako se trudimo da bude :)"
       },
       "EMAIL_PROVIDER": {
         "TITLE": "Select your email provider",

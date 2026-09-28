@@ -47,7 +47,7 @@ RSpec.describe AccountEmailRateLimitable do
       end
     end
 
-    context 'when chatwoot cloud' do
+    context 'when adaki cloud' do
       before do
         allow(ChatwootApp).to receive(:chatwoot_cloud?).and_return(true)
         2.times { account.increment_email_sent_count }
