@@ -6,7 +6,7 @@
   include ConversationReplyMailerHelper
   include ReferencesHeaderBuilder
   include EmailAddressParseable
-  default from: ENV.fetch('MAILER_SENDER_EMAIL', 'Adaki <accounts@chatwoot.com>')
+  default from: ENV.fetch('MAILER_SENDER_EMAIL', 'Adaki <accounts@adaki.net>')
   layout :choose_layout
 
   def reply_with_summary(conversation, last_queued_id)

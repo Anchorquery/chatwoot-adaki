@@ -30,7 +30,10 @@ describe('ActionCableConnector - Copilot Tests', () => {
         dispatch: mockDispatch,
         getters: {
           getCurrentAccountId: 1,
-          'accounts/isFeatureEnabledonAccount': vi.fn(() => true),
+          'globalConfig/isOnChatwootCloud': true,
+          'accounts/getAccount': vi.fn(() => ({
+            features: { conversation_unread_counts: true },
+          })),
         },
       },
     };
@@ -90,9 +93,22 @@ describe('ActionCableConnector - Copilot Tests', () => {
     });
 
     it('does not refetch unread counts when unread count feature is disabled', () => {
-      store.$store.getters[
-        'accounts/isFeatureEnabledonAccount'
-      ].mockReturnValue(false);
+      store.$store.getters['accounts/getAccount'].mockReturnValue({
+        features: { conversation_unread_counts: false },
+      });
+
+      actionCable.onReceived({
+        event: 'conversation.unread_count_changed',
+        data: { account_id: 1 },
+      });
+
+      expect(mockDispatch).not.toHaveBeenCalledWith(
+        'conversationUnreadCounts/get'
+      );
+    });
+
+    it('does not refetch unread counts outside Chatwoot Cloud', () => {
+      store.$store.getters['globalConfig/isOnChatwootCloud'] = false;
 
       actionCable.onReceived({
         event: 'conversation.unread_count_changed',
