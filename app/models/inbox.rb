@@ -182,7 +182,8 @@ class Inbox < ApplicationRecord
   # than the default won't be reflected here. Same class of gap as
   # Captain::InboxPendingConversationsResolutionJob.
   def continue_bot_after_assignment?
-    if respond_to?(:captain_inbox) && captain_inbox.present? && captain_inbox.captain_assistant&.autopilot_enabled? && captain_inbox.continue_after_human_takeover?
+    if respond_to?(:captain_inbox) && captain_inbox.present? &&
+       captain_inbox.captain_assistant&.autopilot_enabled? && captain_inbox.continue_after_human_takeover?
       return true
     end
 

@@ -21,7 +21,7 @@ class Captain::Llm::Gemini::FilesClient
     @version_base = (api_base.presence || DEFAULT_BASE).chomp('/')
     # Upload endpoint lives under /upload/<version>/files, e.g.
     # https://generativelanguage.googleapis.com/upload/v1beta/files
-    @root = @version_base.sub(%r{/v1beta\z}, '')
+    @root = @version_base.delete_suffix('/v1beta')
   end
 
   # Uploads bytes and returns the File resource hash ({ 'name', 'uri', 'state', ... }).
@@ -45,7 +45,7 @@ class Captain::Llm::Gemini::FilesClient
   end
 
   def get_file(name)
-    id = name.to_s.sub(%r{\Afiles/}, '')
+    id = name.to_s.delete_prefix('files/')
     response = connection.get("#{@version_base}/files/#{id}") do |req|
       req.headers['x-goog-api-key'] = @api_key
     end

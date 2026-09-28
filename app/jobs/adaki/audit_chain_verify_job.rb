@@ -13,6 +13,6 @@ class Adaki::AuditChainVerifyJob < ApplicationJob
 
     return if failures.empty?
 
-    raise "Audit chain verification failed for #{failures.size} accounts: #{failures.map { |f| f[:account_id] }.join(', ')}"
+    raise "Audit chain verification failed for #{failures.size} accounts: #{failures.pluck(:account_id).join(', ')}"
   end
 end

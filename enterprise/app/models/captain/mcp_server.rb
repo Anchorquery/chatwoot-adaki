@@ -28,6 +28,8 @@ require 'digest'
 class Captain::McpServer < ApplicationRecord
   class DiscoveryError < StandardError; end
 
+  MCP_TOOL_PREFIX = 'mcp_'
+
   self.table_name = 'captain_mcp_servers'
 
   belongs_to :account
@@ -58,7 +60,7 @@ class Captain::McpServer < ApplicationRecord
     return prefixed if prefixed.length <= 64
 
     digest = Digest::SHA1.hexdigest(tool_name.to_s)[0, 6]
-    available_length = [64 - 'mcp_'.length - slug.length - digest.length - 2, 0].max
+    available_length = [64 - MCP_TOOL_PREFIX.length - slug.length - digest.length - 2, 0].max
     truncated_tool = tool_name.to_s.parameterize(separator: '_')[0, available_length].to_s.sub(/_+\z/, '')
     "mcp_#{slug}_#{truncated_tool}_#{digest}"
   end
@@ -101,12 +103,12 @@ class Captain::McpServer < ApplicationRecord
 
     self
   rescue StandardError => e
-    update_columns(last_error: e.message, updated_at: Time.current)
+    update_columns(last_error: e.message, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
     raise DiscoveryError, e.message
   end
 
   def normalized_tools_cache
-    Array(tools_cache).map { |tool| tool.with_indifferent_access }
+    Array(tools_cache).map(&:with_indifferent_access)
   end
 
   private

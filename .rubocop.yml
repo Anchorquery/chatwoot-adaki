@@ -1,3 +1,10 @@
+inherit_from: .rubocop_todo.yml
+
+# Merge (not override) the todo's per-file Metrics excludes with the ones below.
+inherit_mode:
+  merge:
+    - Exclude
+
 plugins:
   - rubocop-performance
   - rubocop-rails
@@ -117,10 +124,18 @@ Metrics/ModuleLength:
     # docs/adaki/captain-remediacion.md §Fase 4.
     - enterprise/app/helpers/captain/chat_helper.rb
 
+RSpec/DescribeClass:
+  Exclude:
+    # Specs for ruby_llm monkey patches in config/initializers: there is no
+    # class of ours under test, only the patched behaviour.
+    - 'spec/lib/ruby_llm_*_spec.rb'
+
 Rails/HelperInstanceVariable:
   Exclude:
     - enterprise/app/helpers/captain/chat_helper.rb
     - enterprise/app/helpers/captain/chat_response_helper.rb
+    # Prepended into Captain::ChatHelper (a service mixin, not a view helper).
+    - enterprise/app/helpers/captain/chat_helper_adaki.rb
 Rails/ApplicationController:
   Exclude:
     - 'app/controllers/api/v1/widget/messages_controller.rb'

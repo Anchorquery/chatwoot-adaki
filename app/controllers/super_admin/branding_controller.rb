@@ -32,7 +32,7 @@ class SuperAdmin::BrandingController < SuperAdmin::ApplicationController
     if errors.any?
       redirect_to super_admin_branding_path, alert: errors.join(', ')
     else
-      redirect_to super_admin_branding_path, notice: 'Branding settings updated successfully.'
+      redirect_to super_admin_branding_path, notice: I18n.t('super_admin.branding.updated')
     end
   end
 end

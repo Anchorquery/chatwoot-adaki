@@ -18,7 +18,7 @@ class Adaki::CaptainUsageTracker
 
     Adaki::CaptainUsage.transaction do
       usage = Adaki::CaptainUsage.current_for(account)
-      Adaki::CaptainUsage.where(id: usage.id).update_all(
+      Adaki::CaptainUsage.where(id: usage.id).update_all( # rubocop:disable Rails/SkipsModelValidations
         'request_count = request_count + 1, ' \
         "input_tokens = input_tokens + #{input_tokens.to_i}, " \
         "output_tokens = output_tokens + #{output_tokens.to_i}, " \

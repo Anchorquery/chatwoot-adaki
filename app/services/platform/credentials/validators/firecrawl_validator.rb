@@ -1,4 +1,2 @@
-module Platform::Credentials::Validators
-  class FirecrawlValidator < Base
-  end
+class Platform::Credentials::Validators::FirecrawlValidator < Platform::Credentials::Validators::Base
 end

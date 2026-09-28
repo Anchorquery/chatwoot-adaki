@@ -49,7 +49,7 @@ class Api::V1::Accounts::Platform::ModelsController < Api::V1::Accounts::BaseCon
     enabled = ActiveModel::Type::Boolean.new.cast(params[:enabled])
     scope = @credential.models
     scope = scope.by_kind(params[:kind]) if params[:kind].present?
-    scope.update_all(enabled: enabled, updated_at: Time.current)
+    scope.update_all(enabled: enabled, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
     render json: { updated: scope.count }
   end
 

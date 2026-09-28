@@ -10,15 +10,17 @@ RSpec.describe Captain::Llm::PdfFaqGeneratorService do
   end
 
   def stub_chat_returning(content)
-    chat = double('chat')
+    chat = instance_double(RubyLLM::Chat)
     allow(chat).to receive(:with_params).and_return(chat)
     allow(chat).to receive(:with_instructions).and_return(chat)
-    allow(chat).to receive(:ask).and_return(double('response', content: content))
+    allow(chat).to receive(:ask).and_return(instance_double(RubyLLM::Message, content: content))
     chat
   end
 
   def stub_pdf(byte_size:)
-    pdf_file = double('pdf_file', attached?: true, blob: double('blob', byte_size: byte_size))
+    # Attached::One delegates #blob via method_missing, so a verifying double
+    # cannot stub it; a plain struct stands in for the attachment.
+    pdf_file = Struct.new(:attached?, :blob).new(true, instance_double(ActiveStorage::Blob, byte_size: byte_size))
     allow(document).to receive(:pdf_file).and_return(pdf_file)
   end
 
@@ -37,7 +39,7 @@ RSpec.describe Captain::Llm::PdfFaqGeneratorService do
       allow(service).to receive(:chat).and_return(chat)
 
       expect(chat).to receive(:ask).with(described_class::USER_PROMPT, with: document.pdf_file)
-                                   .and_return(double(content: '{"faqs": []}'))
+                                   .and_return(instance_double(RubyLLM::Message, content: '{"faqs": []}'))
 
       service.generate
     end
@@ -69,7 +71,7 @@ RSpec.describe Captain::Llm::PdfFaqGeneratorService do
         expect(content).to be_a(RubyLLM::Content::Raw)
         parts = content.value
         expect(parts.first[:file_data][:file_uri]).to eq('https://gen.googleapis.com/v1beta/files/abc')
-        double(content: '{"faqs": []}')
+        instance_double(RubyLLM::Message, content: '{"faqs": []}')
       end
 
       service.generate

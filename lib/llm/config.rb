@@ -27,6 +27,17 @@ module Llm::Config
     'CAPTAIN_BEDROCK_REGION' => :bedrock_region
   }.freeze
 
+  # Credential setter -> provider it enables, for enabled_providers.
+  PROVIDER_BY_SETTER = {
+    openai_api_key: :openai,
+    anthropic_api_key: :anthropic,
+    gemini_api_key: :gemini,
+    deepseek_api_key: :deepseek,
+    openrouter_api_key: :openrouter,
+    ollama_api_base: :ollama,
+    bedrock_api_key: :bedrock
+  }.freeze
+
   class << self
     def initialized?
       !@configured_fingerprint.nil?
@@ -146,17 +157,9 @@ module Llm::Config
     # the Super Admin diagnostic page and for unit tests.
     def enabled_providers
       provider_values.filter_map do |setter, value|
-        next unless value.present?
+        next if value.blank?
 
-        case setter
-        when :openai_api_key      then :openai
-        when :anthropic_api_key   then :anthropic
-        when :gemini_api_key      then :gemini
-        when :deepseek_api_key    then :deepseek
-        when :openrouter_api_key  then :openrouter
-        when :ollama_api_base     then :ollama
-        when :bedrock_api_key     then :bedrock
-        end
+        PROVIDER_BY_SETTER[setter]
       end.uniq
     end
 
@@ -180,7 +183,7 @@ module Llm::Config
     def configure_ruby_llm(values)
       RubyLLM.configure do |config|
         values.each do |setter, value|
-          next unless value.present?
+          next if value.blank?
 
           # Some RubyLLM versions may not expose every setter; skip silently.
           config.public_send("#{setter}=", value) if config.respond_to?("#{setter}=")

@@ -1,4 +1,7 @@
 module Enterprise::Whatsapp::OneoffCampaignService
+  ALL_AUDIENCE_TYPES = %w[All AllContacts].freeze
+  CONTACT_AUDIENCE_TYPES = %w[Contact ContactId].freeze
+
   def perform
     Adaki::CampaignApprovalService.new(campaign).ensure_approved!
     enforce_tier_safety!
@@ -35,10 +38,10 @@ module Enterprise::Whatsapp::OneoffCampaignService
 
   def estimate_recipient_count
     audience = campaign.audience.to_a
-    return campaign.account.contacts.count if audience.any? { |a| %w[All AllContacts].include?(a['type'].to_s) }
+    return campaign.account.contacts.count if audience.any? { |a| ALL_AUDIENCE_TYPES.include?(a['type'].to_s) }
 
-    contact_ids = audience.select { |a| %w[Contact ContactId].include?(a['type'].to_s) }.map { |a| a['id'] }
-    label_ids = audience.select { |a| a['type'].to_s == 'Label' }.map { |a| a['id'] }
+    contact_ids = audience.select { |a| CONTACT_AUDIENCE_TYPES.include?(a['type'].to_s) }.pluck('id')
+    label_ids = audience.select { |a| a['type'].to_s == 'Label' }.pluck('id')
 
     count = 0
     count += campaign.account.contacts.where(id: contact_ids).count if contact_ids.any?

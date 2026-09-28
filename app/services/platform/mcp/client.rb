@@ -96,7 +96,7 @@ class Platform::Mcp::Client
     apply_auth_headers(request)
 
     response = http.request(request)
-    raise CustomExceptions::Platform::InvalidCredential.new(nil) if response.code.to_i == 401 || response.code.to_i == 403
+    raise CustomExceptions::Platform::InvalidCredential, nil if response.code.to_i == 401 || response.code.to_i == 403
     raise Platform::Mcp::Error, "MCP request failed with status #{response.code}" unless response.is_a?(Net::HTTPSuccess)
 
     response

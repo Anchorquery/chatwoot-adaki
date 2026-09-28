@@ -75,7 +75,8 @@ class Captain::Documents::CrawlJob < ApplicationJob
   def firecrawl_webhook_url(document, crawl_limit)
     webhook_url = Rails.application.routes.url_helpers.enterprise_webhooks_firecrawl_url
 
-    "#{webhook_url}?assistant_id=#{document.assistant_id}&token=#{generate_firecrawl_token(document.assistant_id,
-                                                                                           document.account_id)}&root_url=#{URI.encode_www_form_component(document.external_link)}&crawl_depth=#{crawl_limit}"
+    token = generate_firecrawl_token(document.assistant_id, document.account_id)
+    root_url = URI.encode_www_form_component(document.external_link)
+    "#{webhook_url}?assistant_id=#{document.assistant_id}&token=#{token}&root_url=#{root_url}&crawl_depth=#{crawl_limit}"
   end
 end

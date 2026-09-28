@@ -12,18 +12,12 @@ module Featurable
   # Bits 1..63 -> feature_flags. Bits 64+ -> feature_flags_2.
   MAX_BITS_PER_COLUMN = 63
 
-  FEATURES_PRIMARY = {}
-  FEATURES_SECONDARY = {}
-  FEATURE_LIST.each_with_index do |feature, idx|
-    key = "feature_#{feature['name']}".to_sym
-    if idx < MAX_BITS_PER_COLUMN
-      FEATURES_PRIMARY[idx + 1] = key
-    else
-      FEATURES_SECONDARY[idx - MAX_BITS_PER_COLUMN + 1] = key
-    end
-  end
-  FEATURES_PRIMARY.freeze
-  FEATURES_SECONDARY.freeze
+  FEATURES_PRIMARY = FEATURE_LIST.first(MAX_BITS_PER_COLUMN).each_with_index.to_h do |feature, idx|
+    [idx + 1, :"feature_#{feature['name']}"]
+  end.freeze
+  FEATURES_SECONDARY = FEATURE_LIST.drop(MAX_BITS_PER_COLUMN).each_with_index.to_h do |feature, idx|
+    [idx + 1, :"feature_#{feature['name']}"]
+  end.freeze
 
   FEATURES = FEATURES_PRIMARY.merge(
     FEATURES_SECONDARY.transform_keys { |k| k + MAX_BITS_PER_COLUMN }
