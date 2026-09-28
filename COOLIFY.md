@@ -18,7 +18,7 @@ docker compose up   │  ┌─────────┐  ┌─────�
   build image       │       │ pgvector│  │         │    │
         ↓           │       └─────────┘  └─────────┘    │
 [GHCR]              │                                     │
-ghcr.io/.../...     │  Traefik proxy → chat.adaki.com    │
+ghcr.io/.../...     │  Traefik proxy → whatsapp.adaki.com    │
         ↓           └─────────────────────────────────────┘
 [Coolify webhook]
   pull + restart
@@ -53,7 +53,7 @@ VPS Ubuntu 22.04+, mín. 4 GB RAM (8 GB recomendado), 40 GB disco:
 curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash
 ```
 
-Apuntar DNS `chat.adaki.com` → IP VPS.
+Apuntar DNS `whatsapp.adaki.com` → IP VPS.
 
 ### 5. Crear app en Coolify
 
@@ -61,7 +61,7 @@ Apuntar DNS `chat.adaki.com` → IP VPS.
 2. Source: **Git Repository** → conectar `chatwoot-adaki` (GitHub App)
 3. Branch: `main`
 4. Compose file path: `docker-compose.coolify.yaml`
-5. Domain: `https://chat.adaki.com` → port `3000` → Service `rails`
+5. Domain: `https://whatsapp.adaki.com` → port `3000` → Service `rails`
 6. SSL: Let's Encrypt ✅
 
 ### 6. Environment variables

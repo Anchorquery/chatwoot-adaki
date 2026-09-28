@@ -702,7 +702,7 @@
         "STATUSES": {
           "APPROVED": "Aprobado",
           "PENDING_REVIEW": "Revisión pendiente",
-        "AVAILABLE_WITHOUT_REVIEW": "Disponible sin revisión",
+          "AVAILABLE_WITHOUT_REVIEW": "Disponible sin revisión",
           "REJECTED": "Rechazado",
           "DECLINED": "Rechazado",
           "NON_EXISTS": "No existe"
@@ -729,7 +729,9 @@
       "DISPLAY_FILE_PICKER": "Mostrar el selector de archivos en el widget",
       "DISPLAY_EMOJI_PICKER": "Mostrar el selector de emoji en el widget",
       "ALLOW_END_CONVERSATION": "Permitir a los usuarios finalizar conversaciones desde el widget",
-      "USE_INBOX_AVATAR_FOR_BOT": "Usar nombre de bandeja de entrada y avatar para el bot"
+      "USE_INBOX_AVATAR_FOR_BOT": "Usar nombre de bandeja de entrada y avatar para el bot",
+      "CONTINUE_BOT_AFTER_ASSIGNMENT": "Mantener el bot activo tras la asignación",
+      "SHOW_ASSIGNMENT_HANDOFF_MESSAGE": "Mostrar un mensaje visible tras la asignación"
     },
     "SETTINGS_POPUP": {
       "EVOLUTION_PRIVACY": {
@@ -771,7 +773,7 @@
         "SECRET_KEY": "Secret Key",
         "VIEW_DOCS": "Ver documentación",
         "REQUIRE_LABEL": "Require identity validation for all conversations",
-      "REQUIRE_DESCRIPTION": "Cuando está activado, los usuarios deben proporcionar un token de identidad válido para iniciar conversaciones. Las solicitudes sin tokens válidos serán rechazadas."
+        "REQUIRE_DESCRIPTION": "Cuando está activado, los usuarios deben proporcionar un token de identidad válido para iniciar conversaciones. Las solicitudes sin tokens válidos serán rechazadas."
       },
       "INBOX_AGENTS": "Agentes",
       "INBOX_AGENTS_SUB_TEXT": "Añadir o quitar agentes de esta bandeja de entrada",

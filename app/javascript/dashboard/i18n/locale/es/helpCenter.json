@@ -419,7 +419,7 @@
         "SLUG": {
           "LABEL": "Slug",
           "PLACEHOLDER": "Slug de categoría para urls",
-          "HELP_TEXT": "chat.adaki.com/hc/my-portal/es-ES/categories/my-slug",
+          "HELP_TEXT": "whatsapp.adaki.com/hc/my-portal/es-ES/categories/my-slug",
           "ERROR": "El slug es requerido"
         },
         "DESCRIPTION": {
@@ -450,7 +450,7 @@
         "SLUG": {
           "LABEL": "Slug",
           "PLACEHOLDER": "Slug de categoría para urls",
-          "HELP_TEXT": "chat.adaki.com/hc/my-portal/es-ES/categories/my-slug",
+          "HELP_TEXT": "whatsapp.adaki.com/hc/my-portal/es-ES/categories/my-slug",
           "ERROR": "El slug es requerido"
         },
         "DESCRIPTION": {
@@ -670,7 +670,7 @@
             "LABEL": "Slug",
             "PLACEHOLDER": "Slug de categoría para urls",
             "ERROR": "El slug es requerido",
-            "HELP_TEXT": "chat.adaki.com/hc/{portalSlug}/{localeCode}/categories/{categorySlug}"
+            "HELP_TEXT": "whatsapp.adaki.com/hc/{portalSlug}/{localeCode}/categories/{categorySlug}"
           },
           "DESCRIPTION": {
             "LABEL": "Descripción",

@@ -30,6 +30,15 @@ RSpec.describe 'Super Admin Custom Roles API', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include(*CustomRole::PERMISSIONS, *CustomRole::SIDEBAR_PROFILES)
+      expect(response.body).to include('Manage all conversations', 'Community communications (manage campaigns)')
+    end
+
+    it 'preselects the default sidebar instead of the first profile' do
+      sign_in(super_admin, scope: :super_admin)
+
+      get '/super_admin/custom_roles/new'
+
+      expect(response.body).to match(%r{<option selected="selected" value="">Default sidebar</option>})
     end
   end
 

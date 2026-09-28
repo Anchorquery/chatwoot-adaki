@@ -232,7 +232,9 @@
           "COMPLETED": "Completado",
           "SCHEDULED": "Programado",
           "RUNNING": "Enviando",
-          "PAUSED": "Pausado"
+          "PAUSED": "Pausado",
+          "FAILED": "Fallida",
+          "DRAFT": "Borrador"
         },
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Enviado desde",
@@ -279,6 +281,7 @@
           "BUTTONS": {
             "CREATE": "Crear",
             "CANCEL": "Cancelar",
+            "UPDATE": "Actualizar",
             "SAVE_DRAFT": "Guardar Borrador"
           },
           "API": {
@@ -294,6 +297,9 @@
           "FILES": {
             "TITLE": "Archivos Adjuntos",
             "DROP_LABEL": "Arrastra archivos aquí o haz clic para explorar",
+            "EXISTING": "Adjuntos existentes",
+            "KEEP": "Se conservan al actualizar",
+            "NEW": "Adjuntos nuevos",
             "REMOVE": "Eliminar"
           },
           "DELIVERY": {
@@ -303,6 +309,8 @@
             "BATCH_SIZE": "Tamaño del lote (mensajes/lote)",
             "DELAY_MESSAGES": "Espera entre mensajes (seg)",
             "DELAY_BATCHES": "Espera entre lotes (seg)",
+            "MAX_PER_MINUTE": "Máximo de mensajes por minuto",
+            "MAX_DAILY": "Máximo de mensajes por día",
             "MAX_FAILURES": "Máx. fallos antes de auto-pausa",
             "PAUSE_ON_429": "Pausar automáticamente en límite de tasa (429)",
             "BUSINESS_HOURS_ONLY": "Enviar solo en horario laboral",
@@ -354,6 +362,15 @@
               "standard": "Estándar",
               "detailed": "Detallado"
             }
+          }
+        }
+      },
+      "EDIT": {
+        "TITLE": "Editar campaña de API",
+        "FORM": {
+          "API": {
+            "SUCCESS_MESSAGE": "Campaña de API actualizada correctamente",
+            "ERROR_MESSAGE": "Se produjo un error. Inténtalo de nuevo."
           }
         }
       }

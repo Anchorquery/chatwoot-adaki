@@ -63,6 +63,7 @@
     "CODE": "Código",
     "BULLET_LIST": "Lista de viñetas",
     "ORDERED_LIST": "Lista ordenada",
-    "TABLE": "Tabla"
+    "TABLE": "Tabla",
+    "IMAGE": "Imagen"
   }
 }

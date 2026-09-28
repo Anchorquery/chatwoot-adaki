@@ -310,12 +310,13 @@
     "CONTACTS": "Contactos",
     "ACTIVE": "Activo",
     "COMPANIES": "Empresas",
-      "ALL_COMPANIES": "Todas las empresas",
+    "ALL_COMPANIES": "Todas las empresas",
     "CAPTAIN": "Capitán",
     "CAPTAIN_ASSISTANTS": "Asistentes",
     "CAPTAIN_DOCUMENTS": "Documentos",
     "CAPTAIN_RESPONSES": "Preguntas frecuentes",
     "CAPTAIN_TOOLS": "Herramientas",
+    "CAPTAIN_MCP": "MCP",
     "CAPTAIN_SCENARIOS": "Escenarios",
     "CAPTAIN_PLAYGROUND": "Zona de pruebas",
     "CAPTAIN_INBOXES": "Entradas",
@@ -384,12 +385,19 @@
     "CAPTAIN_AI": "Capitán",
     "CONVERSATION_WORKFLOW": "Flujo de conversaciones"
   },
-    "CAPTAIN_SETTINGS": {
+  "CAPTAIN_SETTINGS": {
     "TITLE": "Configuración de Captain",
     "DESCRIPTION": "Configura los modelos y funciones de IA para Captain. Captain usa facturación por créditos; se te cargarán créditos por cada acción que realice según el modelo seleccionado.",
     "LOADING": "Cargando la configuración de Captain...",
     "LINK_TEXT": "Más información sobre los créditos de Captain",
     "NOT_ENABLED": "Captain no está habilitado para tu cuenta. Actualiza tu plan para acceder a las funciones de Captain.",
+    "PROVIDERS": {
+      "TITLE": "Proveedores de IA",
+      "DESCRIPTION": "Gestiona los proveedores del sistema que usan Captain y las integraciones compartidas.",
+      "CARD_TITLE": "Registro de proveedores",
+      "CARD_DESCRIPTION": "Crea, edita, valida y revoca desde un solo lugar las credenciales compartidas de los proveedores de IA.",
+      "ACTION": "Gestionar proveedores"
+    },
     "MODEL_CONFIG": {
       "TITLE": "Configuración de modelo",
       "DESCRIPTION": "Selecciona modelos de IA para distintas funciones.",
@@ -460,7 +468,71 @@
       "DOCUMENTS": "Documentos",
       "RESPONSES": "Respuestas",
       "UPGRADE": "Captain no está disponible en el plan gratuito. Actualiza tu suscripción ahora para tener acceso a asistentes, Copilot y más.",
-      "REFRESH_CREDITS": "Actualizar"
+      "REFRESH_CREDITS": "Actualizar",
+      "MCP": {
+        "HEADER": "Servidores MCP",
+        "ADD_NEW": "Añadir servidor MCP",
+        "ALERTS": {
+          "ERROR": "Se produjo un error al cargar los servidores MCP"
+        },
+        "EMPTY_STATE": {
+          "TITLE": "No hay servidores MCP configurados",
+          "SUBTITLE": "Conecta un servidor MCP para ofrecer sus herramientas a Captain y que el asistente pueda consultar datos en tiempo real de sistemas externos."
+        },
+        "ACTIONS": {
+          "EDIT": "Editar",
+          "DISCOVER": "Actualizar herramientas",
+          "TEST": "Probar conexión",
+          "DELETE": "Eliminar"
+        },
+        "STATUS": {
+          "ENABLED": "Activado",
+          "DISABLED": "Desactivado"
+        },
+        "CARD": {
+          "TOOL_COUNT": "Herramientas",
+          "TRANSPORT": "Transporte",
+          "CREDENTIAL": "Credencial",
+          "NO_CREDENTIAL": "Sin credencial"
+        },
+        "FORM": {
+          "NEW_TITLE": "Crear servidor MCP",
+          "EDIT_TITLE": "Editar servidor MCP",
+          "DESCRIPTION": "Conecta un servidor MCP para que sus herramientas estén disponibles en Captain.",
+          "DESCRIPTION_LABEL": "Descripción",
+          "NAME": "Nombre del servidor",
+          "ENDPOINT_URL": "URL del endpoint",
+          "TIMEOUT": "Tiempo de espera (segundos)",
+          "CREDENTIAL": "Credencial",
+          "CREDENTIAL_PLACEHOLDER": "Selecciona una credencial",
+          "NO_CREDENTIAL": "Sin credencial",
+          "NO_CREDENTIAL_HELP": "Todavía no hay proveedores configurados. Añádelos en Ajustes > Proveedores de IA.",
+          "MANAGE_PROVIDERS": "Abrir proveedores de IA",
+          "ENABLED": "Activado",
+          "CANCEL": "Cancelar",
+          "CREATE": "Crear",
+          "SAVE": "Guardar",
+          "ERRORS": {
+            "NAME": "El nombre del servidor es obligatorio",
+            "ENDPOINT_URL": "La URL del endpoint es obligatoria"
+          }
+        },
+        "CREATE": {
+          "SUCCESS_MESSAGE": "Servidor MCP creado correctamente",
+          "ERROR_MESSAGE": "No se pudo crear el servidor MCP"
+        },
+        "EDIT": {
+          "SUCCESS_MESSAGE": "Servidor MCP actualizado correctamente",
+          "ERROR_MESSAGE": "No se pudo actualizar el servidor MCP"
+        },
+        "DELETE": {
+          "TITLE": "Eliminar servidor MCP",
+          "DESCRIPTION": "¿Seguro que quieres eliminar este servidor MCP?",
+          "CONFIRM": "Sí, eliminar",
+          "SUCCESS_MESSAGE": "Servidor MCP eliminado correctamente",
+          "ERROR_MESSAGE": "No se pudo eliminar el servidor MCP"
+        }
+      }
     },
     "CHAT_WITH_US": {
       "TITLE": "¿Necesitas ayuda?",
@@ -805,7 +877,7 @@
     "AGENT_CAPACITY_POLICY": {
       "INDEX": {
         "HEADER": {
-        "TITLE": "Capacidad de agentes",
+          "TITLE": "Capacidad de agentes",
           "CREATE_POLICY": "Nueva política"
         },
         "CARD": {
@@ -895,8 +967,8 @@
             "EMPTY_STATE": "No se han añadido etiquetas a esta política."
           },
           "DURATION": {
-          "LABEL": "Excluir conversaciones con una antigüedad específica",
-          "PLACEHOLDER": "Establecer tiempo"
+            "LABEL": "Excluir conversaciones con una antigüedad específica",
+            "PLACEHOLDER": "Establecer tiempo"
           }
         },
         "USERS": {
@@ -924,6 +996,55 @@
       "DESCRIPTION": "¿Seguro que quieres eliminar esta política? Esta acción no se puede deshacer.",
       "CONFIRM_BUTTON_LABEL": "Eliminar",
       "CANCEL_BUTTON_LABEL": "Cancelar"
+    }
+  },
+  "CAPTAIN": {
+    "MCP": {
+      "HEADER": "Servidores MCP",
+      "ADD_NEW": "Añadir servidor MCP",
+      "MANAGE_PROVIDERS": "Gestionar proveedores",
+      "EMPTY_STATE": {
+        "TITLE": "No hay servidores MCP configurados",
+        "SUBTITLE": "Conecta un servidor MCP para ofrecer sus herramientas a Captain y que el asistente pueda consultar datos en tiempo real de sistemas externos."
+      },
+      "FORM": {
+        "NAME": "Nombre",
+        "TIMEOUT": "Tiempo de espera (segundos)",
+        "DESCRIPTION_LABEL": "Descripción",
+        "ENDPOINT_URL": "URL del endpoint",
+        "CREDENTIAL": "Credencial",
+        "CREDENTIAL_PLACEHOLDER": "Selecciona una credencial",
+        "NO_CREDENTIAL": "Sin credencial",
+        "NO_CREDENTIAL_HELP": "Este servidor no tiene ninguna credencial configurada.",
+        "MANAGE_PROVIDERS": "Gestionar proveedores",
+        "ENABLED": "Activado",
+        "CANCEL": "Cancelar",
+        "CREATE": "Crear",
+        "SAVE": "Guardar",
+        "ERRORS": {
+          "NAME": "El nombre es obligatorio",
+          "ENDPOINT_URL": "La URL del endpoint es obligatoria"
+        }
+      },
+      "ACTIONS": {
+        "EDIT": "Editar",
+        "DISCOVER": "Descubrir ({count})",
+        "TEST": "Probar",
+        "DELETE": "Eliminar"
+      },
+      "STATUS": {
+        "ENABLED": "Activado",
+        "DISABLED": "Desactivado"
+      },
+      "CARD": {
+        "TOOL_COUNT": "Herramientas",
+        "TRANSPORT": "Transporte",
+        "CREDENTIAL": "Credencial",
+        "NO_CREDENTIAL": "Sin credencial"
+      },
+      "ALERTS": {
+        "ERROR": "Se produjo un error al cargar los servidores MCP"
+      }
     }
   }
 }

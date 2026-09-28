@@ -8,7 +8,7 @@ class AccountRoleField < Administrate::Field::Base
   CUSTOM_PREFIX = 'custom_'.freeze
 
   def to_s
-    custom_role&.name || data
+    custom_role&.name || role_label(data)
   end
 
   def selected_option
@@ -18,14 +18,19 @@ class AccountRoleField < Administrate::Field::Base
   # Built-in roles first, then custom roles grouped by account. When the form
   # already knows its account (account page), only that account's roles show.
   def grouped_options
-    groups = [['Default', AccountUser.roles.keys.map { |role| [role, role] }]]
+    groups = [[I18n.t('super_admin.account_users.role_groups.default'), AccountUser.roles.keys.map { |role| [role_label(role), role] }]]
     custom_roles.group_by(&:account).each do |account, roles|
-      groups << ["Custom roles - #{account.name}", roles.map { |role| [role.name, "#{CUSTOM_PREFIX}#{role.id}"] }]
+      groups << [I18n.t('super_admin.account_users.role_groups.custom', account: account.name),
+                 roles.map { |role| [role.name, "#{CUSTOM_PREFIX}#{role.id}"] }]
     end
     groups
   end
 
   private
+
+  def role_label(role)
+    I18n.t("super_admin.account_users.roles.#{role}", default: role.to_s)
+  end
 
   def custom_role
     resource.try(:custom_role)
