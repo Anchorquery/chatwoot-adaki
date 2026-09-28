@@ -78,6 +78,7 @@ const addAgent = async () => {
     };
 
     if (selectedRole.value.name.startsWith('custom_')) {
+      payload.role = 'agent';
       payload.custom_role_id = selectedRole.value.id;
     } else {
       payload.role = selectedRole.value.name;

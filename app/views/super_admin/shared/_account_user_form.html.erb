@@ -12,7 +12,8 @@ Used by both account and user show pages.
 %>
 
 <section class="main-content__body">
-  <% account_user_page = Administrate::Page::Form.new(AccountUserDashboard.new, AccountUser.new) %>
+  <% new_account_user = resource_type == 'account' ? AccountUser.new(account: page.resource) : AccountUser.new %>
+  <% account_user_page = Administrate::Page::Form.new(AccountUserDashboard.new, new_account_user) %>
   <%= form_for([namespace, account_user_page.resource], html: { class: "form" }) do |f| %>
     <% if account_user_page.resource.errors.any? %>
       <div id="error_explanation">

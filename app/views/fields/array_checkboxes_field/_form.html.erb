@@ -1,0 +1,13 @@
+<div class="field-unit__label">
+  <%= f.label field.attribute %>
+</div>
+<div class="field-unit__field">
+  <%# Empty value keeps the key in the params when every box is unchecked %>
+  <%= hidden_field_tag "#{f.object_name}[#{field.attribute}][]", '', id: nil %>
+  <% field.collection.each do |value| %>
+    <label class="flex items-center gap-2 mb-1">
+      <%= check_box_tag "#{f.object_name}[#{field.attribute}][]", value, field.selected?(value), id: "#{f.object_name}_#{field.attribute}_#{value}" %>
+      <%= value %>
+    </label>
+  <% end %>
+</div>
