@@ -90,7 +90,7 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
   end
 
   def assistant_context
-    return '' unless assistant.present?
+    return '' if assistant.blank?
 
     parts = [
       'Assistant context:',
@@ -161,7 +161,8 @@ class Captain::Llm::CampaignCopyService < Captain::BaseTaskService
     when 'concise'
       'Keep the message and every variant under 80 characters each. Be punchy and direct.'
     when 'detailed'
-      'Write longer texts for message and variants. Include relevant context, supporting detail, and a clear call to action. Aim for 2-4 sentences each.'
+      'Write longer texts for message and variants. Include relevant context, supporting detail, ' \
+      'and a clear call to action. Aim for 2-4 sentences each.'
     else
       'Use normal message length (1-2 sentences) for message and variants.'
     end

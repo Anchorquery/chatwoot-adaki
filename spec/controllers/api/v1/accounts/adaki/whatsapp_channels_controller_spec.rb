@@ -46,7 +46,7 @@ RSpec.describe 'Adaki Whatsapp Channels API', type: :request do
   describe 'POST refresh_tier' do
     it 'invokes TierMonitorService' do
       snapshot = build_stubbed(:adaki_whatsapp_tier_snapshot, channel_whatsapp: channel)
-      allow_any_instance_of(Adaki::TierMonitorService).to receive(:perform).and_return(snapshot)
+      allow(Adaki::TierMonitorService).to receive(:new).and_return(instance_double(Adaki::TierMonitorService, perform: snapshot))
 
       post "#{base_path}/#{channel.id}/refresh_tier", headers: admin.create_new_auth_token, as: :json
       expect(response).to have_http_status(:ok)

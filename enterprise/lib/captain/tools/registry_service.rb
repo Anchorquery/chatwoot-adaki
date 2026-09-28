@@ -12,7 +12,7 @@ class Captain::Tools::RegistryService
   end
 
   def available_tool_ids
-    available_tool_metadata.map { |tool| tool[:id] }
+    available_tool_metadata.pluck(:id)
   end
 
   def assistant_tools

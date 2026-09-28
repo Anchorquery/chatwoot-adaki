@@ -43,7 +43,7 @@ class Captain::Assistant < ApplicationRecord
   has_many :scenarios, class_name: 'Captain::Scenario', inverse_of: :assistant, dependent: :destroy_async
 
   HUMAN_TAKEOVER_MODES = %w[always after_window never].freeze
-  DEFAULT_HUMAN_TAKEOVER_MODE = 'after_window'
+  DEFAULT_HUMAN_TAKEOVER_MODE = 'after_window'.freeze
   DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES = 15
 
   # Cap on how many recent conversation messages are sent to the LLM as context.
@@ -185,7 +185,7 @@ class Captain::Assistant < ApplicationRecord
   end
 
   def available_tool_ids
-    available_agent_tools.map { |tool| tool[:id] }
+    available_agent_tools.pluck(:id)
   end
 
   def push_event_data

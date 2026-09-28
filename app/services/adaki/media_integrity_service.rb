@@ -29,7 +29,9 @@ class Adaki::MediaIntegrityService
     return :no_op if broken.empty?
 
     broken.each do |att|
+      # rubocop:disable Rails/SkipsModelValidations
       att.update_columns(meta: (att.meta || {}).merge('adaki_corrupted' => true, 'adaki_lost_at' => Time.current.iso8601))
+      # rubocop:enable Rails/SkipsModelValidations
     end
 
     Adaki::AuditLogger.log(

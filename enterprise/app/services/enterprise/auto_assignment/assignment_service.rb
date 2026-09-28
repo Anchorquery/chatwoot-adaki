@@ -99,10 +99,10 @@ module Enterprise::AutoAssignment::AssignmentService
   # Adaki coverage: filter out agents currently on absence unless they
   # have no coverage_user set (in which case absence resolver returns themselves).
   def filter_agents_by_team(agents, conversation)
-    agents = super
-    return agents if agents.nil?
+    team_agents = super
+    return team_agents if team_agents.nil?
 
-    filter_agents_by_absences(agents)
+    filter_agents_by_absences(team_agents)
   end
 
   def filter_agents_by_absences(agents)

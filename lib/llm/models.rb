@@ -35,7 +35,7 @@ module Llm::Models
     def feature_keys = CONFIG['features'].keys
 
     def enabled_providers
-      CONFIG['providers'].select { |_k, meta| meta['enabled'] != false }
+      CONFIG['providers'].reject { |_k, meta| meta['enabled'] == false }
     end
 
     def provider_enabled?(provider)

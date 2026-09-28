@@ -10,7 +10,7 @@ class UpdateBrandingToAdaki < ActiveRecord::Migration[7.0]
       next unless config
       next if config.value == value
 
-      config.update_columns(
+      config.update_columns( # rubocop:disable Rails/SkipsModelValidations
         serialized_value: { value: value }.with_indifferent_access
       )
     end

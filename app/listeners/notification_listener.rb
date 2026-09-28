@@ -63,8 +63,7 @@ class NotificationListener < BaseListener
 
     assignment_handoff_exists = conversation.messages.outgoing
                                             .where(private: false)
-                                            .where("additional_attributes ->> 'handoff_type' = ?", 'assignment')
-                                            .exists?
+                                            .exists?(["additional_attributes ->> 'handoff_type' = ?", 'assignment'])
     return if assignment_handoff_exists
 
     assistant = conversation.resolved_captain_assistant

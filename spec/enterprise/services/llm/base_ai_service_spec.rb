@@ -35,17 +35,17 @@ RSpec.describe Llm::BaseAiService do
 
   describe '#json_mode_params' do
     it 'uses response_format for openai' do
-      allow(service).to receive(:llm_request_provider).and_return('openai')
+      service.instance_variable_set(:@resolved_credential, instance_double(Platform::Credential, provider: 'openai'))
       expect(service.send(:json_mode_params)).to eq(response_format: { type: 'json_object' })
     end
 
     it 'uses generationConfig for gemini' do
-      allow(service).to receive(:llm_request_provider).and_return('gemini')
+      service.instance_variable_set(:@resolved_credential, instance_double(Platform::Credential, provider: 'gemini'))
       expect(service.send(:json_mode_params)).to eq(generationConfig: { responseMimeType: 'application/json' })
     end
 
     it 'omits the provider-specific hint for unknown providers but keeps extra params' do
-      allow(service).to receive(:llm_request_provider).and_return('mistral')
+      service.instance_variable_set(:@resolved_credential, instance_double(Platform::Credential, provider: 'mistral'))
       expect(service.send(:json_mode_params, max_tokens: 100)).to eq(max_tokens: 100)
     end
   end

@@ -7,7 +7,8 @@ RSpec.describe Adaki::TierMonitorService do
                               validate_provider_config: false,
                               sync_templates: false)
   end
-  let!(:inbox) { create(:inbox, account: account, channel: channel) }
+
+  before { create(:inbox, account: account, channel: channel) }
 
   describe '#safe_to_send?' do
     it 'false when channel tier_locked' do
@@ -55,14 +56,14 @@ RSpec.describe Adaki::TierMonitorService do
       }
     end
 
+    let(:svc) { described_class.new(channel) }
+
     before do
-      svc = described_class.new(channel)
       allow(svc).to receive(:fetch_phone_number_metadata).and_return(meta)
-      @svc = svc
     end
 
     it 'creates snapshot and updates channel' do
-      expect { @svc.perform }.to change(Adaki::WhatsappTierSnapshot, :count).by(1)
+      expect { svc.perform }.to change(Adaki::WhatsappTierSnapshot, :count).by(1)
       expect(channel.reload.messaging_tier).to eq(3)
       expect(channel.daily_conversation_limit).to eq(1_000)
       expect(channel.quality_rating).to eq('GREEN')
@@ -70,26 +71,25 @@ RSpec.describe Adaki::TierMonitorService do
 
     it 'locks on RED quality' do
       meta['quality_rating'] = 'RED'
-      expect { @svc.perform }.to change(Adaki::AuditLogEntry, :count).by_at_least(1)
+      expect { svc.perform }.to change(Adaki::AuditLogEntry, :count).by_at_least(1)
       expect(channel.reload.tier_locked).to be true
       expect(channel.tier_lock_reason).to eq('quality_rating_red')
     end
 
     it 'locks at 95% daily usage' do
       meta['conversations_sent_24h'] = 980
-      @svc.perform
+      svc.perform
       expect(channel.reload.tier_locked).to be true
       expect(channel.tier_lock_reason).to eq('daily_limit_near_exhaustion')
     end
 
     it 'no lock at 75% (warning only)' do
       meta['conversations_sent_24h'] = 800
-      @svc.perform
+      svc.perform
       expect(channel.reload.tier_locked).to be false
     end
 
     it 'returns nil and logs when network fails' do
-      svc = described_class.new(channel)
       allow(svc).to receive(:fetch_phone_number_metadata).and_raise(StandardError, 'boom')
       expect(svc.perform).to be_nil
     end

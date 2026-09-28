@@ -206,6 +206,10 @@ class Conversation < ApplicationRecord
     inbox.inbox_type == 'Twitter' && additional_attributes['type'] == 'tweet'
   end
 
+  CHAT_TYPE_KEYS = %w[chat_type type].freeze
+  GROUP_ID_KEYS = %w[group_id groupId].freeze
+  IS_GROUP_KEYS = %w[is_group isGroup].freeze
+
   def group?
     # WhatsApp group JIDs always contain "@g.us" (e.g. 1203630...@g.us). API-channel
     # bridges (Evolution and similar) may stash this JID in the contact_inbox source_id,
@@ -217,9 +221,9 @@ class Conversation < ApplicationRecord
     # Explicit group markers set by Telegram, Evolution and other integrations, on either
     # the conversation or the contact (snake_case and camelCase variants). These don't carry
     # a clean, reusable JID (see #group_jid), only a boolean signal that this is a group.
-    return true if chat_attributes.any? { |attrs| %w[chat_type type].any? { |k| attrs[k].to_s.downcase.include?('group') } }
-    return true if chat_attributes.any? { |attrs| %w[group_id groupId].any? { |k| attrs[k].present? } }
-    return true if chat_attributes.any? { |attrs| %w[is_group isGroup].any? { |k| ActiveModel::Type::Boolean.new.cast(attrs[k]) } }
+    return true if chat_attributes.any? { |attrs| CHAT_TYPE_KEYS.any? { |k| attrs[k].to_s.downcase.include?('group') } }
+    return true if chat_attributes.any? { |attrs| GROUP_ID_KEYS.any? { |k| attrs[k].present? } }
+    return true if chat_attributes.any? { |attrs| IS_GROUP_KEYS.any? { |k| ActiveModel::Type::Boolean.new.cast(attrs[k]) } }
 
     false
   end
@@ -252,7 +256,7 @@ class Conversation < ApplicationRecord
   def whatsapp_channel?
     return true if whatsapp_channel_jid.present?
 
-    chat_attributes.any? { |attrs| %w[chat_type type].any? { |k| attrs[k].to_s.downcase.include?('newsletter') } }
+    chat_attributes.any? { |attrs| CHAT_TYPE_KEYS.any? { |k| attrs[k].to_s.downcase.include?('newsletter') } }
   end
 
   # The normalized WhatsApp channel (newsletter) id for this conversation, or nil if this

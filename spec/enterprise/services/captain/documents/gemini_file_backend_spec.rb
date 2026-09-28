@@ -2,8 +2,8 @@ require 'rails_helper'
 
 RSpec.describe Captain::Documents::GeminiFileBackend do
   let(:account) { create(:account) }
-  let(:blob) { double('blob', byte_size: 30.megabytes, content_type: 'application/pdf', filename: 'big.pdf') }
-  let(:pdf_file) { double('pdf_file', blob: blob) }
+  let(:blob) { instance_double(ActiveStorage::Blob, byte_size: 30.megabytes, content_type: 'application/pdf', filename: 'big.pdf') }
+  let(:pdf_file) { instance_double(ActiveStorage::Attachment, blob: blob) }
   let(:document) { instance_double(Captain::Document, account: account, pdf_file: pdf_file) }
   let(:client) { instance_double(Captain::Llm::Gemini::FilesClient) }
 

@@ -10,10 +10,10 @@ RSpec.describe Captain::Llm::ArticleSearchTermsService do
   end
 
   def stub_chat_returning(content)
-    chat = double('chat')
+    chat = instance_double(RubyLLM::Chat)
     allow(chat).to receive(:with_params).and_return(chat)
     allow(chat).to receive(:with_instructions).and_return(chat)
-    response = double('response', content: content)
+    response = instance_double(RubyLLM::Message, content: content)
     allow(chat).to receive(:ask).and_return(response)
     chat
   end

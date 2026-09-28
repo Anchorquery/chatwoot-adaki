@@ -83,7 +83,7 @@ class Platform::CredentialManager
         error_code: error_code,
         context: context
       )
-      credential.update_column(:last_used_at, Time.current)
+      credential.update_column(:last_used_at, Time.current) # rubocop:disable Rails/SkipsModelValidations
     end
 
     def default_key_for(provider)
@@ -93,7 +93,8 @@ class Platform::CredentialManager
     def with_credential_context(account:, key:, provider: nil, purpose: nil, api_base: nil)
       credential = fetch!(account: account, key: key, provider: provider, purpose: purpose)
       payload = credential.payload
-      access_token = payload[:api_key] || payload['api_key'] || payload[:token] || payload['token'] || payload[:access_token] || payload['access_token']
+      access_token = payload[:api_key] || payload['api_key'] || payload[:token] || payload['token'] ||
+                     payload[:access_token] || payload['access_token']
       metadata = credential.metadata.is_a?(Hash) ? credential.metadata : {}
       api_base ||= metadata['api_base'].to_s.presence || metadata[:api_base].to_s.presence
 

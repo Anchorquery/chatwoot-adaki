@@ -138,7 +138,7 @@ class Captain::Document < ApplicationRecord
   end
 
   def crawl_progress_percent
-    return nil unless crawl_expected_pages_count.present?
+    return nil if crawl_expected_pages_count.blank?
 
     ((crawl_pages_count.to_f / crawl_expected_pages_count) * 100).round.clamp(0, 100)
   end
@@ -153,6 +153,10 @@ class Captain::Document < ApplicationRecord
 
   def sync_in_progress?
     sync_syncing? && !sync_stale?
+  end
+
+  def self.max_pdf_size_mb
+    (InstallationConfig.find_by(name: 'CAPTAIN_PDF_MAX_SIZE_MB')&.value.presence || DEFAULT_MAX_PDF_SIZE_MB).to_i
   end
 
   private
@@ -195,10 +199,6 @@ class Captain::Document < ApplicationRecord
     return unless pdf_file.attached?
 
     errors.add(:pdf_file, I18n.t('captain.documents.pdf_format_error')) unless pdf_file.blob.content_type == 'application/pdf'
-  end
-
-  def self.max_pdf_size_mb
-    (InstallationConfig.find_by(name: 'CAPTAIN_PDF_MAX_SIZE_MB')&.value.presence || DEFAULT_MAX_PDF_SIZE_MB).to_i
   end
 
   def validate_file_attachment

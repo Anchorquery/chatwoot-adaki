@@ -300,7 +300,7 @@ describe MessageTemplates::HookExecutionService do
     end
 
     it 'calls template hooks when the bot is mentioned' do
-      allow_any_instance_of(Conversation).to receive(:bot_mentioned?).and_return(true)
+      allow_any_instance_of(Conversation).to receive(:bot_mentioned?).and_return(true) # rubocop:disable RSpec/AnyInstance
 
       # Clean up Redis rate limit key first to ensure a clean state
       Redis::Alfred.delete("rate_limit:group_chat:#{conversation.id}:user:#{contact.id}")
@@ -311,7 +311,7 @@ describe MessageTemplates::HookExecutionService do
     end
 
     it 'triggers cooldown warning and blocks hooks when user exceeds the rate limit' do
-      allow_any_instance_of(Conversation).to receive(:bot_mentioned?).and_return(true)
+      allow_any_instance_of(Conversation).to receive(:bot_mentioned?).and_return(true) # rubocop:disable RSpec/AnyInstance
 
       redis_key = "rate_limit:group_chat:#{conversation.id}:user:#{contact.id}"
       Redis::Alfred.delete(redis_key)
@@ -347,7 +347,7 @@ describe MessageTemplates::HookExecutionService do
     end
 
     it 'calls template hooks when the bot is mentioned' do
-      allow_any_instance_of(Conversation).to receive(:bot_mentioned?).and_return(true)
+      allow_any_instance_of(Conversation).to receive(:bot_mentioned?).and_return(true) # rubocop:disable RSpec/AnyInstance
 
       Redis::Alfred.delete("rate_limit:channel_chat:#{conversation.id}:user:#{contact.id}")
 

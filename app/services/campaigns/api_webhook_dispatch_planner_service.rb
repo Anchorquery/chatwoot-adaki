@@ -7,28 +7,28 @@ class Campaigns::ApiWebhookDispatchPlannerService
     return Time.current unless campaign.inbox_id == inbox.id
     return Time.current if campaign.completed?
 
+    # `next` (not `return`) so the lock transaction commits: with the 7.0
+    # defaults a `return` rolls it back, which silently undid the pause
+    # persist_schedule! writes when the daily limit is reached.
     campaign.with_lock do
       state = campaign.delivery_state.to_h.with_indifferent_access
       settings = campaign.delivery_settings.to_h.with_indifferent_access
 
       dispatch_at = current_dispatch_at(state)
       dispatch_at = align_to_business_hours(dispatch_at, campaign, settings)
-      return nil if dispatch_at.nil?
+      next if dispatch_at.nil?
 
       dispatch_at = align_to_rate_limit(dispatch_at, state, settings)
-      return nil if dispatch_at.nil?
+      next if dispatch_at.nil?
 
-      scheduled_at = persist_schedule!(campaign, state, settings, dispatch_at)
-      return nil if scheduled_at.nil?
-
-      scheduled_at
+      persist_schedule!(campaign, state, settings, dispatch_at)
     end
   end
 
   private
 
   def current_dispatch_at(state)
-    next_dispatch_at = state[:webhook_next_dispatch_at].present? ? Time.at(state[:webhook_next_dispatch_at].to_i) : Time.current
+    next_dispatch_at = state[:webhook_next_dispatch_at].present? ? Time.zone.at(state[:webhook_next_dispatch_at].to_i) : Time.current
     [next_dispatch_at, Time.current].max
   end
 
@@ -44,7 +44,7 @@ class Campaigns::ApiWebhookDispatchPlannerService
     max_per_minute = settings[:max_messages_per_minute].to_i
     return dispatch_at unless max_per_minute.positive?
 
-    window_started_at = state[:webhook_window_started_at].present? ? Time.at(state[:webhook_window_started_at].to_i) : dispatch_at
+    window_started_at = state[:webhook_window_started_at].present? ? Time.zone.at(state[:webhook_window_started_at].to_i) : dispatch_at
     window_sent_count = state[:webhook_window_sent_count].to_i
 
     if dispatch_at - window_started_at >= 60.seconds

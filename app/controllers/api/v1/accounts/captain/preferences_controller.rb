@@ -98,7 +98,7 @@ class Api::V1::Accounts::Captain::PreferencesController < Api::V1::Accounts::Bas
       yaml_slugs = config[:models].map { |m| m[:id] }
 
       extra_models = all_platform_models
-                     .select { |m| kinds.include?(m.kind) && !yaml_slugs.include?(m.slug) }
+                     .select { |m| kinds.include?(m.kind) && yaml_slugs.exclude?(m.slug) }
                      .map do |m|
         {
           id: m.slug,

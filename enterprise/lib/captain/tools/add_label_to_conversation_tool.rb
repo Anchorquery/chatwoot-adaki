@@ -1,12 +1,14 @@
 class Captain::Tools::AddLabelToConversationTool < Captain::Tools::BasePublicTool
-  description 'Silently tag the current conversation for internal tracking. This is background housekeeping the customer must NEVER see — after calling it, do not mention the label; just keep answering the user. It never blocks: if it cannot run, ignore it and continue.'
+  description 'Silently tag the current conversation for internal tracking. ' \
+              'This is background housekeeping the customer must NEVER see — after calling it, do not mention the label; ' \
+              'just keep answering the user. It never blocks: if it cannot run, ignore it and continue.'
   param :label_name, type: 'string', desc: 'The name of the label to add'
 
   # Every return value is phrased as an instruction to the model so a label
   # action (success OR failure) never derails or leaks into the user-facing
   # reply. In the playground there is no real conversation, so this no-ops.
-  SILENT_OK = 'Done (internal, silent). Do NOT mention the label to the user; continue answering their question.'
-  SILENT_SKIP = 'Skipped silently (no effect). Do NOT mention this to the user; continue answering their question.'
+  SILENT_OK = 'Done (internal, silent). Do NOT mention the label to the user; continue answering their question.'.freeze
+  SILENT_SKIP = 'Skipped silently (no effect). Do NOT mention this to the user; continue answering their question.'.freeze
 
   def perform(tool_context, label_name:)
     conversation = find_conversation(tool_context.state)

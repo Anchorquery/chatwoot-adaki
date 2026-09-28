@@ -2,7 +2,8 @@ class Campaigns::ProcessBatchJob < ApplicationJob
   queue_as :low
 
   def perform(campaign)
-    Rails.logger.info("[CampaignBatch] perform START campaign=#{campaign.id} status=#{campaign.campaign_status} delivery_state=#{campaign.delivery_state.inspect}")
+    Rails.logger.info("[CampaignBatch] perform START campaign=#{campaign.id} status=#{campaign.campaign_status} " \
+                      "delivery_state=#{campaign.delivery_state.inspect}")
     unless campaign.running?
       Rails.logger.warn("[CampaignBatch] perform SKIPPED campaign=#{campaign.id} not running (status=#{campaign.campaign_status})")
       return
@@ -30,6 +31,7 @@ class Campaigns::ProcessBatchJob < ApplicationJob
     start_index = state[:processed_index]
     end_index = [start_index + batch_size, contact_ids.size].min
 
+    auto_paused = false
     (start_index...end_index).each do |idx|
       break unless campaign.reload.running?
 
@@ -78,10 +80,12 @@ class Campaigns::ProcessBatchJob < ApplicationJob
           campaign.paused!
           persist_state(campaign,
                         errors: Array(state[:errors]) + [{ system: 'Campaign auto-paused because of repeated failures', time: Time.current }])
-          return
+          auto_paused = true
+          break
         end
       end
     end
+    return if auto_paused
 
     if state[:processed_index].to_i >= contact_ids.size
       campaign.with_lock do
@@ -114,7 +118,8 @@ class Campaigns::ProcessBatchJob < ApplicationJob
 
   def persist_state(campaign, updates)
     campaign.with_lock do
-      Rails.logger.info("[CampaignBatch] persist_state BEFORE for campaign=#{campaign.id} state=#{campaign.delivery_state.inspect} updates=#{updates.inspect}")
+      Rails.logger.info("[CampaignBatch] persist_state BEFORE for campaign=#{campaign.id} " \
+                        "state=#{campaign.delivery_state.inspect} updates=#{updates.inspect}")
       current_state = campaign.delivery_state.to_h.with_indifferent_access
       current_state[:sent_count] = current_state[:sent_count].to_i
       current_state[:failed_count] = current_state[:failed_count].to_i

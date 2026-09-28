@@ -31,7 +31,7 @@ class Captain::Embeddings::ReindexJob < ApplicationJob
       next if vector.blank?
 
       # update_columns skips callbacks so we don't re-enqueue UpdateEmbeddingJob.
-      response.update_columns(embedding: vector, embedding_model: target)
+      response.update_columns(embedding: vector, embedding_model: target) # rubocop:disable Rails/SkipsModelValidations
     end
   end
 
@@ -42,7 +42,7 @@ class Captain::Embeddings::ReindexJob < ApplicationJob
       vector = service.get_embedding(article_embedding.term)
       next if vector.blank?
 
-      article_embedding.update_columns(embedding: vector, embedding_model: target)
+      article_embedding.update_columns(embedding: vector, embedding_model: target) # rubocop:disable Rails/SkipsModelValidations
     end
   end
 end

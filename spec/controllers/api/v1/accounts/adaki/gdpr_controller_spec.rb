@@ -7,7 +7,7 @@ RSpec.describe 'Adaki GDPR API', type: :request do
   let(:contact) { create(:contact, account: account, name: 'Jane Doe', email: 'jane@example.com', phone_number: '+34600111222') }
 
   describe 'POST /api/v1/accounts/:id/adaki/gdpr/pseudonymize_contact' do
-    context 'unauthenticated' do
+    context 'when unauthenticated' do
       it 'returns unauthorized' do
         post "/api/v1/accounts/#{account.id}/adaki/gdpr/pseudonymize_contact",
              params: { contact_id: contact.id }
@@ -15,7 +15,7 @@ RSpec.describe 'Adaki GDPR API', type: :request do
       end
     end
 
-    context 'as agent (non-admin)' do
+    context 'when the user is an agent (non-admin)' do
       it 'returns forbidden' do
         post "/api/v1/accounts/#{account.id}/adaki/gdpr/pseudonymize_contact",
              params: { contact_id: contact.id },
@@ -25,7 +25,7 @@ RSpec.describe 'Adaki GDPR API', type: :request do
       end
     end
 
-    context 'as admin' do
+    context 'when the user is an admin' do
       it 'pseudonymizes the contact PII' do
         post "/api/v1/accounts/#{account.id}/adaki/gdpr/pseudonymize_contact",
              params: { contact_id: contact.id, reason: 'right_to_be_forgotten' },

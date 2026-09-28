@@ -62,7 +62,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   end
 
   def results
-    Rails.logger.info("[CampaignResults] requested campaign id=#{@campaign.id} display_id=#{@campaign.display_id} status=#{@campaign.campaign_status} delivery_state=#{@campaign.delivery_state.inspect}")
+    Rails.logger.info("[CampaignResults] requested campaign id=#{@campaign.id} display_id=#{@campaign.display_id} " \
+                      "status=#{@campaign.campaign_status} delivery_state=#{@campaign.delivery_state.inspect}")
     state = @campaign.delivery_state.to_h.with_indifferent_access
     recipients_map = state[:recipients].to_h
     contact_ids = (state[:contact_ids] || []).map(&:to_i)
@@ -100,7 +101,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     started_at = state[:started_at]
     completed_at = state[:completed_at]
 
-    duration_seconds = ((Time.parse(completed_at) - Time.parse(started_at)).round if started_at && completed_at)
+    duration_seconds = ((Time.zone.parse(completed_at) - Time.zone.parse(started_at)).round if started_at && completed_at)
     throughput = ((sent_count.to_f / (duration_seconds / 60.0)).round(1) if duration_seconds&.positive? && sent_count.positive?)
     success_rate = total_contacts.positive? ? (sent_count.to_f / total_contacts * 100).round(1) : nil
 
@@ -151,7 +152,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     # Remove failed entries so they get re-attempted
     failed_ids.each { |id| recipients_map.delete(id.to_s) }
 
-    already_done_ids = recipients_map.select { |_, v| %w[sent skipped].include?(v['status']) }.keys.map(&:to_i)
+    done_statuses = %w[sent skipped]
+    already_done_ids = recipients_map.select { |_, v| done_statuses.include?(v['status']) }.keys.map(&:to_i)
     all_original_ids = (state[:contact_ids] || []).map(&:to_i)
     processed_ids = recipients_map.keys.map(&:to_i)
     unprocessed_ids = all_original_ids - processed_ids - already_done_ids
@@ -255,7 +257,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     attachment_ids = Array(params.dig(:campaign, :attachment_ids_to_remove)).reject(&:blank?)
     return if attachment_ids.blank?
 
-    campaign.attachments_attachments.where(id: attachment_ids).each(&:purge)
+    campaign.attachments_attachments.where(id: attachment_ids).find_each(&:purge)
   end
 
   def parse_delivery_settings

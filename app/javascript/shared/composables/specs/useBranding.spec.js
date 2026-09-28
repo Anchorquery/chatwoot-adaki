@@ -40,22 +40,22 @@ describe('useBranding', () => {
       expect(result).toBe('MyCompany is great! Use MyCompany today.');
     });
 
-    it('should return original text when installation name is not provided', () => {
+    it('should fall back to the default brand when installation name is not provided', () => {
       mockGlobalConfig.value = {};
 
       const { replaceInstallationName } = useBranding();
       const result = replaceInstallationName('Welcome to Chatwoot');
 
-      expect(result).toBe('Welcome to Chatwoot');
+      expect(result).toBe('Welcome to Adaki');
     });
 
-    it('should return original text when globalConfig is not available', () => {
+    it('should fall back to the default brand when globalConfig is not available', () => {
       mockGlobalConfig.value = undefined;
 
       const { replaceInstallationName } = useBranding();
       const result = replaceInstallationName('Welcome to Chatwoot');
 
-      expect(result).toBe('Welcome to Chatwoot');
+      expect(result).toBe('Welcome to Adaki');
     });
 
     it('should return original text when text is empty or null', () => {
