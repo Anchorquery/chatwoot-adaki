@@ -34,6 +34,20 @@ RSpec.describe 'Enterprise Agents API', type: :request do
         expect(other_agent.account_users.first.reload.custom_role_id).to eq(custom_role.id)
         expect(JSON.parse(response.body)['custom_role_id']).to eq(custom_role.id)
       end
+
+      it 'demotes an administrator to agent when a custom role is assigned' do
+        other_admin = create(:user, account: account, role: :administrator)
+
+        put "/api/v1/accounts/#{account.id}/agents/#{other_admin.id}",
+            headers: admin.create_new_auth_token,
+            params: { custom_role_id: custom_role.id },
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        account_user = other_admin.account_users.first.reload
+        expect(account_user.custom_role_id).to eq(custom_role.id)
+        expect(account_user).to be_agent
+      end
     end
   end
 end

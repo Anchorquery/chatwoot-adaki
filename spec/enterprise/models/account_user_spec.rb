@@ -29,6 +29,45 @@ RSpec.describe AccountUser, type: :model do
     end
   end
 
+  describe 'role and custom role consistency' do
+    let(:account) { create(:account) }
+    let(:custom_role) { create(:custom_role, account: account) }
+
+    it 'makes an administrator an agent when a custom role is assigned' do
+      account_user = create(:account_user, account: account, role: :administrator)
+
+      account_user.update!(custom_role: custom_role)
+
+      expect(account_user.reload).to be_agent
+      expect(account_user.custom_role).to eq(custom_role)
+    end
+
+    it 'drops the custom role when promoted to administrator' do
+      account_user = create(:account_user, account: account, custom_role: custom_role)
+
+      account_user.update!(role: :administrator)
+
+      expect(account_user.reload).to be_administrator
+      expect(account_user.custom_role).to be_nil
+    end
+
+    it 'leaves an administrator without custom role untouched' do
+      account_user = create(:account_user, account: account, role: :administrator)
+
+      account_user.update!(availability: :offline)
+
+      expect(account_user.reload).to be_administrator
+    end
+
+    it 'rejects a custom role from another account' do
+      other_role = create(:custom_role, account: create(:account))
+      account_user = build(:account_user, account: account, custom_role: other_role)
+
+      expect(account_user).not_to be_valid
+      expect(account_user.errors[:custom_role]).to be_present
+    end
+  end
+
   describe 'audit log' do
     context 'when account user is created' do
       it 'has associated audit log created' do

@@ -746,6 +746,7 @@ Rails.application.routes.draw do
       resources :users, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
         delete :avatar, on: :member, action: :destroy_avatar
       end
+      resources :custom_roles if ChatwootApp.enterprise?
 
       resources :access_tokens, only: [:index, :show]
       resources :installation_configs, only: [:index, :new, :create, :show, :edit, :update]

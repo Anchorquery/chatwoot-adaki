@@ -9,8 +9,12 @@ class SuperAdmin::AccountUsersController < SuperAdmin::ApplicationController
     redirect_to super_admin_user_path(requested_resource.user)
   end
 
+  # Upserts the membership so the form can also change the role of a user who
+  # already belongs to the account.
   def create
-    resource = resource_class.new(resource_params)
+    attributes = resource_params
+    resource = resource_class.find_or_initialize_by(account_id: attributes[:account_id], user_id: attributes[:user_id])
+    resource.assign_attributes(attributes.merge(role_attributes(attributes.delete(:role))))
     authorize_resource(resource)
 
     notice =  resource.save ? translate_with_resource('create.success') : resource.errors.full_messages.first
@@ -24,6 +28,16 @@ class SuperAdmin::AccountUsersController < SuperAdmin::ApplicationController
       flash[:error] = requested_resource.errors.full_messages.join('<br/>')
     end
     redirect_back(fallback_location: [namespace, requested_resource.account])
+  end
+
+  private
+
+  # AccountRoleField submits either a built-in role or `custom_<id>`; a custom
+  # role always sits on top of the agent role.
+  def role_attributes(role)
+    return { role: role, custom_role_id: nil } unless role.to_s.start_with?(AccountRoleField::CUSTOM_PREFIX)
+
+    { role: :agent, custom_role_id: role.delete_prefix(AccountRoleField::CUSTOM_PREFIX) }
   end
 
   # Override this method to specify custom lookup behavior.
