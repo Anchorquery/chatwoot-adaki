@@ -40,6 +40,10 @@
       "REPORT_MANAGE": "Administrar informes",
       "KNOWLEDGE_BASE_MANAGE": "Administrar la base de conocimientos"
     },
+    "SIDEBAR_PROFILES": {
+      "AI_AGENT": "Agente de soporte IA (gestiona Captain, agentes, equipos, asignación, bandejas y etiquetas)",
+      "COMMUNICATION": "Comunicación con la comunidad (gestiona campañas)"
+    },
     "FORM": {
       "NAME": {
         "LABEL": "Nombre",
@@ -54,6 +58,10 @@
       "PERMISSIONS": {
         "LABEL": "Permisos",
         "ERROR": "Los permisos son obligatorios."
+      },
+      "SIDEBAR_PROFILE": {
+        "LABEL": "Perfil del menú lateral",
+        "NONE": "Menú lateral por defecto"
       },
       "CANCEL_BUTTON_TEXT": "Cancelar",
       "API": {

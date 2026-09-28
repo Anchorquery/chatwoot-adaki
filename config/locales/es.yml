@@ -525,3 +525,39 @@ es:
       no_subscriptions_to_test: 'Selecciona al menos una suscripción para probarla.'
       no_subscriptions_to_delete: 'Selecciona al menos una suscripción para eliminarla.'
       subscriptions_deleted: "Se eliminaron %{count} suscripción(es). Los dispositivos del usuario se volverán a registrar en el próximo inicio de la aplicación."
+    branding:
+      updated: 'Configuración de marca actualizada correctamente.'
+    custom_roles:
+      permissions:
+        conversation_manage: 'Administrar todas las conversaciones'
+        conversation_unassigned_manage: 'Administrar las conversaciones sin asignar y las asignadas a ellas'
+        conversation_participating_manage: 'Administrar las conversaciones en las que participa y las asignadas a ellas'
+        contact_manage: 'Administrar contactos'
+        report_manage: 'Administrar informes'
+        knowledge_base_manage: 'Administrar la base de conocimientos'
+      sidebar_profiles:
+        none: 'Menú lateral por defecto'
+        ai_agent: 'Agente de soporte IA (gestiona Captain, agentes, equipos, asignación, bandejas y etiquetas)'
+        communication: 'Comunicación con la comunidad (gestiona campañas)'
+    account_users:
+      role_groups:
+        default: 'Roles predeterminados'
+        custom: 'Roles personalizados - %{account}'
+      roles:
+        agent: 'Agente'
+        administrator: 'Administrador'
+  activerecord:
+    models:
+      custom_role:
+        one: 'Rol personalizado'
+        other: 'Roles personalizados'
+    attributes:
+      custom_role:
+        account: 'Cuenta'
+        name: 'Nombre'
+        description: 'Descripción'
+        sidebar_profile: 'Perfil del menú lateral'
+        permissions: 'Permisos'
+        account_users: 'Usuarios'
+      account_user:
+        role: 'Rol'

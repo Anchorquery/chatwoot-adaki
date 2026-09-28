@@ -129,10 +129,10 @@ export const twilioTemplates = [
     template_type: 'quick_reply',
   },
   {
-    body: 'What type of Adaki installation are you using? Select "Adaki Cloud" if you are using chat.adaki.com, otherwise select "Self-hosted Adaki".',
+    body: 'What type of Adaki installation are you using? Select "Adaki Cloud" if you are using whatsapp.adaki.com, otherwise select "Self-hosted Adaki".',
     types: {
       'twilio/quick-reply': {
-        body: 'What type of Adaki installation are you using? Select "Adaki Cloud" if you are using chat.adaki.com, otherwise select "Self-hosted Adaki".',
+        body: 'What type of Adaki installation are you using? Select "Adaki Cloud" if you are using whatsapp.adaki.com, otherwise select "Self-hosted Adaki".',
         actions: [
           {
             id: 'Adaki Cloud_payload',

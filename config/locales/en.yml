@@ -572,3 +572,22 @@ en:
       subscriptions_deleted: "Deleted %{count} subscription(s). The user's device(s) will re-register on next app launch."
     branding:
       updated: 'Branding settings updated successfully.'
+    custom_roles:
+      permissions:
+        conversation_manage: 'Manage all conversations'
+        conversation_unassigned_manage: 'Manage unassigned conversations and those assigned to them'
+        conversation_participating_manage: 'Manage participating conversations and those assigned to them'
+        contact_manage: 'Manage contacts'
+        report_manage: 'Manage reports'
+        knowledge_base_manage: 'Manage knowledge base'
+      sidebar_profiles:
+        none: 'Default sidebar'
+        ai_agent: 'AI support agent (manage Captain, agents, teams, assignment, inboxes, and labels)'
+        communication: 'Community communications (manage campaigns)'
+    account_users:
+      role_groups:
+        default: 'Default roles'
+        custom: 'Custom roles - %{account}'
+      roles:
+        agent: 'Agent'
+        administrator: 'Administrator'

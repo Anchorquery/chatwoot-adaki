@@ -419,7 +419,7 @@
         "SLUG": {
           "LABEL": "슬러그",
           "PLACEHOLDER": "URL용 카테고리 슬러그",
-          "HELP_TEXT": "chat.adaki.com/hc/my-portal/en-US/categories/my-slug",
+          "HELP_TEXT": "whatsapp.adaki.com/hc/my-portal/en-US/categories/my-slug",
           "ERROR": "슬러그가 필요합니다"
         },
         "DESCRIPTION": {
@@ -450,7 +450,7 @@
         "SLUG": {
           "LABEL": "슬러그",
           "PLACEHOLDER": "URL용 카테고리 슬러그",
-          "HELP_TEXT": "chat.adaki.com/hc/my-portal/en-US/categories/my-slug",
+          "HELP_TEXT": "whatsapp.adaki.com/hc/my-portal/en-US/categories/my-slug",
           "ERROR": "슬러그가 필요합니다"
         },
         "DESCRIPTION": {
@@ -670,7 +670,7 @@
             "LABEL": "슬러그",
             "PLACEHOLDER": "URL용 카테고리 슬러그",
             "ERROR": "슬러그가 필요합니다",
-            "HELP_TEXT": "chat.adaki.com/hc/{portalSlug}/{localeCode}/categories/{categorySlug}"
+            "HELP_TEXT": "whatsapp.adaki.com/hc/{portalSlug}/{localeCode}/categories/{categorySlug}"
           },
           "DESCRIPTION": {
             "LABEL": "설명",

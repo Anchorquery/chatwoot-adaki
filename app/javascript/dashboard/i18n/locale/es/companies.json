@@ -27,6 +27,16 @@
     },
     "CREATE": {
       "TITLE": "Añadir detalles de la empresa",
+      "DESCRIPTION": "Las empresas agrupan contactos relacionados para que puedas llevar el control de las organizaciones a las que pertenecen, su sitio web y notas internas.",
+      "FIELDS": {
+        "NAME": {
+          "ERROR": "Introduce el nombre de la empresa."
+        },
+        "DOMAIN": {
+          "ERROR": "Introduce un dominio válido, como example.com, sin https:// ni ninguna ruta.",
+          "MESSAGE": "Usa solo el nombre de dominio, por ejemplo example.com o www.example.com."
+        }
+      },
       "ACTIONS": {
         "SAVE": "Añadir empresa"
       },

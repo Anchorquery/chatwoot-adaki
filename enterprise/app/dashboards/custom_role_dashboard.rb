@@ -6,8 +6,9 @@ class CustomRoleDashboard < Administrate::BaseDashboard
     account: Field::BelongsToSearch.with_options(class_name: 'Account', searchable: true, searchable_field: [:name, :id], order: 'id DESC'),
     name: Field::String,
     description: Field::String,
-    permissions: ArrayCheckboxesField.with_options(collection: CustomRole::PERMISSIONS),
-    sidebar_profile: Field::Select.with_options(collection: CustomRole::SIDEBAR_PROFILES, include_blank: true),
+    permissions: ArrayCheckboxesField.with_options(collection: CustomRole::PERMISSIONS,
+                                                   i18n_scope: 'super_admin.custom_roles.permissions'),
+    sidebar_profile: SidebarProfileField.with_options(collection: CustomRole::SIDEBAR_PROFILES),
     account_users: Field::HasMany,
     created_at: Field::DateTime,
     updated_at: Field::DateTime

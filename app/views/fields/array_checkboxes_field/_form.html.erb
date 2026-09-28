@@ -7,7 +7,7 @@
   <% field.collection.each do |value| %>
     <label class="flex items-center gap-2 mb-1">
       <%= check_box_tag "#{f.object_name}[#{field.attribute}][]", value, field.selected?(value), id: "#{f.object_name}_#{field.attribute}_#{value}" %>
-      <%= value %>
+      <%= field.label_for(value) %>
     </label>
   <% end %>
 </div>

@@ -191,6 +191,7 @@
           "MODEL_PLACEHOLDER": "Elige un modelo",
           "PURPOSE_PLACEHOLDER": "ai_provider",
           "API_BASE_PLACEHOLDER": "https://api.openai.com/v1",
+          "SECRET": "Secreto",
           "API_KEY": "API key",
           "API_KEY_PLACEHOLDER": "sk-...",
           "TOKEN": "Token",
@@ -310,6 +311,55 @@
       "APPROVALS": "Aprobaciones",
       "AUDIT": "Audit log",
       "CAPTAIN": "Proveedores IA"
+    }
+  },
+  "CAPTAIN": {
+    "MCP": {
+      "HEADER": "Servidores MCP",
+      "ADD_NEW": "Añadir servidor MCP",
+      "MANAGE_PROVIDERS": "Gestionar proveedores",
+      "EMPTY_STATE": {
+        "TITLE": "No hay servidores MCP configurados",
+        "SUBTITLE": "Conecta un servidor MCP para ofrecer sus herramientas a Captain y que el asistente pueda consultar datos en tiempo real de sistemas externos."
+      },
+      "FORM": {
+        "NAME": "Nombre",
+        "TIMEOUT": "Tiempo de espera (segundos)",
+        "DESCRIPTION_LABEL": "Descripción",
+        "ENDPOINT_URL": "URL del endpoint",
+        "CREDENTIAL": "Credencial",
+        "CREDENTIAL_PLACEHOLDER": "Selecciona una credencial",
+        "NO_CREDENTIAL": "Sin credencial",
+        "NO_CREDENTIAL_HELP": "Este servidor no tiene ninguna credencial configurada.",
+        "MANAGE_PROVIDERS": "Gestionar proveedores",
+        "ENABLED": "Activado",
+        "CANCEL": "Cancelar",
+        "CREATE": "Crear",
+        "SAVE": "Guardar",
+        "ERRORS": {
+          "NAME": "El nombre es obligatorio",
+          "ENDPOINT_URL": "La URL del endpoint es obligatoria"
+        }
+      },
+      "ACTIONS": {
+        "EDIT": "Editar",
+        "DISCOVER": "Descubrir ({count})",
+        "TEST": "Probar",
+        "DELETE": "Eliminar"
+      },
+      "STATUS": {
+        "ENABLED": "Activado",
+        "DISABLED": "Desactivado"
+      },
+      "CARD": {
+        "TOOL_COUNT": "Herramientas",
+        "TRANSPORT": "Transporte",
+        "CREDENTIAL": "Credencial",
+        "NO_CREDENTIAL": "Sin credencial"
+      },
+      "ALERTS": {
+        "ERROR": "Se produjo un error al cargar los servidores MCP"
+      }
     }
   }
 }
