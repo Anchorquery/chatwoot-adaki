@@ -239,10 +239,10 @@ RSpec.describe Captain::CustomTool, type: :model do
 
       it 'renders request body template with params' do
         tool = create(:captain_custom_tool, account: account,
-                                            request_template: '{ "order_id": "{{ order_id }}", "source": "chatwoot" }')
+                                            request_template: '{ "order_id": "{{ order_id }}", "source": "adaki" }')
 
         result = tool.build_request_body({ order_id: '12345' })
-        expect(result).to eq('{ "order_id": "12345", "source": "chatwoot" }')
+        expect(result).to eq('{ "order_id": "12345", "source": "adaki" }')
       end
     end
 

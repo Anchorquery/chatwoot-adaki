@@ -1,4 +1,4 @@
-# Deploy Adaki Chatwoot en Coolify
+# Deploy Adaki Adaki en Coolify
 
 ## 0. Pre-requisitos
 

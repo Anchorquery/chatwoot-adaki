@@ -419,7 +419,7 @@
         "SLUG": {
           "LABEL": "網址代碼",
           "PLACEHOLDER": "分類的網址代碼",
-          "HELP_TEXT": "app.chatwoot.com/hc/my-portal/en-US/categories/my-slug",
+          "HELP_TEXT": "chat.adaki.com/hc/my-portal/en-US/categories/my-slug",
           "ERROR": "網址代碼為必填"
         },
         "DESCRIPTION": {
@@ -450,7 +450,7 @@
         "SLUG": {
           "LABEL": "網址代碼",
           "PLACEHOLDER": "分類的網址代碼",
-          "HELP_TEXT": "app.chatwoot.com/hc/my-portal/en-US/categories/my-slug",
+          "HELP_TEXT": "chat.adaki.com/hc/my-portal/en-US/categories/my-slug",
           "ERROR": "網址代碼為必填"
         },
         "DESCRIPTION": {
@@ -670,7 +670,7 @@
             "LABEL": "網址代碼",
             "PLACEHOLDER": "分類的網址代碼",
             "ERROR": "網址代碼為必填",
-            "HELP_TEXT": "app.chatwoot.com/hc/{portalSlug}/{localeCode}/categories/{categorySlug}"
+            "HELP_TEXT": "chat.adaki.com/hc/{portalSlug}/{localeCode}/categories/{categorySlug}"
           },
           "DESCRIPTION": {
             "LABEL": "描述",

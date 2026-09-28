@@ -260,8 +260,8 @@ describe PortalHelper do
   end
 
   describe '#set_og_image_url' do
-    let(:portal_name) { 'Chatwoot Portal' }
-    let(:title) { 'Welcome to Chatwoot' }
+    let(:portal_name) { 'Adaki Portal' }
+    let(:title) { 'Welcome to Adaki' }
 
     context 'when CDN URL is present' do
       before do
@@ -294,24 +294,24 @@ describe PortalHelper do
 
   describe '#generate_portal_brand_url' do
     it 'builds URL with UTM params and referer host as source (happy path)' do
-      result = helper.generate_portal_brand_url('https://brand.example.com', 'https://app.chatwoot.com/some/page')
+      result = helper.generate_portal_brand_url('https://brand.example.com', 'https://app.adaki.net/some/page')
       uri = URI.parse(result)
       params = Rack::Utils.parse_query(uri.query)
       expect(uri.scheme).to eq('https')
       expect(uri.host).to eq('brand.example.com')
       expect(params['utm_medium']).to eq('helpcenter')
       expect(params['utm_campaign']).to eq('branding')
-      expect(params['utm_source']).to eq('app.chatwoot.com')
+      expect(params['utm_source']).to eq('app.adaki.net')
     end
 
     it 'returns utm string when brand_url is nil or empty' do
       expect(helper.generate_portal_brand_url(nil,
-                                              'https://app.chatwoot.com')).to eq(
-                                                '?utm_campaign=branding&utm_medium=helpcenter&utm_source=app.chatwoot.com'
+                                              'https://app.adaki.net')).to eq(
+                                                '?utm_campaign=branding&utm_medium=helpcenter&utm_source=app.adaki.net'
                                               )
       expect(helper.generate_portal_brand_url('',
-                                              'https://app.chatwoot.com')).to eq(
-                                                '?utm_campaign=branding&utm_medium=helpcenter&utm_source=app.chatwoot.com'
+                                              'https://app.adaki.net')).to eq(
+                                                '?utm_campaign=branding&utm_medium=helpcenter&utm_source=app.adaki.net'
                                               )
     end
 

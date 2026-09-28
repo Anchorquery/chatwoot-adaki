@@ -1,6 +1,6 @@
 # Adaki Municipal Extensions
 
-Capa propia sobre Chatwoot fork para gestión centralizada WhatsApp Cloud API multi-municipio.
+Capa propia sobre este fork para gestión centralizada WhatsApp Cloud API multi-municipio.
 
 ## Resumen módulos
 
@@ -83,7 +83,7 @@ POST   /api/v1/accounts/:id/campaigns/:campaign_id/approvals/reject
 | Fase 1 MVP | AuditLogger (GDPR día 1), MediaIntegrity verificador, GDPR pseudonymization |
 | Fase 2 Escalado | Absences/Coverage, TierMonitor + lock, UI dashboard |
 | Fase 3 Campañas | Doble validación + audit campañas + UI aprobaciones, audience estimation completa |
-| Fase 4 IA | Captain (Chatwoot enterprise) + límites mensuales por account + audit invocaciones |
+| Fase 4 IA | Captain (Adaki enterprise) + límites mensuales por account + audit invocaciones |
 | Fase 5 SaaS | DR plan + backup script + audit export legal |
 
 ## Avisos legales / operativos

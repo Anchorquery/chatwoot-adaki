@@ -78,7 +78,7 @@
       "HEADER_BTN_TXT": "Yeni webhook əlavə et",
       "LOADING": "Qoşulmuş webhooklar yüklənir",
       "SEARCH_404": "Bu sorğuya uyğun element yoxdur",
-      "SIDEBAR_TXT": "<p><b>Webhooklar</b> </p> <p>Webhooklar hər bir hesab üçün təyin edilə bilən HTTP çağırışlarıdır. Onlar chatwoot-da mesaj yaradılması kimi hadisələr tərəfindən işə düşür. Bu hesab üçün bir neçə webhook yarada bilərsiniz. <br /><br /> <b>Webhook</b> yaratmaq üçün <b>Yeni webhook əlavə et</b> düyməsini klikləyin. Mövcud webhookları Sil düyməsini klikləyərək də silə bilərsiniz.</p>",
+      "SIDEBAR_TXT": "<p><b>Webhooklar</b> </p> <p>Webhooklar hər bir hesab üçün təyin edilə bilən HTTP çağırışlarıdır. Onlar Adaki-da mesaj yaradılması kimi hadisələr tərəfindən işə düşür. Bu hesab üçün bir neçə webhook yarada bilərsiniz. <br /><br /> <b>Webhook</b> yaratmaq üçün <b>Yeni webhook əlavə et</b> düyməsini klikləyin. Mövcud webhookları Sil düyməsini klikləyərək də silə bilərsiniz.</p>",
       "LIST": {
         "404": "Bu hesab üçün heç bir webhook konfiqurasiya edilməyib.",
         "TITLE": "Webhookları idarə et",
@@ -126,14 +126,14 @@
       },
       "HELP_TEXT": {
         "TITLE": "Slack inteqrasiyasından necə istifadə etmək olar?",
-        "BODY": "Bu inteqrasiya ilə bütün gələn söhbətləriniz Slack iş sahənizdəki ***{selectedChannelName}*** kanalına sinxronlaşdırılacaq. Müştəri söhbətlərinizə birbaşa həmin kanalda nəzarət edə və heç bir mesajı qaçırmazsınız.\n\nİnteqrasiyanın əsas xüsusiyyətləri bunlardır:\n\n**Slack daxilində söhbətlərə cavab verin:** ***{selectedChannelName}*** Slack kanalında söhbətə cavab vermək üçün sadəcə mesajınızı yazıb thread kimi göndərin. Bu, Adaki vasitəsilə müştəriyə cavab göndərəcək. Çox sadədir!\n\n**Şəxsi qeydlər yaradın:** Əgər cavab əvəzinə şəxsi qeyd əlavə etmək istəyirsinizsə, mesajınıza ***`note:`*** ilə başlayın. Bu halda mesajınız şəxsi qalacaq və müştəriyə görünməyəcək.\n\n**Agent profilini əlaqələndirin:** Əgər Slack-də cavab verən şəxsin chatwoot-da eyni e-poçt ünvanı ilə agent profili varsa, cavablar avtomatik olaraq həmin agent profili ilə əlaqələndiriləcək. Bu, kim nə vaxt nə yazıb asanlıqla izləməyə imkan verir. Əks halda, agent profili əlaqələndirilməyibsə, cavablar müştəriyə bot profili adından göndəriləcək.",
+        "BODY": "Bu inteqrasiya ilə bütün gələn söhbətləriniz Slack iş sahənizdəki ***{selectedChannelName}*** kanalına sinxronlaşdırılacaq. Müştəri söhbətlərinizə birbaşa həmin kanalda nəzarət edə və heç bir mesajı qaçırmazsınız.\n\nİnteqrasiyanın əsas xüsusiyyətləri bunlardır:\n\n**Slack daxilində söhbətlərə cavab verin:** ***{selectedChannelName}*** Slack kanalında söhbətə cavab vermək üçün sadəcə mesajınızı yazıb thread kimi göndərin. Bu, Adaki vasitəsilə müştəriyə cavab göndərəcək. Çox sadədir!\n\n**Şəxsi qeydlər yaradın:** Əgər cavab əvəzinə şəxsi qeyd əlavə etmək istəyirsinizsə, mesajınıza ***`note:`*** ilə başlayın. Bu halda mesajınız şəxsi qalacaq və müştəriyə görünməyəcək.\n\n**Agent profilini əlaqələndirin:** Əgər Slack-də cavab verən şəxsin Adaki-da eyni e-poçt ünvanı ilə agent profili varsa, cavablar avtomatik olaraq həmin agent profili ilə əlaqələndiriləcək. Bu, kim nə vaxt nə yazıb asanlıqla izləməyə imkan verir. Əks halda, agent profili əlaqələndirilməyibsə, cavablar müştəriyə bot profili adından göndəriləcək.",
         "SELECTED": "seçilmiş"
       },
       "SELECT_CHANNEL": {
         "OPTION_LABEL": "Kanal seçin",
         "UPDATE": "Yenilə",
         "BUTTON_TEXT": "Kanalı qoş",
-        "DESCRIPTION": "Slack iş sahəniz artıq Adaki ilə əlaqələndirilib. Lakin, inteqrasiya hazırda aktiv deyil. İnteqrasiyanı aktivləşdirmək və chatwoot-a kanal qoşmaq üçün aşağıdakı düyməni basın.\n\n**Qeyd:** Əgər özəl kanalı qoşmağa çalışırsınızsa, bu addımı etməzdən əvvəl Adaki tətbiqini Slack kanalına əlavə edin.",
+        "DESCRIPTION": "Slack iş sahəniz artıq Adaki ilə əlaqələndirilib. Lakin, inteqrasiya hazırda aktiv deyil. İnteqrasiyanı aktivləşdirmək və Adaki-a kanal qoşmaq üçün aşağıdakı düyməni basın.\n\n**Qeyd:** Əgər özəl kanalı qoşmağa çalışırsınızsa, bu addımı etməzdən əvvəl Adaki tətbiqini Slack kanalına əlavə edin.",
         "ATTENTION_REQUIRED": "Diqqət tələb olunur",
         "EXPIRED": "Slack inteqrasiyanızın müddəti bitib. Slack-də mesaj almağa davam etmək üçün inteqrasiyanı silin və iş sahənizi yenidən qoşun."
       },

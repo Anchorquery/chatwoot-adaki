@@ -3,7 +3,7 @@
 Tres capas independientes pueden bloquear (o no) una respuesta del bot. Todas
 conviven y todas tienen que estar abiertas para que el bot responda.
 
-## Capa 1 — Cuota de plan de Chatwoot (`CAPTAIN_CLOUD_PLAN_LIMITS`)
+## Capa 1 — Cuota de plan de Adaki (`CAPTAIN_CLOUD_PLAN_LIMITS`)
 
 **Fuente:** `InstallationConfig` con `name = 'CAPTAIN_CLOUD_PLAN_LIMITS'`
 (Super Admin → System → Captain Cloud Plan Limits).

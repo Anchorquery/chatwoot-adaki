@@ -6,7 +6,7 @@ RSpec.describe Internal::ReconcilePlanConfigService do
 
     # Adaki is a disconnected fork with all premium features permanently
     # unlocked. This service used to reset local branding config back to
-    # "Chatwoot" whenever the (unreachable) upstream hub resolved the plan to
+    # "Adaki" whenever the (unreachable) upstream hub resolved the plan to
     # 'community', which happens by default on every self-hosted install.
     # It's now a no-op that only clears the stale reset warning.
     it 'does not modify installation config regardless of pricing plan' do

@@ -41,7 +41,7 @@ RSpec.describe 'Installation::Onboarding API', type: :request do
         expect(Redis::Alfred.get(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)).to be_nil
       end
 
-      it 'does not contact the upstream Chatwoot hub (Adaki is a disconnected fork)' do
+      it 'does not contact the upstream Adaki hub (Adaki is a disconnected fork)' do
         allow(ChatwootHub).to receive(:register_instance)
         post '/installation/onboarding', params: { user: {} }
         expect(ChatwootHub).not_to have_received(:register_instance)

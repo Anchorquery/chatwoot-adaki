@@ -7,8 +7,8 @@ respuesta de Captain por WhatsApp (Evolution API sobre `Channel::Api`), y respue
 ## Dónde se va el tiempo (ruta completa)
 
 ```
-WhatsApp → Evolution → (3-4 llamadas API a Chatwoot; con caché de conversación, 1)
-        → Chatwoot crea el mensaje → HookExecutionService encola ResponseBuilderJob
+WhatsApp → Evolution → (3-4 llamadas API a Adaki; con caché de conversación, 1)
+        → Adaki crea el mensaje → HookExecutionService encola ResponseBuilderJob
         → [debounce 2 s] → cola `captain` (3 hilos)
         → LLM #1 (orquestador) → [handoff a escenario → LLM #2] → [tool faq_lookup: embedding + pgvector → LLM #3]
         → mensaje saliente → WebhookJob (cola `medium`) → Evolution (+0,5–2 s aleatorios, hardcodeado)
@@ -48,19 +48,19 @@ Ajustes por asistente (Captain → Asistente → Ajustes del sistema, campos de 
 `max_response_tokens` (default 800) y `history_window_messages` (default 30, o 16 en
 canales de chat si no se fija).
 
-## Recomendaciones fuera del código de Chatwoot
+## Recomendaciones fuera del código de Adaki
 
 1. **Modelo del asistente: Gemini 2.5 Flash con razonamiento `off`** (Captain → Asistente →
    Ajustes del sistema). Pro tiene un suelo de `thinkingBudget: 128` y multiplica la latencia
    por 3–5 sin mejorar respuestas de FAQ. Comprobar qué modelo tiene cada asistente en
    producción: el log `[Captain V2] model resolution ... model=` lo dice en cada turno.
 2. **Evolution**: activar `CACHE_REDIS_ENABLED=true` (o `CACHE_LOCAL_ENABLED`) para que
-   `createConversation` se cachee 30 min y cada mensaje entrante sea 1 llamada a Chatwoot
-   en vez de 3–4. Evolution y Chatwoot en la misma red de Coolify (hostname interno, no
+   `createConversation` se cachee 30 min y cada mensaje entrante sea 1 llamada a Adaki
+   en vez de 3–4. Evolution y Adaki en la misma red de Coolify (hostname interno, no
    dominio público) para que esas llamadas no salgan a internet.
 3. **Evolution añade 0,5–2 s aleatorios** a cada mensaje saliente (`delay: Math.random()*1500+500`
    en `chatwoot.service.ts`). Está hardcodeado; no hay setting. Asumirlo.
-4. **Indicador "escribiendo…"**: Evolution no procesa `conversation_typing_on` de Chatwoot.
+4. **Indicador "escribiendo…"**: Evolution no procesa `conversation_typing_on` de Adaki.
    No se puede simular desde aquí sin tocar Evolution.
 5. **Índice pgvector**: `vector_idx_knowledge_entries_embedding` es ivfflat con `vector_l2_ops`
    pero la búsqueda usa coseno → no se usa el índice (scan secuencial exacto). Irrelevante
@@ -82,7 +82,7 @@ FROM m WHERE message_type=1 AND sender_type='Captain::Assistant' AND prev_type=0
 GROUP BY 1 ORDER BY 2 DESC;
 ```
 
-Mide entrada → respuesta guardada en Chatwoot. Lo que falte hasta el móvil es webhook +
+Mide entrada → respuesta guardada en Adaki. Lo que falte hasta el móvil es webhook +
 Evolution. Comparar antes/después del despliegue; el debounce suma ~2 s fijos al p50 y a
 cambio quita los picos de ráfagas y las respuestas duplicadas.
 

@@ -1,12 +1,12 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Chatwoot",
-    "description": "This is the API documentation for Chatwoot server.",
+    "title": "Adaki",
+    "description": "This is the API documentation for Adaki server.",
     "version": "1.1.0",
-    "termsOfService": "https://www.chatwoot.com/terms-of-service/",
+    "termsOfService": "https://www.adaki.net/terms-of-service/",
     "contact": {
-      "email": "hello@chatwoot.com"
+      "email": "hello@adaki.net"
     },
     "license": {
       "name": "MIT License",
@@ -15,7 +15,7 @@
   },
   "servers": [
     {
-      "url": "https://app.chatwoot.com/"
+      "url": "https://app.adaki.net/"
     }
   ],
   "paths": {
@@ -1844,7 +1844,7 @@
               "busy",
               "offline"
             ],
-            "description": "The availability status of the agent computed by Chatwoot."
+            "description": "The availability status of the agent computed by Adaki."
           },
           "auto_offline": {
             "type": "boolean",
@@ -2432,7 +2432,7 @@
                   "string",
                   "null"
                 ],
-                "description": "Latest version of Chatwoot available",
+                "description": "Latest version of Adaki available",
                 "example": "3.0.0"
               },
               "subscribed_features": {
@@ -2720,7 +2720,7 @@
           },
           "pubsub_token": {
             "type": "string",
-            "description": "The token to be used to connect to chatwoot websocket"
+            "description": "The token to be used to connect to adaki websocket"
           }
         }
       },
@@ -3806,7 +3806,7 @@
                     "type": "object",
                     "description": "The processed param values for template variables in template",
                     "example": {
-                      "1": "Chatwoot"
+                      "1": "Adaki"
                     }
                   }
                 }
@@ -4407,7 +4407,7 @@
           "custom_domain": {
             "type": "string",
             "description": "Custom domain to display help center.",
-            "example": "chatwoot.help"
+            "example": "adaki.help"
           },
           "header_text": {
             "type": "string",
@@ -4417,7 +4417,7 @@
           "homepage_link": {
             "type": "string",
             "description": "link to main dashboard",
-            "example": "https://www.chatwoot.com/"
+            "example": "https://www.adaki.net/"
           },
           "name": {
             "type": "string",
@@ -6491,7 +6491,7 @@
         "schema": {
           "type": "string"
         },
-        "description": "Id of the session for which the conversation is created.\n\n\n\n Source Ids can be obtained through contactable inboxes API or via generated.<br/><br/>Website: Chatwoot generated string which can be obtained from webhook events. <br/> Phone Channels(Twilio): Phone number in e164 format <br/> Email Channels: Contact Email address <br/> API Channel: Any Random String"
+        "description": "Id of the session for which the conversation is created.\n\n\n\n Source Ids can be obtained through contactable inboxes API or via generated.<br/><br/>Website: Adaki generated string which can be obtained from webhook events. <br/> Phone Channels(Twilio): Phone number in e164 format <br/> Email Channels: Contact Email address <br/> API Channel: Any Random String"
       },
       "contact_sort_param": {
         "in": "query",

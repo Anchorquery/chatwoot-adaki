@@ -70,7 +70,7 @@ De la primera pasada de investigación, cinco quedaron fuera del inventario:
 |---|----------|-------|--------|
 | E1 | Clasificador V1 (`captain_v1_action_classifier`, ON por default) corre tras CADA respuesta V1 y puede forzar `action: handoff` por su cuenta | `v1_action_classifier.rb`, `assistant_action_classifier_service.rb` | Riesgo de sobre-handoff en cuentas V1; muere con V1 en Fase 4 |
 | E2 | Rate limit de grupos: máx 3 mensajes/5 min por usuario en grupos/broadcast; el 4º recibe aviso hardcodeado en español y el resto silencio | `hook_execution_service.rb` (FOSS) :12-25 | Silencio por diseño que se reporta como "se pega"; documentar, no cambiar |
-| E3 | Filtro de privacidad de Evolution en modo allowlist: el mensaje ni llega a Chatwoot — sin fila de mensaje, parece bot colgado | Estado vive en Evolution, no en el repo | Primer chequeo cuando no existe la conversación; añadido al runbook |
+| E3 | Filtro de privacidad de Evolution en modo allowlist: el mensaje ni llega a Adaki — sin fila de mensaje, parece bot colgado | Estado vive en Evolution, no en el repo | Primer chequeo cuando no existe la conversación; añadido al runbook |
 | E4 | Audiencias: `ordered` es `order(:id)` — una audiencia vieja y amplia eclipsa a las nuevas específicas; matching usa `label_list` vivo mientras otras vistas usan `cached_label_list` | `captain_inbox_audience.rb`, `conversation.rb:316` | Enrutado al asistente equivocado; revisar si se usan audiencias |
 | E5 | Tools MCP: `timeout_seconds` 20 s default (cap 60), llamadas en serie dentro del loop agéntico | `mcp_server.rb:47`, `mcp_tool.rb:23-27` | Un endpoint muerto cuelga el job minutos sin handoff; entra en los presupuestos de Fase 3 |
 
@@ -174,7 +174,7 @@ Detiene el 90% del gasto y los handoffs falsos de producción.
 - El mismo predicado excluye esas conversaciones del cron
   `InboxPendingConversationsResolutionJob`.
 - Defensa en profundidad (config externa, documentada como complemento, no sustituto):
-  desactivar en Evolution el reenvío de eventos de instancia a Chatwoot.
+  desactivar en Evolution el reenvío de eventos de instancia a Adaki.
 - Specs: contacto de servicio ignorado, cliente real respondido, número configurable,
   cron excluido.
 - Estado real (2026-08-26): implementada, sintaxis y rubocop verificados. **No
@@ -569,19 +569,19 @@ agente de información de productos" **sin haber llamado la tool de handoff** �
 alucina la acción, el cliente cree que viene un humano, no viene nadie.
 
 Investigación previa a implementar (el operador pidió explícitamente ver si esto le
-pasa a otros con Chatwoot y cómo lo resuelve la industria, antes de decidir):
+pasa a otros con Adaki y cómo lo resuelve la industria, antes de decidir):
 industria general lo llama *fabricated tool call* / *tool-call hallucination* — caso
 casi idéntico documentado en agentes de voz de Retell AI (el agente anuncia "te
 transfiero" y la tool nunca se dispara). El patrón de mitigación estándar
 (paper *Tool Receipts, Not Zero-Knowledge Proofs*) es verificación por "recibo": si
 el texto afirma una acción y no existe el registro real de que ocurrió, se trata
-como no verificada. En Chatwoot específicamente: issue
+como no verificada. En Adaki específicamente: issue
 [#13881](https://github.com/chatwoot/chatwoot/issues/13881) (bug opuesto —
 handoff real sin mensaje) se arregló con PR
 [#13885](https://github.com/chatwoot/chatwoot/pull/13885) exponiendo el flag
 `handoff_tool_called` como fuente de verdad — **el mismo mecanismo que ya usa este
 fork** (confirma que C6, dejado sin tocar, ya está alineado con el fix oficial
-upstream). No se encontró un issue público de Chatwoot sobre el caso específico de
+upstream). No se encontró un issue público del proyecto original sobre el caso específico de
 C12 (anuncio falso, no mensaje faltante) — parece no reportado todavía upstream.
 
 Diseño (usa exactamente el "recibo" que ya existe, `handoff_tool_called`, como
@@ -869,7 +869,7 @@ es un `team_id` en `run_handoff_auto_assignment`.
   `bot_handoff!` y menciona al asignado (o al equipo de handoff si la
   asignación aún no ocurrió — con `assignment_v2` es un job asíncrono). La
   mención genera notificación `conversation_mention` con el texto del error
-  (cuota agotada, credencial muerta). Formato: markup de Chatwoot
+  (cuota agotada, credencial muerta). Formato: markup de Adaki
   `[@Nombre](mention://user|team/ID/Nombre)`, procesado por
   `Messages::MentionService`.
 - **Deploy**: Coolify solo hace `pull` de `ghcr.io/...:latest`; si se

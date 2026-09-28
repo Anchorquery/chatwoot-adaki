@@ -611,7 +611,7 @@
     }
   },
   "CREATE_ACCOUNT": {
-    "NO_ACCOUNT_WARNING": "Oh oh! Wir konnten keine chatwoot-Konten finden. Bitte erstellen Sie ein neues Konto um fortzufahren.",
+    "NO_ACCOUNT_WARNING": "Oh oh! Wir konnten keine Adaki-Konten finden. Bitte erstellen Sie ein neues Konto um fortzufahren.",
     "NEW_ACCOUNT": "Neuer Account",
     "SELECTOR_SUBTITLE": "Neuen Account erstellen",
     "API": {

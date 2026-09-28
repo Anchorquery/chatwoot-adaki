@@ -611,7 +611,7 @@
     }
   },
   "CREATE_ACCOUNT": {
-    "NO_ACCOUNT_WARNING": "Uh oh! Vi kunne ikke finde nogen chatwoot-konti. Opret venligst en ny konto for at fortsætte.",
+    "NO_ACCOUNT_WARNING": "Uh oh! Vi kunne ikke finde nogen Adaki-konti. Opret venligst en ny konto for at fortsætte.",
     "NEW_ACCOUNT": "Ny Konto",
     "SELECTOR_SUBTITLE": "Opret en ny konto",
     "API": {

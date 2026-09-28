@@ -78,7 +78,7 @@
       "HEADER_BTN_TXT": "Dodaj novu veb zakačku",
       "LOADING": "Prikupljanje dodatih veb zakački",
       "SEARCH_404": "Nema razultata",
-      "SIDEBAR_TXT": "<p><b>Veb zakačke</b> </p> <p>Veb zakačke su HTTP povratni pozivi koji mogu biti definisani za svaki nalog. Pozivaju ih događaji kao što je pravljenje poruke u chatwoot-u. Možete kreirati više od jedne veb zakačke za ovaj nalog. <br /><br /> Za kreiranje <b>veb zakačke</b>, kliknite na dugem <b>Dodaj novu veb zakačku</b>. Takođe možete ukloniti postojeće veb zakačke klikom na dugme Obriši.</p>",
+      "SIDEBAR_TXT": "<p><b>Veb zakačke</b> </p> <p>Veb zakačke su HTTP povratni pozivi koji mogu biti definisani za svaki nalog. Pozivaju ih događaji kao što je pravljenje poruke u Adaki-u. Možete kreirati više od jedne veb zakačke za ovaj nalog. <br /><br /> Za kreiranje <b>veb zakačke</b>, kliknite na dugem <b>Dodaj novu veb zakačku</b>. Takođe možete ukloniti postojeće veb zakačke klikom na dugme Obriši.</p>",
       "LIST": {
         "404": "Nema veb zakački podešenih za ovaj nalog.",
         "TITLE": "Upravljanje veb zakačkama",
@@ -235,7 +235,7 @@
     "DASHBOARD_APPS": {
       "TITLE": "Aplikacije radne table",
       "HEADER_BTN_TXT": "Dodaj novu aplikaciju radne table",
-      "SIDEBAR_TXT": "<p><b>Aplikacije radne table</b></p><p>Aplikacije radne table omogućavaju organizacijama da integrišu aplikaciju unutar Adaki radne table da dostave kontekst agentima podrške. Ova mogućnosti vam omogućava da napravite aplikaciju nezavisno i integrišete je unutar radne table da bi ste dostavili informacije o korisniku, njihovim narudžbama ili istoriji prethodnih plaćanja.</p><p>Kada integrišete vašu aplikaciju koristeći radnu tablu u chatwoot-u, vaša aplikacija će dobiti kontakst razgovora i kontakta kao window događaj. Implementirajte osluškivač događaj poruke na vašoj stranici da bi ste primili kontakst.</p><p>Da bi ste dodali novu aplikaciju radne table, kliknite na dugme 'Dodaj novu aplikaciju radne table'.</p>",
+      "SIDEBAR_TXT": "<p><b>Aplikacije radne table</b></p><p>Aplikacije radne table omogućavaju organizacijama da integrišu aplikaciju unutar Adaki radne table da dostave kontekst agentima podrške. Ova mogućnosti vam omogućava da napravite aplikaciju nezavisno i integrišete je unutar radne table da bi ste dostavili informacije o korisniku, njihovim narudžbama ili istoriji prethodnih plaćanja.</p><p>Kada integrišete vašu aplikaciju koristeći radnu tablu u Adaki-u, vaša aplikacija će dobiti kontakst razgovora i kontakta kao window događaj. Implementirajte osluškivač događaj poruke na vašoj stranici da bi ste primili kontakst.</p><p>Da bi ste dodali novu aplikaciju radne table, kliknite na dugme 'Dodaj novu aplikaciju radne table'.</p>",
       "DESCRIPTION": "Aplikacije radne table omogućavaju organizacijama da integrišu aplikaciju unutar radne table da bi omogućili kontekst agentima podrške. Ova mogućnost omogućava da nezavisno napravite aplikaciju i integrišete je da bi ste dostavili informacije o korisniku, njihovim narudžbama ili njihovoj istoriji plaćanja.",
       "LEARN_MORE": "Learn more about Dashboard Apps",
       "COUNT": "{n} dashboard app | {n} dashboard apps",

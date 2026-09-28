@@ -20,7 +20,7 @@ describe Messages::Facebook::MessageBuilder do
           first_name: 'Jane',
           last_name: 'Dae',
           account_id: facebook_channel.inbox.account_id,
-          profile_pic: 'https://chatwoot-assets.local/sample.png'
+          profile_pic: 'https://adaki-assets.local/sample.png'
         }.with_indifferent_access
       )
       message_builder
@@ -66,7 +66,7 @@ describe Messages::Facebook::MessageBuilder do
           first_name: 'Jane',
           last_name: 'Dae',
           account_id: facebook_channel.inbox.account_id,
-          profile_pic: 'https://chatwoot-assets.local/sample.png'
+          profile_pic: 'https://adaki-assets.local/sample.png'
         }.with_indifferent_access
       )
 
@@ -117,7 +117,7 @@ describe Messages::Facebook::MessageBuilder do
       before do
         allow(Koala::Facebook::API).to receive(:new).and_return(fb_object)
         allow(fb_object).to receive(:get_object).and_return(
-          { first_name: 'Jane', last_name: 'Dae', profile_pic: 'https://chatwoot-assets.local/sample.png' }.with_indifferent_access
+          { first_name: 'Jane', last_name: 'Dae', profile_pic: 'https://adaki-assets.local/sample.png' }.with_indifferent_access
         )
       end
 

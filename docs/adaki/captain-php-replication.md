@@ -1,4 +1,4 @@
-# Captain (Chatwoot) — Arquitectura completa para replicar en PHP
+# Captain (Adaki) — Arquitectura completa para replicar en PHP
 
 Documento técnico exhaustivo. Mapea infraestructura, datos, ingestión, embeddings, generación automática de FAQs y el flujo del bot. Pensado para reescribir Captain en PHP (Laravel/Symfony) manteniendo paridad funcional.
 
@@ -722,7 +722,7 @@ Idéntico a Ruby. Llama a `gpt-4.1` con prompt `assistant_action_classifier` y `
 
 ---
 
-## 11. Archivos de referencia (Chatwoot)
+## 11. Archivos de referencia (Adaki)
 
 | Concepto | Archivo |
 |---|---|

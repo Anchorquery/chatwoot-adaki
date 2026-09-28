@@ -733,8 +733,8 @@
     },
     "SETTINGS_POPUP": {
       "EVOLUTION_PRIVACY": {
-        "LABEL": "Privacidad — qué se sincroniza a Chatwoot",
-        "HINT": "Elegí si se sincroniza todo chat de WhatsApp a Chatwoot, se excluyen algunos, o solo se permiten los que elijas. Aplica solo a esta bandeja.",
+        "LABEL": "Privacidad — qué se sincroniza a Adaki",
+        "HINT": "Elegí si se sincroniza todo chat de WhatsApp a Adaki, se excluyen algunos, o solo se permiten los que elijas. Aplica solo a esta bandeja.",
         "NO_CONNECTION_HINT": "No hay lista con nombres para esta bandeja, así que podés pegar los IDs a mano. Ver grupos, canales y contactos por nombre requiere acceso de administrador y conexión con Evolution.",
         "MODES": {
           "ALL": "Todos",

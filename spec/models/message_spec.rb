@@ -667,7 +667,7 @@ RSpec.describe Message do
         end
 
         it 'returns only the base content without URL when survey_url stored separately' do
-          message.content_attributes = { 'survey_url' => 'https://app.chatwoot.com/survey/responses/12345' }
+          message.content_attributes = { 'survey_url' => 'https://app.adaki.net/survey/responses/12345' }
           expect(message.content).to eq('Rate your experience')
         end
       end
@@ -774,7 +774,7 @@ RSpec.describe Message do
       end
     end
 
-    context 'when advanced search feature is not enabled for account on chatwoot cloud' do
+    context 'when advanced search feature is not enabled for account on adaki cloud' do
       before do
         allow(ChatwootApp).to receive(:chatwoot_cloud?).and_return(true)
         account.disable_features('advanced_search_indexing')

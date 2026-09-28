@@ -5,7 +5,7 @@ RSpec.describe Enterprise::Concerns::Portal do
     let(:portal) { create(:portal, custom_domain: nil) }
 
     context 'when custom_domain is changed' do
-      context 'when on chatwoot cloud' do
+      context 'when on adaki cloud' do
         before do
           allow(ChatwootApp).to receive(:chatwoot_cloud?).and_return(true)
         end
@@ -17,7 +17,7 @@ RSpec.describe Enterprise::Concerns::Portal do
         end
       end
 
-      context 'when not on chatwoot cloud' do
+      context 'when not on adaki cloud' do
         before do
           allow(ChatwootApp).to receive(:chatwoot_cloud?).and_return(false)
         end

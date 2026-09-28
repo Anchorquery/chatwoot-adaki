@@ -1,16 +1,16 @@
 openapi: '3.1.0'
 info:
-  title: Chatwoot - Application API
-  description: Application API endpoints for Chatwoot
+  title: Adaki - Application API
+  description: Application API endpoints for Adaki
   version: 1.1.0
-  termsOfService: https://www.chatwoot.com/terms-of-service/
+  termsOfService: https://www.adaki.net/terms-of-service/
   contact:
-    email: hello@chatwoot.com
+    email: hello@adaki.net
   license:
     name: MIT License
     url: https://opensource.org/licenses/MIT
 servers:
-  - url: https://app.chatwoot.com/
+  - url: https://app.adaki.net/
 tags:
   - name: Account AgentBots
     description: Manage agent bots within accounts
