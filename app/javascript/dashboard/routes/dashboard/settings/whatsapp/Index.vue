@@ -53,9 +53,7 @@ const evolutionEnabled = computed(
 const evolutionInboxes = computed(() =>
   (inboxes.value || [])
     .filter(
-      inbox =>
-        inbox.channel_type === 'Channel::Api' &&
-        inbox.evolution_api_key_configured
+      inbox => inbox.channel_type === 'Channel::Api' && inbox.evolution_linked
     )
     .sort((a, b) => a.name.localeCompare(b.name))
 );

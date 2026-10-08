@@ -124,6 +124,9 @@ if resource.api?
   # si hay una configurada.
   json.additional_attributes resource.channel.try(:additional_attributes)&.except('evolution_api_key')
   json.evolution_api_key_configured resource.channel.try(:additional_attributes)&.dig('evolution_api_key').present?
+  # Vinculada y operable desde Chatwoot: con apikey propia o, si el webhook apunta
+  # al Evolution de Super Admin, con la global (que nunca sale del servidor).
+  json.evolution_linked Evolution::InboxClient.new(resource).linked?
 end
 
 json.provider resource.channel.try(:provider)

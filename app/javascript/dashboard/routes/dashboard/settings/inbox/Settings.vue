@@ -868,7 +868,7 @@ export default {
             </SettingsFieldSection>
 
             <SettingsFieldSection
-              v-if="isAPIInbox && inbox.evolution_api_key_configured"
+              v-if="isAPIInbox && inbox.evolution_linked"
               :label="$t('INBOX_MGMT.EVOLUTION_CONNECTION.LABEL')"
               :help-text="$t('INBOX_MGMT.EVOLUTION_CONNECTION.HELP')"
             >

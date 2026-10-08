@@ -102,8 +102,7 @@ const inboxGetter = useMapGetter('inboxes/getInbox');
 const isEvolutionInbox = computed(() => {
   const inbox = props.inboxId ? inboxGetter.value(props.inboxId) : null;
   return Boolean(
-    inbox?.channel_type === 'Channel::Api' &&
-      inbox?.evolution_api_key_configured
+    inbox?.channel_type === 'Channel::Api' && inbox?.evolution_linked
   );
 });
 

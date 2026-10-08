@@ -21,6 +21,13 @@ class Evolution::InboxClient
     parsed_webhook_uri
   end
 
+  # La bandeja está vinculada a una instancia de Evolution que Chatwoot puede
+  # operar (con su apikey o con la global). Lo usa el front para decidir
+  # dónde mostrar QR, estado y filtro de chats.
+  def linked?
+    configured?
+  end
+
   private
 
   # El host sale del webhook_url, que es un campo editable por el admin: por
@@ -85,7 +92,36 @@ class Evolution::InboxClient
     ERB::Util.url_encode(instance_name)
   end
 
+  # La apikey propia de la bandeja (token de su instancia, o la que se pegó a
+  # mano) y, si no hay, la global de Super Admin: con ella Evolution permite
+  # operar cualquier instancia, así que las bandejas vinculadas desde el
+  # Manager funcionan sin pegarles nada.
   def api_key
-    @config['evolution_api_key']
+    @config['evolution_api_key'].presence || global_api_key
+  end
+
+  # Solo si el webhook de la bandeja apunta al MISMO servidor configurado en
+  # Super Admin. El webhook_url lo puede editar un admin: sin esta comprobación,
+  # apuntarlo a otro host le mandaría allí la clave global.
+  def global_api_key
+    return nil unless same_server_as_configured?
+
+    GlobalConfigService.load('EVOLUTION_API_KEY', '').presence
+  end
+
+  def same_server_as_configured?
+    configured_url = GlobalConfigService.load('EVOLUTION_API_URL', '').to_s.chomp('/')
+    return false if configured_url.blank? || base_url.blank?
+
+    normalize_server_url(configured_url) == normalize_server_url(base_url)
+  end
+
+  def normalize_server_url(url)
+    uri = URI.parse(url)
+    return nil unless ALLOWED_SCHEMES.include?(uri.scheme) && uri.host.present?
+
+    [uri.scheme, uri.host.downcase, uri.port, uri.path.to_s.chomp('/')]
+  rescue URI::InvalidURIError
+    nil
   end
 end
