@@ -89,26 +89,26 @@ describe('WhatsApp connections page', () => {
         id: 1,
         name: 'Ventas',
         channel_type: 'Channel::Api',
-        evolution_api_key_configured: true,
+        evolution_linked: true,
       },
       {
         id: 2,
         name: 'Soporte',
         channel_type: 'Channel::Api',
-        evolution_api_key_configured: true,
+        evolution_linked: true,
       },
       {
         id: 3,
         name: 'Avisos',
         channel_type: 'Channel::Api',
-        evolution_api_key_configured: true,
+        evolution_linked: true,
       },
       { id: 4, name: 'Web', channel_type: 'Channel::WebWidget' },
       {
         id: 5,
         name: 'API sin Evolution',
         channel_type: 'Channel::Api',
-        evolution_api_key_configured: false,
+        evolution_linked: false,
       },
     ];
     InboxesAPI.getEvolutionConnectionState.mockImplementation(id =>
@@ -154,7 +154,7 @@ describe('WhatsApp connections page', () => {
         id: 9,
         name: 'Caída',
         channel_type: 'Channel::Api',
-        evolution_api_key_configured: true,
+        evolution_linked: true,
       },
     ];
     const wrapper = mountPage();
