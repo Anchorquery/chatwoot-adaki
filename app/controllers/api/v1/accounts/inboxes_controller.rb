@@ -8,6 +8,8 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
 
   include Api::V1::Accounts::Concerns::WhatsappHealthManagement
   include Api::V1::Accounts::Concerns::EvolutionChannelManagement
+  include Api::V1::Accounts::Concerns::EvolutionSessionManagement
+  include Api::V1::Accounts::Concerns::EvolutionPrivacyManagement
 
   def index
     @inboxes = policy_scope(Current.account.inboxes)

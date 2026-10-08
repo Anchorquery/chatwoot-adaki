@@ -62,6 +62,37 @@ describe('#actions', () => {
     });
   });
 
+  describe('#createEvolutionChannel', () => {
+    it('sends correct actions if API is success', async () => {
+      axios.post.mockResolvedValue({ data: inboxList[0] });
+      const result = await actions.createEvolutionChannel(
+        { commit },
+        { name: 'Soporte' }
+      );
+      expect(axios.post).toHaveBeenCalledWith(
+        '/api/v1/inboxes/evolution_create',
+        { name: 'Soporte' }
+      );
+      expect(result).toEqual(inboxList[0]);
+      expect(commit.mock.calls).toEqual([
+        [types.default.SET_INBOXES_UI_FLAG, { isCreating: true }],
+        [types.default.ADD_INBOXES, inboxList[0]],
+        [types.default.SET_INBOXES_UI_FLAG, { isCreating: false }],
+      ]);
+    });
+    it('rethrows the API error so the form can show it', async () => {
+      const error = { response: { data: { error: 'name_taken' } } };
+      axios.post.mockRejectedValue(error);
+      await expect(
+        actions.createEvolutionChannel({ commit }, { name: 'Soporte' })
+      ).rejects.toBe(error);
+      expect(commit.mock.calls).toEqual([
+        [types.default.SET_INBOXES_UI_FLAG, { isCreating: true }],
+        [types.default.SET_INBOXES_UI_FLAG, { isCreating: false }],
+      ]);
+    });
+  });
+
   describe('#createVoiceChannel', () => {
     it('sends correct actions if API is success', async () => {
       axios.post.mockResolvedValue({ data: inboxList[0] });

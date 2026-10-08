@@ -1,28 +1,7 @@
-require 'ssrf_filter'
-
-class Evolution::AudienceOptionsService
-  ALLOWED_SCHEMES = %w[http https].freeze
-  # update_privacy_filter encadena dos llamadas (find + set) que no se pueden
-  # paralelizar: la segunda necesita el resultado de la primera. El presupuesto
-  # real de una peticion es open_timeout + read_timeout (no un unico timeout):
-  # con 2s + 5s el peor caso por llamada es ~7s y la cadena find+set queda en
-  # ~14s, por debajo del limite global de 15s de Rack::Timeout. El valor
-  # anterior (6s + 6s) permitia ~24s en cadena y la request moria con
-  # Rack::Timeout::RequestTimeoutException, irrescatable a proposito.
-  OPEN_TIMEOUT = 2
-  REQUEST_TIMEOUT = 5
+# Audiencias (grupos, canales, contactos) y filtro de privacidad de una
+# bandeja vinculada a Evolution. Conexión y QR: Evolution::ConnectionService.
+class Evolution::AudienceOptionsService < Evolution::InboxClient
   PRIVACY_MODES = %w[all block allow].freeze
-
-  def initialize(inbox)
-    @inbox = inbox
-    @config = inbox.channel.try(:additional_attributes) || {}
-    @webhook_url = inbox.channel.try(:webhook_url)
-    # evolution_audience_options comparte esta instancia entre varios threads.
-    # La memoizacion de parsed_webhook_uri escribe un nil intermedio antes de
-    # parsear: un thread que entrara justo ahi veia "sin webhook" y devolvia su
-    # lista vacia. Se resuelve aca, antes de que exista concurrencia.
-    parsed_webhook_uri
-  end
 
   def newsletters
     fetch('newsletter/find')
@@ -49,6 +28,38 @@ class Evolution::AudienceOptionsService
       jid = chat['remoteJid'].to_s
       jid.end_with?('@g.us', '@newsletter') || jid == 'status@broadcast'
     end
+  end
+
+  # Búsqueda paginada para el filtro de privacidad. A diferencia de #contacts,
+  # el término viaja a Evolution (findChats del fork filtra en SQL por nombre,
+  # por JID y por el teléfono de los chats "@lid") y no hay tope de 200: se
+  # pide de página en página. Devuelve las filas crudas, sin filtrar por tipo.
+  def search_chats(query:, take:, skip:)
+    where = query.present? ? { pushName: query } : {}
+    rows = fetch('chat/findChats', method: :post, body: { where: where, take: take, skip: skip })
+    Array.wrap(rows).select { |chat| chat.is_a?(Hash) }
+  end
+
+  # Búsqueda en la agenda del número (findContacts del fork con `search` y
+  # `onlySaved`): parcial por nombre y teléfono, en SQL y paginada. Mucho más
+  # barata que findChats, que agrupa toda la tabla de mensajes, y encuentra
+  # también a quien nunca escribió.
+  def search_contacts(query:, take:, page:)
+    where = { onlySaved: true }
+    where[:search] = query if query.present?
+    rows = fetch('chat/findContacts', method: :post, body: { where: where, offset: take, page: page })
+    Array.wrap(rows).select { |contact| contact.is_a?(Hash) }
+  end
+
+  # Contactos de la agenda por JID, en una sola llamada (findContacts del fork
+  # con `remoteJids`). `offset` acota la respuesta: un Evolution sin ese
+  # parámetro lo ignoraría y devolvería la agenda entera.
+  def contacts_by_jids(jids)
+    jids = Array(jids).first(500)
+    return [] if jids.empty?
+
+    rows = fetch('chat/findContacts', method: :post, body: { where: { remoteJids: jids }, offset: [jids.size * 2, 1000].min, page: 1 })
+    Array.wrap(rows).select { |contact| contact.is_a?(Hash) }
   end
 
   def test_connection
@@ -127,11 +138,6 @@ class Evolution::AudienceOptionsService
     ).except('createdAt', 'updatedAt', 'id', 'instanceId', 'webhook_url')
   end
 
-  def build_result(response)
-    ok = response.is_a?(Net::HTTPSuccess)
-    { success: ok, message: ok ? 'ok' : "http_#{response&.code}" }
-  end
-
   # Reparte los JIDs guardados en las tres cajas del picker por su SUFIJO, no
   # cruzándolos contra las listas vivas de Evolution.
   #
@@ -172,115 +178,5 @@ class Evolution::AudienceOptionsService
     Array.wrap(JSON.parse(response.body))
   rescue JSON::ParserError
     []
-  end
-
-  # El host sale del webhook_url, que es un campo editable por el admin, así que
-  # la petición se hace con SsrfFilter: valida el esquema y resuelve el host,
-  # rechazando IPs privadas/loopback/link-local. Sin eso, apuntar el webhook a
-  # una IP interna convertiría a Chatwoot en un proxy hacia la red del servidor
-  # (y filtraría la apikey al host elegido).
-  def request(url, method: :get, query: {}, body: nil)
-    full_url = query.present? ? "#{url}?#{query.to_query}" : url
-    headers = { 'apikey' => api_key }
-    headers['Content-Type'] = 'application/json' if body
-    json_body = body&.to_json
-
-    if allow_private_network?
-      request_via_net_http(full_url, method, headers, json_body)
-    else
-      request_via_ssrf_filter(full_url, method, headers, json_body)
-    end
-  rescue SsrfFilter::Error, Resolv::ResolvError, URI::InvalidURIError => e
-    Rails.logger.warn("Evolution audience options: unsafe or invalid URL (#{e.class})")
-    nil
-  rescue StandardError => e
-    ChatwootExceptionTracker.new(e).capture_exception
-    nil
-  end
-
-  def request_via_ssrf_filter(url, method, headers, json_body)
-    http_options = { open_timeout: OPEN_TIMEOUT, read_timeout: REQUEST_TIMEOUT }
-
-    if method == :post
-      SsrfFilter.post(url, headers: headers, body: json_body, http_options: http_options)
-    else
-      SsrfFilter.get(url, headers: headers, http_options: http_options)
-    end
-  end
-
-  # Solo para desarrollo contra una instancia local de Evolution, que
-  # SsrfFilter rechazaría por ser loopback. Nunca activar en producción
-  # (ver EVOLUTION_ALLOW_PRIVATE_NETWORK en allow_private_network?).
-  def request_via_net_http(url, method, headers, json_body)
-    uri = URI.parse(url)
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = uri.scheme == 'https'
-    # Sin esto quedaban los defaults de Net::HTTP (60s de read_timeout): una
-    # Evolution local colgada bloqueaba la request hasta el Rack::Timeout.
-    http.open_timeout = OPEN_TIMEOUT
-    http.read_timeout = REQUEST_TIMEOUT
-    req = method == :post ? Net::HTTP::Post.new(uri) : Net::HTTP::Get.new(uri)
-    headers.each { |key, value| req[key] = value }
-    req.body = json_body if json_body
-    http.request(req)
-  end
-
-  def allow_private_network?
-    ENV.fetch('EVOLUTION_ALLOW_PRIVATE_NETWORK', 'false') == 'true'
-  end
-
-  def configured?
-    base_url.present? && api_key.present? && instance_name.present?
-  end
-
-  # Evolution arma el webhook_url del inbox como
-  # "{base_url}/chatwoot/webhook/{instanceName}" al conectar el canal (ver
-  # initInstanceChatwoot en su chatwoot.service.ts). En vez de volver a pedir la
-  # URL y el nombre de instancia, se derivan de ahí — solo la apikey no se puede
-  # deducir.
-  def parsed_webhook_uri
-    return @parsed_webhook_uri if defined?(@parsed_webhook_uri)
-
-    @parsed_webhook_uri = nil
-    return @parsed_webhook_uri if @webhook_url.blank?
-
-    uri = URI.parse(@webhook_url)
-    @parsed_webhook_uri = uri if ALLOWED_SCHEMES.include?(uri.scheme) && uri.host.present?
-    @parsed_webhook_uri
-  rescue URI::InvalidURIError
-    @parsed_webhook_uri = nil
-  end
-
-  # Conserva el prefijo de path, para instalaciones donde Evolution vive en un
-  # subpath detrás de un reverse proxy (".../evo/chatwoot/webhook/instancia").
-  def base_url
-    uri = parsed_webhook_uri
-    return nil if uri.nil?
-
-    port_suffix = uri.port == uri.default_port ? '' : ":#{uri.port}"
-    prefix = path_segments[0...-3].join('/')
-    "#{uri.scheme}://#{uri.host}#{port_suffix}#{prefix.present? ? "/#{prefix}" : ''}"
-  end
-
-  def instance_name
-    segment = path_segments.last
-    return nil if segment.blank?
-
-    # CGI.unescape traduciría "+" a espacio, rompiendo nombres que lo contengan.
-    URI::DEFAULT_PARSER.unescape(segment)
-  end
-
-  def path_segments
-    @path_segments ||= (parsed_webhook_uri&.path || '').split('/').reject(&:blank?)
-  end
-
-  # El nombre puede traer espacios u otros caracteres (ej. "EAJ - PNV"), así que
-  # hay que re-codificarlo al armar la URL hacia Evolution.
-  def encoded_instance_name
-    ERB::Util.url_encode(instance_name)
-  end
-
-  def api_key
-    @config['evolution_api_key']
   end
 end

@@ -80,6 +80,34 @@ class InboxPolicy < ApplicationPolicy
     agent_settings_manager?
   end
 
+  def evolution_create?
+    agent_settings_manager?
+  end
+
+  def evolution_connection_state?
+    agent_settings_manager?
+  end
+
+  def evolution_connect?
+    agent_settings_manager?
+  end
+
+  def evolution_logout?
+    agent_settings_manager?
+  end
+
+  def evolution_restart?
+    agent_settings_manager?
+  end
+
+  def evolution_instance_settings?
+    agent_settings_manager?
+  end
+
+  def evolution_update_instance_settings?
+    agent_settings_manager?
+  end
+
   def evolution_privacy_filter?
     agent_settings_manager? || Current.user.assigned_inboxes.include?(record)
   end

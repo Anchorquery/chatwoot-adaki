@@ -41,7 +41,7 @@ import ColorPicker from 'dashboard/components-next/colorpicker/ColorPicker.vue';
 import SelectInput from 'dashboard/components-next/select/Select.vue';
 import Widget from 'dashboard/modules/widget-preview/components/Widget.vue';
 import AccessToken from 'dashboard/routes/dashboard/settings/profile/AccessToken.vue';
-import EvolutionPrivacyFilter from './components/EvolutionPrivacyFilter.vue';
+import EvolutionConnection from './components/EvolutionConnection.vue';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 
 export default {
@@ -76,7 +76,7 @@ export default {
     AccountHealth,
     Widget,
     AccessToken,
-    EvolutionPrivacyFilter,
+    EvolutionConnection,
   },
   mixins: [inboxMixin],
   setup() {
@@ -868,6 +868,18 @@ export default {
             </SettingsFieldSection>
 
             <SettingsFieldSection
+              v-if="isAPIInbox && inbox.evolution_api_key_configured"
+              :label="$t('INBOX_MGMT.EVOLUTION_CONNECTION.LABEL')"
+              :help-text="$t('INBOX_MGMT.EVOLUTION_CONNECTION.HELP')"
+            >
+              <EvolutionConnection
+                :key="currentInboxId"
+                :inbox-id="currentInboxId"
+                @connected="evolutionVerified = true"
+              />
+            </SettingsFieldSection>
+
+            <SettingsFieldSection
               v-if="isAPIInbox"
               :label="$t('INBOX_MGMT.ADD.API_CHANNEL.EVOLUTION_API_KEY.LABEL')"
             >
@@ -921,10 +933,21 @@ export default {
               v-if="isAPIInbox"
               :label="$t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.LABEL')"
             >
-              <EvolutionPrivacyFilter
-                :inbox-id="currentInboxId"
-                :connected="evolutionVerified === true"
-              />
+              <div class="flex flex-col items-start gap-2">
+                <p class="text-xs text-n-slate-11">
+                  {{ $t('PRIVACY_FILTER.SETTINGS_HINT') }}
+                </p>
+                <router-link
+                  :to="{
+                    name: 'settings_inbox_privacy_filter',
+                    params: { inboxId: currentInboxId },
+                  }"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-n-alpha-2 text-n-slate-12 hover:bg-n-alpha-3"
+                >
+                  <span class="i-lucide-shield-check size-4" />
+                  {{ $t('PRIVACY_FILTER.OPEN') }}
+                </router-link>
+              </div>
             </SettingsFieldSection>
 
             <SettingsFieldSection

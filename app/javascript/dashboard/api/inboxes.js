@@ -35,13 +35,70 @@ class Inboxes extends CacheEnabledApiClient {
     return axios.get(`${this.url}/${inboxId}/evolution_privacy_filter`);
   }
 
-  updateEvolutionPrivacyFilter(inboxId, { mode, jids }) {
+  updateEvolutionPrivacyFilter(inboxId, { mode, jids, labels }) {
     return axios.post(
       `${this.url}/${inboxId}/evolution_update_privacy_filter`,
       {
         mode,
         jids,
+        labels,
       }
+    );
+  }
+
+  searchEvolutionPrivacy(inboxId, { q, type, page }) {
+    return axios.get(`${this.url}/${inboxId}/evolution_privacy_search`, {
+      params: { q, type, page },
+    });
+  }
+
+  resolveEvolutionPrivacy(inboxId, jids) {
+    return axios.post(`${this.url}/${inboxId}/evolution_privacy_resolve`, {
+      jids,
+    });
+  }
+
+  getEvolutionPrivacyContact(inboxId, contactId) {
+    return axios.get(`${this.url}/${inboxId}/evolution_privacy_contact`, {
+      params: { contact_id: contactId },
+    });
+  }
+
+  updateEvolutionPrivacyContact(inboxId, contactId, filtered) {
+    return axios.post(
+      `${this.url}/${inboxId}/evolution_update_privacy_contact`,
+      { contact_id: contactId, filtered }
+    );
+  }
+
+  createEvolutionInbox(name) {
+    return axios.post(`${this.url}/evolution_create`, { name });
+  }
+
+  getEvolutionConnectionState(inboxId) {
+    return axios.get(`${this.url}/${inboxId}/evolution_connection_state`);
+  }
+
+  connectEvolution(inboxId) {
+    return axios.post(`${this.url}/${inboxId}/evolution_connect`);
+  }
+
+  logoutEvolution(inboxId) {
+    return axios.post(`${this.url}/${inboxId}/evolution_logout`);
+  }
+
+  restartEvolution(inboxId) {
+    return axios.post(`${this.url}/${inboxId}/evolution_restart`);
+  }
+
+  getEvolutionInstanceSettings(inboxId) {
+    return axios.get(`${this.url}/${inboxId}/evolution_instance_settings`);
+  }
+
+  updateEvolutionInstanceSettings(inboxId, settings) {
+    return axios.post(
+      `${this.url}/${inboxId}/evolution_update_instance_settings`,
+      settings
     );
   }
 

@@ -247,7 +247,9 @@
           "WHATSAPP_CLOUD": "WhatsApp Cloud",
           "WHATSAPP_CLOUD_DESC": "Quick setup through Meta",
           "TWILIO_DESC": "Connect via Twilio credentials",
-          "360_DIALOG": "360Dialog"
+          "360_DIALOG": "360Dialog",
+          "EVOLUTION": "WhatsApp (QR code)",
+          "EVOLUTION_DESC": "Link any WhatsApp number by scanning a QR code, through Evolution API."
         },
         "SELECT_PROVIDER": {
           "TITLE": "Select your API provider",
@@ -538,6 +540,26 @@
         "SIGN_IN": "Sign in with Google",
         "EMAIL_PLACEHOLDER": "Enter email address",
         "ERROR_MESSAGE": "There was an error connecting to Google, please try again"
+      },
+      "EVOLUTION": {
+        "TITLE": "Connect WhatsApp with a QR code",
+        "DESC": "We create the WhatsApp session and its inbox. Then you scan the QR code from this same screen.",
+        "SCAN_DESC": "Inbox created. Scan the QR code with the phone that has the WhatsApp number you want to connect.",
+        "NAME": {
+          "LABEL": "Inbox name",
+          "PLACEHOLDER": "e.g. Customer support",
+          "HELP": "Do not rename this inbox later: Evolution API finds it by name."
+        },
+        "SUBMIT": "Create session and show QR",
+        "CONTINUE": "Continue",
+        "SKIP": "Skip for now",
+        "SKIP_HINT": "You can scan the QR later from the inbox settings (Configuration tab).",
+        "ERRORS": {
+          "NAME_REQUIRED": "Enter a name for the inbox.",
+          "NAME_TAKEN": "An inbox with this name already exists in this account.",
+          "NOT_CONFIGURED": "Evolution API is not configured on this server. Ask the super admin to set it up.",
+          "GENERIC": "Could not create the WhatsApp session. Try again."
+        }
       }
     },
     "DETAILS": {
@@ -1198,6 +1220,217 @@
       "INSTAGRAM": "Instagram",
       "TIKTOK": "TikTok",
       "VOICE": "Voice"
+    },
+    "EVOLUTION_CONNECTION": {
+      "LABEL": "WhatsApp connection",
+      "HELP": "Status of the WhatsApp session linked to this inbox. Scan the QR code here to connect it or reconnect it.",
+      "STATUS": {
+        "LOADING": "Checking connection…",
+        "OPEN": "Connected",
+        "CONNECTING": "Waiting for the QR code scan",
+        "CLOSE": "Disconnected",
+        "EXPIRED": "QR code expired"
+      },
+      "ERRORS": {
+        "NOT_CONFIGURED": "This inbox has no Evolution API key: add it below to see the status.",
+        "UNREACHABLE": "Could not reach Evolution API"
+      },
+      "UNKNOWN_PROFILE": "WhatsApp account",
+      "QR_ALT": "WhatsApp QR code",
+      "QR_TITLE": "Scan this code with WhatsApp",
+      "QR_STEPS": {
+        "OPEN": "Open WhatsApp on the phone.",
+        "DEVICES": "Go to Settings > Linked devices.",
+        "SCAN": "Tap \"Link a device\" and point the camera at this code."
+      },
+      "QR_HINT": "The code refreshes by itself. This screen updates as soon as the phone is linked.",
+      "PAIRING_CODE": "Or enter this code on the phone:",
+      "EXPIRED_HINT": "Nobody scanned the code in time. Generate a new one when you have the phone at hand.",
+      "CONNECT": "Connect and show QR",
+      "NEW_QR": "Generate new QR",
+      "LOGOUT": "Disconnect",
+      "LOGOUT_CONFIRM": "The phone will be unlinked. Continue?",
+      "CANCEL": "Cancel",
+      "CONNECTED_ALERT": "WhatsApp connected",
+      "LOGOUT_SUCCESS": "WhatsApp disconnected",
+      "LOGOUT_ERROR": "Could not disconnect WhatsApp"
+    }
+  },
+  "WHATSAPP_CONNECTIONS": {
+    "HEADER": "WhatsApp connections",
+    "DESCRIPTION": "Every WhatsApp number linked through Evolution API, in one place. Connect them with a QR code, check their status and change their settings without opening Evolution.",
+    "LOADING": "Loading connections…",
+    "SEARCH": "Search by name or number",
+    "REFRESH": "Refresh",
+    "NEW_CONNECTION": "New connection",
+    "NOT_CONFIGURED": "Evolution API is not configured on this server. A super admin can set it up in Super Admin > Settings.",
+    "NO_RESULTS": "No connection matches your search.",
+    "EMPTY": {
+      "TITLE": "No WhatsApp numbers connected yet",
+      "DESCRIPTION": "Create a connection, scan the QR code with the phone and the conversations will start arriving here."
+    },
+    "SUMMARY": {
+      "OPEN": "Connected",
+      "CONNECTING": "Waiting for scan",
+      "CLOSE": "Disconnected",
+      "ERROR": "No response"
+    },
+    "STATUS": {
+      "LOADING": "Checking",
+      "OPEN": "Connected",
+      "CONNECTING": "Waiting for scan",
+      "CLOSE": "Disconnected",
+      "ERROR": "No response"
+    },
+    "CARD": {
+      "NOT_LINKED": "No phone linked",
+      "UNREACHABLE_HINT": "Evolution API did not answer"
+    },
+    "ACTIONS": {
+      "CONNECT": "Connect with QR",
+      "SETTINGS": "Settings",
+      "RESTART": "Restart connection",
+      "OPEN_INBOX": "Inbox settings",
+      "LOGOUT": "Disconnect",
+      "PRIVACY": "Chat filter"
+    },
+    "ALERTS": {
+      "RESTARTED": "{name}: connection restarted",
+      "RESTART_ERROR": "Could not restart the connection"
+    },
+    "LOGOUT_DIALOG": {
+      "TITLE": "Disconnect {name}?",
+      "DESCRIPTION": "The phone will be unlinked and messages will stop arriving until the QR code is scanned again. The inbox and its conversations are kept."
+    },
+    "QR_DIALOG": {
+      "DESCRIPTION": "Scan the code with the phone that has this WhatsApp number. The status updates by itself.",
+      "CLOSE": "Close"
+    },
+    "NEW": {
+      "TITLE": "New WhatsApp connection",
+      "DESCRIPTION": "We create the session in Evolution API and its inbox. Then you scan the QR code right here.",
+      "SCAN_TITLE": "Connect {name}",
+      "CANCEL": "Cancel",
+      "DONE": "Done",
+      "AGENTS_HINT": "Remember to choose which agents will answer from this inbox.",
+      "ASSIGN_AGENTS": "Assign agents"
+    },
+    "SETTINGS": {
+      "TITLE": "{name} settings",
+      "DESCRIPTION": "These settings are stored in Evolution API and apply to this WhatsApp number.",
+      "SAVE": "Save",
+      "SAVE_SUCCESS": "Settings saved",
+      "SAVE_ERROR": "Could not save the settings in Evolution API",
+      "LOAD_ERROR": "Could not read the current settings. Nothing will be saved until they load.",
+      "RETRY": "Try again",
+      "MSG_CALL_PLACEHOLDER": "Optional message sent to whoever calls, e.g. \"We only answer by chat.\"",
+      "FIELDS": {
+        "REJECT_CALL": {
+          "LABEL": "Reject calls",
+          "HELP": "Incoming WhatsApp calls are rejected automatically."
+        },
+        "GROUPS_IGNORE": {
+          "LABEL": "Ignore groups",
+          "HELP": "Messages from WhatsApp groups do not reach this inbox."
+        },
+        "NEWSLETTER_IGNORE": {
+          "LABEL": "Ignore channels",
+          "HELP": "Updates from WhatsApp channels do not reach this inbox."
+        },
+        "ALWAYS_ONLINE": {
+          "LABEL": "Always online",
+          "HELP": "The number shows as online all the time."
+        },
+        "READ_MESSAGES": {
+          "LABEL": "Mark messages as read",
+          "HELP": "Customers see the blue ticks as soon as a message arrives."
+        },
+        "READ_STATUS": {
+          "LABEL": "View statuses",
+          "HELP": "Contacts' statuses are marked as seen."
+        }
+      }
+    }
+  },
+  "PRIVACY_FILTER": {
+    "TITLE": "Chat filter",
+    "DESCRIPTION": "Choose which WhatsApp chats of {name} reach this app. Filtered chats keep working on the phone, but their messages are not shown here.",
+    "OPEN": "Manage chat filter",
+    "SETTINGS_HINT": "Choose which chats of this number reach the app: block some, or receive only the ones you pick.",
+    "LOADING": "Loading the current filter…",
+    "LOAD_ERROR": "Could not read the current filter from Evolution API. Nothing will be saved until it loads.",
+    "RETRY": "Try again",
+    "ALL_HINT": "Every chat of this number reaches the app. Pick another mode to block chats or to receive only some of them.",
+    "SAVE": "Save changes",
+    "DISCARD": "Discard",
+    "SAVED": "No pending changes",
+    "UNSAVED": "You have unsaved changes",
+    "MISSING_SELECTION": "Add at least one chat. An empty list would let every chat through.",
+    "SAVE_SUCCESS": "Chat filter saved",
+    "SAVE_ERROR": "Could not save the filter in Evolution API",
+    "MODES": {
+      "LABEL": "Filter mode",
+      "ALL": {
+        "TITLE": "Receive everything",
+        "DESCRIPTION": "Every chat of the number reaches the app."
+      },
+      "BLOCK": {
+        "TITLE": "Block selected",
+        "DESCRIPTION": "Everything arrives except the chats you pick."
+      },
+      "ALLOW": {
+        "TITLE": "Only selected",
+        "DESCRIPTION": "Only the chats you pick arrive. The rest stay on the phone."
+      }
+    },
+    "TYPES": {
+      "CONTACT": "Contacts",
+      "GROUP": "Groups",
+      "CHANNEL": "Channels"
+    },
+    "SEARCH": {
+      "TITLE": "Find chats",
+      "PLACEHOLDER_CONTACT": "Name or phone number, e.g. +34 600 111 222",
+      "PLACEHOLDER_GROUP": "Group name, or paste its ID (…{'@'}g.us)",
+      "PLACEHOLDER_CHANNEL": "Channel name, or paste its ID (…{'@'}newsletter)",
+      "MANUAL": "Add {value} by hand",
+      "ADD_BLOCK": "Block",
+      "ADD_ALLOW": "Allow",
+      "ADDED": "Added",
+      "LOAD_MORE": "Load more",
+      "EMPTY": "No chats to show yet.",
+      "NO_RESULTS": "Nothing matches the filter.",
+      "NO_RESULTS_HINT": "No chat found. If it is a phone number, type it with the country code to add it by hand.",
+      "ERROR": "The search failed. Evolution API may not be responding.",
+      "RETRY": "Try again"
+    },
+    "SELECTED": {
+      "TITLE_BLOCK": "Blocked ({count})",
+      "TITLE_ALLOW": "Allowed ({count})",
+      "CLEAR": "Remove all",
+      "REMOVE": "Remove",
+      "FILTER_PLACEHOLDER": "Filter this list",
+      "EMPTY_BLOCK": "No blocked chats yet. Search on the left and press Block.",
+      "EMPTY_ALLOW": "No allowed chats yet. Search on the left and press Allow."
+    },
+    "CONTACT": {
+      "TITLE": "WhatsApp chat filter",
+      "RECEIVING": "Messages from this chat reach the app.",
+      "FILTERED": "This chat is filtered: its new messages do not reach the app.",
+      "EXCLUDE": "Stop receiving",
+      "INCLUDE": "Receive again",
+      "MANAGE": "Manage filter",
+      "LOAD_ERROR": "Could not check the filter.",
+      "CONFIRM_TITLE": "Stop receiving this chat?",
+      "CONFIRM_DESCRIPTION": "New messages from this chat will not reach the app. The conversation history is kept and you can undo it here.",
+      "CONFIRM_ALLOW_MODE": "This number only receives selected chats: this chat will be removed from that list and its new messages will stop arriving.",
+      "EXCLUDED_ALERT": "Chat filtered",
+      "INCLUDED_ALERT": "This chat reaches the app again",
+      "ERRORS": {
+        "LAST_ALLOWED": "It is the only allowed chat. Removing it would let every chat through: change the mode from the filter page.",
+        "NO_JID": "This contact has no WhatsApp number to filter.",
+        "GENERIC": "Could not update the filter in Evolution API"
+      }
     }
   }
 }

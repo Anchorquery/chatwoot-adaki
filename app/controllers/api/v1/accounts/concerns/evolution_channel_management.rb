@@ -70,7 +70,10 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
       mode: params[:mode],
       jids: Array(params[:jids])
     )
-    return render json: result if result[:success]
+    if result[:success]
+      remember_privacy_labels(Array(params[:jids]))
+      return render json: result
+    end
 
     render json: result, status: privacy_filter_error_status(result[:message])
   end

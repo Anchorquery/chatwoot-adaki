@@ -685,6 +685,16 @@ const menuItems = computed(() => {
           ],
           to: accountScopedRoute('settings_inbox_list'),
         },
+        ...(window.chatwootConfig?.evolutionEnabled
+          ? [
+              {
+                name: 'Settings WhatsApp',
+                label: t('SIDEBAR.WHATSAPP_CONNECTIONS'),
+                icon: 'i-ri-whatsapp-line',
+                to: accountScopedRoute('settings_whatsapp_connections'),
+              },
+            ]
+          : []),
         {
           name: 'Settings Labels',
           label: t('SIDEBAR.LABELS'),
@@ -810,6 +820,7 @@ const menuItems = computed(() => {
       'Settings Teams',
       'Settings Agent Assignment',
       'Settings Inboxes',
+      'Settings WhatsApp',
       'Settings Labels',
     ]);
 
