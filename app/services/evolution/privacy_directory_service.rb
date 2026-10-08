@@ -168,9 +168,48 @@ class Evolution::PrivacyDirectoryService
   # Evolution trae nombre y foto más frescos: gana sobre el duplicado de
   # Chatwoot, conservando el orden en que llegaron.
   def merge_items(items)
-    items.each_with_object({}) do |item, merged|
+    unique = items.each_with_object({}) do |item, merged|
       merged[item[:jid]] ||= item
     end.values
+    pair_private_ids(unique)
+  end
+
+  # WhatsApp puede identificar a la misma persona por su "@lid" (sin teléfono
+  # conocido) y por su número. Si en los resultados hay exactamente uno de cada
+  # con el mismo nombre, casi seguro son la misma persona: se muestra una vez,
+  # con el teléfono, y el lid viaja en alt_jids para filtrar los dos a la vez.
+  # Con más de un candidato por lado no se une: bloquear a un homónimo por
+  # error es peor que verlo dos veces.
+  def pair_private_ids(items)
+    lids = unique_by_name(items.select { |item| private_only?(item) })
+    phones = unique_by_name(items.select { |item| item[:phone].present? })
+
+    paired = lids.filter_map do |key, lid|
+      phone_item = phones[key]
+      next unless phone_item
+
+      phone_item[:alt_jids] = Array(phone_item[:alt_jids]) + [lid[:jid]]
+      lid[:jid]
+    end
+    items.reject { |item| paired.include?(item[:jid]) }
+  end
+
+  def private_only?(item)
+    item[:jid].end_with?('@lid') && item[:phone].nil?
+  end
+
+  # { nombre => item }, solo para los nombres que aparecen una única vez.
+  def unique_by_name(items)
+    items.group_by { |item| name_key(item[:name]) }
+         .filter_map { |key, group| [key, group.first] if key && group.size == 1 }
+         .to_h
+  end
+
+  # Nombre comparable; los "nombres" que en realidad son un número o un JID no
+  # sirven para emparejar.
+  def name_key(name)
+    key = name.to_s.unicode_normalize(:nfkc).downcase.squish
+    key.blank? || key.match?(/\A\+?[\d\s]+\z/) || key.include?('@') ? nil : key
   end
 
   def matches?(item, query)

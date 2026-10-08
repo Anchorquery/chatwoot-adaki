@@ -225,7 +225,7 @@ onBeforeUnmount(() => clearTimeout(debounceTimer));
       }}
     </p>
 
-    <div v-else class="flex flex-col overflow-y-auto max-h-[32rem]">
+    <div v-else class="flex flex-col overflow-y-auto max-h-[min(32rem,55vh)]">
       <PrivacyChatRow
         v-for="item in items"
         :key="item.jid"

@@ -87,7 +87,10 @@ const title = computed(() =>
       </p>
     </div>
 
-    <div v-else class="flex flex-col gap-4 overflow-y-auto max-h-[32rem]">
+    <div
+      v-else
+      class="flex flex-col gap-4 overflow-y-auto max-h-[min(32rem,55vh)]"
+    >
       <div v-for="group in groups" :key="group.type" class="flex flex-col">
         <p class="text-xs font-medium text-n-slate-10 uppercase tracking-wide">
           {{ group.label }} · {{ group.items.length }}
