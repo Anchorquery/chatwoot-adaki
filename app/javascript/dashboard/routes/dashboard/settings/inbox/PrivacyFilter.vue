@@ -6,6 +6,7 @@ import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import InboxesAPI from 'dashboard/api/inboxes';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import BackButton from 'dashboard/components/widgets/BackButton.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import PrivacyModeSelector from './privacy/PrivacyModeSelector.vue';
 import PrivacySearchPanel from './privacy/PrivacySearchPanel.vue';
@@ -187,132 +188,126 @@ onMounted(() => {
 </script>
 
 <template>
-  <!-- El contenedor de Ajustes recorta lo que sobresale (overflow-hidden): sin
-       scroll propio, lo que no cabía en pantalla quedaba cortado sin forma de
-       bajar. -->
-  <div class="flex-1 min-h-0 !overflow-y-auto">
-    <div class="flex flex-col w-full max-w-6xl gap-6 px-1 pb-8 mx-auto">
-      <!-- Las acciones van en la cabecera y no en una barra fija abajo: fijada al
+  <div class="flex flex-col w-full gap-6">
+    <!-- Las acciones van en la cabecera y no en una barra fija abajo: fijada al
          fondo de la zona de scroll flotaba a media pantalla y tapaba la lista. -->
-      <header
-        class="sticky top-0 z-10 flex flex-wrap items-start justify-between gap-4 py-3 bg-n-surface-1"
-      >
-        <div class="flex flex-col gap-1 min-w-0 flex-1">
-          <h1 class="text-heading-1 text-n-slate-12">
-            {{ $t('PRIVACY_FILTER.TITLE') }}
-          </h1>
-          <p class="text-body-main text-n-slate-11 max-w-3xl">
-            {{
-              $t('PRIVACY_FILTER.DESCRIPTION', {
-                name: inbox.name || '',
-              })
-            }}
-          </p>
-        </div>
-        <div v-if="loaded" class="flex flex-col items-end gap-1.5 shrink-0">
-          <div class="flex items-center gap-2">
-            <NextButton
-              v-if="isDirty"
-              type="button"
-              size="sm"
-              variant="ghost"
-              color="slate"
-              :label="$t('PRIVACY_FILTER.DISCARD')"
-              @click="discard"
-            />
-            <NextButton
-              type="button"
-              size="sm"
-              icon="i-lucide-save"
-              :label="$t('PRIVACY_FILTER.SAVE')"
-              :is-loading="saving"
-              :disabled="!isDirty || missingSelection"
-              @click="save"
-            />
-          </div>
-          <span
-            class="text-xs text-end max-w-xs"
-            :class="
-              missingSelection
-                ? 'text-n-amber-11'
-                : isDirty
-                  ? 'text-n-blue-11'
-                  : 'text-n-slate-11'
-            "
-          >
-            {{
-              missingSelection
-                ? $t('PRIVACY_FILTER.MISSING_SELECTION')
-                : isDirty
-                  ? $t('PRIVACY_FILTER.UNSAVED')
-                  : $t('PRIVACY_FILTER.SAVED')
-            }}
-          </span>
-        </div>
-      </header>
-
-      <div v-if="loading" class="flex items-center gap-2 py-10 text-n-slate-11">
-        <Spinner class="size-4" />
-        <span class="text-sm">{{ $t('PRIVACY_FILTER.LOADING') }}</span>
+    <header
+      class="sticky top-0 z-10 flex flex-wrap items-start justify-between gap-4 py-3 bg-n-surface-1"
+    >
+      <div class="flex flex-col gap-1 min-w-0 flex-1">
+        <BackButton compact class="mb-1" />
+        <h1 class="text-heading-1 text-n-slate-12">
+          {{ $t('PRIVACY_FILTER.TITLE') }}
+        </h1>
+        <p class="text-body-main text-n-slate-11 max-w-3xl">
+          {{
+            $t('PRIVACY_FILTER.DESCRIPTION', {
+              name: inbox.name || '',
+            })
+          }}
+        </p>
       </div>
+      <div v-if="loaded" class="flex flex-col items-end gap-1.5 shrink-0">
+        <div class="flex items-center gap-2">
+          <NextButton
+            v-if="isDirty"
+            type="button"
+            size="sm"
+            variant="ghost"
+            color="slate"
+            :label="$t('PRIVACY_FILTER.DISCARD')"
+            @click="discard"
+          />
+          <NextButton
+            type="button"
+            size="sm"
+            icon="i-lucide-save"
+            :label="$t('PRIVACY_FILTER.SAVE')"
+            :is-loading="saving"
+            :disabled="!isDirty || missingSelection"
+            @click="save"
+          />
+        </div>
+        <span
+          class="text-xs text-end max-w-xs"
+          :class="
+            missingSelection
+              ? 'text-n-amber-11'
+              : isDirty
+                ? 'text-n-blue-11'
+                : 'text-n-slate-11'
+          "
+        >
+          {{
+            missingSelection
+              ? $t('PRIVACY_FILTER.MISSING_SELECTION')
+              : isDirty
+                ? $t('PRIVACY_FILTER.UNSAVED')
+                : $t('PRIVACY_FILTER.SAVED')
+          }}
+        </span>
+      </div>
+    </header>
+
+    <div v-if="loading" class="flex items-center gap-2 py-10 text-n-slate-11">
+      <Spinner class="size-4" />
+      <span class="text-sm">{{ $t('PRIVACY_FILTER.LOADING') }}</span>
+    </div>
+
+    <div
+      v-else-if="!loaded"
+      class="flex flex-col items-start gap-3 p-4 rounded-xl bg-n-ruby-2"
+    >
+      <p class="text-sm text-n-ruby-11">
+        {{ $t('PRIVACY_FILTER.LOAD_ERROR') }}
+      </p>
+      <NextButton
+        type="button"
+        size="sm"
+        variant="faded"
+        color="ruby"
+        icon="i-lucide-refresh-cw"
+        :label="$t('PRIVACY_FILTER.RETRY')"
+        @click="load"
+      />
+    </div>
+
+    <template v-else>
+      <p
+        v-if="conflict"
+        class="flex items-start gap-2 p-3 text-sm rounded-xl bg-n-amber-2 text-n-amber-11"
+      >
+        <span class="i-lucide-triangle-alert size-4 shrink-0 mt-0.5" />
+        {{ $t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.CONFLICT_WARNING') }}
+      </p>
+
+      <PrivacyModeSelector v-model="mode" />
 
       <div
-        v-else-if="!loaded"
-        class="flex flex-col items-start gap-3 p-4 rounded-xl bg-n-ruby-2"
+        v-if="mode !== 'all'"
+        class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start"
       >
-        <p class="text-sm text-n-ruby-11">
-          {{ $t('PRIVACY_FILTER.LOAD_ERROR') }}
-        </p>
-        <NextButton
-          type="button"
-          size="sm"
-          variant="faded"
-          color="ruby"
-          icon="i-lucide-refresh-cw"
-          :label="$t('PRIVACY_FILTER.RETRY')"
-          @click="load"
+        <PrivacySearchPanel
+          :inbox-id="inboxId"
+          :mode="mode"
+          :selected-jids="selectedJids"
+          @add="add"
+        />
+        <PrivacySelectedList
+          :items="selected"
+          :mode="mode"
+          @remove="remove"
+          @clear="clearAll"
         />
       </div>
 
-      <template v-else>
-        <p
-          v-if="conflict"
-          class="flex items-start gap-2 p-3 text-sm rounded-xl bg-n-amber-2 text-n-amber-11"
-        >
-          <span class="i-lucide-triangle-alert size-4 shrink-0 mt-0.5" />
-          {{
-            $t('INBOX_MGMT.SETTINGS_POPUP.EVOLUTION_PRIVACY.CONFLICT_WARNING')
-          }}
-        </p>
-
-        <PrivacyModeSelector v-model="mode" />
-
-        <div
-          v-if="mode !== 'all'"
-          class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start"
-        >
-          <PrivacySearchPanel
-            :inbox-id="inboxId"
-            :mode="mode"
-            :selected-jids="selectedJids"
-            @add="add"
-          />
-          <PrivacySelectedList
-            :items="selected"
-            :mode="mode"
-            @remove="remove"
-            @clear="clearAll"
-          />
-        </div>
-
-        <p
-          v-else
-          class="flex items-start gap-2 p-4 text-sm rounded-xl border border-n-weak text-n-slate-11"
-        >
-          <span class="i-lucide-info size-4 shrink-0 mt-0.5" />
-          {{ $t('PRIVACY_FILTER.ALL_HINT') }}
-        </p>
-      </template>
-    </div>
+      <p
+        v-else
+        class="flex items-start gap-2 p-4 text-sm rounded-xl border border-n-weak text-n-slate-11"
+      >
+        <span class="i-lucide-info size-4 shrink-0 mt-0.5" />
+        {{ $t('PRIVACY_FILTER.ALL_HINT') }}
+      </p>
+    </template>
   </div>
 </template>

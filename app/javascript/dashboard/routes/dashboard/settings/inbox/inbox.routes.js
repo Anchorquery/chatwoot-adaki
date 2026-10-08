@@ -33,6 +33,20 @@ export default {
             permissions: ['administrator', 'agent_settings_manage'],
           },
         },
+        {
+          // Bajo SettingsWrapper (el contenedor con scroll de las páginas de
+          // listado) y no bajo SettingsContent: ese recorta lo que sobresale y
+          // la página, más alta que la pantalla, quedaba cortada.
+          // Va antes que settings_inbox_show, cuyo :tab? es un comodín que
+          // matchearía "privacy" como si fuera una pestaña.
+          path: ':inboxId/privacy',
+          name: 'settings_inbox_privacy_filter',
+          component: PrivacyFilter,
+          meta: {
+            featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
+            permissions: ['administrator', 'agent', 'agent_settings_manage'],
+          },
+        },
       ],
     },
     {
@@ -93,17 +107,6 @@ export default {
               component: AddAgents,
             },
           ],
-        },
-        {
-          // Tiene que ir ANTES de settings_inbox_show — esa ruta usa :tab?
-          // como comodin y matchearia "privacy" como si fuera una pestaña.
-          path: ':inboxId/privacy',
-          name: 'settings_inbox_privacy_filter',
-          component: PrivacyFilter,
-          meta: {
-            featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-            permissions: ['administrator', 'agent', 'agent_settings_manage'],
-          },
         },
         {
           path: ':inboxId/:tab?',

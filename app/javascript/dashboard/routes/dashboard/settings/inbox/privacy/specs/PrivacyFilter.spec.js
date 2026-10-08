@@ -9,6 +9,10 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { inboxId: '7' } }),
 }));
 vi.mock('dashboard/composables', () => ({ useAlert: vi.fn() }));
+// BackButton importa el router real de la app.
+vi.mock('dashboard/components/widgets/BackButton.vue', () => ({
+  default: { template: '<span />' },
+}));
 vi.mock('dashboard/composables/store', async () => {
   const { computed } = await import('vue');
   return {
