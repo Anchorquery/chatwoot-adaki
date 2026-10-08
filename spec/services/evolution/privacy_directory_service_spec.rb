@@ -116,6 +116,35 @@ describe Evolution::PrivacyDirectoryService do
       expect(items.pluck(:name)).to eq(['Juan'])
     end
 
+    # La misma persona vista por WhatsApp como "@lid" (sin teléfono) y por su
+    # número: se muestra una vez y el lid viaja en alt_jids.
+    it 'shows a private ID and a phone with the same unique name as one person' do
+      stub_request(:post, find_chats_url).to_return(
+        json([
+               { remoteJid: '1470039@lid', pushName: 'Daniel Herrera' },
+               { remoteJid: '584227146464@s.whatsapp.net', pushName: 'Daniel Herrera' }
+             ])
+      )
+
+      items = service.search(query: 'daniel', type: 'contact', page: 1)[:items]
+
+      expect(items.size).to eq(1)
+      expect(items.first).to include(jid: '584227146464@s.whatsapp.net', alt_jids: ['1470039@lid'])
+    end
+
+    # Con homónimos no se sabe quién es quién: mejor verlos todos.
+    it 'does not merge when the name is ambiguous' do
+      stub_request(:post, find_chats_url).to_return(
+        json([
+               { remoteJid: '1470039@lid', pushName: 'Ana' },
+               { remoteJid: '34600000001@s.whatsapp.net', pushName: 'Ana' },
+               { remoteJid: '34600000002@s.whatsapp.net', pushName: 'Ana' }
+             ])
+      )
+
+      expect(service.search(query: 'ana', type: 'contact', page: 1)[:items].size).to eq(3)
+    end
+
     it 'filters groups by name' do
       stub_request(:get, 'https://evo.example.com/group/fetchAllGroups/ventas?getParticipants=false').to_return(
         json([{ id: '1@g.us', subject: 'Familia' }, { id: '2@g.us', subject: 'Trabajo' }])
