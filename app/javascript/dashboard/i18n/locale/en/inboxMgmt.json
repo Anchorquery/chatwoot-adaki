@@ -1431,6 +1431,8 @@
         "NO_JID": "This contact has no WhatsApp number to filter.",
         "GENERIC": "Could not update the filter in Evolution API"
       }
-    }
+    },
+    "UNNAMED": "Unnamed contact",
+    "PRIVATE_ID": "Private WhatsApp ID"
   }
 }
