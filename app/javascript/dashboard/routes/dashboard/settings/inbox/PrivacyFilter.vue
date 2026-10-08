@@ -182,18 +182,62 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col w-full max-w-6xl gap-6 px-1 pb-28 mx-auto">
-    <header class="flex flex-col gap-1">
-      <h1 class="text-heading-1 text-n-slate-12">
-        {{ $t('PRIVACY_FILTER.TITLE') }}
-      </h1>
-      <p class="text-body-main text-n-slate-11 max-w-3xl">
-        {{
-          $t('PRIVACY_FILTER.DESCRIPTION', {
-            name: inbox.name || '',
-          })
-        }}
-      </p>
+  <div class="flex flex-col w-full max-w-6xl gap-6 px-1 pb-8 mx-auto">
+    <!-- Las acciones van en la cabecera y no en una barra fija abajo: fijada al
+         fondo de la zona de scroll flotaba a media pantalla y tapaba la lista. -->
+    <header class="flex flex-wrap items-start justify-between gap-4">
+      <div class="flex flex-col gap-1 min-w-0 flex-1">
+        <h1 class="text-heading-1 text-n-slate-12">
+          {{ $t('PRIVACY_FILTER.TITLE') }}
+        </h1>
+        <p class="text-body-main text-n-slate-11 max-w-3xl">
+          {{
+            $t('PRIVACY_FILTER.DESCRIPTION', {
+              name: inbox.name || '',
+            })
+          }}
+        </p>
+      </div>
+      <div v-if="loaded" class="flex flex-col items-end gap-1.5 shrink-0">
+        <div class="flex items-center gap-2">
+          <NextButton
+            v-if="isDirty"
+            type="button"
+            size="sm"
+            variant="ghost"
+            color="slate"
+            :label="$t('PRIVACY_FILTER.DISCARD')"
+            @click="discard"
+          />
+          <NextButton
+            type="button"
+            size="sm"
+            icon="i-lucide-save"
+            :label="$t('PRIVACY_FILTER.SAVE')"
+            :is-loading="saving"
+            :disabled="!isDirty || missingSelection"
+            @click="save"
+          />
+        </div>
+        <span
+          class="text-xs text-end max-w-xs"
+          :class="
+            missingSelection
+              ? 'text-n-amber-11'
+              : isDirty
+                ? 'text-n-blue-11'
+                : 'text-n-slate-11'
+          "
+        >
+          {{
+            missingSelection
+              ? $t('PRIVACY_FILTER.MISSING_SELECTION')
+              : isDirty
+                ? $t('PRIVACY_FILTER.UNSAVED')
+                : $t('PRIVACY_FILTER.SAVED')
+          }}
+        </span>
+      </div>
     </header>
 
     <div v-if="loading" class="flex items-center gap-2 py-10 text-n-slate-11">
@@ -256,40 +300,5 @@ onMounted(() => {
         {{ $t('PRIVACY_FILTER.ALL_HINT') }}
       </p>
     </template>
-
-    <div
-      v-if="loaded"
-      class="sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-3 p-3 mt-auto rounded-xl border border-n-weak bg-n-solid-2/95 backdrop-blur"
-    >
-      <span
-        class="flex-1 text-xs"
-        :class="missingSelection ? 'text-n-amber-11' : 'text-n-slate-11'"
-      >
-        {{
-          missingSelection
-            ? $t('PRIVACY_FILTER.MISSING_SELECTION')
-            : isDirty
-              ? $t('PRIVACY_FILTER.UNSAVED')
-              : $t('PRIVACY_FILTER.SAVED')
-        }}
-      </span>
-      <NextButton
-        v-if="isDirty"
-        type="button"
-        size="sm"
-        variant="ghost"
-        color="slate"
-        :label="$t('PRIVACY_FILTER.DISCARD')"
-        @click="discard"
-      />
-      <NextButton
-        type="button"
-        size="sm"
-        :label="$t('PRIVACY_FILTER.SAVE')"
-        :is-loading="saving"
-        :disabled="!isDirty || missingSelection"
-        @click="save"
-      />
-    </div>
   </div>
 </template>
