@@ -170,6 +170,22 @@
   locked: false
 # ------- End of WhatsApp Channel Related Config ------- #
 
+# ------- Evolution API (WhatsApp por QR) ------- #
+- name: EVOLUTION_API_URL
+  display_title: 'Evolution API URL'
+  description: 'Base URL of the Evolution API server used to create WhatsApp (QR) inboxes, e.g. https://evolution.example.com'
+  locked: false
+- name: EVOLUTION_API_KEY
+  display_title: 'Evolution API global key'
+  description: 'Global API key of the Evolution API server (AUTHENTICATION_API_KEY). Only used server side to create instances.'
+  locked: false
+  type: secret
+- name: EVOLUTION_CHATWOOT_URL
+  display_title: 'URL Evolution uses to reach this installation'
+  description: 'Optional. Defaults to FRONTEND_URL. Set an internal URL when Evolution and this app share a private network.'
+  locked: false
+# ------- End of Evolution API Config ------- #
+
 # MARK: Microsoft Email Channel Config
 - name: AZURE_APP_ID
   display_title: 'Azure App ID'

@@ -138,6 +138,12 @@ whatsapp_embedded:
   enabled: true
   icon: 'icon-whatsapp-line'
   config_key: 'whatsapp_embedded'
+evolution:
+  name: 'WhatsApp (QR) - Evolution API'
+  description: 'Connect WhatsApp numbers by scanning a QR code, through an Evolution API server'
+  enabled: true
+  icon: 'icon-whatsapp-line'
+  config_key: 'evolution'
 shopify:
   name: 'Shopify'
   description: 'Configuration for setting up Shopify Integration'

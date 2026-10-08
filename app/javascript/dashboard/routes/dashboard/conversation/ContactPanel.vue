@@ -14,6 +14,7 @@ import ContactConversations from './ContactConversations.vue';
 import ConversationAction from './ConversationAction.vue';
 import ConversationParticipant from './ConversationParticipant.vue';
 import ContactInfo from './contact/ContactInfo.vue';
+import EvolutionContactPrivacy from './contact/EvolutionContactPrivacy.vue';
 import ContactNotes from './contact/ContactNotes.vue';
 import ConversationInfo from './ConversationInfo.vue';
 import CustomAttributes from './customAttributes/CustomAttributes.vue';
@@ -96,6 +97,16 @@ const contactAdditionalAttributes = computed(
   () => contact.value.additional_attributes || {}
 );
 
+// Atajo al filtro de privacidad: solo en bandejas vinculadas a Evolution.
+const inboxGetter = useMapGetter('inboxes/getInbox');
+const isEvolutionInbox = computed(() => {
+  const inbox = props.inboxId ? inboxGetter.value(props.inboxId) : null;
+  return Boolean(
+    inbox?.channel_type === 'Channel::Api' &&
+      inbox?.evolution_api_key_configured
+  );
+});
+
 const getContactDetails = () => {
   if (contactId.value) {
     store.dispatch('contacts/show', { id: contactId.value });
@@ -138,6 +149,11 @@ onMounted(() => {
       @close="closeContactPanel"
     />
     <ContactInfo :contact="contact" :channel-type="channelType" />
+    <EvolutionContactPrivacy
+      v-if="isEvolutionInbox && contactId"
+      :inbox-id="inboxId"
+      :contact-id="contactId"
+    />
     <div class="px-2 pb-8 list-group">
       <Draggable
         :list="conversationSidebarItems"

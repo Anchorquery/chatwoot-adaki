@@ -321,6 +321,17 @@ Rails.application.routes.draw do
             post :evolution_test_connection, on: :member
             get :evolution_privacy_filter, on: :member
             post :evolution_update_privacy_filter, on: :member
+            get :evolution_privacy_search, on: :member
+            post :evolution_privacy_resolve, on: :member
+            get :evolution_privacy_contact, on: :member
+            post :evolution_update_privacy_contact, on: :member
+            post :evolution_create, on: :collection
+            get :evolution_connection_state, on: :member
+            post :evolution_connect, on: :member
+            post :evolution_logout, on: :member
+            post :evolution_restart, on: :member
+            get :evolution_instance_settings, on: :member
+            post :evolution_update_instance_settings, on: :member
             post :register_webhook, on: :member
             post :reset_secret, on: :member
             if ChatwootApp.enterprise?

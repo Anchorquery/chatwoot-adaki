@@ -383,7 +383,8 @@
     "DOCS": "Leer documentos",
     "SECURITY": "Seguridad",
     "CAPTAIN_AI": "Capitán",
-    "CONVERSATION_WORKFLOW": "Flujo de conversaciones"
+    "CONVERSATION_WORKFLOW": "Flujo de conversaciones",
+    "WHATSAPP_CONNECTIONS": "Conexiones de WhatsApp"
   },
   "CAPTAIN_SETTINGS": {
     "TITLE": "Configuración de Captain",

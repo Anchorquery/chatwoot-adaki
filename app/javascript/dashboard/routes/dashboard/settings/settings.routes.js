@@ -27,6 +27,7 @@ import security from './security/security.routes';
 import conversationWorkflow from './conversationWorkflow/conversationWorkflow.routes';
 import captain from './captain/captain.routes';
 import adaki from './adaki/adaki.routes';
+import whatsapp from './whatsapp/whatsapp.routes';
 
 export default {
   routes: [
@@ -69,5 +70,6 @@ export default {
     ...conversationWorkflow.routes,
     ...captain.routes,
     ...adaki.routes,
+    ...whatsapp.routes,
   ],
 };

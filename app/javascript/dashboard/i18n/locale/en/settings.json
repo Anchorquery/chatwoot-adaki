@@ -383,7 +383,8 @@
     "DOCS": "Read docs",
     "SECURITY": "Security",
     "CAPTAIN_AI": "Captain",
-    "CONVERSATION_WORKFLOW": "Conversation Workflow"
+    "CONVERSATION_WORKFLOW": "Conversation Workflow",
+    "WHATSAPP_CONNECTIONS": "WhatsApp connections"
   },
   "CAPTAIN_SETTINGS": {
     "TITLE": "AI configuration",
@@ -997,8 +998,7 @@
       "CONFIRM_BUTTON_LABEL": "Delete",
       "CANCEL_BUTTON_LABEL": "Cancel"
     }
-  }
-,
+  },
   "CAPTAIN": {
     "MCP": {
       "HEADER": "MCP Servers",

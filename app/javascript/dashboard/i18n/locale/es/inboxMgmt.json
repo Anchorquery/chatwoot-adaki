@@ -247,7 +247,9 @@
           "WHATSAPP_CLOUD": "Nube de WhatsApp",
           "WHATSAPP_CLOUD_DESC": "Configuración rápida a través de Meta",
           "TWILIO_DESC": "Conectar con credenciales de Twilio",
-          "360_DIALOG": "360dialog"
+          "360_DIALOG": "360dialog",
+          "EVOLUTION": "WhatsApp (código QR)",
+          "EVOLUTION_DESC": "Vincula cualquier número de WhatsApp escaneando un código QR, a través de Evolution API."
         },
         "SELECT_PROVIDER": {
           "TITLE": "Selecciona tu proveedor de API",
@@ -538,6 +540,26 @@
         "SIGN_IN": "Iniciar sesión con Google",
         "EMAIL_PLACEHOLDER": "Introduzca la dirección de correo",
         "ERROR_MESSAGE": "Se ha producido un error al conectar a Google, por favor inténtelo nuevamente"
+      },
+      "EVOLUTION": {
+        "TITLE": "Conectar WhatsApp con código QR",
+        "DESC": "Creamos la sesión de WhatsApp y su bandeja. Después escaneas el QR desde esta misma pantalla.",
+        "SCAN_DESC": "Bandeja creada. Escanea el QR con el teléfono que tiene el número de WhatsApp que quieres conectar.",
+        "NAME": {
+          "LABEL": "Nombre de la bandeja",
+          "PLACEHOLDER": "Ej.: Atención al cliente",
+          "HELP": "No cambies este nombre después: Evolution API encuentra la bandeja por su nombre."
+        },
+        "SUBMIT": "Crear sesión y mostrar QR",
+        "CONTINUE": "Continuar",
+        "SKIP": "Omitir por ahora",
+        "SKIP_HINT": "Puedes escanear el QR más tarde desde la configuración de la bandeja (pestaña Configuración).",
+        "ERRORS": {
+          "NAME_REQUIRED": "Escribe un nombre para la bandeja.",
+          "NAME_TAKEN": "Ya existe una bandeja con este nombre en esta cuenta.",
+          "NOT_CONFIGURED": "Evolution API no está configurada en este servidor. Pide al super admin que la configure.",
+          "GENERIC": "No se pudo crear la sesión de WhatsApp. Inténtalo de nuevo."
+        }
       }
     },
     "DETAILS": {
@@ -1198,6 +1220,217 @@
       "INSTAGRAM": "Instagram",
       "TIKTOK": "TikTok",
       "VOICE": "Voice"
+    },
+    "EVOLUTION_CONNECTION": {
+      "LABEL": "Conexión de WhatsApp",
+      "HELP": "Estado de la sesión de WhatsApp vinculada a esta bandeja. Escanea aquí el QR para conectarla o reconectarla.",
+      "STATUS": {
+        "LOADING": "Comprobando conexión…",
+        "OPEN": "Conectado",
+        "CONNECTING": "Esperando el escaneo del QR",
+        "CLOSE": "Desconectado",
+        "EXPIRED": "El QR caducó"
+      },
+      "ERRORS": {
+        "NOT_CONFIGURED": "Esta bandeja no tiene apikey de Evolution: añádela abajo para ver el estado.",
+        "UNREACHABLE": "No se pudo contactar con Evolution API"
+      },
+      "UNKNOWN_PROFILE": "Cuenta de WhatsApp",
+      "QR_ALT": "Código QR de WhatsApp",
+      "QR_TITLE": "Escanea este código con WhatsApp",
+      "QR_STEPS": {
+        "OPEN": "Abre WhatsApp en el teléfono.",
+        "DEVICES": "Ve a Ajustes > Dispositivos vinculados.",
+        "SCAN": "Toca \"Vincular un dispositivo\" y apunta la cámara a este código."
+      },
+      "QR_HINT": "El código se renueva solo. Esta pantalla se actualiza en cuanto el teléfono quede vinculado.",
+      "PAIRING_CODE": "O introduce este código en el teléfono:",
+      "EXPIRED_HINT": "Nadie escaneó el código a tiempo. Genera uno nuevo cuando tengas el teléfono a mano.",
+      "CONNECT": "Conectar y mostrar QR",
+      "NEW_QR": "Generar nuevo QR",
+      "LOGOUT": "Desconectar",
+      "LOGOUT_CONFIRM": "Se desvinculará el teléfono. ¿Continuar?",
+      "CANCEL": "Cancelar",
+      "CONNECTED_ALERT": "WhatsApp conectado",
+      "LOGOUT_SUCCESS": "WhatsApp desconectado",
+      "LOGOUT_ERROR": "No se pudo desconectar WhatsApp"
+    }
+  },
+  "WHATSAPP_CONNECTIONS": {
+    "HEADER": "Conexiones de WhatsApp",
+    "DESCRIPTION": "Todos los números de WhatsApp vinculados con Evolution API, en un solo sitio. Conéctalos con un QR, revisa su estado y cambia sus ajustes sin abrir Evolution.",
+    "LOADING": "Cargando conexiones…",
+    "SEARCH": "Buscar por nombre o número",
+    "REFRESH": "Actualizar",
+    "NEW_CONNECTION": "Nueva conexión",
+    "NOT_CONFIGURED": "Evolution API no está configurada en este servidor. Un super admin puede hacerlo en Super Admin > Settings.",
+    "NO_RESULTS": "Ninguna conexión coincide con la búsqueda.",
+    "EMPTY": {
+      "TITLE": "Aún no hay números de WhatsApp conectados",
+      "DESCRIPTION": "Crea una conexión, escanea el QR con el teléfono y las conversaciones empezarán a llegar aquí."
+    },
+    "SUMMARY": {
+      "OPEN": "Conectadas",
+      "CONNECTING": "Esperando escaneo",
+      "CLOSE": "Desconectadas",
+      "ERROR": "Sin respuesta"
+    },
+    "STATUS": {
+      "LOADING": "Comprobando",
+      "OPEN": "Conectado",
+      "CONNECTING": "Esperando escaneo",
+      "CLOSE": "Desconectado",
+      "ERROR": "Sin respuesta"
+    },
+    "CARD": {
+      "NOT_LINKED": "Sin teléfono vinculado",
+      "UNREACHABLE_HINT": "Evolution API no respondió"
+    },
+    "ACTIONS": {
+      "CONNECT": "Conectar con QR",
+      "SETTINGS": "Ajustes",
+      "RESTART": "Reiniciar conexión",
+      "OPEN_INBOX": "Configuración de la bandeja",
+      "LOGOUT": "Desconectar",
+      "PRIVACY": "Filtro de chats"
+    },
+    "ALERTS": {
+      "RESTARTED": "{name}: conexión reiniciada",
+      "RESTART_ERROR": "No se pudo reiniciar la conexión"
+    },
+    "LOGOUT_DIALOG": {
+      "TITLE": "¿Desconectar {name}?",
+      "DESCRIPTION": "Se desvinculará el teléfono y dejarán de llegar mensajes hasta que se vuelva a escanear el QR. La bandeja y sus conversaciones se conservan."
+    },
+    "QR_DIALOG": {
+      "DESCRIPTION": "Escanea el código con el teléfono que tiene este número de WhatsApp. El estado se actualiza solo.",
+      "CLOSE": "Cerrar"
+    },
+    "NEW": {
+      "TITLE": "Nueva conexión de WhatsApp",
+      "DESCRIPTION": "Creamos la sesión en Evolution API y su bandeja. Después escaneas el QR aquí mismo.",
+      "SCAN_TITLE": "Conectar {name}",
+      "CANCEL": "Cancelar",
+      "DONE": "Listo",
+      "AGENTS_HINT": "Recuerda elegir qué agentes atenderán desde esta bandeja.",
+      "ASSIGN_AGENTS": "Asignar agentes"
+    },
+    "SETTINGS": {
+      "TITLE": "Ajustes de {name}",
+      "DESCRIPTION": "Estos ajustes se guardan en Evolution API y se aplican a este número de WhatsApp.",
+      "SAVE": "Guardar",
+      "SAVE_SUCCESS": "Ajustes guardados",
+      "SAVE_ERROR": "No se pudieron guardar los ajustes en Evolution API",
+      "LOAD_ERROR": "No se pudieron leer los ajustes actuales. No se guardará nada hasta que carguen.",
+      "RETRY": "Reintentar",
+      "MSG_CALL_PLACEHOLDER": "Mensaje opcional para quien llama, p. ej. «Solo atendemos por chat».",
+      "FIELDS": {
+        "REJECT_CALL": {
+          "LABEL": "Rechazar llamadas",
+          "HELP": "Las llamadas de WhatsApp entrantes se rechazan automáticamente."
+        },
+        "GROUPS_IGNORE": {
+          "LABEL": "Ignorar grupos",
+          "HELP": "Los mensajes de grupos de WhatsApp no llegan a esta bandeja."
+        },
+        "NEWSLETTER_IGNORE": {
+          "LABEL": "Ignorar canales",
+          "HELP": "Las publicaciones de canales de WhatsApp no llegan a esta bandeja."
+        },
+        "ALWAYS_ONLINE": {
+          "LABEL": "Siempre en línea",
+          "HELP": "El número aparece en línea todo el tiempo."
+        },
+        "READ_MESSAGES": {
+          "LABEL": "Marcar mensajes como leídos",
+          "HELP": "El cliente ve el doble check azul en cuanto llega su mensaje."
+        },
+        "READ_STATUS": {
+          "LABEL": "Ver estados",
+          "HELP": "Los estados de los contactos se marcan como vistos."
+        }
+      }
+    }
+  },
+  "PRIVACY_FILTER": {
+    "TITLE": "Filtro de chats",
+    "DESCRIPTION": "Elige qué chats de WhatsApp de {name} llegan a la app. Los chats filtrados siguen funcionando en el teléfono, pero sus mensajes no aparecen aquí.",
+    "OPEN": "Gestionar filtro de chats",
+    "SETTINGS_HINT": "Elige qué chats de este número llegan a la app: bloquea algunos o recibe solo los que elijas.",
+    "LOADING": "Cargando el filtro actual…",
+    "LOAD_ERROR": "No se pudo leer el filtro actual de Evolution API. No se guardará nada hasta que cargue.",
+    "RETRY": "Reintentar",
+    "ALL_HINT": "Todos los chats de este número llegan a la app. Elige otro modo para bloquear chats o recibir solo algunos.",
+    "SAVE": "Guardar cambios",
+    "DISCARD": "Descartar",
+    "SAVED": "Sin cambios pendientes",
+    "UNSAVED": "Hay cambios sin guardar",
+    "MISSING_SELECTION": "Añade al menos un chat. Con la lista vacía llegarían todos los chats.",
+    "SAVE_SUCCESS": "Filtro de chats guardado",
+    "SAVE_ERROR": "No se pudo guardar el filtro en Evolution API",
+    "MODES": {
+      "LABEL": "Modo del filtro",
+      "ALL": {
+        "TITLE": "Recibir todo",
+        "DESCRIPTION": "Llegan todos los chats del número."
+      },
+      "BLOCK": {
+        "TITLE": "Bloquear seleccionados",
+        "DESCRIPTION": "Llega todo menos los chats que elijas."
+      },
+      "ALLOW": {
+        "TITLE": "Solo seleccionados",
+        "DESCRIPTION": "Solo llegan los chats que elijas. El resto se queda en el teléfono."
+      }
+    },
+    "TYPES": {
+      "CONTACT": "Contactos",
+      "GROUP": "Grupos",
+      "CHANNEL": "Canales"
+    },
+    "SEARCH": {
+      "TITLE": "Buscar chats",
+      "PLACEHOLDER_CONTACT": "Nombre o teléfono, p. ej. +34 600 111 222",
+      "PLACEHOLDER_GROUP": "Nombre del grupo, o pega su ID (…{'@'}g.us)",
+      "PLACEHOLDER_CHANNEL": "Nombre del canal, o pega su ID (…{'@'}newsletter)",
+      "MANUAL": "Añadir {value} a mano",
+      "ADD_BLOCK": "Bloquear",
+      "ADD_ALLOW": "Permitir",
+      "ADDED": "Añadido",
+      "LOAD_MORE": "Cargar más",
+      "EMPTY": "Aún no hay chats que mostrar.",
+      "NO_RESULTS": "Nada coincide con el filtro.",
+      "NO_RESULTS_HINT": "No se encontró ningún chat. Si es un teléfono, escríbelo con el prefijo del país para añadirlo a mano.",
+      "ERROR": "La búsqueda falló. Puede que Evolution API no esté respondiendo.",
+      "RETRY": "Reintentar"
+    },
+    "SELECTED": {
+      "TITLE_BLOCK": "Bloqueados ({count})",
+      "TITLE_ALLOW": "Permitidos ({count})",
+      "CLEAR": "Quitar todos",
+      "REMOVE": "Quitar",
+      "FILTER_PLACEHOLDER": "Filtrar esta lista",
+      "EMPTY_BLOCK": "Aún no hay chats bloqueados. Busca a la izquierda y pulsa Bloquear.",
+      "EMPTY_ALLOW": "Aún no hay chats permitidos. Busca a la izquierda y pulsa Permitir."
+    },
+    "CONTACT": {
+      "TITLE": "Filtro de chats de WhatsApp",
+      "RECEIVING": "Los mensajes de este chat llegan a la app.",
+      "FILTERED": "Este chat está filtrado: sus mensajes nuevos no llegan a la app.",
+      "EXCLUDE": "Dejar de recibir",
+      "INCLUDE": "Volver a recibir",
+      "MANAGE": "Gestionar filtro",
+      "LOAD_ERROR": "No se pudo comprobar el filtro.",
+      "CONFIRM_TITLE": "¿Dejar de recibir este chat?",
+      "CONFIRM_DESCRIPTION": "Los mensajes nuevos de este chat no llegarán a la app. El historial de la conversación se conserva y puedes deshacerlo aquí mismo.",
+      "CONFIRM_ALLOW_MODE": "Este número solo recibe los chats seleccionados: este chat saldrá de esa lista y sus mensajes nuevos dejarán de llegar.",
+      "EXCLUDED_ALERT": "Chat filtrado",
+      "INCLUDED_ALERT": "Este chat vuelve a llegar a la app",
+      "ERRORS": {
+        "LAST_ALLOWED": "Es el único chat permitido. Quitarlo dejaría pasar todos los chats: cambia el modo desde la página del filtro.",
+        "NO_JID": "Este contacto no tiene un número de WhatsApp que filtrar.",
+        "GENERIC": "No se pudo actualizar el filtro en Evolution API"
+      }
     }
   }
 }
