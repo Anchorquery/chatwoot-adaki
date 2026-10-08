@@ -56,21 +56,25 @@ class Evolution::PrivacyDirectoryService
     paginate(items, page)
   end
 
-  # Se busca en la agenda (findContacts), no en los chats: encuentra también a
-  # quien nunca escribió y es mucho más rápido. Un Evolution sin la búsqueda
-  # parcial ignora `search` y devolvería la agenda sin filtrar: se reconoce
-  # porque no trae remoteJidAlt, y entonces se busca en los chats como antes.
+  # Dos fuentes a la vez, porque ninguna basta sola:
+  # - la agenda (findContacts) trae a quien nunca escribió;
+  # - los chats (findChats) traen a quien escribió sin estar agendado.
+  # Van en paralelo: cada llamada puede tardar hasta el timeout de Evolution y
+  # en serie se sumarían. Los chats (actividad reciente) van primero y los
+  # duplicados se unen en merge_items.
+  #
+  # Un Evolution sin la búsqueda parcial ignora `search` y devolvería la agenda
+  # sin filtrar: se reconoce porque no trae remoteJidAlt y se descarta.
   def evolution_contact_search(query, page)
-    rows = audience_service.search_contacts(query: query, take: PAGE_SIZE, page: page)
-    return evolution_chat_search(query, page) if rows.any? && rows.none? { |row| row.key?('remoteJidAlt') }
+    service = audience_service
+    contacts_thread = Thread.new { service.search_contacts(query: query, take: PAGE_SIZE, page: page) }
+    chats_thread = Thread.new { service.search_chats(query: query, take: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE) }
+    contacts = contacts_thread.value
+    chats = chats_thread.value
+    contacts = [] if contacts.any? && contacts.none? { |row| row.key?('remoteJidAlt') }
 
-    [rows.filter_map { |row| chat_item(row) }, rows.size >= PAGE_SIZE]
-  end
-
-  def evolution_chat_search(query, page)
-    rows = audience_service.search_chats(query: query, take: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE)
-    items = rows.filter_map { |row| chat_item(row) }
-    [items, rows.size >= PAGE_SIZE]
+    items = (chats + contacts).filter_map { |row| chat_item(row) }
+    [items, chats.size >= PAGE_SIZE || contacts.size >= PAGE_SIZE]
   end
 
   def chat_item(row)

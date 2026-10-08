@@ -30,6 +30,12 @@ describe Evolution::PrivacyDirectoryService do
   end
 
   describe '#search' do
+    # Las dos fuentes se consultan siempre; cada test sobrescribe la que mira.
+    before do
+      stub_request(:post, find_contacts_url).to_return(json([]))
+      stub_request(:post, find_chats_url).to_return(json([]))
+    end
+
     it 'searches the address book of the number and pages through it' do
       stub = stub_request(:post, find_contacts_url)
              .with(body: hash_including('where' => { 'onlySaved' => true, 'search' => 'juan' }, 'offset' => 30, 'page' => 2))
@@ -80,6 +86,22 @@ describe Evolution::PrivacyDirectoryService do
         expect(service.search(query: 'juan', type: 'contact', page: 1)[:items].size).to eq(1)
         expect(a_request(:post, find_contacts_url)).not_to have_been_made
       end
+    end
+
+    it 'finds both saved contacts and people who wrote without being saved' do
+      stub_request(:post, find_contacts_url).to_return(
+        json([{ remoteJid: '34600111222@s.whatsapp.net', remoteJidAlt: nil, pushName: 'Juan agenda' }])
+      )
+      stub_request(:post, find_chats_url).to_return(
+        json([
+               { remoteJid: '34611000000@s.whatsapp.net', pushName: 'Juan sin agendar' },
+               { remoteJid: '34600111222@s.whatsapp.net', pushName: 'Juan agenda' }
+             ])
+      )
+
+      items = service.search(query: 'juan', type: 'contact', page: 1)[:items]
+
+      expect(items.pluck(:jid)).to eq(['34611000000@s.whatsapp.net', '34600111222@s.whatsapp.net'])
     end
 
     # Un Evolution sin la búsqueda parcial ignora `search` y devolvería la
