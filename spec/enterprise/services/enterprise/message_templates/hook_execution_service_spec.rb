@@ -212,6 +212,47 @@ RSpec.describe MessageTemplates::HookExecutionService do
 
       create(:message, conversation: conversation, message_type: :incoming, account: account)
     end
+
+    context 'when an assigned agent has been handling the thread for days (after_window + active thread days)' do
+      let(:agent) { create(:user, account: account) }
+      let(:active_thread_days) { 0 }
+      # The config has to exist from the moment the assistant is created: the
+      # outer before (status: :open) already resolves and memoizes
+      # conversation.resolved_captain_assistant, so an assistant.update! made
+      # later in a before or an example never reaches the evaluator.
+      let(:assistant) do
+        create(:captain_assistant, account: account,
+                                   config: { 'autopilot_enabled' => true,
+                                             'human_takeover_mode' => 'after_window',
+                                             'human_takeover_window_minutes' => 15,
+                                             'human_takeover_active_thread_days' => active_thread_days })
+      end
+
+      before do
+        create(:inbox_member, inbox: inbox, user: agent)
+        travel_to(2.days.ago) do
+          conversation.update!(assignee: agent)
+          create(:message, conversation: conversation, message_type: :outgoing, account: account, sender: agent,
+                           content: 'Te lo miro y te digo')
+        end
+      end
+
+      context 'with the rule on' do
+        let(:active_thread_days) { 7 }
+
+        it 'does not schedule captain response while the human thread is active' do
+          expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
+
+          create(:message, conversation: conversation, message_type: :incoming, account: account)
+        end
+      end
+
+      it 'schedules captain response when the rule is off (default) and the minute window has passed' do
+        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 2.0)
+
+        create(:message, conversation: conversation, message_type: :incoming, account: account)
+      end
+    end
   end
 
   context 'when message is outgoing' do
