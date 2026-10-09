@@ -216,13 +216,19 @@ RSpec.describe MessageTemplates::HookExecutionService do
     context 'when an assigned agent has been handling the thread for days (after_window + active thread days)' do
       let(:agent) { create(:user, account: account) }
       let(:active_thread_days) { 0 }
+      # The config has to exist from the moment the assistant is created: the
+      # outer before (status: :open) already resolves and memoizes
+      # conversation.resolved_captain_assistant, so an assistant.update! made
+      # later in a before or an example never reaches the evaluator.
+      let(:assistant) do
+        create(:captain_assistant, account: account,
+                                   config: { 'autopilot_enabled' => true,
+                                             'human_takeover_mode' => 'after_window',
+                                             'human_takeover_window_minutes' => 15,
+                                             'human_takeover_active_thread_days' => active_thread_days })
+      end
 
       before do
-        # Configure before the agent's reply below: that outgoing message runs
-        # the hook too, which memoizes conversation.resolved_captain_assistant.
-        assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'after_window',
-                                                         'human_takeover_window_minutes' => 15,
-                                                         'human_takeover_active_thread_days' => active_thread_days))
         create(:inbox_member, inbox: inbox, user: agent)
         travel_to(2.days.ago) do
           conversation.update!(assignee: agent)
