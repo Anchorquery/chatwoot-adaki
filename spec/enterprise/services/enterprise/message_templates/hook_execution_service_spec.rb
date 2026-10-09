@@ -215,8 +215,14 @@ RSpec.describe MessageTemplates::HookExecutionService do
 
     context 'when an assigned agent has been handling the thread for days (after_window + active thread days)' do
       let(:agent) { create(:user, account: account) }
+      let(:active_thread_days) { 0 }
 
       before do
+        # Configure before the agent's reply below: that outgoing message runs
+        # the hook too, which memoizes conversation.resolved_captain_assistant.
+        assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'after_window',
+                                                         'human_takeover_window_minutes' => 15,
+                                                         'human_takeover_active_thread_days' => active_thread_days))
         create(:inbox_member, inbox: inbox, user: agent)
         travel_to(2.days.ago) do
           conversation.update!(assignee: agent)
@@ -225,14 +231,14 @@ RSpec.describe MessageTemplates::HookExecutionService do
         end
       end
 
-      it 'does not schedule captain response while the human thread is active' do
-        assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'after_window',
-                                                         'human_takeover_window_minutes' => 15,
-                                                         'human_takeover_active_thread_days' => 7))
+      context 'with the rule on' do
+        let(:active_thread_days) { 7 }
 
-        expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
+        it 'does not schedule captain response while the human thread is active' do
+          expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
 
-        create(:message, conversation: conversation, message_type: :incoming, account: account)
+          create(:message, conversation: conversation, message_type: :incoming, account: account)
+        end
       end
 
       it 'schedules captain response when the rule is off (default) and the minute window has passed' do
