@@ -110,6 +110,59 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(conversation.messages.last.content).to eq('Hey, welcome to Captain Specs')
       end
 
+      context 'when the opening burst is a generic info request (clarification gate)' do
+        before do
+          create(:message, conversation: conversation, content: 'quiero más información sobre sus productos', message_type: :incoming)
+        end
+
+        it 'asks which product/topic without calling the LLM, tags the reply and stamps the marker' do
+          expect(Captain::Llm::AssistantChatService).not_to receive(:new)
+          expect(Captain::Assistant::AgentRunnerService).not_to receive(:new)
+
+          described_class.perform_now(conversation, assistant)
+
+          reply = conversation.messages.outgoing.last
+          expect(reply.content).to eq(I18n.t('conversations.captain.clarification_prompt', locale: :en))
+          expect(reply.sender).to eq(assistant)
+          expect(reply.additional_attributes['agent_name']).to eq('clarification_gate')
+          expect(conversation.reload.additional_attributes['captain_clarification_asked_at']).to be_present
+        end
+
+        it 'does not consume a Captain response nor record token usage' do
+          expect(Adaki::CaptainUsageTracker).not_to receive(:record!)
+
+          described_class.perform_now(conversation, assistant)
+
+          expect(account.reload.usage_limits[:captain][:responses][:consumed]).to eq(0)
+        end
+
+        it 'uses the assistant clarification_message when configured' do
+          assistant.update!(config: assistant.config.merge('clarification_message' => '¿Qué producto te interesa?'))
+
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.messages.outgoing.last.content).to eq('¿Qué producto te interesa?')
+        end
+
+        it 'hands the next turn to the LLM once the question has been asked' do
+          described_class.perform_now(conversation, assistant)
+          create(:message, conversation: conversation, content: 'hola quiero información', message_type: :incoming)
+
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.messages.outgoing.count).to eq(2)
+          expect(conversation.messages.last.content).to eq('Hey, welcome to Captain Specs')
+        end
+
+        it 'goes straight to the LLM when the gate is disabled on the assistant' do
+          assistant.update!(config: assistant.config.merge('clarification_gate_enabled' => false))
+
+          described_class.perform_now(conversation, assistant)
+
+          expect(conversation.messages.last.content).to eq('Hey, welcome to Captain Specs')
+        end
+      end
+
       context 'when V1 action classifier is enabled' do
         before do
           allow(account).to receive(:feature_enabled?).and_return(false)
@@ -255,6 +308,40 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         described_class.perform_now(conversation, assistant)
         account.reload
         expect(account.usage_limits[:captain][:responses][:consumed]).to eq(1)
+      end
+
+      context 'when the opening burst is a generic info request (clarification gate)' do
+        before do
+          create(:message, conversation: conversation, content: 'quiero más información sobre sus productos', message_type: :incoming)
+        end
+
+        it 'asks which product/topic without instantiating the agent runner' do
+          expect(Captain::Assistant::AgentRunnerService).not_to receive(:new)
+
+          described_class.perform_now(conversation, assistant)
+
+          reply = conversation.messages.outgoing.last
+          expect(reply.content).to eq(I18n.t('conversations.captain.clarification_prompt', locale: :en))
+          expect(reply.additional_attributes['agent_name']).to eq('clarification_gate')
+          expect(conversation.reload.additional_attributes['captain_clarification_asked_at']).to be_present
+        end
+
+        it 'does not consume a Captain response nor record token usage' do
+          expect(Adaki::CaptainUsageTracker).not_to receive(:record!)
+
+          described_class.perform_now(conversation, assistant)
+
+          expect(account.reload.usage_limits[:captain][:responses][:consumed]).to eq(0)
+        end
+
+        it 'logs the timing line with the gate as agent and zero LLM time' do
+          allow(Rails.logger).to receive(:info).and_call_original
+
+          described_class.perform_now(conversation, assistant)
+
+          expect(Rails.logger).to have_received(:info).with(a_string_matching(/\[CAPTAIN\]\[gate\] .*reason=generic_info_request words=\d+/))
+          expect(Rails.logger).to have_received(:info).with(a_string_matching(/\[CAPTAIN\]\[timing\] .*llm_ms=0 .*agent="clarification_gate"/))
+        end
       end
 
       context 'when tracking usage/audit (fase 3.5: moved here from AgentRunnerService)' do

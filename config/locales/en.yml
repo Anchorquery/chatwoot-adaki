@@ -255,6 +255,7 @@ en:
       assignment_handoff: 'You will be assisted by an agent shortly. Meanwhile, I will keep helping you.'
       handoff_announcement_leak_fallback: "I'm still looking into this for you — one moment, please."
       empty_reply_fallback: "Sorry, I didn't quite get that. Could you rephrase your message?"
+      clarification_prompt: 'Hi! Happy to help. Which product or service would you like information about?'
       provider_error_fallback: 'I cannot respond right now. Please try again in a few minutes.'
       unattended_handoff_note: '[Captain] Nobody has picked up this conversation since I handed it off to a human (no agent was available). %{mentions} — can someone take it?'
       unattended_handoff_email:

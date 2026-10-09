@@ -68,7 +68,8 @@ class Captain::Assistant < ApplicationRecord
                  :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number,
                  :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
                  :human_takeover_mode, :human_takeover_window_minutes, :human_takeover_active_thread_days,
-                 :history_window_messages, :handoff_team_id, :reasoning_level, :max_response_tokens
+                 :history_window_messages, :handoff_team_id, :reasoning_level, :max_response_tokens,
+                 :clarification_gate_enabled, :clarification_message
 
   validates :name, presence: true
   validates :description, presence: true
@@ -110,6 +111,15 @@ class Captain::Assistant < ApplicationRecord
     return true unless config.key?('continue_after_human_takeover')
 
     ActiveModel::Type::Boolean.new.cast(config['continue_after_human_takeover'])
+  end
+
+  # Default true: a generic first message ("hola, quiero más información")
+  # gets a deterministic clarification question instead of an LLM turn. See
+  # Captain::Conversation::ClarificationGate.
+  def clarification_gate_enabled?
+    return true unless config.key?('clarification_gate_enabled')
+
+    ActiveModel::Type::Boolean.new.cast(config['clarification_gate_enabled'])
   end
 
   # Default false: desactiva cron de auto-handoff por evaluación LLM.
