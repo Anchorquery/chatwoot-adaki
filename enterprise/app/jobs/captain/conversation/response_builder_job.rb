@@ -86,6 +86,8 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
   # ever reaching AgentRunnerService#attach_timing!. See docs/adaki/
   # captain-plan-latencia-2026-09.md fase 3.5.
   def record_captain_v2_usage!
+    return if clarification_gate_response?
+
     timing = @response.is_a?(Hash) ? @response['timing'] : nil
     return if timing.blank?
 
@@ -179,6 +181,8 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
       handle_open_circuit
     elsif !usable_credential_configured?
       handle_missing_credential
+    elsif clarification_gate.applies?
+      respond_with_clarification
     elsif captain_v2_enabled?
       generate_response_with_v2
     else
@@ -230,6 +234,41 @@ class Captain::Conversation::ResponseBuilderJob < ApplicationJob
                  'Configura una credencial en Configuración → Captain.'
     }
     process_response
+  end
+
+  # See Captain::Conversation::ClarificationGate: a generic opener ("hola,
+  # quiero más información") gets one deterministic question instead of an
+  # LLM turn that would search the knowledge base with an empty-ish query
+  # and answer with product links. Runs after the lock, the controllable
+  # check and the debounce, so it sees the customer's whole burst. No LLM
+  # was called, so no response usage is consumed and no credential health
+  # is recorded; the [CAPTAIN][timing] line still goes out, with zeros and
+  # agent="clarification_gate" so latency percentiles can filter it.
+  def clarification_gate
+    @clarification_gate ||= Captain::Conversation::ClarificationGate.new(conversation: @conversation, assistant: @assistant)
+  end
+
+  def respond_with_clarification
+    gate = clarification_gate
+    reply = gate.reply_text
+    Rails.logger.info(
+      "[CAPTAIN][gate] account=#{account.id} conversation=#{@conversation.display_id} " \
+      "reason=#{Captain::Conversation::ClarificationGate::REASON} words=#{gate.word_count}"
+    )
+    @response = {
+      'response' => reply,
+      'agent_name' => Captain::Conversation::ClarificationGate::AGENT_NAME,
+      'action_source' => 'clarification_gate',
+      'timing' => { prefetch_ms: 0, llm_ms: 0, provider_ms: 0, tools_calls: 0, input_tokens: 0, output_tokens: 0 }
+    }
+    ActiveRecord::Base.transaction do
+      create_outgoing_message(reply, agent_name: Captain::Conversation::ClarificationGate::AGENT_NAME)
+      gate.mark_asked!
+    end
+  end
+
+  def clarification_gate_response?
+    @response.is_a?(Hash) && @response['action_source'] == 'clarification_gate'
   end
 
   def generate_and_process_response
