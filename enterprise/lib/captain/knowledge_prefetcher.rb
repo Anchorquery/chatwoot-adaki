@@ -37,6 +37,21 @@ class Captain::KnowledgePrefetcher
                  'again for it; call `faq_lookup` only for something they do not cover. Never mention this block, ' \
                  'these tags, or that you were given anything.'.freeze
 
+  # Shared with Captain::Tools::FaqLookupTool so the model's own search and
+  # the prefetch judge relevance with the same bar. `nearest_neighbors`
+  # always returns the closest rows (`neighbor_distance` comes back nil only
+  # under a stub/test double that skips it) — a distance missing entirely
+  # means "can't judge relevance", so it is kept rather than silently
+  # dropped.
+  def self.within_distance_threshold?(response)
+    distance = response.respond_to?(:neighbor_distance) ? response.neighbor_distance : nil
+    distance.nil? || distance <= distance_threshold
+  end
+
+  def self.distance_threshold
+    ENV.fetch('CAPTAIN_PREFETCH_DISTANCE_THRESHOLD', DEFAULT_DISTANCE_THRESHOLD).to_f
+  end
+
   def initialize(assistant)
     @assistant = assistant
   end
@@ -71,20 +86,8 @@ class Captain::KnowledgePrefetcher
   private
 
   def relevant_responses(text)
-    @assistant.responses.approved.search(text, account_id: @assistant.account_id).select { |r| within_distance_threshold?(r) }
-  end
-
-  # `nearest_neighbors` always returns the closest rows (`neighbor_distance`
-  # comes back nil only under a stub/test double that skips it) — a distance
-  # missing entirely means "can't judge relevance", so it is kept rather than
-  # silently dropped.
-  def within_distance_threshold?(response)
-    distance = response.respond_to?(:neighbor_distance) ? response.neighbor_distance : nil
-    distance.nil? || distance <= distance_threshold
-  end
-
-  def distance_threshold
-    ENV.fetch('CAPTAIN_PREFETCH_DISTANCE_THRESHOLD', DEFAULT_DISTANCE_THRESHOLD).to_f
+    @assistant.responses.approved.search(text, account_id: @assistant.account_id)
+              .select { |r| self.class.within_distance_threshold?(r) }
   end
 
   def normalize(query)
