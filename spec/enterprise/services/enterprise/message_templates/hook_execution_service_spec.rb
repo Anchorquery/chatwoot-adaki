@@ -212,6 +212,35 @@ RSpec.describe MessageTemplates::HookExecutionService do
 
       create(:message, conversation: conversation, message_type: :incoming, account: account)
     end
+
+    context 'when an assigned agent has been handling the thread for days (after_window + active thread days)' do
+      let(:agent) { create(:user, account: account) }
+
+      before do
+        create(:inbox_member, inbox: inbox, user: agent)
+        travel_to(2.days.ago) do
+          conversation.update!(assignee: agent)
+          create(:message, conversation: conversation, message_type: :outgoing, account: account, sender: agent,
+                           content: 'Te lo miro y te digo')
+        end
+      end
+
+      it 'does not schedule captain response while the human thread is active' do
+        assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'after_window',
+                                                         'human_takeover_window_minutes' => 15,
+                                                         'human_takeover_active_thread_days' => 7))
+
+        expect(Captain::Conversation::ResponseBuilderJob).not_to receive(:perform_later)
+
+        create(:message, conversation: conversation, message_type: :incoming, account: account)
+      end
+
+      it 'schedules captain response when the rule is off (default) and the minute window has passed' do
+        expect(Captain::Conversation::ResponseBuilderJob).to receive(:perform_later).with(conversation, assistant, debounce_wait: 2.0)
+
+        create(:message, conversation: conversation, message_type: :incoming, account: account)
+      end
+    end
   end
 
   context 'when message is outgoing' do
