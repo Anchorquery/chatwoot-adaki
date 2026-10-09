@@ -101,6 +101,40 @@ RSpec.describe Captain::Tools::FaqLookupTool, type: :model do
       end
     end
 
+    # `search` is a plain nearest-neighbours query and always returns the
+    # closest rows, however far. The tool applies the prefetch's distance bar
+    # so an off-topic query really is empty (see Captain::KnowledgePrefetcher).
+    context 'when the closest FAQ is above the distance threshold (real nearest_neighbors)' do
+      before do
+        # Opposite vector to the stubbed query embedding: cosine distance ~2,
+        # well past DEFAULT_DISTANCE_THRESHOLD (0.65).
+        create(:captain_assistant_response, assistant: assistant, question: 'Something unrelated',
+                                            answer: 'unrelated', status: 'approved', embedding: Array.new(1536, -0.1))
+      end
+
+      it 'reports no relevant FAQs instead of the nearest off-topic rows' do
+        result = tool.perform(tool_context, query: 'quiero más información')
+
+        expect(result).to eq('No relevant FAQs found for: quiero más información')
+      end
+
+      it 'still returns a FAQ that is within the threshold' do
+        create(:captain_assistant_response, assistant: assistant, question: 'How much is the 3-pack?',
+                                            answer: '37.90', status: 'approved', embedding: Array.new(1536, 0.1))
+
+        result = tool.perform(tool_context, query: 'price of the 3-pack')
+
+        expect(result).to include('Question: How much is the 3-pack?')
+        expect(result).not_to include('Something unrelated')
+      end
+
+      it 'returns the off-topic row again when the threshold env var is opened all the way up' do
+        with_modified_env CAPTAIN_PREFETCH_DISTANCE_THRESHOLD: '2' do
+          expect(tool.perform(tool_context, query: 'quiero más información')).to include('Something unrelated')
+        end
+      end
+    end
+
     context 'with blank query' do
       it 'handles empty query' do
         # Return empty result set
