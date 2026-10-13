@@ -103,7 +103,7 @@ class Evolution::PrivacyDirectoryService
   # --- Chatwoot ---------------------------------------------------------------
 
   def chatwoot_search(query, type, page)
-    scope = inbox_contacts.where(type_condition(type))
+    scope = inbox_contacts.where(type_condition(type)).where.not(service_contact_condition, service_contact_numbers)
     scope = scope.where(search_condition(query), **search_values(query)) if query.present?
     rows = scope.order(Arel.sql('contacts.last_activity_at DESC NULLS LAST'), 'contacts.id')
                 .offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE + 1)
@@ -119,6 +119,18 @@ class Evolution::PrivacyDirectoryService
     when 'channel' then "contacts.identifier LIKE '%@newsletter'"
     else "(contacts.identifier IS NULL OR (contacts.identifier NOT LIKE '%@g.us' AND contacts.identifier NOT LIKE '%@newsletter'))"
     end
+  end
+
+  # El contacto con el que Evolution avisa de su estado ("+123456", con el
+  # nombre de la organización) no es un chat de WhatsApp: no hay nada que
+  # bloquear. Ver Contact#service_channel_contact?. Con un NULL suelto el NOT
+  # daría NULL y ocultaría la fila: de ahí los COALESCE.
+  def service_contact_condition
+    "COALESCE(contacts.identifier, '') = '' AND COALESCE(contacts.phone_number, '') IN (?)"
+  end
+
+  def service_contact_numbers
+    @inbox.try(:captain_inbox)&.service_contact_numbers_value || Conversation::DEFAULT_SERVICE_CONTACT_NUMBERS
   end
 
   # "+34 600 11" debe encontrar "+34600111222": además del texto tal cual, se
@@ -166,10 +178,15 @@ class Evolution::PrivacyDirectoryService
   end
 
   # Evolution trae nombre y foto más frescos: gana sobre el duplicado de
-  # Chatwoot, conservando el orden en que llegaron.
+  # Chatwoot, conservando el orden en que llegaron. Salvo si Evolution solo
+  # sabe el número (chat cuyo último mensaje enviamos nosotros): entonces vale
+  # el nombre que tenga Chatwoot.
   def merge_items(items)
     unique = items.each_with_object({}) do |item, merged|
-      merged[item[:jid]] ||= item
+      kept = merged[item[:jid]]
+      next merged[item[:jid]] = item unless kept
+
+      kept[:name] = item[:name] if name_key(kept[:name]).nil? && name_key(item[:name])
     end.values
     pair_private_ids(unique)
   end
