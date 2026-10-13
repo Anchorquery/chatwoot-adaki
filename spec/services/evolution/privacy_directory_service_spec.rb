@@ -77,6 +77,29 @@ describe Evolution::PrivacyDirectoryService do
       expect(service.search(query: '+34 600 555', type: 'contact', page: 1)[:items].pluck(:name)).to eq(['Luis'])
     end
 
+    # El contacto de servicio de Evolution lleva el nombre de la organización:
+    # buscar ese nombre lo sacaba como si fuera un chat que bloquear.
+    it 'leaves out the Evolution service contact' do
+      inbox_contact(name: 'Tienda', phone_number: '+123456', identifier: nil)
+      inbox_contact(name: 'Tienda Centro', phone_number: '+34600777888', identifier: nil)
+
+      names = service.search(query: 'tienda', type: 'contact', page: 1)[:items].pluck(:name)
+
+      expect(names).to contain_exactly('Tienda Centro')
+    end
+
+    # Si el último mensaje del chat lo enviamos nosotros, Evolution no sabe el
+    # nombre y lo devuelve solo con el número; Chatwoot sí lo conoce.
+    it 'keeps the Chatwoot name when Evolution only knows the number' do
+      inbox_contact(name: 'Marta', phone_number: '+34600222333', identifier: '34600222333@s.whatsapp.net')
+      stub_request(:post, find_chats_url).to_return(json([{ remoteJid: '34600222333@s.whatsapp.net', pushName: nil }]))
+
+      items = service.search(query: '600222', type: 'contact', page: 1)[:items]
+
+      expect(items.size).to eq(1)
+      expect(items.first).to include(name: 'Marta', source: 'whatsapp')
+    end
+
     context 'when the user cannot see every chat of the number' do
       let(:include_evolution) { false }
 
