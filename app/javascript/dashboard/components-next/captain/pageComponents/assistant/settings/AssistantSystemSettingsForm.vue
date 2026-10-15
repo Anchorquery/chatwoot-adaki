@@ -42,6 +42,7 @@ const initialState = {
   continueAfterHumanTakeover: true,
   humanTakeoverMode: 'after_window',
   humanTakeoverWindowMinutes: 15,
+  humanTakeoverActiveThreadDays: 0,
   autoHandoffEnabled: false,
   autoResolveHours: 24,
   handoffTeamId: null,
@@ -88,6 +89,8 @@ const updateStateFromAssistant = assistant => {
     : 'after_window';
   state.humanTakeoverWindowMinutes =
     Number(config.human_takeover_window_minutes) || 15;
+  state.humanTakeoverActiveThreadDays =
+    Number(config.human_takeover_active_thread_days) || 0;
   state.handoffTeamId = Number(config.handoff_team_id) || null;
   state.reasoningLevel = REASONING_LEVELS.includes(config.reasoning_level)
     ? config.reasoning_level
@@ -120,6 +123,8 @@ const handleSystemMessagesUpdate = async () => {
       human_takeover_mode: state.humanTakeoverMode,
       human_takeover_window_minutes:
         Number(state.humanTakeoverWindowMinutes) || 15,
+      human_takeover_active_thread_days:
+        Number(state.humanTakeoverActiveThreadDays) || 0,
       auto_handoff_enabled: state.autoHandoffEnabled,
       auto_resolve_hours: Number(state.autoResolveHours) || 24,
       handoff_team_id: Number(state.handoffTeamId) || null,
@@ -267,6 +272,27 @@ watch(
       />
       <p class="text-sm text-n-slate-11 italic">
         {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_WINDOW.DESCRIPTION') }}
+      </p>
+    </div>
+
+    <div
+      v-if="state.humanTakeoverMode === 'after_window'"
+      class="flex flex-col gap-2"
+    >
+      <label class="text-sm font-medium text-n-slate-12">
+        {{ t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_ACTIVE_THREAD.LABEL') }}
+      </label>
+      <input
+        v-model.number="state.humanTakeoverActiveThreadDays"
+        type="number"
+        min="0"
+        max="365"
+        class="w-32 px-3 py-2 rounded-lg border border-n-weak bg-n-alpha-black2 text-sm text-n-slate-12"
+      />
+      <p class="text-sm text-n-slate-11 italic">
+        {{
+          t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_ACTIVE_THREAD.DESCRIPTION')
+        }}
       </p>
     </div>
 

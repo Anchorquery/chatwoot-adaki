@@ -93,6 +93,7 @@ const localTakeoverMode = ref(null);
 const localTakeoverWindow = ref(null);
 // null = inherit from the assistant, 0 = explicitly no team, N = team id
 const localHandoffTeam = ref(null);
+const localActiveThreadDays = ref(null);
 
 const HUMAN_TAKEOVER_MODES = ['always', 'after_window', 'never'];
 
@@ -124,6 +125,11 @@ const syncLocal = () => {
     settings.value.human_takeover_window_minutes === undefined
       ? null
       : Number(settings.value.human_takeover_window_minutes);
+  localActiveThreadDays.value =
+    settings.value.human_takeover_active_thread_days === undefined ||
+    settings.value.human_takeover_active_thread_days === null
+      ? null
+      : Number(settings.value.human_takeover_active_thread_days);
   localHandoffTeam.value =
     settings.value.handoff_team_id === undefined ||
     settings.value.handoff_team_id === null
@@ -479,6 +485,44 @@ const removeAudience = audienceId => {
                     human_takeover_window_minutes: Number(localTakeoverWindow),
                   })
                 : clearOverride('human_takeover_window_minutes')
+            "
+          />
+        </div>
+      </div>
+
+      <!-- human_takeover_active_thread_days (0 is a valid override: off) -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1">
+          <p class="text-sm font-medium text-n-slate-12">
+            {{
+              t('CAPTAIN.ASSISTANTS.FORM.HUMAN_TAKEOVER_ACTIVE_THREAD.LABEL')
+            }}
+          </p>
+          <p class="text-xs text-n-slate-11">
+            {{
+              t('CAPTAIN.INBOXES.OVERRIDES.EFFECTIVE', {
+                value: (effective.human_takeover_active_thread_days || 0) + 'd',
+              })
+            }}
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            v-model.number="localActiveThreadDays"
+            type="number"
+            min="0"
+            max="365"
+            :placeholder="t('CAPTAIN.INBOXES.OVERRIDES.INHERIT')"
+            :disabled="saving"
+            class="w-24 text-xs rounded-md border border-n-weak bg-n-alpha-black2 px-2 py-1 text-n-slate-12"
+            @change="
+              localActiveThreadDays === null || localActiveThreadDays === ''
+                ? clearOverride('human_takeover_active_thread_days')
+                : saveOverride({
+                    human_takeover_active_thread_days: Number(
+                      localActiveThreadDays
+                    ),
+                  })
             "
           />
         </div>

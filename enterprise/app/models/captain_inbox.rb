@@ -22,8 +22,8 @@ class CaptainInbox < ApplicationRecord
   validates :inbox_id, uniqueness: true
 
   store_accessor :settings, :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
-                 :human_takeover_mode, :human_takeover_window_minutes, :service_contact_numbers,
-                 :handoff_team_id
+                 :human_takeover_mode, :human_takeover_window_minutes, :human_takeover_active_thread_days,
+                 :service_contact_numbers, :handoff_team_id
 
   # Cascada: override > assistant > nil (sin equipo: auto-asignación del inbox).
   # Un override explícito a 0 significa "sin equipo" aunque el asistente
@@ -80,6 +80,17 @@ class CaptainInbox < ApplicationRecord
     return value if raw.present? && value.positive?
 
     captain_assistant.human_takeover_window_minutes_value
+  end
+
+  # Cascada: override > assistant > 0 (desactivado). Un override explícito a
+  # 0 apaga la regla en esta bandeja aunque el asistente la tenga activa; la
+  # clave ausente significa heredar.
+  def human_takeover_active_thread_days_value
+    if settings.key?('human_takeover_active_thread_days') && !settings['human_takeover_active_thread_days'].nil?
+      return [settings['human_takeover_active_thread_days'].to_i, 0].max
+    end
+
+    captain_assistant.human_takeover_active_thread_days_value
   end
 
   # Cascada: override > assistant > default false.
