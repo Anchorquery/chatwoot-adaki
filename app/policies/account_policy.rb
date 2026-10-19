@@ -12,7 +12,7 @@ class AccountPolicy < ApplicationPolicy
   end
 
   def update?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('account_settings_manage')
   end
 
   def update_captain_preferences?

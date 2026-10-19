@@ -7,10 +7,11 @@ export const CUSTOM_ROLE_PERMISSION_GROUPS = [
       'conversation_manage',
       'conversation_unassigned_manage',
       'conversation_participating_manage',
+      'macro_manage',
     ],
   },
   { key: 'contacts', permissions: ['contact_manage'] },
-  { key: 'campaigns', permissions: ['campaign_manage'] },
+  { key: 'campaigns', permissions: ['campaign_manage', 'campaign_approve'] },
   { key: 'channels', permissions: ['inbox_manage', 'channel_operate'] },
   { key: 'captain', permissions: ['captain_manage'] },
   {
@@ -20,10 +21,25 @@ export const CUSTOM_ROLE_PERMISSION_GROUPS = [
       'team_manage',
       'label_manage',
       'assignment_manage',
+      'absence_manage',
     ],
   },
+  {
+    key: 'customization',
+    permissions: [
+      'automation_manage',
+      'attribute_manage',
+      'agent_bot_manage',
+      'sla_manage',
+    ],
+  },
+  { key: 'integrations', permissions: ['integration_manage'] },
   { key: 'reports', permissions: ['report_manage'] },
   { key: 'knowledge_base', permissions: ['knowledge_base_manage'] },
+  {
+    key: 'account',
+    permissions: ['account_settings_manage', 'audit_log_view'],
+  },
 ];
 
 export const AVAILABLE_CUSTOM_ROLE_PERMISSIONS =

@@ -72,6 +72,10 @@ class InboxPolicy < ApplicationPolicy
     inbox_manager?
   end
 
+  def whatsapp_tier?
+    inbox_manager?
+  end
+
   def evolution_audience_options?
     inbox_manager?
   end

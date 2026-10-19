@@ -14,7 +14,7 @@ import { useAdmin } from 'dashboard/composables/useAdmin';
 const getters = useStoreGetters();
 const store = useStore();
 const { t } = useI18n();
-const { isAdmin } = useAdmin();
+const { canManageMacros } = useAdmin();
 
 const showDeleteConfirmationPopup = ref(false);
 const selectedMacro = ref({});
@@ -111,7 +111,7 @@ const tableHeaders = computed(() => {
             v-for="macro in items"
             :key="macro.id"
             :macro="macro"
-            :can-manage-public-macros="isAdmin"
+            :can-manage-public-macros="canManageMacros"
             @delete="openDeletePopup(macro)"
           />
         </template>

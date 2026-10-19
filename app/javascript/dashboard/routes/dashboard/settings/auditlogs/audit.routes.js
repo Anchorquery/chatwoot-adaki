@@ -26,7 +26,7 @@ export default {
               INSTALLATION_TYPES.CLOUD,
               INSTALLATION_TYPES.ENTERPRISE,
             ],
-            permissions: ['administrator'],
+            permissions: ['administrator', 'audit_log_view'],
           },
           component: AuditLogsHome,
         },

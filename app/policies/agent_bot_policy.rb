@@ -4,7 +4,7 @@ class AgentBotPolicy < ApplicationPolicy
   end
 
   def update?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_bot_manage')
   end
 
   def show?
@@ -12,22 +12,22 @@ class AgentBotPolicy < ApplicationPolicy
   end
 
   def create?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_bot_manage')
   end
 
   def destroy?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_bot_manage')
   end
 
   def avatar?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_bot_manage')
   end
 
   def reset_access_token?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_bot_manage')
   end
 
   def reset_secret?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('agent_bot_manage')
   end
 end

@@ -1,17 +1,17 @@
 class Adaki::CampaignApprovalPolicy < ApplicationPolicy
   def index?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('campaign_manage')
   end
 
   def create?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('campaign_manage')
   end
 
   def approve?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('campaign_approve')
   end
 
   def reject?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('campaign_approve')
   end
 end

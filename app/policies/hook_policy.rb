@@ -1,10 +1,10 @@
 class HookPolicy < ApplicationPolicy
   def create?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('integration_manage')
   end
 
   def update?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('integration_manage')
   end
 
   def process_event?
@@ -12,6 +12,6 @@ class HookPolicy < ApplicationPolicy
   end
 
   def destroy?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('integration_manage')
   end
 end

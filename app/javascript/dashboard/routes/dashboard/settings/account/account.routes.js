@@ -7,7 +7,7 @@ export default {
     {
       path: frontendURL('accounts/:accountId/settings/general'),
       meta: {
-        permissions: ['administrator'],
+        permissions: ['administrator', 'account_settings_manage'],
       },
       component: SettingsWrapper,
       children: [
@@ -16,7 +16,7 @@ export default {
           name: 'general_settings_index',
           component: Index,
           meta: {
-            permissions: ['administrator'],
+            permissions: ['administrator', 'account_settings_manage'],
           },
         },
       ],

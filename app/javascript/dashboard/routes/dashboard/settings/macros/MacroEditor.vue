@@ -19,7 +19,7 @@ const router = useRouter();
 const { t } = useI18n();
 
 const { getMacroDropdownValues } = useMacros();
-const { isAdmin } = useAdmin();
+const { canManageMacros } = useAdmin();
 
 const macro = ref(null);
 const mode = ref('CREATE');
@@ -36,7 +36,7 @@ provide('macroActionTypes', macroActionTypes);
 const uiFlags = computed(() => getters['macros/getUIFlags'].value);
 const macroId = computed(() => route.params.macroId);
 const isPublicMacroReadOnly = computed(
-  () => macro.value?.visibility === 'global' && !isAdmin.value
+  () => macro.value?.visibility === 'global' && !canManageMacros.value
 );
 
 const fetchDropdownData = () => {
@@ -97,7 +97,7 @@ const initNewMacro = () => {
         action_params: [],
       },
     ],
-    visibility: isAdmin.value ? 'global' : 'personal',
+    visibility: canManageMacros.value ? 'global' : 'personal',
   };
 };
 
@@ -143,7 +143,7 @@ const saveMacro = async macroData => {
     <MacroForm
       v-if="macro && !uiFlags.isFetchingItem"
       :macro-data="macro"
-      :can-manage-public-macros="isAdmin"
+      :can-manage-public-macros="canManageMacros"
       :read-only="isPublicMacroReadOnly"
       @update:macro-data="macro = $event"
       @submit="saveMacro"

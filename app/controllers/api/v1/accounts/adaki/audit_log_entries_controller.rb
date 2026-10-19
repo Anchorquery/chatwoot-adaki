@@ -1,5 +1,5 @@
 class Api::V1::Accounts::Adaki::AuditLogEntriesController < Api::V1::Accounts::BaseController
-  before_action :check_admin_authorization?
+  before_action -> { authorize :audit_log, :index? }
 
   def index
     entries = Adaki::AuditLogEntry.for_account(Current.account).includes(:user).order(recorded_at: :desc)

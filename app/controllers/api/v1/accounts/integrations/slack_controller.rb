@@ -1,5 +1,5 @@
 class Api::V1::Accounts::Integrations::SlackController < Api::V1::Accounts::BaseController
-  before_action :check_admin_authorization?
+  before_action -> { authorize :hook, :create? }
   before_action :fetch_hook, only: [:update, :destroy, :list_all_channels]
 
   def list_all_channels

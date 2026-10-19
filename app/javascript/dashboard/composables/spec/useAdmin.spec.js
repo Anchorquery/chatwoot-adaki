@@ -73,6 +73,14 @@ describe('useAdmin', () => {
       expect(canManageTeams.value).toBe(false);
     });
 
+    it('opens shared macros only with macro_manage', () => {
+      withUser('agent', ['macro_manage', 'custom_role']);
+      expect(useAdmin().canManageMacros.value).toBe(true);
+
+      withUser('agent', ['conversation_manage', 'custom_role']);
+      expect(useAdmin().canManageMacros.value).toBe(false);
+    });
+
     it('does not open channel administration for channel operators', () => {
       withUser('agent', ['channel_operate', 'custom_role']);
 
