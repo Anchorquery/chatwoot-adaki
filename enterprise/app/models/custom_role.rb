@@ -2,25 +2,42 @@
 #
 # Table name: custom_roles
 #
-#  id          :bigint           not null, primary key
-#  description :string
-#  name        :string
-#  permissions :text             default([]), is an Array
-#  created_at  :datetime         not null
-#  updated_at  :datetime         not null
-#  account_id  :bigint           not null
+#  id              :bigint           not null, primary key
+#  description     :string
+#  name            :string
+#  permissions     :text             default([]), is an Array
+#  sidebar_profile :string
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#  account_id      :bigint           not null
 #
 # Indexes
 #
 #  index_custom_roles_on_account_id  (account_id)
 #
-#
 
-# Available permissions for custom roles:
+# Available permissions for custom roles, grouped by the section of the app
+# they open. Each one is an independent checkbox in the role form.
+#
+# Conversations
 # - 'conversation_manage': Can manage all conversations.
 # - 'conversation_unassigned_manage': Can manage unassigned conversations and assign to self.
 # - 'conversation_participating_manage': Can manage conversations they are participating in (assigned to or a participant).
+# Contacts (and companies)
 # - 'contact_manage': Can manage contacts.
+# Campaigns
+# - 'campaign_manage': Can create, edit, clone and launch campaigns.
+# Channels
+# - 'inbox_manage': Can create, configure and delete every inbox.
+# - 'channel_operate': Can connect (QR), check and restart the WhatsApp session of the inboxes they are assigned to.
+# Captain
+# - 'captain_manage': Can manage Captain assistants, tools and settings.
+# Team
+# - 'agent_manage': Can invite and manage agents.
+# - 'team_manage': Can manage teams.
+# - 'label_manage': Can manage labels.
+# - 'assignment_manage': Can manage assignment and capacity policies.
+# Reports and help center
 # - 'report_manage': Can manage reports.
 # - 'knowledge_base_manage': Can manage knowledge base portals.
 
@@ -28,31 +45,60 @@ class CustomRole < ApplicationRecord
   belongs_to :account
   has_many :account_users, dependent: :nullify
 
-  PERMISSIONS = %w[
-    conversation_manage
-    conversation_unassigned_manage
-    conversation_participating_manage
-    contact_manage
-    report_manage
-    knowledge_base_manage
-  ].freeze
-
-  SIDEBAR_PROFILES = %w[ai_agent communication].freeze
-
-  SIDEBAR_PROFILE_PERMISSIONS = {
-    'ai_agent' => %w[
-      agent_settings_manage
-      captain_manage
+  PERMISSION_GROUPS = {
+    'conversations' => %w[
       conversation_manage
+      conversation_unassigned_manage
+      conversation_participating_manage
     ],
-    'communication' => %w[campaign_manage conversation_manage]
+    'contacts' => %w[contact_manage],
+    'campaigns' => %w[campaign_manage],
+    'channels' => %w[inbox_manage channel_operate],
+    'captain' => %w[captain_manage],
+    'team' => %w[agent_manage team_manage label_manage assignment_manage],
+    'reports' => %w[report_manage],
+    'knowledge_base' => %w[knowledge_base_manage]
   }.freeze
 
+  PERMISSIONS = PERMISSION_GROUPS.values.flatten.freeze
+
+  # Older roles may still carry this single permission that used to open
+  # every team/inbox/label setting at once. It is expanded to the granular
+  # ones when permissions are resolved.
+  LEGACY_PERMISSIONS = {
+    'agent_settings_manage' => %w[inbox_manage agent_manage team_manage label_manage assignment_manage]
+  }.freeze
+
+  # Ready-made sets of permissions the role form can apply with one click.
+  PRESETS = {
+    'ai_agent' => %w[
+      conversation_manage
+      captain_manage
+      inbox_manage
+      agent_manage
+      team_manage
+      label_manage
+      assignment_manage
+    ],
+    'communication' => %w[conversation_manage contact_manage campaign_manage channel_operate]
+  }.freeze
+
+  # Roles created before the permission matrix picked one of these presets
+  # instead of ticking boxes; kept so those rows still resolve.
+  SIDEBAR_PROFILES = PRESETS.keys.freeze
+
   validates :name, presence: true
-  validates :permissions, inclusion: { in: PERMISSIONS }
+  validates :permissions, inclusion: { in: PERMISSIONS + LEGACY_PERMISSIONS.keys }
   validates :sidebar_profile, inclusion: { in: SIDEBAR_PROFILES }, allow_nil: true
 
   def profile_permissions
-    SIDEBAR_PROFILE_PERMISSIONS.fetch(sidebar_profile, [])
+    PRESETS.fetch(sidebar_profile, [])
+  end
+
+  # What the role actually grants: ticked permissions, the legacy preset it may
+  # still carry, and the granular permissions a legacy one stands for.
+  def effective_permissions
+    granted = (permissions + profile_permissions).uniq
+    granted | LEGACY_PERMISSIONS.slice(*granted).values.flatten
   end
 end

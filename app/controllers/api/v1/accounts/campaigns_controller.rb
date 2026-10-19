@@ -3,7 +3,6 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   before_action :campaign_for_results, only: [:results, :retry_failed]
   before_action :find_campaign_for_clone, only: [:clone]
   before_action :check_authorization
-  before_action :check_clone_authorization, only: [:clone]
   before_action :parse_delivery_settings, only: [:create, :update]
   after_action :trigger_immediate_dispatch, only: [:create, :update]
 
@@ -215,10 +214,6 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   end
 
   private
-
-  def check_clone_authorization
-    raise Pundit::NotAuthorizedError unless Current.account_user&.administrator?
-  end
 
   def campaign
     @campaign ||= Current.account.campaigns.find_by(display_id: params[:id])

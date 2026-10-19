@@ -23,50 +23,49 @@ RSpec.describe 'Super Admin Custom Roles API', type: :request do
   end
 
   describe 'GET /super_admin/custom_roles/new' do
-    it 'shows every permission and sidebar profile' do
+    it 'shows every permission grouped by section' do
       sign_in(super_admin, scope: :super_admin)
 
       get '/super_admin/custom_roles/new'
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include(*CustomRole::PERMISSIONS, *CustomRole::SIDEBAR_PROFILES)
-      expect(response.body).to include('Manage all conversations', 'Community communications (manage campaigns)')
+      expect(response.body).to include(*CustomRole::PERMISSIONS)
+      expect(response.body).to include('Conversations', 'Campaigns', 'Channels (inboxes)', 'Team')
+      expect(response.body).to include('Create, edit, clone and launch campaigns')
     end
 
-    it 'preselects the default sidebar instead of the first profile' do
+    it 'offers the ready-made templates' do
       sign_in(super_admin, scope: :super_admin)
 
       get '/super_admin/custom_roles/new'
 
-      expect(response.body).to match(%r{<option selected="selected" value="">Default sidebar</option>})
+      expect(response.body).to include('Community communications', 'AI support agent')
+      expect(response.body).to include(CustomRole::PRESETS['communication'].to_json.gsub('"', '&quot;'))
     end
   end
 
   describe 'POST /super_admin/custom_roles' do
     before { sign_in(super_admin, scope: :super_admin) }
 
-    it 'creates a custom role with permissions and sidebar profile' do
+    it 'creates a custom role with the ticked permissions' do
       post '/super_admin/custom_roles', params: {
         custom_role: {
-          account_id: account.id, name: 'AI team', description: 'Captain only',
-          sidebar_profile: 'ai_agent', permissions: ['', 'contact_manage', 'report_manage']
+          account_id: account.id, name: 'Communication', description: 'Campaigns',
+          permissions: ['', 'campaign_manage', 'channel_operate', 'contact_manage']
         }
       }
 
       custom_role = account.custom_roles.last
-      expect(custom_role.name).to eq('AI team')
-      expect(custom_role.sidebar_profile).to eq('ai_agent')
-      expect(custom_role.permissions).to eq(%w[contact_manage report_manage])
+      expect(custom_role.name).to eq('Communication')
+      expect(custom_role.permissions).to eq(%w[campaign_manage channel_operate contact_manage])
     end
 
-    it 'creates a custom role without sidebar profile or permissions' do
+    it 'creates a custom role without permissions' do
       post '/super_admin/custom_roles', params: {
-        custom_role: { account_id: account.id, name: 'Plain', sidebar_profile: '', permissions: [''] }
+        custom_role: { account_id: account.id, name: 'Plain', permissions: [''] }
       }
 
-      custom_role = account.custom_roles.last
-      expect(custom_role.sidebar_profile).to be_nil
-      expect(custom_role.permissions).to eq([])
+      expect(account.custom_roles.last.permissions).to eq([])
     end
   end
 
@@ -76,11 +75,10 @@ RSpec.describe 'Super Admin Custom Roles API', type: :request do
       sign_in(super_admin, scope: :super_admin)
 
       patch "/super_admin/custom_roles/#{custom_role.id}", params: {
-        custom_role: { permissions: ['', 'conversation_manage'], sidebar_profile: 'communication' }
+        custom_role: { permissions: ['', 'conversation_manage', 'inbox_manage'] }
       }
 
-      expect(custom_role.reload.permissions).to eq(%w[conversation_manage])
-      expect(custom_role.sidebar_profile).to eq('communication')
+      expect(custom_role.reload.permissions).to eq(%w[conversation_manage inbox_manage])
     end
   end
 

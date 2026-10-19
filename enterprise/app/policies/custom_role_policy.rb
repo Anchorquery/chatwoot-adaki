@@ -1,6 +1,6 @@
 class CustomRolePolicy < ApplicationPolicy
   def index?
-    administrator_or_custom_role_permission?('agent_settings_manage')
+    administrator_or_custom_role_permission?('agent_manage')
   end
 
   def update?

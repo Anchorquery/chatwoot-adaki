@@ -573,17 +573,34 @@ en:
     branding:
       updated: 'Branding settings updated successfully.'
     custom_roles:
+      apply_preset: 'Apply a template:'
+      permissions_groups:
+        conversations: 'Conversations'
+        contacts: 'Contacts and companies'
+        campaigns: 'Campaigns'
+        channels: 'Channels (inboxes)'
+        captain: 'Captain (AI)'
+        team: 'Team'
+        reports: 'Reports'
+        knowledge_base: 'Help center'
+      permissions_presets:
+        communication: 'Community communications'
+        ai_agent: 'AI support agent'
       permissions:
         conversation_manage: 'Manage all conversations'
         conversation_unassigned_manage: 'Manage unassigned conversations and those assigned to them'
         conversation_participating_manage: 'Manage participating conversations and those assigned to them'
-        contact_manage: 'Manage contacts'
+        contact_manage: 'Manage contacts and companies'
+        campaign_manage: 'Create, edit, clone and launch campaigns'
+        inbox_manage: 'Create, configure and delete any inbox'
+        channel_operate: 'Connect (QR), check and restart the WhatsApp session of their assigned inboxes'
+        captain_manage: 'Manage Captain assistants, tools and settings'
+        agent_manage: 'Invite and manage agents'
+        team_manage: 'Manage teams'
+        label_manage: 'Manage labels'
+        assignment_manage: 'Manage assignment and capacity policies'
         report_manage: 'Manage reports'
         knowledge_base_manage: 'Manage knowledge base'
-      sidebar_profiles:
-        none: 'Default sidebar'
-        ai_agent: 'AI support agent (manage Captain, agents, teams, assignment, inboxes, and labels)'
-        communication: 'Community communications (manage campaigns)'
     account_users:
       role_groups:
         default: 'Default roles'

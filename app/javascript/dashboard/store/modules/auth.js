@@ -83,14 +83,6 @@ export const getters = {
     return currentAccount.custom_role_id;
   },
 
-  getCurrentSidebarProfile($state, $getters) {
-    const { accounts = [] } = $state.currentUser;
-    const [currentAccount = {}] = accounts.filter(
-      account => account.id === $getters.getCurrentAccountId
-    );
-    return currentAccount.custom_role?.sidebar_profile || null;
-  },
-
   getCurrentUser($state) {
     return $state.currentUser;
   },

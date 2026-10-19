@@ -6,7 +6,8 @@ import { useVuelidate } from '@vuelidate/core';
 import { required, minLength } from '@vuelidate/validators';
 import { useAlert } from 'dashboard/composables';
 import {
-  AVAILABLE_CUSTOM_ROLE_PERMISSIONS,
+  CUSTOM_ROLE_PERMISSION_GROUPS,
+  CUSTOM_ROLE_PRESETS,
   MANAGE_ALL_CONVERSATION_PERMISSIONS,
   CONVERSATION_UNASSIGNED_PERMISSIONS,
   CONVERSATION_PARTICIPATING_PERMISSIONS,
@@ -34,7 +35,6 @@ const { t } = useI18n();
 const name = ref('');
 const description = ref('');
 const selectedPermissions = ref([]);
-const sidebarProfile = ref('');
 
 const nameInput = ref(null);
 
@@ -55,7 +55,6 @@ const resetForm = () => {
   name.value = '';
   description.value = '';
   selectedPermissions.value = [];
-  sidebarProfile.value = '';
   v$.value.$reset();
 };
 
@@ -63,7 +62,6 @@ const populateEditForm = () => {
   name.value = props.selectedRole.name || '';
   description.value = props.selectedRole.description || '';
   selectedPermissions.value = props.selectedRole.permissions || [];
-  sidebarProfile.value = props.selectedRole.sidebar_profile || '';
 };
 
 watch(
@@ -94,31 +92,16 @@ watch(
         p => p !== MANAGE_ALL_CONVERSATION_PERMISSIONS
       );
     }
-
-    if (
-      sidebarProfile.value &&
-      !selectedPermissions.value.includes(MANAGE_ALL_CONVERSATION_PERMISSIONS)
-    ) {
-      selectedPermissions.value = [
-        ...selectedPermissions.value,
-        MANAGE_ALL_CONVERSATION_PERMISSIONS,
-      ];
-    }
   },
   { deep: true }
 );
 
-watch(sidebarProfile, profile => {
-  if (
-    profile &&
-    !selectedPermissions.value.includes(MANAGE_ALL_CONVERSATION_PERMISSIONS)
-  ) {
-    selectedPermissions.value = [
-      ...selectedPermissions.value,
-      MANAGE_ALL_CONVERSATION_PERMISSIONS,
-    ];
-  }
-});
+// Ticks every permission of a ready-made set; nothing already ticked is lost.
+const applyPreset = preset => {
+  selectedPermissions.value = [
+    ...new Set([...selectedPermissions.value, ...CUSTOM_ROLE_PRESETS[preset]]),
+  ];
+};
 
 onMounted(() => {
   if (props.mode === 'edit') {
@@ -148,7 +131,8 @@ const handleCustomRole = async () => {
       name: name.value,
       description: description.value,
       permissions: selectedPermissions.value,
-      sidebar_profile: sidebarProfile.value || null,
+      // Roles no longer pick a fixed menu profile; clear any legacy one.
+      sidebar_profile: null,
     };
 
     if (props.mode === 'edit') {
@@ -212,45 +196,55 @@ const isSubmitDisabled = computed(
       </div>
 
       <div class="w-full">
-        <label>
-          {{ $t('CUSTOM_ROLE.FORM.SIDEBAR_PROFILE.LABEL') }}
-          <select v-model="sidebarProfile">
-            <option value="">
-              {{ $t('CUSTOM_ROLE.FORM.SIDEBAR_PROFILE.NONE') }}
-            </option>
-            <option value="ai_agent">
-              {{ $t('CUSTOM_ROLE.SIDEBAR_PROFILES.AI_AGENT') }}
-            </option>
-            <option value="communication">
-              {{ $t('CUSTOM_ROLE.SIDEBAR_PROFILES.COMMUNICATION') }}
-            </option>
-          </select>
-        </label>
-      </div>
-
-      <div class="w-full">
         <label :class="{ 'text-n-ruby-9': v$.selectedPermissions.$error }">
           {{ $t('CUSTOM_ROLE.FORM.PERMISSIONS.LABEL') }}
         </label>
-        <div class="flex flex-col gap-2.5 mb-4 mt-2">
-          <div
-            v-for="permission in AVAILABLE_CUSTOM_ROLE_PERMISSIONS"
-            :key="permission"
-            class="flex items-center"
-          >
-            <input
-              :id="permission"
-              v-model="selectedPermissions"
-              type="checkbox"
-              :value="permission"
-              name="permissions"
-              class="ltr:mr-2 rtl:ml-2"
-            />
-            <label :for="permission" class="text-sm font-normal">
-              {{ $t(`CUSTOM_ROLE.PERMISSIONS.${permission.toUpperCase()}`) }}
-            </label>
-          </div>
+        <div class="flex flex-wrap items-center gap-2 mt-2">
+          <span class="text-sm text-n-slate-11">
+            {{ $t('CUSTOM_ROLE.FORM.PRESETS.LABEL') }}
+          </span>
+          <Button
+            v-for="(_, preset) in CUSTOM_ROLE_PRESETS"
+            :key="preset"
+            type="button"
+            faded
+            slate
+            sm
+            :label="$t(`CUSTOM_ROLE.PRESETS.${preset.toUpperCase()}`)"
+            @click="applyPreset(preset)"
+          />
         </div>
+        <fieldset
+          v-for="group in CUSTOM_ROLE_PERMISSION_GROUPS"
+          :key="group.key"
+          class="mt-4 mb-0"
+        >
+          <legend class="mb-1.5 text-sm font-medium text-n-slate-12">
+            {{ $t(`CUSTOM_ROLE.PERMISSION_GROUPS.${group.key.toUpperCase()}`) }}
+          </legend>
+          <div class="flex flex-col gap-2">
+            <div
+              v-for="permission in group.permissions"
+              :key="permission"
+              class="flex items-center"
+            >
+              <input
+                :id="permission"
+                v-model="selectedPermissions"
+                type="checkbox"
+                :value="permission"
+                name="permissions"
+                class="ltr:mr-2 rtl:ml-2"
+              />
+              <label :for="permission" class="text-sm font-normal">
+                {{ $t(`CUSTOM_ROLE.PERMISSIONS.${permission.toUpperCase()}`) }}
+              </label>
+            </div>
+          </div>
+        </fieldset>
+        <p class="mt-4 text-xs text-n-slate-11">
+          {{ $t('CUSTOM_ROLE.FORM.PERMISSIONS.INBOX_HINT') }}
+        </p>
       </div>
 
       <div class="flex flex-row justify-end w-full gap-2 px-0 py-2">

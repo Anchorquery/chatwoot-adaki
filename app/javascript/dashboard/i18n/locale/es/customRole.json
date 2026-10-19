@@ -36,13 +36,31 @@
       "CONVERSATION_MANAGE": "Administrar todas las conversaciones",
       "CONVERSATION_UNASSIGNED_MANAGE": "Administrar las conversaciones sin asignar y las asignadas a ellas",
       "CONVERSATION_PARTICIPATING_MANAGE": "Administrar las conversaciones en las que participa y las asignadas a ellas",
-      "CONTACT_MANAGE": "Administrar contactos",
+      "CONTACT_MANAGE": "Administrar contactos y empresas",
+      "CAMPAIGN_MANAGE": "Crear, editar, clonar y lanzar campañas",
+      "INBOX_MANAGE": "Crear, configurar y borrar cualquier bandeja",
+      "CHANNEL_OPERATE": "Conectar (QR), consultar y reiniciar la sesión de WhatsApp de sus bandejas asignadas",
+      "CAPTAIN_MANAGE": "Administrar asistentes, herramientas y ajustes de Captain",
+      "AGENT_MANAGE": "Invitar y administrar agentes",
+      "TEAM_MANAGE": "Administrar equipos",
+      "LABEL_MANAGE": "Administrar etiquetas",
+      "ASSIGNMENT_MANAGE": "Administrar políticas de asignación y capacidad",
       "REPORT_MANAGE": "Administrar informes",
       "KNOWLEDGE_BASE_MANAGE": "Administrar la base de conocimientos"
     },
-    "SIDEBAR_PROFILES": {
-      "AI_AGENT": "Agente de soporte IA (gestiona Captain, agentes, equipos, asignación, bandejas y etiquetas)",
-      "COMMUNICATION": "Comunicación con la comunidad (gestiona campañas)"
+    "PERMISSION_GROUPS": {
+      "CONVERSATIONS": "Conversaciones",
+      "CONTACTS": "Contactos y empresas",
+      "CAMPAIGNS": "Campañas",
+      "CHANNELS": "Canales (bandejas)",
+      "CAPTAIN": "Captain (IA)",
+      "TEAM": "Equipo",
+      "REPORTS": "Informes",
+      "KNOWLEDGE_BASE": "Centro de ayuda"
+    },
+    "PRESETS": {
+      "COMMUNICATION": "Comunicación con la comunidad",
+      "AI_AGENT": "Agente de soporte IA"
     },
     "FORM": {
       "NAME": {
@@ -57,15 +75,15 @@
       },
       "PERMISSIONS": {
         "LABEL": "Permisos",
-        "ERROR": "Los permisos son obligatorios."
-      },
-      "SIDEBAR_PROFILE": {
-        "LABEL": "Perfil del menú lateral",
-        "NONE": "Menú lateral por defecto"
+        "ERROR": "Los permisos son obligatorios.",
+        "INBOX_HINT": "Los agentes solo ven las conversaciones de las bandejas de las que son miembros; añádelos como colaboradores en cada bandeja."
       },
       "CANCEL_BUTTON_TEXT": "Cancelar",
       "API": {
         "ERROR_MESSAGE": "No se pudo conectar al servidor Woot. Inténtalo de nuevo más tarde."
+      },
+      "PRESETS": {
+        "LABEL": "Aplicar una plantilla:"
       }
     },
     "ADD": {

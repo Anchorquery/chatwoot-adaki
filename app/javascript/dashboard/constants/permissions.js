@@ -1,11 +1,52 @@
-export const AVAILABLE_CUSTOM_ROLE_PERMISSIONS = [
-  'conversation_manage',
-  'conversation_unassigned_manage',
-  'conversation_participating_manage',
-  'contact_manage',
-  'report_manage',
-  'knowledge_base_manage',
+// Permissions a custom role can be given, grouped by the section of the app
+// they open. Keep in sync with CustomRole::PERMISSION_GROUPS.
+export const CUSTOM_ROLE_PERMISSION_GROUPS = [
+  {
+    key: 'conversations',
+    permissions: [
+      'conversation_manage',
+      'conversation_unassigned_manage',
+      'conversation_participating_manage',
+    ],
+  },
+  { key: 'contacts', permissions: ['contact_manage'] },
+  { key: 'campaigns', permissions: ['campaign_manage'] },
+  { key: 'channels', permissions: ['inbox_manage', 'channel_operate'] },
+  { key: 'captain', permissions: ['captain_manage'] },
+  {
+    key: 'team',
+    permissions: [
+      'agent_manage',
+      'team_manage',
+      'label_manage',
+      'assignment_manage',
+    ],
+  },
+  { key: 'reports', permissions: ['report_manage'] },
+  { key: 'knowledge_base', permissions: ['knowledge_base_manage'] },
 ];
+
+export const AVAILABLE_CUSTOM_ROLE_PERMISSIONS =
+  CUSTOM_ROLE_PERMISSION_GROUPS.flatMap(group => group.permissions);
+
+// One-click sets of permissions. Keep in sync with CustomRole::PRESETS.
+export const CUSTOM_ROLE_PRESETS = {
+  communication: [
+    'conversation_manage',
+    'contact_manage',
+    'campaign_manage',
+    'channel_operate',
+  ],
+  ai_agent: [
+    'conversation_manage',
+    'captain_manage',
+    'inbox_manage',
+    'agent_manage',
+    'team_manage',
+    'label_manage',
+    'assignment_manage',
+  ],
+};
 
 export const ROLES = ['agent', 'administrator'];
 

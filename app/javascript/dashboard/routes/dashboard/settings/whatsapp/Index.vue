@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useAlert } from 'dashboard/composables';
 import { useMapGetter } from 'dashboard/composables/store';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import InboxesAPI from 'dashboard/api/inboxes';
 import SettingsLayout from '../SettingsLayout.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
@@ -29,6 +30,7 @@ const router = useRouter();
 const MAX_PARALLEL_REQUESTS = 4;
 const AUTO_REFRESH_MS = 60 * 1000;
 
+const { canManageInboxes } = useAdmin();
 const inboxes = useMapGetter('inboxes/getInboxes');
 const inboxUiFlags = useMapGetter('inboxes/getUIFlags');
 
@@ -243,6 +245,7 @@ onBeforeUnmount(() => {
             @click="refreshAll"
           />
           <NextButton
+            v-if="canManageInboxes"
             v-tooltip.bottom="
               evolutionEnabled
                 ? null
@@ -281,7 +284,7 @@ onBeforeUnmount(() => {
           </p>
         </div>
         <NextButton
-          v-if="evolutionEnabled"
+          v-if="evolutionEnabled && canManageInboxes"
           type="button"
           icon="i-lucide-plus"
           :label="$t('WHATSAPP_CONNECTIONS.NEW_CONNECTION')"
@@ -325,6 +328,7 @@ onBeforeUnmount(() => {
             :inbox="inbox"
             :connection="connections[inbox.id]"
             :restarting="restarting[inbox.id] === true"
+            :can-manage="canManageInboxes"
             @qr="openQr"
             @settings="openSettings"
             @privacy="openPrivacy"

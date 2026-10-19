@@ -49,4 +49,35 @@ describe('useAdmin', () => {
     const { isAdmin } = useAdmin();
     expect(isAdmin.value).toBe(false);
   });
+
+  describe('section permissions', () => {
+    const withUser = (role, permissions) =>
+      useStoreGetters.mockReturnValue({
+        getCurrentRole: ref(role),
+        getCurrentPermissions: ref(permissions),
+      });
+
+    it('lets an administrator manage every section', () => {
+      withUser('administrator', ['administrator']);
+
+      const { canManageInboxes, canManageTeams } = useAdmin();
+      expect(canManageInboxes.value).toBe(true);
+      expect(canManageTeams.value).toBe(true);
+    });
+
+    it('only opens the sections the custom role was given', () => {
+      withUser('agent', ['inbox_manage', 'custom_role']);
+
+      const { canManageInboxes, canManageTeams } = useAdmin();
+      expect(canManageInboxes.value).toBe(true);
+      expect(canManageTeams.value).toBe(false);
+    });
+
+    it('does not open channel administration for channel operators', () => {
+      withUser('agent', ['channel_operate', 'custom_role']);
+
+      const { canManageInboxes } = useAdmin();
+      expect(canManageInboxes.value).toBe(false);
+    });
+  });
 });

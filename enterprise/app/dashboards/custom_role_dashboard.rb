@@ -7,8 +7,9 @@ class CustomRoleDashboard < Administrate::BaseDashboard
     name: Field::String,
     description: Field::String,
     permissions: ArrayCheckboxesField.with_options(collection: CustomRole::PERMISSIONS,
+                                                   groups: CustomRole::PERMISSION_GROUPS,
+                                                   presets: CustomRole::PRESETS,
                                                    i18n_scope: 'super_admin.custom_roles.permissions'),
-    sidebar_profile: SidebarProfileField.with_options(collection: CustomRole::SIDEBAR_PROFILES),
     account_users: Field::HasMany,
     created_at: Field::DateTime,
     updated_at: Field::DateTime
@@ -18,7 +19,6 @@ class CustomRoleDashboard < Administrate::BaseDashboard
     id
     name
     account
-    sidebar_profile
     permissions
   ].freeze
 
@@ -27,7 +27,6 @@ class CustomRoleDashboard < Administrate::BaseDashboard
     account
     name
     description
-    sidebar_profile
     permissions
     account_users
     created_at
@@ -38,7 +37,6 @@ class CustomRoleDashboard < Administrate::BaseDashboard
     account
     name
     description
-    sidebar_profile
     permissions
   ].freeze
 

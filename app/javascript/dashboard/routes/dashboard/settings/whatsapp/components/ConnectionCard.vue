@@ -19,6 +19,12 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // Ajustes de instancia, configuración de la bandeja y desvincular son solo
+  // para quien administra bandejas; el resto opera QR, reinicio y privacidad.
+  canManage: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits([
@@ -95,6 +101,7 @@ const subtitle = computed(() => {
         @click="emit('qr', inbox)"
       />
       <NextButton
+        v-if="canManage"
         type="button"
         size="sm"
         variant="faded"
@@ -128,6 +135,7 @@ const subtitle = computed(() => {
         @click="emit('restart', inbox)"
       />
       <NextButton
+        v-if="canManage"
         v-tooltip.top="$t('WHATSAPP_CONNECTIONS.ACTIONS.OPEN_INBOX')"
         type="button"
         size="sm"
@@ -138,7 +146,7 @@ const subtitle = computed(() => {
         @click="emit('open', inbox)"
       />
       <NextButton
-        v-if="isConnected"
+        v-if="isConnected && canManage"
         v-tooltip.top="$t('WHATSAPP_CONNECTIONS.ACTIONS.LOGOUT')"
         type="button"
         size="sm"

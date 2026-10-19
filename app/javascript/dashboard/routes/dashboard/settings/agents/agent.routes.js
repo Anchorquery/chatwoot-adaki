@@ -21,7 +21,7 @@ export default {
           component: AgentHome,
           meta: {
             featureFlag: FEATURE_FLAGS.AGENT_MANAGEMENT,
-            permissions: ['administrator', 'agent_settings_manage'],
+            permissions: ['administrator', 'agent_manage'],
           },
         },
       ],

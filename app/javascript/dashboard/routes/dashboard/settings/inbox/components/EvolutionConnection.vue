@@ -18,6 +18,12 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // Quien solo opera el canal (permiso channel_operate) conecta y reinicia,
+  // pero no puede desvincular el número.
+  allowLogout: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(['connected', 'disconnected']);
@@ -359,7 +365,7 @@ onBeforeUnmount(() => {
         :is-loading="requestingQr"
         @click="startConnection"
       />
-      <template v-if="isConnected">
+      <template v-if="isConnected && allowLogout">
         <NextButton
           v-if="!confirmingLogout"
           type="button"

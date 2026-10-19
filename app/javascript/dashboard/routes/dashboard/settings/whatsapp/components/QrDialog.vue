@@ -1,9 +1,12 @@
 <script setup>
 import { ref } from 'vue';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import EvolutionConnection from 'dashboard/routes/dashboard/settings/inbox/components/EvolutionConnection.vue';
 
 const emit = defineEmits(['closed']);
+
+const { canManageInboxes } = useAdmin();
 
 const dialogRef = ref(null);
 const inbox = ref(null);
@@ -36,6 +39,7 @@ defineExpose({ open });
       :key="inbox.id"
       :inbox-id="inbox.id"
       auto-connect
+      :allow-logout="canManageInboxes"
     />
   </Dialog>
 </template>

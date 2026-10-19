@@ -4,7 +4,7 @@ class TeamPolicy < ApplicationPolicy
   end
 
   def update?
-    administrator_or_custom_role_permission?('agent_settings_manage')
+    administrator_or_custom_role_permission?('team_manage')
   end
 
   def show?
@@ -12,10 +12,10 @@ class TeamPolicy < ApplicationPolicy
   end
 
   def create?
-    administrator_or_custom_role_permission?('agent_settings_manage')
+    administrator_or_custom_role_permission?('team_manage')
   end
 
   def destroy?
-    administrator_or_custom_role_permission?('agent_settings_manage')
+    administrator_or_custom_role_permission?('team_manage')
   end
 end

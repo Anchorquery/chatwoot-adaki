@@ -1,13 +1,47 @@
+<% scope = "#{f.object_name}_#{field.attribute}" %>
 <div class="field-unit__label">
   <%= f.label field.attribute %>
 </div>
-<div class="field-unit__field">
+<div class="field-unit__field" id="<%= scope %>_field">
   <%# Empty value keeps the key in the params when every box is unchecked %>
   <%= hidden_field_tag "#{f.object_name}[#{field.attribute}][]", '', id: nil %>
-  <% field.collection.each do |value| %>
-    <label class="flex items-center gap-2 mb-1">
-      <%= check_box_tag "#{f.object_name}[#{field.attribute}][]", value, field.selected?(value), id: "#{f.object_name}_#{field.attribute}_#{value}" %>
-      <%= field.label_for(value) %>
-    </label>
+  <% if field.presets.any? %>
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <span class="text-sm"><%= I18n.t('super_admin.custom_roles.apply_preset') %></span>
+      <% field.presets.each do |preset, values| %>
+        <button type="button" class="button button--alt" data-preset-values="<%= values.to_json %>">
+          <%= field.preset_label(preset) %>
+        </button>
+      <% end %>
+    </div>
+  <% end %>
+  <% field.groups.each do |group, values| %>
+    <fieldset class="mb-3">
+      <% if field.group_label(group) %>
+        <legend class="font-semibold mb-1"><%= field.group_label(group) %></legend>
+      <% end %>
+      <% values.each do |value| %>
+        <label class="flex items-center gap-2 mb-1">
+          <%= check_box_tag "#{f.object_name}[#{field.attribute}][]", value, field.selected?(value), id: "#{scope}_#{value}" %>
+          <%= field.label_for(value) %>
+        </label>
+      <% end %>
+    </fieldset>
   <% end %>
 </div>
+<% if field.presets.any? %>
+  <script>
+    (function () {
+      var root = document.getElementById('<%= scope %>_field');
+      if (!root) return;
+      root.querySelectorAll('[data-preset-values]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var values = JSON.parse(button.getAttribute('data-preset-values'));
+          root.querySelectorAll('input[type=checkbox]').forEach(function (box) {
+            if (values.indexOf(box.value) !== -1) box.checked = true;
+          });
+        });
+      });
+    })();
+  </script>
+<% end %>
