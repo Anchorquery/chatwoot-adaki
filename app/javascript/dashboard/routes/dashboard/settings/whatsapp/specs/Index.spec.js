@@ -2,7 +2,10 @@ import { mount, flushPromises } from '@vue/test-utils';
 import InboxesAPI from 'dashboard/api/inboxes';
 import WhatsappConnections from '../Index.vue';
 
-const { inboxes } = vi.hoisted(() => ({ inboxes: { value: [] } }));
+const { inboxes, canManage } = vi.hoisted(() => ({
+  inboxes: { value: [] },
+  canManage: { value: true },
+}));
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -11,6 +14,12 @@ vi.mock('vue-i18n', () => ({
 }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('dashboard/composables', () => ({ useAlert: vi.fn() }));
+vi.mock('dashboard/composables/useAdmin', async () => {
+  const { computed } = await import('vue');
+  return {
+    useAdmin: () => ({ canManageInboxes: computed(() => canManage.value) }),
+  };
+});
 vi.mock('dashboard/composables/store', async () => {
   const { computed } = await import('vue');
   return {
@@ -83,6 +92,7 @@ const mountPage = () =>
 describe('WhatsApp connections page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    canManage.value = true;
     window.chatwootConfig = { evolutionEnabled: true };
     inboxes.value = [
       {
@@ -189,6 +199,39 @@ describe('WhatsApp connections page', () => {
 
     expect(InboxesAPI.restartEvolution).toHaveBeenCalledWith(2);
     expect(InboxesAPI.getEvolutionConnectionState).toHaveBeenCalledTimes(4);
+  });
+
+  it('hides channel administration from users who only operate the channel', async () => {
+    const buttonsOf = async value => {
+      canManage.value = value;
+      const wrapper = mountPage();
+      await flushPromises();
+      // Orden alfabético: Avisos (desconectada), Soporte (esperando), Ventas (conectada).
+      return wrapper
+        .findAll('article')
+        .map(card =>
+          card.findAll('button').map(b => b.attributes('aria-label') || 'text')
+        );
+    };
+
+    const [avisos, , ventas] = await buttonsOf(true);
+    expect(ventas).toContain('WHATSAPP_CONNECTIONS.ACTIONS.LOGOUT');
+    expect(ventas).toContain('WHATSAPP_CONNECTIONS.ACTIONS.OPEN_INBOX');
+    expect(avisos).toHaveLength(5);
+
+    const [avisosOp, soporteOp, ventasOp] = await buttonsOf(false);
+    // Conectada: solo privacidad y reinicio; sin desvincular ni configuración.
+    expect(ventasOp).toEqual([
+      'WHATSAPP_CONNECTIONS.ACTIONS.PRIVACY',
+      'WHATSAPP_CONNECTIONS.ACTIONS.RESTART',
+    ]);
+    // Sin vincular: además el botón de QR (con texto), sin ajustes de instancia.
+    expect(avisosOp).toEqual([
+      'text',
+      'WHATSAPP_CONNECTIONS.ACTIONS.PRIVACY',
+      'WHATSAPP_CONNECTIONS.ACTIONS.RESTART',
+    ]);
+    expect(soporteOp).toHaveLength(3);
   });
 
   it('shows the empty state when nothing is linked yet', async () => {

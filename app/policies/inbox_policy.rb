@@ -11,7 +11,7 @@ class InboxPolicy < ApplicationPolicy
     end
 
     def resolve
-      return account.inboxes if account_user.permissions.include?('agent_settings_manage')
+      return account.inboxes if account_user.permissions.include?('inbox_manage')
 
       user.assigned_inboxes
     end
@@ -23,7 +23,7 @@ class InboxPolicy < ApplicationPolicy
 
   def show?
     # FIXME: for agent bots, lets bring this validation to policies as well in future
-    return true if @user.is_a?(AgentBot) || agent_settings_manager?
+    return true if @user.is_a?(AgentBot) || inbox_manager?
 
     Current.user.assigned_inboxes.include? record
   end
@@ -41,84 +41,91 @@ class InboxPolicy < ApplicationPolicy
   end
 
   def create?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def update?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def destroy?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def set_agent_bot?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def avatar?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def sync_templates?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def health?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def reset_secret?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def evolution_audience_options?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def evolution_test_connection?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def evolution_create?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def evolution_connection_state?
-    agent_settings_manager?
+    inbox_manager? || channel_operator?
   end
 
   def evolution_connect?
-    agent_settings_manager?
+    inbox_manager? || channel_operator?
   end
 
   def evolution_logout?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def evolution_restart?
-    agent_settings_manager?
+    inbox_manager? || channel_operator?
   end
 
   def evolution_instance_settings?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def evolution_update_instance_settings?
-    agent_settings_manager?
+    inbox_manager?
   end
 
   def evolution_privacy_filter?
-    agent_settings_manager? || Current.user.assigned_inboxes.include?(record)
+    inbox_manager? || Current.user.assigned_inboxes.include?(record)
   end
 
   def evolution_update_privacy_filter?
-    agent_settings_manager? || Current.user.assigned_inboxes.include?(record)
+    inbox_manager? || Current.user.assigned_inboxes.include?(record)
   end
 
   private
 
-  def agent_settings_manager?
-    administrator_or_custom_role_permission?('agent_settings_manage')
+  def inbox_manager?
+    administrator_or_custom_role_permission?('inbox_manage')
+  end
+
+  # 'channel_operate' connects (QR), checks and restarts the WhatsApp session,
+  # but only of the inboxes the user is assigned to.
+  def channel_operator?
+    administrator_or_custom_role_permission?('channel_operate') &&
+      Current.user.assigned_inboxes.include?(record)
   end
 end

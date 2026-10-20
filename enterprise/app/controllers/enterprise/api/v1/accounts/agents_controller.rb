@@ -21,7 +21,7 @@ module Enterprise::Api::V1::Accounts::AgentsController
   def authorize_role_assignment!
     return if Current.account_user.administrator?
 
-    return unless Current.account_user.permissions.include?('agent_settings_manage')
+    return unless Current.account_user.permissions.include?('agent_manage')
 
     role = params.dig(:agent, :role) || params[:role]
     return unless role == 'administrator'

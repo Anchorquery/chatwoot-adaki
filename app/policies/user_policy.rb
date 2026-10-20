@@ -4,15 +4,15 @@ class UserPolicy < ApplicationPolicy
   end
 
   def create?
-    administrator_or_custom_role_permission?('agent_settings_manage')
+    administrator_or_custom_role_permission?('agent_manage')
   end
 
   def update?
-    @account_user.administrator? || (agent_settings_manager? && account_agent?)
+    @account_user.administrator? || (agent_manager? && account_agent?)
   end
 
   def destroy?
-    @account_user.administrator? || (agent_settings_manager? && account_agent?)
+    @account_user.administrator? || (agent_manager? && account_agent?)
   end
 
   def bulk_create?
@@ -21,8 +21,8 @@ class UserPolicy < ApplicationPolicy
 
   private
 
-  def agent_settings_manager?
-    @account_user.permissions.include?('agent_settings_manage')
+  def agent_manager?
+    @account_user.permissions.include?('agent_manage')
   end
 
   def account_agent?

@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useVuelidate } from '@vuelidate/core';
 import { required, email } from '@vuelidate/validators';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -30,7 +31,7 @@ const v$ = useVuelidate(rules, {
 
 const uiFlags = useMapGetter('agents/getUIFlags');
 const getCustomRoles = useMapGetter('customRole/getCustomRoles');
-const sidebarProfile = useMapGetter('getCurrentSidebarProfile');
+const { isAdmin } = useAdmin();
 
 const roles = computed(() => {
   const defaultRoles = [
@@ -52,10 +53,10 @@ const roles = computed(() => {
     label: role.name,
   }));
 
-  const availableDefaultRoles =
-    sidebarProfile.value === 'ai_agent'
-      ? defaultRoles.filter(role => role.name !== 'administrator')
-      : defaultRoles;
+  // Only administrators can make someone else an administrator.
+  const availableDefaultRoles = isAdmin.value
+    ? defaultRoles
+    : defaultRoles.filter(role => role.name !== 'administrator');
 
   return [...availableDefaultRoles, ...customRoles];
 });

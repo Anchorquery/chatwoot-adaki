@@ -36,13 +36,31 @@
       "CONVERSATION_MANAGE": "Manage all conversations",
       "CONVERSATION_UNASSIGNED_MANAGE": "Manage unassigned conversations and those assigned to them",
       "CONVERSATION_PARTICIPATING_MANAGE": "Manage participating conversations and those assigned to them",
-      "CONTACT_MANAGE": "Manage contacts",
+      "CONTACT_MANAGE": "Manage contacts and companies",
+      "CAMPAIGN_MANAGE": "Create, edit, clone and launch campaigns",
+      "INBOX_MANAGE": "Create, configure and delete any inbox",
+      "CHANNEL_OPERATE": "Connect (QR), check and restart the WhatsApp session of their assigned inboxes",
+      "CAPTAIN_MANAGE": "Manage Captain assistants, tools and settings",
+      "AGENT_MANAGE": "Invite and manage agents",
+      "TEAM_MANAGE": "Manage teams",
+      "LABEL_MANAGE": "Manage labels",
+      "ASSIGNMENT_MANAGE": "Manage assignment and capacity policies",
       "REPORT_MANAGE": "Manage reports",
       "KNOWLEDGE_BASE_MANAGE": "Manage knowledge base"
     },
-    "SIDEBAR_PROFILES": {
-      "AI_AGENT": "AI support agent (manage Captain, agents, teams, assignment, inboxes, and labels)",
-      "COMMUNICATION": "Community communications (manage campaigns)"
+    "PERMISSION_GROUPS": {
+      "CONVERSATIONS": "Conversations",
+      "CONTACTS": "Contacts and companies",
+      "CAMPAIGNS": "Campaigns",
+      "CHANNELS": "Channels (inboxes)",
+      "CAPTAIN": "Captain (AI)",
+      "TEAM": "Team",
+      "REPORTS": "Reports",
+      "KNOWLEDGE_BASE": "Help center"
+    },
+    "PRESETS": {
+      "COMMUNICATION": "Community communications",
+      "AI_AGENT": "AI support agent"
     },
     "FORM": {
       "NAME": {
@@ -57,15 +75,15 @@
       },
       "PERMISSIONS": {
         "LABEL": "Permissions",
-        "ERROR": "Permissions are required."
-      },
-      "SIDEBAR_PROFILE": {
-        "LABEL": "Sidebar profile",
-        "NONE": "Default sidebar"
+        "ERROR": "Permissions are required.",
+        "INBOX_HINT": "Agents only see the conversations of the inboxes they are a member of; add them as collaborators in each inbox."
       },
       "CANCEL_BUTTON_TEXT": "Cancel",
       "API": {
         "ERROR_MESSAGE": "Could not connect to Woot server. Please try again."
+      },
+      "PRESETS": {
+        "LABEL": "Apply a template:"
       }
     },
     "ADD": {

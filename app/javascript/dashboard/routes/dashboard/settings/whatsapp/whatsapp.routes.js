@@ -12,7 +12,7 @@ export default {
           path: '',
           name: 'settings_whatsapp_connections',
           meta: {
-            permissions: ['administrator', 'agent_settings_manage'],
+            permissions: ['administrator', 'inbox_manage', 'channel_operate'],
           },
           component: WhatsappConnectionsIndex,
         },

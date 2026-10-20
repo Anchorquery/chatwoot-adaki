@@ -19,7 +19,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 const getters = useStoreGetters();
 const store = useStore();
 const { t } = useI18n();
-const { canManageAgentSettings } = useAdmin();
+const { canManageInboxes } = useAdmin();
 
 const showDeletePopup = ref(false);
 const selectedInbox = ref({});
@@ -102,7 +102,7 @@ const openDelete = inbox => {
         </template>
         <template #actions>
           <router-link
-            v-if="canManageAgentSettings"
+            v-if="canManageInboxes"
             :to="{ name: 'settings_inbox_new' }"
           >
             <Button :label="$t('SETTINGS.INBOXES.NEW_INBOX')" size="sm" />
@@ -161,7 +161,7 @@ const openDelete = inbox => {
               }"
             >
               <Button
-                v-if="canManageAgentSettings"
+                v-if="canManageInboxes"
                 v-tooltip.top="$t('INBOX_MGMT.SETTINGS')"
                 icon="i-woot-settings"
                 slate
@@ -169,7 +169,7 @@ const openDelete = inbox => {
               />
             </router-link>
             <Button
-              v-if="canManageAgentSettings"
+              v-if="canManageInboxes"
               v-tooltip.top="$t('INBOX_MGMT.DELETE.BUTTON_TEXT')"
               icon="i-woot-bin"
               slate

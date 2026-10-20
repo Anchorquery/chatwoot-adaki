@@ -15,7 +15,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 const store = useStore();
 const { t } = useI18n();
 const getters = useStoreGetters();
-const { canManageAgentSettings } = useAdmin();
+const { canManageTeams } = useAdmin();
 
 const loading = ref({});
 const searchQuery = ref('');
@@ -102,7 +102,7 @@ const confirmPlaceHolderText = computed(() =>
         </template>
         <template #actions>
           <router-link
-            v-if="canManageAgentSettings"
+            v-if="canManageTeams"
             :to="{ name: 'settings_teams_new' }"
           >
             <Button :label="$t('TEAMS_SETTINGS.NEW_TEAM')" size="sm" />
@@ -150,7 +150,7 @@ const confirmPlaceHolderText = computed(() =>
               }"
             >
               <Button
-                v-if="canManageAgentSettings"
+                v-if="canManageTeams"
                 v-tooltip.top="$t('TEAMS_SETTINGS.LIST.EDIT_TEAM')"
                 icon="i-woot-settings"
                 slate
@@ -159,7 +159,7 @@ const confirmPlaceHolderText = computed(() =>
             </router-link>
 
             <Button
-              v-if="canManageAgentSettings"
+              v-if="canManageTeams"
               v-tooltip.top="$t('TEAMS_SETTINGS.DELETE.BUTTON_TEXT')"
               icon="i-woot-bin"
               slate

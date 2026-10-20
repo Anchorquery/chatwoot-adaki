@@ -14,8 +14,14 @@ module Api::V1::Accounts::Concerns::EvolutionSessionManagement
     'not_configured' => :unprocessable_entity
   }.freeze
 
+  # Estado, QR y reinicio también los opera quien tiene `channel_operate` en sus
+  # bandejas asignadas: la autorización es por instancia, no por la clase Inbox.
+  OPERATOR_ACTIONS = %i[evolution_connection_state evolution_connect evolution_restart].freeze
+
   included do
     skip_before_action :fetch_inbox, only: [:evolution_create]
+    skip_before_action :check_authorization, only: OPERATOR_ACTIONS
+    before_action :authorize_session_operator, only: OPERATOR_ACTIONS
     before_action :validate_limit, only: [:evolution_create]
     # destroy vive en el controller que incluye este concern.
     before_action :release_evolution_instance, only: [:destroy] # rubocop:disable Rails/LexicallyScopedActionFilter
@@ -56,6 +62,10 @@ module Api::V1::Accounts::Concerns::EvolutionSessionManagement
   end
 
   private
+
+  def authorize_session_operator
+    authorize @inbox, :"#{action_name}?"
+  end
 
   def evolution_connection_service
     Evolution::ConnectionService.new(@inbox)

@@ -30,7 +30,7 @@ export default {
           component: InboxHome,
           meta: {
             featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-            permissions: ['administrator', 'agent_settings_manage'],
+            permissions: ['administrator', 'inbox_manage'],
           },
         },
         {
@@ -44,7 +44,7 @@ export default {
           component: PrivacyFilter,
           meta: {
             featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-            permissions: ['administrator', 'agent', 'agent_settings_manage'],
+            permissions: ['administrator', 'agent', 'inbox_manage'],
           },
         },
       ],
@@ -73,7 +73,7 @@ export default {
               component: ChannelList,
               meta: {
                 featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-                permissions: ['administrator', 'agent_settings_manage'],
+                permissions: ['administrator', 'inbox_manage'],
               },
             },
             {
@@ -82,7 +82,7 @@ export default {
               component: FinishSetup,
               meta: {
                 featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-                permissions: ['administrator', 'agent_settings_manage'],
+                permissions: ['administrator', 'inbox_manage'],
               },
             },
             {
@@ -91,7 +91,7 @@ export default {
               component: ChannelFactory,
               meta: {
                 featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-                permissions: ['administrator', 'agent_settings_manage'],
+                permissions: ['administrator', 'inbox_manage'],
               },
               props: route => {
                 return { channelName: route.params.sub_page };
@@ -102,7 +102,7 @@ export default {
               name: 'settings_inboxes_add_agents',
               meta: {
                 featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-                permissions: ['administrator', 'agent_settings_manage'],
+                permissions: ['administrator', 'inbox_manage'],
               },
               component: AddAgents,
             },
@@ -114,7 +114,7 @@ export default {
           component: Settings,
           meta: {
             featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-            permissions: ['administrator', 'agent_settings_manage'],
+            permissions: ['administrator', 'inbox_manage'],
           },
         },
       ],
