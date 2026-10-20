@@ -36,7 +36,7 @@ class Macro < ApplicationRecord
 
   def set_visibility(user, params)
     self.visibility = params[:visibility]
-    self.visibility = :personal if user.agent?
+    self.visibility = :personal if user.agent? && !can_share_macros?(user)
   end
 
   def self.with_visibility(user, _params)
@@ -64,6 +64,11 @@ class Macro < ApplicationRecord
   end
 
   private
+
+  # Agents keep their macros personal unless their role has macro_manage.
+  def can_share_macros?(user)
+    user.current_account_user.permissions.include?('macro_manage')
+  end
 
   def json_actions_format
     return if actions.blank?
