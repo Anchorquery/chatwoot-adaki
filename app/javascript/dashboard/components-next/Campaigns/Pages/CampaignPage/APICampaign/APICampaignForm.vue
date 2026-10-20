@@ -181,8 +181,34 @@ const handleCancel = () => emit('cancel');
 const addVariant = () => state.variants.push({ text: '' });
 const removeVariant = index => state.variants.splice(index, 1);
 
+// Lo mismo que ATTACHMENT_LIMITS en CampaignsController (en MB). El navegador
+// reporta los .m4a como audio/x-m4a; el servidor los detecta como audio/mp4.
+const ATTACHMENT_LIMITS_MB = {
+  'image/jpeg': 5,
+  'image/png': 5,
+  'video/mp4': 16,
+  'audio/mpeg': 16,
+  'audio/ogg': 16,
+  'audio/mp4': 16,
+  'audio/x-m4a': 16,
+  'audio/aac': 16,
+  'application/pdf': 16,
+};
+const ACCEPTED_ATTACHMENT_TYPES = Object.keys(ATTACHMENT_LIMITS_MB).join(',');
+
+const isSupportedAttachment = file => {
+  const limit = ATTACHMENT_LIMITS_MB[file.type];
+  return Boolean(limit) && file.size <= limit * 1024 * 1024;
+};
+
 const handleFiles = fileList => {
   Array.from(fileList || []).forEach(file => {
+    if (!isSupportedAttachment(file)) {
+      useAlert(
+        t('CAMPAIGN.API.CREATE.FORM.FILES.UNSUPPORTED', { name: file.name })
+      );
+      return;
+    }
     state.attachments.push({
       file,
       name: file.name,
@@ -655,10 +681,14 @@ defineExpose({
         <p class="text-sm text-n-slate-10">
           {{ t('CAMPAIGN.API.CREATE.FORM.FILES.DROP_LABEL') }}
         </p>
+        <p class="mt-1 text-xs text-n-slate-10">
+          {{ t('CAMPAIGN.API.CREATE.FORM.FILES.HINT') }}
+        </p>
         <input
           ref="fileInputRef"
           type="file"
           multiple
+          :accept="ACCEPTED_ATTACHMENT_TYPES"
           class="hidden"
           @change="onFileChange"
         />

@@ -39,7 +39,7 @@
       "CONTACT_MANAGE": "Administrar contactos y empresas",
       "CAMPAIGN_MANAGE": "Crear, editar, clonar y lanzar campañas",
       "INBOX_MANAGE": "Crear, configurar y borrar cualquier bandeja",
-      "CHANNEL_OPERATE": "Conectar (QR), consultar y reiniciar la sesión de WhatsApp de sus bandejas asignadas",
+      "CHANNEL_OPERATE": "Trabajar con todos los números de WhatsApp de la cuenta: recibir sus conversaciones y conectar (QR), consultar y reiniciar su sesión",
       "CAPTAIN_MANAGE": "Administrar asistentes, herramientas y ajustes de Captain",
       "AGENT_MANAGE": "Invitar y administrar agentes",
       "TEAM_MANAGE": "Administrar equipos",
@@ -89,7 +89,7 @@
       "PERMISSIONS": {
         "LABEL": "Permisos",
         "ERROR": "Los permisos son obligatorios.",
-        "INBOX_HINT": "Los agentes solo ven las conversaciones de las bandejas de las que son miembros; añádelos como colaboradores en cada bandeja."
+        "INBOX_HINT": "Los agentes solo ven las conversaciones de las bandejas de las que son miembros. Con el permiso de WhatsApp marcado pasan a ser colaboradores de todos los números de WhatsApp de la cuenta automáticamente; para cualquier otra bandeja, añádelos como colaboradores."
       },
       "CANCEL_BUTTON_TEXT": "Cancelar",
       "API": {

@@ -3,6 +3,8 @@ module Enterprise::Whatsapp::OneoffCampaignService
   CONTACT_AUDIENCE_TYPES = %w[Contact ContactId].freeze
 
   def perform
+    # Primero lo barato: una campaña inválida no debe consultar el tier en Meta.
+    validate_campaign!
     Adaki::CampaignApprovalService.new(campaign).ensure_approved!
     enforce_tier_safety!
     super

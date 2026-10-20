@@ -1,6 +1,10 @@
 class Webhooks::Trigger
   SUPPORTED_ERROR_HANDLE_EVENTS = %w[message_created message_updated].freeze
   RETRYABLE_AGENT_BOT_STATUSES = [429, 500].freeze
+  # Evolution responde al webhook de una bandeja API cuando ya descargó el
+  # adjunto y lo subió a WhatsApp. Con el timeout general (5s) una imagen solía
+  # caer en timeout y el mensaje quedaba como fallido, llegara o no.
+  API_INBOX_MEDIA_TIMEOUT = 30
 
   class RetryableError < StandardError
     attr_reader :status
@@ -99,6 +103,8 @@ class Webhooks::Trigger
 
   def update_message_status(error)
     Messages::StatusUpdateService.new(message, 'failed', error.message).perform
+    # Solo el envío del mensaje cuenta como entrega fallida de la campaña.
+    Campaigns::RecordDeliveryFailureService.new(message: message, error: error.message).perform if @payload[:event] == 'message_created'
   end
 
   def message
@@ -119,7 +125,12 @@ class Webhooks::Trigger
     raw_timeout = GlobalConfig.get_value('WEBHOOK_TIMEOUT')
     timeout = raw_timeout.presence&.to_i
 
-    timeout&.positive? ? timeout : 5
+    timeout = 5 unless timeout&.positive?
+    media_delivery? ? [timeout, API_INBOX_MEDIA_TIMEOUT].max : timeout
+  end
+
+  def media_delivery?
+    @webhook_type == :api_inbox_webhook && @payload[:attachments].present?
   end
 
   def retryable_agent_bot_error?(error)

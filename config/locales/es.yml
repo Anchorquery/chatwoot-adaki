@@ -34,6 +34,8 @@ es:
     saml_not_available: La autenticación SAML no está disponible en esta instalación.
     inbox_deletetion_response: Su solicitud de eliminación de la bandeja de entrada será procesada en algún tiempo.
   errors:
+    campaigns:
+      unsupported_attachment: '%{name}: las campañas solo admiten imágenes JPG o PNG de hasta 5 MB, y vídeos MP4, audios (MP3, OGG, M4A, AAC) o PDF de hasta 16 MB.'
     account:
       reporting_timezone:
         invalid: no es una zona horaria válida
@@ -553,7 +555,7 @@ es:
         campaign_manage: 'Crear, editar, clonar y lanzar campañas'
         campaign_approve: 'Aprobar o rechazar campañas que requieren aprobación'
         inbox_manage: 'Crear, configurar y borrar cualquier bandeja'
-        channel_operate: 'Conectar (QR), consultar y reiniciar la sesión de WhatsApp de sus bandejas asignadas'
+        channel_operate: 'Trabajar con todos los números de WhatsApp de la cuenta: recibir sus conversaciones y conectar (QR), consultar y reiniciar su sesión'
         captain_manage: 'Administrar asistentes, herramientas y ajustes de Captain'
         agent_manage: 'Invitar y administrar agentes'
         team_manage: 'Administrar equipos'

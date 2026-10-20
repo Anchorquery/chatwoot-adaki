@@ -300,7 +300,9 @@
             "EXISTING": "Adjuntos existentes",
             "KEEP": "Se conservan al actualizar",
             "NEW": "Adjuntos nuevos",
-            "REMOVE": "Eliminar"
+            "REMOVE": "Eliminar",
+            "HINT": "JPG o PNG hasta 5 MB; vídeo MP4, audio o PDF hasta 16 MB. Mejor un solo archivo: cada adjunto se envía como un mensaje aparte con el texto repetido.",
+            "UNSUPPORTED": "{name} no se puede enviar: usa JPG o PNG de hasta 5 MB, o vídeo MP4, audio o PDF de hasta 16 MB."
           },
           "DELIVERY": {
             "TITLE": "Configuración de Entrega Segura",

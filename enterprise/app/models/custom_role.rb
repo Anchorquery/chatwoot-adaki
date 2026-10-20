@@ -31,7 +31,8 @@
 # - 'campaign_approve': Can approve or reject campaigns that need approval.
 # Channels
 # - 'inbox_manage': Can create, configure and delete every inbox.
-# - 'channel_operate': Can connect (QR), check and restart the WhatsApp session of the inboxes they are assigned to.
+# - 'channel_operate': Works with every WhatsApp number of the account: becomes a collaborator of its inboxes
+#   (see CustomRoles::WhatsappInboxAccessService) and can connect (QR), check and restart their session.
 # Captain
 # - 'captain_manage': Can manage Captain assistants, tools and settings.
 # Team
@@ -108,6 +109,8 @@ class CustomRole < ApplicationRecord
   validates :permissions, inclusion: { in: PERMISSIONS + LEGACY_PERMISSIONS.keys }
   validates :sidebar_profile, inclusion: { in: SIDEBAR_PROFILES }, allow_nil: true
 
+  after_commit :grant_whatsapp_inboxes, on: :update, if: :saved_change_to_permissions?
+
   def profile_permissions
     PRESETS.fetch(sidebar_profile, [])
   end
@@ -117,5 +120,13 @@ class CustomRole < ApplicationRecord
   def effective_permissions
     granted = (permissions + profile_permissions).uniq
     granted | LEGACY_PERMISSIONS.slice(*granted).values.flatten
+  end
+
+  private
+
+  def grant_whatsapp_inboxes
+    account_users.includes(:custom_role).find_each do |account_user|
+      CustomRoles::WhatsappInboxAccessService.grant_for_account_user(account_user)
+    end
   end
 end

@@ -4,6 +4,7 @@ class Campaigns::DeliveryPlannerService
   def perform
     Rails.logger.info("[CampaignPlanner] perform START campaign=#{campaign.id} status=#{campaign.campaign_status}")
     return if campaign.completed?
+    return unless claim_campaign!
 
     contacts = fetch_audience_contacts
     Rails.logger.info("[CampaignPlanner] audience for campaign=#{campaign.id} contacts=#{contacts.map(&:id)}")
@@ -40,6 +41,17 @@ class Campaigns::DeliveryPlannerService
   end
 
   private
+
+  # El envío inmediato y TriggerScheduledItemsJob (cada minuto) pueden encolar
+  # el arranque de la misma campaña: solo quien la pasa de active a running la
+  # envía. Antes arrancaban las dos, con mensajes duplicados y el doble de carga
+  # en Evolution.
+  def claim_campaign!
+    running = Campaign.campaign_statuses[:running]
+    Campaign.where(id: campaign.id, campaign_status: :active)
+            .update_all(campaign_status: running, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
+            .positive?
+  end
 
   def fetch_audience_contacts
     audience_label_ids = campaign.audience.select { |aud| aud['type'] == 'Label' }.pluck('id')

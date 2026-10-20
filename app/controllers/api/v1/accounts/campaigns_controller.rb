@@ -1,9 +1,24 @@
 class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
+  # Adjuntos que WhatsApp acepta y que Evolution envía sin problemas. Evolution
+  # decide el tipo de mensaje por la extensión: HEIC o WebP salían como imagen y
+  # WhatsApp los rechazaba, y un archivo grande agotaba el tiempo del envío.
+  ATTACHMENT_LIMITS = {
+    'image/jpeg' => 5.megabytes,
+    'image/png' => 5.megabytes,
+    'video/mp4' => 16.megabytes,
+    'audio/mpeg' => 16.megabytes,
+    'audio/ogg' => 16.megabytes,
+    'audio/mp4' => 16.megabytes,
+    'audio/aac' => 16.megabytes,
+    'application/pdf' => 16.megabytes
+  }.freeze
+
   before_action :campaign, except: [:index, :create, :ai_generate, :clone, :results, :retry_failed]
   before_action :campaign_for_results, only: [:results, :retry_failed]
   before_action :find_campaign_for_clone, only: [:clone]
   before_action :check_authorization
   before_action :parse_delivery_settings, only: [:create, :update]
+  before_action :validate_attachments, only: [:create, :update]
   after_action :trigger_immediate_dispatch, only: [:create, :update]
 
   def index
@@ -38,9 +53,11 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def update
     @campaign.update!(campaign_params.except(:attachments))
-    @campaign.update!(campaign_status: :active) if @campaign.draft?
     remove_files_from(@campaign)
     attach_files_to(@campaign)
+    # Se activa con los adjuntos ya guardados: activa antes, el job de cada
+    # minuto podía lanzarla y Evolution recibía una imagen que aún no existía.
+    @campaign.update!(campaign_status: :active) if @campaign.draft?
   end
 
   def destroy
@@ -237,6 +254,21 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   def find_campaign_for_clone
     @source_campaign = Current.account.campaigns.find_by(display_id: params[:id])
     head :not_found unless @source_campaign
+  end
+
+  def validate_attachments
+    rejected = Array(params.dig(:campaign, :attachments)).find { |file| !supported_attachment?(file) }
+    return if rejected.nil?
+
+    render_could_not_create_error(I18n.t('errors.campaigns.unsupported_attachment', name: rejected.try(:original_filename)))
+  end
+
+  def supported_attachment?(file)
+    return false unless file.respond_to?(:tempfile)
+
+    content_type = Marcel::MimeType.for(file.tempfile, name: file.original_filename, declared_type: file.content_type)
+    limit = ATTACHMENT_LIMITS[content_type]
+    limit.present? && file.size <= limit
   end
 
   def attach_files_to(campaign)

@@ -123,7 +123,7 @@ class WebhookListener < BaseListener
 
     if event_name == 'message_created' && message&.conversation&.campaign.present?
       dispatch_at = Campaigns::ApiWebhookDispatchPlannerService.new(message: message, inbox: inbox).perform
-      return if dispatch_at.nil?
+      return record_undelivered_campaign_message(message) if dispatch_at.nil?
 
       WebhookJob.set(wait_until: dispatch_at).perform_later(
         inbox.channel.webhook_url,
@@ -142,5 +142,14 @@ class WebhookListener < BaseListener
   def deliver_webhook_payloads(payload, inbox, message: nil, event_name: nil)
     deliver_account_webhooks(payload, inbox.account)
     deliver_api_inbox_webhooks(payload, inbox, message: message, event_name: event_name)
+  end
+
+  # Límite diario alcanzado: la campaña se pausa y este mensaje, que ya existe,
+  # no se envía. Antes quedaba contado como enviado y se perdía; ahora consta
+  # como fallido y "Reintentar fallidos" lo vuelve a mandar.
+  def record_undelivered_campaign_message(message)
+    error = 'Daily delivery limit reached'
+    Messages::StatusUpdateService.new(message, 'failed', error).perform
+    Campaigns::RecordDeliveryFailureService.new(message: message, error: error).perform
   end
 end
