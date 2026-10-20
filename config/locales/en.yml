@@ -48,6 +48,8 @@ en:
     inbox_deletetion_response: Your inbox deletion request will be processed in some time.
 
   errors:
+    campaigns:
+      unsupported_attachment: '%{name}: campaigns only accept JPG or PNG images up to 5 MB, and MP4 videos, audio (MP3, OGG, M4A, AAC) or PDF files up to 16 MB.'
     account:
       reporting_timezone:
         invalid: is not a valid timezone
@@ -598,7 +600,7 @@ en:
         campaign_manage: 'Create, edit, clone and launch campaigns'
         campaign_approve: 'Approve or reject campaigns that need approval'
         inbox_manage: 'Create, configure and delete any inbox'
-        channel_operate: 'Connect (QR), check and restart the WhatsApp session of their assigned inboxes'
+        channel_operate: 'Work with every WhatsApp number of the account: receive its conversations and connect (QR), check and restart its session'
         captain_manage: 'Manage Captain assistants, tools and settings'
         agent_manage: 'Invite and manage agents'
         team_manage: 'Manage teams'

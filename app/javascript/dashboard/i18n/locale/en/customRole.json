@@ -39,7 +39,7 @@
       "CONTACT_MANAGE": "Manage contacts and companies",
       "CAMPAIGN_MANAGE": "Create, edit, clone and launch campaigns",
       "INBOX_MANAGE": "Create, configure and delete any inbox",
-      "CHANNEL_OPERATE": "Connect (QR), check and restart the WhatsApp session of their assigned inboxes",
+      "CHANNEL_OPERATE": "Work with every WhatsApp number of the account: receive its conversations and connect (QR), check and restart its session",
       "CAPTAIN_MANAGE": "Manage Captain assistants, tools and settings",
       "AGENT_MANAGE": "Invite and manage agents",
       "TEAM_MANAGE": "Manage teams",
@@ -89,7 +89,7 @@
       "PERMISSIONS": {
         "LABEL": "Permissions",
         "ERROR": "Permissions are required.",
-        "INBOX_HINT": "Agents only see the conversations of the inboxes they are a member of; add them as collaborators in each inbox."
+        "INBOX_HINT": "Agents only see the conversations of the inboxes they are a member of. With \"WhatsApp\" ticked they become collaborators of every WhatsApp number of the account automatically; for any other inbox, add them as collaborators."
       },
       "CANCEL_BUTTON_TEXT": "Cancel",
       "API": {

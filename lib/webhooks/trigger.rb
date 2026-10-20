@@ -103,6 +103,8 @@ class Webhooks::Trigger
 
   def update_message_status(error)
     Messages::StatusUpdateService.new(message, 'failed', error.message).perform
+    # Solo el envío del mensaje cuenta como entrega fallida de la campaña.
+    Campaigns::RecordDeliveryFailureService.new(message: message, error: error.message).perform if @payload[:event] == 'message_created'
   end
 
   def message

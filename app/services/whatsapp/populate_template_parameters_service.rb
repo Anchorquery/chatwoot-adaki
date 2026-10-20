@@ -33,8 +33,10 @@ class Whatsapp::PopulateTemplateParametersService
   def build_media_parameter(url, media_type, media_name = nil)
     return nil if url.blank?
 
-    sanitized_url = sanitize_parameter(url)
-    normalized_url = normalize_url(sanitized_url)
+    # sanitize_parameter es para textos: cortaba la URL a 1000 caracteres (las
+    # firmadas de S3 o del CDN de Meta son más largas) y Meta no podía bajar la
+    # imagen. validate_url ya limita a 2000 y solo admite http(s).
+    normalized_url = normalize_url(url.to_s.strip)
     validate_url(normalized_url)
     build_media_type_parameter(normalized_url, media_type.downcase, media_name)
   end

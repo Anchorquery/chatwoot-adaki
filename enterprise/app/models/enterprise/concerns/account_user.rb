@@ -7,9 +7,14 @@ module Enterprise::Concerns::AccountUser
 
     validate :custom_role_belongs_to_account
     before_save :reconcile_role_with_custom_role
+    after_commit :grant_whatsapp_inboxes, if: :saved_change_to_custom_role_id?
   end
 
   private
+
+  def grant_whatsapp_inboxes
+    CustomRoles::WhatsappInboxAccessService.grant_for_account_user(self)
+  end
 
   def custom_role_belongs_to_account
     return if custom_role.blank? || custom_role.account_id == account_id
