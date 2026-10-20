@@ -518,6 +518,10 @@
           "LABEL": "Ventana de inactividad humana (minutos)",
           "DESCRIPTION": "Si la última respuesta humana fue hace más de N minutos, el bot retoma. Útil para que humano chatee tranquilo y el bot reenganche cuando el cliente vuelve días después."
         },
+        "HUMAN_TAKEOVER_ACTIVE_THREAD": {
+          "LABEL": "Hilo humano activo (días)",
+          "DESCRIPTION": "Mientras el agente asignado haya respondido en los últimos N días y la conversación siga abierta, el bot calla aunque pase la ventana de inactividad. 0 desactiva esta regla."
+        },
         "AUTO_HANDOFF": {
           "LABEL": "Transferencia automática por inactividad",
           "DESCRIPTION": "Evalúa periódicamente las conversaciones pendientes inactivas y las transfiere a un humano (o las resuelve) cuando el cliente dejó de responder."

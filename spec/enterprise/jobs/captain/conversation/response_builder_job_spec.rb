@@ -78,6 +78,24 @@ RSpec.describe Captain::Conversation::ResponseBuilderJob, type: :job do
         expect(conversation.messages.outgoing.where(sender_type: 'Captain::Assistant')).to be_empty
       end
 
+      it 'does not generate a response while an assigned agent has an active thread (active thread days)' do
+        agent = create(:user, account: account)
+        assistant.update!(config: assistant.config.merge('human_takeover_mode' => 'after_window',
+                                                         'human_takeover_window_minutes' => 15,
+                                                         'human_takeover_active_thread_days' => 7))
+        conversation.update!(status: :open)
+        travel_to(2.days.ago) do
+          conversation.update!(assignee: agent)
+          create(:message, conversation: conversation, message_type: :outgoing, account: account, sender: agent)
+        end
+
+        expect(Captain::Llm::AssistantChatService).not_to receive(:new)
+
+        described_class.perform_now(conversation, assistant)
+
+        expect(conversation.messages.outgoing.where(sender_type: 'Captain::Assistant')).to be_empty
+      end
+
       it 'increments usage response' do
         described_class.perform_now(conversation, assistant)
         account.reload
