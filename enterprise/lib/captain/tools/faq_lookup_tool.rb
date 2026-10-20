@@ -7,7 +7,16 @@ class Captain::Tools::FaqLookupTool < Captain::Tools::BasePublicTool
 
     # Use existing vector search on approved responses. Pass account_id so the
     # query is embedded with — and filtered to — the account's active embedding model.
-    responses = @assistant.responses.approved.search(query, account_id: @assistant.account_id).to_a
+    #
+    # `search` is a plain nearest-neighbours query: it always returns the five
+    # closest rows, however far away they are, so "No relevant FAQs found"
+    # could never happen and a generic "I want more information" came back
+    # with five products the model then pasted as links. Judge relevance with
+    # the same distance bar the prefetch already uses (see
+    # Captain::KnowledgePrefetcher) so an off-topic query really is empty and
+    # the prompt's "ask which product" path can run.
+    responses = @assistant.responses.approved.search(query, account_id: @assistant.account_id)
+                          .select { |response| Captain::KnowledgePrefetcher.within_distance_threshold?(response) }
 
     if responses.empty?
       log_tool_usage('no_results', { query: query })
