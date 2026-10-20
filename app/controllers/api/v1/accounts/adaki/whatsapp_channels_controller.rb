@@ -1,6 +1,6 @@
 class Api::V1::Accounts::Adaki::WhatsappChannelsController < Api::V1::Accounts::BaseController
   before_action :fetch_channel, only: [:refresh_tier, :unlock_tier]
-  before_action :check_admin_authorization?
+  before_action -> { authorize Inbox, :whatsapp_tier? }
 
   def index
     channels = Channel::Whatsapp.joins(:inbox).where(inboxes: { account_id: Current.account.id })

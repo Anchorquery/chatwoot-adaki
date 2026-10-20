@@ -8,14 +8,14 @@ class Adaki::AbsencePolicy < ApplicationPolicy
   end
 
   def create?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('absence_manage')
   end
 
   def update?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('absence_manage')
   end
 
   def destroy?
-    @account_user.administrator?
+    administrator_or_custom_role_permission?('absence_manage')
   end
 end

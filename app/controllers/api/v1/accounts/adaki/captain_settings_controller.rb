@@ -1,5 +1,5 @@
 class Api::V1::Accounts::Adaki::CaptainSettingsController < Api::V1::Accounts::BaseController
-  before_action :check_admin_authorization?
+  before_action -> { authorize :account, :update_captain_preferences? }
 
   def show
     render json: serialize_settings

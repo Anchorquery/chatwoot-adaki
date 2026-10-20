@@ -20,7 +20,17 @@ RSpec.describe 'Granular custom role permissions', type: :policy do # rubocop:di
     AssignmentPolicyPolicy => ['assignment_manage', %i[index? show? create? update? destroy?], AssignmentPolicy],
     AgentCapacityPolicyPolicy => ['assignment_manage', %i[index? show? create? update? destroy?], AgentCapacityPolicy],
     CampaignPolicy => ['campaign_manage', %i[index? show? create? update? destroy? clone? results? retry_failed? ai_generate?], Campaign],
-    UserPolicy => ['agent_manage', %i[create?], User]
+    UserPolicy => ['agent_manage', %i[create?], User],
+    Adaki::AbsencePolicy => ['absence_manage', %i[create? update? destroy?], Adaki::Absence],
+    Adaki::CampaignApprovalPolicy => ['campaign_approve', %i[approve? reject?], Adaki::CampaignApproval],
+    AutomationRulePolicy => ['automation_manage', %i[index? create? show? update? clone? destroy?], AutomationRule],
+    CustomAttributeDefinitionPolicy => ['attribute_manage', %i[create? update? destroy?], CustomAttributeDefinition],
+    AgentBotPolicy => ['agent_bot_manage', %i[create? update? destroy? avatar? reset_access_token? reset_secret?], AgentBot],
+    WebhookPolicy => ['integration_manage', %i[index? create? update? destroy?], Webhook],
+    HookPolicy => ['integration_manage', %i[create? update? destroy?], Integrations::Hook],
+    SlaPolicyPolicy => ['sla_manage', %i[create? update? destroy?], SlaPolicy],
+    AccountPolicy => ['account_settings_manage', %i[update?], Account],
+    AuditLogPolicy => ['audit_log_view', %i[index? show?], Object]
   }.each do |policy_class, (permission, actions, record_class)|
     describe policy_class do
       actions.each do |action|
@@ -34,6 +44,36 @@ RSpec.describe 'Granular custom role permissions', type: :policy do # rubocop:di
           expect(policy_class.new(context, record_class.new).public_send(action)).to be_falsey
         end
       end
+    end
+  end
+
+  describe Adaki::CampaignApprovalPolicy do
+    it 'lets campaign_manage request approvals but not decide them' do
+      give('campaign_manage')
+
+      policy = described_class.new(context, Adaki::CampaignApproval.new)
+      expect(policy).to be_index
+      expect(policy).to be_create
+      expect(policy).not_to be_approve
+      expect(policy).not_to be_reject
+    end
+  end
+
+  describe MacroPolicy do
+    let(:global_macro) { create(:macro, account: account, visibility: :global, created_by: create(:user, account: account)) }
+
+    it 'lets macro_manage edit and delete shared macros' do
+      give('macro_manage')
+
+      expect(described_class.new(context, global_macro)).to be_update
+      expect(described_class.new(context, global_macro)).to be_destroy
+    end
+
+    it 'keeps shared macros away from roles without macro_manage' do
+      give('conversation_manage')
+
+      expect(described_class.new(context, global_macro)).not_to be_update
+      expect(described_class.new(context, global_macro)).not_to be_destroy
     end
   end
 

@@ -46,7 +46,17 @@
       "LABEL_MANAGE": "Manage labels",
       "ASSIGNMENT_MANAGE": "Manage assignment and capacity policies",
       "REPORT_MANAGE": "Manage reports",
-      "KNOWLEDGE_BASE_MANAGE": "Manage knowledge base"
+      "KNOWLEDGE_BASE_MANAGE": "Manage knowledge base",
+      "MACRO_MANAGE": "Create, edit and delete shared macros",
+      "CAMPAIGN_APPROVE": "Approve or reject campaigns that need approval",
+      "ABSENCE_MANAGE": "Manage agent absences",
+      "AUTOMATION_MANAGE": "Manage automation rules",
+      "ATTRIBUTE_MANAGE": "Manage custom attributes",
+      "AGENT_BOT_MANAGE": "Manage agent bots",
+      "SLA_MANAGE": "Manage SLA policies",
+      "INTEGRATION_MANAGE": "Manage integrations and webhooks",
+      "ACCOUNT_SETTINGS_MANAGE": "Edit the general account settings",
+      "AUDIT_LOG_VIEW": "Read the audit logs"
     },
     "PERMISSION_GROUPS": {
       "CONVERSATIONS": "Conversations",
@@ -55,8 +65,11 @@
       "CHANNELS": "Channels (inboxes)",
       "CAPTAIN": "Captain (AI)",
       "TEAM": "Team",
+      "CUSTOMIZATION": "Customization",
+      "INTEGRATIONS": "Integrations",
       "REPORTS": "Reports",
-      "KNOWLEDGE_BASE": "Help center"
+      "KNOWLEDGE_BASE": "Help center",
+      "ACCOUNT": "Account"
     },
     "PRESETS": {
       "COMMUNICATION": "Community communications",

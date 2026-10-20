@@ -22,5 +22,6 @@ export function useAdmin() {
     isAdmin,
     canManageInboxes: can('inbox_manage'),
     canManageTeams: can('team_manage'),
+    canManageMacros: can('macro_manage'),
   };
 }

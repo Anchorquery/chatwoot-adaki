@@ -7,9 +7,9 @@ import ApprovalsIndex from './approvals/Index.vue';
 import ProvidersIndex from './captain/Index.vue';
 import ProviderModelsPage from './captain/ProviderModelsPage.vue';
 
-const meta = {
-  permissions: ['administrator'],
-};
+const metaFor = permission => ({
+  permissions: ['administrator', permission],
+});
 
 export default {
   routes: [
@@ -20,31 +20,31 @@ export default {
         {
           path: '',
           name: 'adaki_settings_wrapper',
-          meta,
+          meta: { permissions: ['administrator'] },
           redirect: to => ({ name: 'adaki_absences_list', params: to.params }),
         },
         {
           path: 'absences',
           name: 'adaki_absences_list',
-          meta,
+          meta: metaFor('absence_manage'),
           component: AbsencesIndex,
         },
         {
           path: 'tier',
           name: 'adaki_tier_list',
-          meta,
+          meta: metaFor('inbox_manage'),
           component: TierIndex,
         },
         {
           path: 'audit',
           name: 'adaki_audit_list',
-          meta,
+          meta: metaFor('audit_log_view'),
           component: AuditIndex,
         },
         {
           path: 'approvals',
           name: 'adaki_approvals_list',
-          meta,
+          meta: metaFor('campaign_approve'),
           component: ApprovalsIndex,
         },
         {

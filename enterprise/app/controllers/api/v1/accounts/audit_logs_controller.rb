@@ -1,5 +1,5 @@
 class Api::V1::Accounts::AuditLogsController < Api::V1::Accounts::EnterpriseAccountsController
-  before_action :check_admin_authorization?
+  before_action -> { authorize :audit_log, :show? }
   before_action :fetch_audit
 
   RESULTS_PER_PAGE = 15

@@ -1,4 +1,8 @@
 import { mount, flushPromises } from '@vue/test-utils';
+import {
+  AVAILABLE_CUSTOM_ROLE_PERMISSIONS,
+  CUSTOM_ROLE_PERMISSION_GROUPS,
+} from 'dashboard/constants/permissions';
 import CustomRoleModal from '../component/CustomRoleModal.vue';
 
 const { dispatch } = vi.hoisted(() => ({ dispatch: vi.fn() }));
@@ -36,17 +40,14 @@ describe('CustomRoleModal', () => {
     const wrapper = mountModal();
 
     const titles = wrapper.findAll('legend').map(legend => legend.text());
-    expect(titles).toEqual([
-      'CUSTOM_ROLE.PERMISSION_GROUPS.CONVERSATIONS',
-      'CUSTOM_ROLE.PERMISSION_GROUPS.CONTACTS',
-      'CUSTOM_ROLE.PERMISSION_GROUPS.CAMPAIGNS',
-      'CUSTOM_ROLE.PERMISSION_GROUPS.CHANNELS',
-      'CUSTOM_ROLE.PERMISSION_GROUPS.CAPTAIN',
-      'CUSTOM_ROLE.PERMISSION_GROUPS.TEAM',
-      'CUSTOM_ROLE.PERMISSION_GROUPS.REPORTS',
-      'CUSTOM_ROLE.PERMISSION_GROUPS.KNOWLEDGE_BASE',
-    ]);
-    expect(wrapper.findAll('input[type=checkbox]')).toHaveLength(14);
+    expect(titles).toEqual(
+      CUSTOM_ROLE_PERMISSION_GROUPS.map(
+        group => `CUSTOM_ROLE.PERMISSION_GROUPS.${group.key.toUpperCase()}`
+      )
+    );
+    expect(wrapper.findAll('input[type=checkbox]')).toHaveLength(
+      AVAILABLE_CUSTOM_ROLE_PERMISSIONS.length
+    );
   });
 
   it('ticks the permissions of a template without losing the ones already ticked', async () => {
