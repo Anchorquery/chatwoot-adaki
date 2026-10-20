@@ -27,6 +27,10 @@ describe Whatsapp::OneoffCampaignService do
     # Stub HTTP requests to WhatsApp API
     stub_request(:post, /graph\.facebook\.com.*messages/)
       .to_return(status: 200, body: { messages: [{ id: 'message_id_123' }] }.to_json, headers: { 'Content-Type' => 'application/json' })
+    # Adaki::TierMonitorService consulta el tier del número antes de enviar.
+    stub_request(:get, %r{graph\.facebook\.com/v\d+\.\d+/[^/]+\?fields=})
+      .to_return(status: 200, headers: { 'Content-Type' => 'application/json' },
+                 body: { messaging_limit_tier: 'TIER_1K', quality_rating: 'GREEN', conversations_sent_24h: 0 }.to_json)
 
     # Ensure the service uses our mocked channel object by stubbing the whole delegation chain
     # Using allow_any_instance_of here because the service is instantiated within individual tests

@@ -6,6 +6,10 @@ RSpec.describe Captain::Tools::SimplePageCrawlService do
 
   before do
     WebMock.disable_net_connect!
+    # SafeFetch resuelve el host antes de pedir la página: sin esto el spec
+    # dependía del DNS real de la máquina.
+    allow(Resolv).to receive(:getaddresses).and_call_original
+    allow(Resolv).to receive(:getaddresses).with('example.com').and_return(['93.184.216.34'])
   end
 
   after do
