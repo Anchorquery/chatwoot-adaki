@@ -60,6 +60,27 @@ const evolutionInboxes = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name))
 );
 
+// Sin inbox_manage solo llegan las bandejas de las que el usuario es
+// colaborador: una lista vacía no significa que no haya números conectados.
+const emptyState = computed(() => {
+  if (!evolutionEnabled.value) {
+    return {
+      title: t('WHATSAPP_CONNECTIONS.EMPTY.TITLE'),
+      description: t('WHATSAPP_CONNECTIONS.NOT_CONFIGURED'),
+    };
+  }
+  if (canManageInboxes.value) {
+    return {
+      title: t('WHATSAPP_CONNECTIONS.EMPTY.TITLE'),
+      description: t('WHATSAPP_CONNECTIONS.EMPTY.DESCRIPTION'),
+    };
+  }
+  return {
+    title: t('WHATSAPP_CONNECTIONS.EMPTY_NOT_ASSIGNED.TITLE'),
+    description: t('WHATSAPP_CONNECTIONS.EMPTY_NOT_ASSIGNED.DESCRIPTION'),
+  };
+});
+
 const visibleInboxes = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) return evolutionInboxes.value;
@@ -273,14 +294,10 @@ onBeforeUnmount(() => {
         </span>
         <div class="flex flex-col gap-1 max-w-md">
           <h2 class="text-base font-medium text-n-slate-12">
-            {{ $t('WHATSAPP_CONNECTIONS.EMPTY.TITLE') }}
+            {{ emptyState.title }}
           </h2>
           <p class="text-sm text-n-slate-11">
-            {{
-              evolutionEnabled
-                ? $t('WHATSAPP_CONNECTIONS.EMPTY.DESCRIPTION')
-                : $t('WHATSAPP_CONNECTIONS.NOT_CONFIGURED')
-            }}
+            {{ emptyState.description }}
           </p>
         </div>
         <NextButton

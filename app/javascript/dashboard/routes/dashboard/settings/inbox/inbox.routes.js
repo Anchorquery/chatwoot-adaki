@@ -44,7 +44,15 @@ export default {
           component: PrivacyFilter,
           meta: {
             featureFlag: FEATURE_FLAGS.INBOX_MANAGEMENT,
-            permissions: ['administrator', 'agent', 'inbox_manage'],
+            // Un rol personalizado no lleva 'agent' entre sus permisos: sin
+            // channel_operate aquí, el botón "Filtro de chats" de la página
+            // de conexiones no le abría nada.
+            permissions: [
+              'administrator',
+              'agent',
+              'inbox_manage',
+              'channel_operate',
+            ],
           },
         },
       ],

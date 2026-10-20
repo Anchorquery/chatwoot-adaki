@@ -1244,6 +1244,8 @@
         "SCAN": "Toca \"Vincular un dispositivo\" y apunta la cámara a este código."
       },
       "QR_HINT": "El código se renueva solo. Esta pantalla se actualiza en cuanto el teléfono quede vinculado.",
+      "QR_MISSING_HINT": "Evolution API no está generando el código QR. Reinicia la conexión; si sigue sin aparecer, el servidor de Evolution necesita actualizarse (la versión de WhatsApp Web que usa quedó desfasada) y hay que avisar al administrador del servidor.",
+      "RESTART": "Reiniciar conexión",
       "PAIRING_CODE": "O introduce este código en el teléfono:",
       "EXPIRED_HINT": "Nadie escaneó el código a tiempo. Genera uno nuevo cuando tengas el teléfono a mano.",
       "CONNECT": "Conectar y mostrar QR",
@@ -1268,6 +1270,10 @@
     "EMPTY": {
       "TITLE": "Aún no hay números de WhatsApp conectados",
       "DESCRIPTION": "Crea una conexión, escanea el QR con el teléfono y las conversaciones empezarán a llegar aquí."
+    },
+    "EMPTY_NOT_ASSIGNED": {
+      "TITLE": "No tienes ningún número de WhatsApp asignado",
+      "DESCRIPTION": "Solo ves los números de las bandejas en las que eres colaborador. Pide a un administrador que te añada en Ajustes > Bandejas > (bandeja de WhatsApp) > Colaboradores: desde ese momento verás el número aquí y sus conversaciones en la bandeja de entrada."
     },
     "SUMMARY": {
       "OPEN": "Conectadas",

@@ -40,6 +40,10 @@ const QR_RETRY_MS = 2500;
 // queda generando QR sin que nadie mire es justo la que se atasca en
 // 'connecting' y consume memoria en Evolution.
 const QR_TIMEOUT_MS = 3 * 60 * 1000;
+// Si en este tiempo Evolution no entregó ni un QR, la sesión está atascada
+// (típico cuando su versión de WhatsApp Web quedó vieja): se avisa en vez de
+// dejar el spinner girando hasta que caduque.
+const QR_MISSING_MS = 30 * 1000;
 
 // loading | open | connecting | close | expired | error
 const status = ref('loading');
@@ -50,10 +54,13 @@ const profile = ref({});
 const requestingQr = ref(false);
 const loggingOut = ref(false);
 const confirmingLogout = ref(false);
+const qrMissing = ref(false);
+const restarting = ref(false);
 
 let statePollTimer = null;
 let qrRefreshTimer = null;
 let qrTimeoutTimer = null;
+let qrMissingTimer = null;
 let pollingState = false;
 let unmounted = false;
 
@@ -99,9 +106,24 @@ const clearTimers = () => {
   clearInterval(statePollTimer);
   clearTimeout(qrRefreshTimer);
   clearTimeout(qrTimeoutTimer);
+  clearTimeout(qrMissingTimer);
   statePollTimer = null;
   qrRefreshTimer = null;
   qrTimeoutTimer = null;
+  qrMissingTimer = null;
+  qrMissing.value = false;
+};
+
+const watchForMissingQr = () => {
+  if (qrCode.value) {
+    clearTimeout(qrMissingTimer);
+    qrMissingTimer = null;
+    qrMissing.value = false;
+  } else if (!qrMissingTimer && !qrMissing.value) {
+    qrMissingTimer = setTimeout(() => {
+      qrMissing.value = !qrCode.value;
+    }, QR_MISSING_MS);
+  }
 };
 
 const handleError = error => {
@@ -188,6 +210,7 @@ requestQr = async ({ silent = false } = {}) => {
     errorCode.value = '';
     qrCode.value = data.qr_code || qrCode.value;
     pairingCode.value = data.pairing_code || null;
+    watchForMissingQr();
     startPolling();
     // Recién arrancada, Evolution tarda un par de segundos en tener el primer
     // QR: si aún no llegó, se vuelve a pedir enseguida.
@@ -204,6 +227,20 @@ requestQr = async ({ silent = false } = {}) => {
 const startConnection = () => {
   clearTimers();
   requestQr();
+};
+
+// Reinicia la sesión en Evolution (sin desvincular) y vuelve a pedir el QR.
+// Lo pueden usar también quienes solo operan el canal.
+const restartAndConnect = async () => {
+  restarting.value = true;
+  try {
+    await InboxesAPI.restartEvolution(props.inboxId);
+    startConnection();
+  } catch {
+    useAlert(t('WHATSAPP_CONNECTIONS.ALERTS.RESTART_ERROR'));
+  } finally {
+    restarting.value = false;
+  }
 };
 
 const loadState = async () => {
@@ -336,6 +373,10 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <p v-if="showQr && qrMissing" class="text-sm text-n-amber-11">
+      {{ $t('INBOX_MGMT.EVOLUTION_CONNECTION.QR_MISSING_HINT') }}
+    </p>
+
     <p v-if="status === 'expired'" class="text-sm text-n-slate-11">
       {{ $t('INBOX_MGMT.EVOLUTION_CONNECTION.EXPIRED_HINT') }}
     </p>
@@ -364,6 +405,17 @@ onBeforeUnmount(() => {
         :label="$t('INBOX_MGMT.EVOLUTION_CONNECTION.NEW_QR')"
         :is-loading="requestingQr"
         @click="startConnection"
+      />
+      <NextButton
+        v-if="showQr && qrMissing"
+        type="button"
+        size="sm"
+        variant="faded"
+        color="amber"
+        icon="i-lucide-rotate-ccw"
+        :label="$t('INBOX_MGMT.EVOLUTION_CONNECTION.RESTART')"
+        :is-loading="restarting"
+        @click="restartAndConnect"
       />
       <template v-if="isConnected && allowLogout">
         <NextButton

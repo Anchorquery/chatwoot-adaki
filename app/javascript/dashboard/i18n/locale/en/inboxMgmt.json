@@ -1244,6 +1244,8 @@
         "SCAN": "Tap \"Link a device\" and point the camera at this code."
       },
       "QR_HINT": "The code refreshes by itself. This screen updates as soon as the phone is linked.",
+      "QR_MISSING_HINT": "Evolution API is not generating the QR code. Restart the connection; if it still does not show up, the Evolution server needs an update (its WhatsApp Web version is outdated) and the server administrator has to be told.",
+      "RESTART": "Restart connection",
       "PAIRING_CODE": "Or enter this code on the phone:",
       "EXPIRED_HINT": "Nobody scanned the code in time. Generate a new one when you have the phone at hand.",
       "CONNECT": "Connect and show QR",
@@ -1268,6 +1270,10 @@
     "EMPTY": {
       "TITLE": "No WhatsApp numbers connected yet",
       "DESCRIPTION": "Create a connection, scan the QR code with the phone and the conversations will start arriving here."
+    },
+    "EMPTY_NOT_ASSIGNED": {
+      "TITLE": "No WhatsApp numbers assigned to you",
+      "DESCRIPTION": "You only see the numbers of the inboxes you are a collaborator of. Ask an administrator to add you in Settings > Inboxes > (WhatsApp inbox) > Collaborators: from then on the number shows up here and its conversations reach your inbox."
     },
     "SUMMARY": {
       "OPEN": "Connected",

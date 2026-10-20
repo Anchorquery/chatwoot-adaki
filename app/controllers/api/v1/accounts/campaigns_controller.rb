@@ -38,9 +38,11 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def update
     @campaign.update!(campaign_params.except(:attachments))
-    @campaign.update!(campaign_status: :active) if @campaign.draft?
     remove_files_from(@campaign)
     attach_files_to(@campaign)
+    # Se activa con los adjuntos ya guardados: activa antes, el job de cada
+    # minuto podía lanzarla y Evolution recibía una imagen que aún no existía.
+    @campaign.update!(campaign_status: :active) if @campaign.draft?
   end
 
   def destroy
