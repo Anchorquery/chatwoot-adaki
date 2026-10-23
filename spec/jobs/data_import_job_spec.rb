@@ -46,8 +46,8 @@ RSpec.describe DataImportJob do
     end
 
     context 'when the data contains errors' do
-      it 'imports erroneous data into the account, skipping invalid records' do
-        # Last record is invalid because of duplicate email
+      it 'imports a row that repeats an email with another phone as its own contact, without the email' do
+        # The last row repeats an email with a different phone: another person sharing the address
         invalid_data = [
           %w[id first_name last_name email phone_number],
           ['1', 'Clarice', 'Uzzell', 'cuzzell0@mozilla.org', '+918484848484'],
@@ -60,7 +60,8 @@ RSpec.describe DataImportJob do
         csv_length = csv_data.length
 
         described_class.perform_now(invalid_data_import)
-        expect(invalid_data_import.account.contacts.count).to eq(csv_length - 1)
+        expect(invalid_data_import.account.contacts.count).to eq(csv_length)
+        expect(invalid_data_import.account.contacts.find_by(phone_number: '+91848484848').email).to be_nil
         expect(invalid_data_import.reload.total_records).to eq(csv_length)
         expect(invalid_data_import.reload.processed_records).to eq(csv_length)
       end

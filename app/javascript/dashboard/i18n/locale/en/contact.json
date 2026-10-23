@@ -320,7 +320,7 @@
         "UNBLOCK_ERROR_MESSAGE": "Unable to unblock contact. Please try again later.",
         "IMPORT_CONTACT": {
           "TITLE": "Import contacts",
-          "DESCRIPTION": "Import contacts through a CSV file.",
+          "DESCRIPTION": "Import contacts through a CSV file. Columns: name, email, phone_number (with the country code, e.g. 34600000000) and labels. Spanish and Basque headers such as nombre, correo, teléfono or etiqueta also work. Labels must exist before importing.",
           "DOWNLOAD_LABEL": "Download a sample csv.",
           "LABEL": "CSV File:",
           "CHOOSE_FILE": "Choose file",

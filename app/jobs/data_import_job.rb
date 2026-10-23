@@ -12,6 +12,7 @@ class DataImportJob < ApplicationJob
   def perform(data_import)
     @data_import = data_import
     @contact_manager = DataImport::ContactManager.new(@data_import.account)
+    @csv_rows = DataImport::CsvRows.new
     begin
       process_import_file
       send_import_notification_to_admin
@@ -45,14 +46,14 @@ class DataImportJob < ApplicationJob
   end
 
   def build_contact_from_row(row, contacts, rejected_contacts)
-    row_hash = row.to_h.with_indifferent_access
+    row_hash = @csv_rows.clean(row)
     labels = extract_labels(row_hash)
     invalid_labels = labels.map(&:downcase) - approved_labels
 
-    if invalid_labels.present?
-      append_label_error(row, invalid_labels, rejected_contacts)
-      return
-    end
+    return append_row_error(row, "Unknown labels: #{invalid_labels.join(', ')}", rejected_contacts) if invalid_labels.present?
+    # Sin email, teléfono ni identificador el contacto se creaba igual, pero la
+    # lista de contactos no lo muestra: mejor rechazar la fila y decir por qué.
+    return append_row_error(row, I18n.t('errors.data_import.missing_contact_details'), rejected_contacts) if @csv_rows.anonymous?(row_hash)
 
     current_contact = @contact_manager.build_contact(row_hash.except(:labels))
     if current_contact.valid?
@@ -145,8 +146,8 @@ class DataImportJob < ApplicationJob
     @approved_labels ||= @data_import.account.labels.pluck(:title)
   end
 
-  def append_label_error(row, labels, rejected_contacts)
-    row['errors'] = "Unknown labels: #{labels.join(', ')}"
+  def append_row_error(row, message, rejected_contacts)
+    row['errors'] = message
     rejected_contacts << row
   end
 
@@ -203,7 +204,7 @@ class DataImportJob < ApplicationJob
     clean_data = utf8_data.valid_encoding? ? utf8_data : utf8_data.encode('UTF-16le', invalid: :replace, replace: '').encode('UTF-8')
     clean_data = clean_data.delete_prefix("\xEF\xBB\xBF")
 
-    CSV.new(StringIO.new(clean_data), headers: true)
+    CSV.new(StringIO.new(clean_data), headers: true, strip: true, header_converters: ->(header) { DataImport::CsvRows.normalize_header(header) })
   end
 
   def with_import_file

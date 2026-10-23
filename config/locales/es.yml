@@ -70,6 +70,7 @@ es:
       feature_not_enabled: La función SAML no está habilitada para esta cuenta
       sso_not_enabled: El SSO de SAML no está habilitado para esta instalación
     data_import:
+      missing_contact_details: 'Falta el email o el teléfono: sin ninguno de los dos el contacto no aparecería en la lista de contactos.'
       data_type:
         invalid: Tipo de datos no válido
     contacts:
