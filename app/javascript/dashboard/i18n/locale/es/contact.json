@@ -319,7 +319,7 @@
         "UNBLOCK_ERROR_MESSAGE": "No se pudo desbloquear el contacto. Inténtalo de nuevo más tarde.",
         "IMPORT_CONTACT": {
           "TITLE": "Importar contactos",
-          "DESCRIPTION": "Importar contactos a través de un archivo CSV.",
+          "DESCRIPTION": "Importar contactos a través de un archivo CSV. Columnas: name, email, phone_number (con prefijo de país, por ejemplo 34600000000) y labels. También valen nombre, correo, teléfono y etiqueta. Las etiquetas tienen que existir antes de importar.",
           "DOWNLOAD_LABEL": "Descarga un ejemplo de csv.",
           "LABEL": "Archivo CSV:",
           "CHOOSE_FILE": "Elegir archivo",

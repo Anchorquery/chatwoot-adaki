@@ -12,6 +12,7 @@ class DataImportJob < ApplicationJob
   def perform(data_import)
     @data_import = data_import
     @contact_manager = DataImport::ContactManager.new(@data_import.account)
+    @csv_rows = DataImport::CsvRows.new
     begin
       process_import_file
       send_import_notification_to_admin
@@ -45,7 +46,7 @@ class DataImportJob < ApplicationJob
   end
 
   def build_contact_from_row(row, contacts, rejected_contacts)
-    row_hash = row.to_h.with_indifferent_access
+    row_hash = @csv_rows.clean(row)
     labels = extract_labels(row_hash)
     invalid_labels = labels.map(&:downcase) - approved_labels
 
@@ -203,7 +204,7 @@ class DataImportJob < ApplicationJob
     clean_data = utf8_data.valid_encoding? ? utf8_data : utf8_data.encode('UTF-16le', invalid: :replace, replace: '').encode('UTF-8')
     clean_data = clean_data.delete_prefix("\xEF\xBB\xBF")
 
-    CSV.new(StringIO.new(clean_data), headers: true)
+    CSV.new(StringIO.new(clean_data), headers: true, strip: true, header_converters: ->(header) { DataImport::CsvRows.normalize_header(header) })
   end
 
   def with_import_file
