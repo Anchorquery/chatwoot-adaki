@@ -28,6 +28,10 @@ class DataImport::CsvRows
     row_hash
   end
 
+  def anonymous?(row_hash)
+    row_hash.values_at(:email, :phone_number, :identifier).all?(&:blank?)
+  end
+
   private
 
   # Dos filas del archivo con el mismo email y distinto teléfono son dos personas

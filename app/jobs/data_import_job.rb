@@ -50,10 +50,10 @@ class DataImportJob < ApplicationJob
     labels = extract_labels(row_hash)
     invalid_labels = labels.map(&:downcase) - approved_labels
 
-    if invalid_labels.present?
-      append_label_error(row, invalid_labels, rejected_contacts)
-      return
-    end
+    return append_row_error(row, "Unknown labels: #{invalid_labels.join(', ')}", rejected_contacts) if invalid_labels.present?
+    # Sin email, teléfono ni identificador el contacto se creaba igual, pero la
+    # lista de contactos no lo muestra: mejor rechazar la fila y decir por qué.
+    return append_row_error(row, I18n.t('errors.data_import.missing_contact_details'), rejected_contacts) if @csv_rows.anonymous?(row_hash)
 
     current_contact = @contact_manager.build_contact(row_hash.except(:labels))
     if current_contact.valid?
@@ -146,8 +146,8 @@ class DataImportJob < ApplicationJob
     @approved_labels ||= @data_import.account.labels.pluck(:title)
   end
 
-  def append_label_error(row, labels, rejected_contacts)
-    row['errors'] = "Unknown labels: #{labels.join(', ')}"
+  def append_row_error(row, message, rejected_contacts)
+    row['errors'] = message
     rejected_contacts << row
   end
 

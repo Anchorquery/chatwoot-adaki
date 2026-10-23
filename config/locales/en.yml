@@ -90,6 +90,7 @@ en:
       unread_counts:
         feature_not_enabled: Conversation unread counts feature not enabled for this account
     data_import:
+      missing_contact_details: 'Missing email or phone number: without either, the contact would not show up in the contacts list.'
       data_type:
         invalid: Invalid data type
     contacts:
