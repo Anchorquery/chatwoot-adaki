@@ -414,9 +414,9 @@
       "STARTED_AT": "Started",
       "COMPLETED_AT": "Completed",
       "VIEW_CONVERSATION": "View conversation",
-      "RETRY_FAILED": "Retry failed",
-      "RETRY_CONFIRM_TITLE": "Retry failed sends?",
-      "RETRY_CONFIRM": "Retry {count} failed sends?",
+      "RETRY_FAILED": "Retry unsent",
+      "RETRY_CONFIRM_TITLE": "Retry unsent messages?",
+      "RETRY_CONFIRM": "Retry {count} failed or skipped sends?",
       "RETRY_SUCCESS": "Retry started for {count} contacts",
       "RETRY_ERROR": "Error retrying. Please try again.",
       "NO_RESULTS": "No results for this search",
@@ -425,7 +425,7 @@
       "COL_ERROR": "Error",
       "STATUS_SENT": "Sent",
       "STATUS_FAILED": "Failed",
-      "STATUS_SKIPPED": "No inbox",
+      "STATUS_SKIPPED": "Skipped",
       "STATUS_PENDING": "Pending"
     },
     "CLONE": {

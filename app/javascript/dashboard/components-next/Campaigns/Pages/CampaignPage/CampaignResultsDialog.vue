@@ -29,6 +29,10 @@ let pollTimer = null;
 
 // ── computed ─────────────────────────────────────────────────────────────────
 const isRunning = computed(() => props.campaign?.campaign_status === 'running');
+// Fallidos + omitidos: los dos se pueden reintentar.
+const retryableCount = computed(
+  () => (stats.value.failed_count || 0) + (stats.value.skipped_count || 0)
+);
 const sentPct = computed(() => {
   const total = stats.value.total_contacts || 0;
   const sent = stats.value.sent_count || 0;
@@ -265,7 +269,7 @@ onUnmounted(() => {
             @click="exportCSV"
           />
           <Button
-            v-if="(stats.failed_count || 0) > 0 && !isRunning"
+            v-if="retryableCount > 0 && !isRunning"
             variant="faded"
             size="sm"
             color="ruby"
@@ -290,7 +294,7 @@ onUnmounted(() => {
         :title="t('CAMPAIGN.RESULTS.RETRY_CONFIRM_TITLE')"
         :description="
           t('CAMPAIGN.RESULTS.RETRY_CONFIRM', {
-            count: stats.failed_count,
+            count: retryableCount,
           })
         "
         :confirm-button-label="t('CAMPAIGN.RESULTS.RETRY_FAILED')"

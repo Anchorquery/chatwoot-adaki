@@ -37,11 +37,12 @@ class Campaigns::ProcessBatchJob < ApplicationJob
 
       contact_id = contact_ids[idx]
       contact = campaign.account.contacts.find(contact_id)
-      contact_inbox = campaign.inbox.contact_inboxes.find_by(contact: contact)
+      contact_inbox = find_or_link_contact_inbox(campaign, contact)
 
       if contact_inbox.nil?
         persist_state(campaign, processed_index: idx + 1,
-                                recipient: { contact_id: contact_id, status: 'skipped', skipped_at: Time.current.iso8601 })
+                                recipient: { contact_id: contact_id, status: 'skipped', skipped_at: Time.current.iso8601,
+                                             error: 'Contacto sin teléfono' })
         next
       end
 
@@ -100,6 +101,21 @@ class Campaigns::ProcessBatchJob < ApplicationJob
   end
 
   private
+
+  # Los contactos importados por CSV (o creados a mano) no quedan vinculados a la
+  # bandeja hasta que escriben por primera vez, y antes se omitían en silencio
+  # ("Sin inbox"). Si tienen teléfono se vinculan aquí: Evolution solo necesita
+  # el número del contacto para entregar el mensaje.
+  def find_or_link_contact_inbox(campaign, contact)
+    existing = campaign.inbox.contact_inboxes.find_by(contact: contact)
+    return existing if existing.present?
+    return if contact.phone_number.blank?
+
+    ContactInboxBuilder.new(contact: contact, inbox: campaign.inbox).perform
+  rescue StandardError => e
+    Rails.logger.warn("[CampaignBatch] cannot link contact=#{contact.id} inbox=#{campaign.inbox_id}: #{e.message}")
+    nil
+  end
 
   def select_message_content(campaign, contact)
     variants = campaign.delivery_settings&.dig('content_variants')

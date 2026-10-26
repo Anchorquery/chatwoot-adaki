@@ -113,6 +113,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
     sent_count = state[:sent_count].to_i
     failed_count = state[:failed_count].to_i
+    skipped_count = recipients_map.count { |_, v| v['status'] == 'skipped' }
     total_contacts = state[:total_contacts].to_i
     started_at = state[:started_at]
     completed_at = state[:completed_at]
@@ -148,6 +149,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
         total_contacts: total_contacts,
         sent_count: sent_count,
         failed_count: failed_count,
+        skipped_count: skipped_count,
         processed_index: state[:processed_index].to_i,
         started_at: started_at,
         completed_at: completed_at,
@@ -162,13 +164,15 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     state = @campaign.delivery_state.to_h.with_indifferent_access
     recipients_map = state[:recipients].to_h
 
-    failed_ids = recipients_map.select { |_, v| v['status'] == 'failed' }.keys.map(&:to_i)
-    return render json: { error: 'No failed contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
+    # Fallidos y omitidos ("Sin inbox") se vuelven a intentar: el envío ya vincula
+    # a la bandeja los contactos con teléfono que antes se omitían.
+    failed_ids = recipients_map.select { |_, v| %w[failed skipped].include?(v['status']) }.keys.map(&:to_i)
+    return render json: { error: 'No failed or skipped contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
 
-    # Remove failed entries so they get re-attempted
+    # Remove failed/skipped entries so they get re-attempted
     failed_ids.each { |id| recipients_map.delete(id.to_s) }
 
-    done_statuses = %w[sent skipped]
+    done_statuses = %w[sent]
     already_done_ids = recipients_map.select { |_, v| done_statuses.include?(v['status']) }.keys.map(&:to_i)
     all_original_ids = (state[:contact_ids] || []).map(&:to_i)
     processed_ids = recipients_map.keys.map(&:to_i)
