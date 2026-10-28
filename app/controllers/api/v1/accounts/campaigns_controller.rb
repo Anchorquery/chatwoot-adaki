@@ -164,19 +164,20 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     state = @campaign.delivery_state.to_h.with_indifferent_access
     recipients_map = state[:recipients].to_h
 
-    # Fallidos y omitidos ("Sin inbox") se vuelven a intentar: el envío ya vincula
-    # a la bandeja los contactos con teléfono que antes se omitían.
-    failed_ids = recipients_map.select { |_, v| %w[failed skipped].include?(v['status']) }.keys.map(&:to_i)
-    return render json: { error: 'No failed or skipped contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
+    # Solo se reintentan los fallidos. Los omitidos no tienen conversación previa
+    # con la bandeja y escribirles en frío es lo que hace que WhatsApp bloquee el número.
+    failed_ids = recipients_map.select { |_, v| v['status'] == 'failed' }.keys.map(&:to_i)
+    return render json: { error: 'No failed contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
 
-    # Remove failed/skipped entries so they get re-attempted
+    # Remove failed entries so they get re-attempted
     failed_ids.each { |id| recipients_map.delete(id.to_s) }
 
-    done_statuses = %w[sent]
+    done_statuses = %w[sent skipped]
     already_done_ids = recipients_map.select { |_, v| done_statuses.include?(v['status']) }.keys.map(&:to_i)
     all_original_ids = (state[:contact_ids] || []).map(&:to_i)
-    processed_ids = recipients_map.keys.map(&:to_i)
-    unprocessed_ids = all_original_ids - processed_ids - already_done_ids
+    # Los fallidos ya no están en recipients_map: sin restarlos aquí entraban dos
+    # veces en contact_ids y se les escribía dos veces.
+    unprocessed_ids = all_original_ids - already_done_ids - failed_ids
 
     # Order: already done (skip by index) → failed (retry) → never processed
     new_contact_ids = already_done_ids + failed_ids + unprocessed_ids

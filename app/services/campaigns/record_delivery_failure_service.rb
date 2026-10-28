@@ -15,7 +15,9 @@ class Campaigns::RecordDeliveryFailureService
       # `next` (no `return`) para que la transacción del lock haga commit.
       next if entry.blank? || entry['status'] == 'failed'
 
-      campaign.update!(delivery_state: failed_state(state, entry))
+      # update! falla en una campaña completed (prevent_completed_campaign_from_update),
+      # que es justo cuando suelen llegar los fallos de entrega de los últimos mensajes.
+      campaign.update_columns(delivery_state: failed_state(state, entry), updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
     end
   end
 

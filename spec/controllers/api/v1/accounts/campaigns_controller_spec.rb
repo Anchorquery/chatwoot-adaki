@@ -227,4 +227,48 @@ RSpec.describe 'Campaigns API', type: :request do
       end
     end
   end
+
+  describe 'POST /api/v1/accounts/{account.id}/campaigns/:id/retry_failed' do
+    let(:administrator) { create(:user, account: account, role: :administrator) }
+    let(:api_inbox) { create(:inbox, account: account, channel: create(:channel_api, account: account)) }
+    let(:recipients) do
+      { '1' => { 'status' => 'sent' }, '2' => { 'status' => 'failed', 'error' => 'timeout' },
+        '3' => { 'status' => 'skipped', 'error' => 'no previous conversation' } }
+    end
+    let!(:campaign) do
+      create(:campaign, account: account, inbox: api_inbox, campaign_status: :paused,
+                        delivery_state: { 'contact_ids' => [1, 2, 3], 'total_contacts' => 3, 'processed_index' => 3,
+                                          'sent_count' => 1, 'failed_count' => 1, 'recipients' => recipients })
+    end
+
+    def retry_failed
+      post "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}/retry_failed",
+           headers: administrator.create_new_auth_token,
+           as: :json
+    end
+
+    it 'retries failed recipients and leaves skipped ones out' do
+      retry_failed
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['retry_count']).to eq(1)
+
+      state = campaign.reload.delivery_state
+      expect(state['contact_ids']).to eq([1, 3, 2])
+      expect(state['processed_index']).to eq(2)
+      expect(state['recipients']['3']['status']).to eq('skipped')
+      expect(state['recipients']).not_to have_key('2')
+    end
+
+    context 'when only skipped recipients are left' do
+      let(:recipients) { { '1' => { 'status' => 'sent' }, '3' => { 'status' => 'skipped' } } }
+
+      it 'does not write to them' do
+        retry_failed
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(campaign.reload).to be_paused
+      end
+    end
+  end
 end

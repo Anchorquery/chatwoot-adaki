@@ -32,4 +32,36 @@ RSpec.describe Campaigns::ApiWebhookDispatchPlannerService do
       expect(campaign.delivery_state['errors'].last['system']).to eq('Daily delivery limit reached')
     end
   end
+
+  context 'when the campaign was already marked completed' do
+    let(:delivery_settings) { { 'delay_between_messages_seconds' => 8 } }
+    let(:next_dispatch_at) { 5.minutes.from_now }
+    let(:delivery_state) { { 'webhook_next_dispatch_at' => next_dispatch_at.to_i } }
+
+    before { campaign.update!(campaign_status: :completed) }
+
+    it 'still waits for the planned slot instead of sending right away' do
+      freeze_time do
+        expect(plan).to eq(Time.zone.at(next_dispatch_at.to_i))
+
+        state = campaign.reload.delivery_state
+        expect(state['webhook_next_dispatch_at']).to eq(next_dispatch_at.to_i + 8)
+        expect(state['webhook_daily_sent_count']).to eq(1)
+        expect(campaign).to be_completed
+      end
+    end
+
+    context 'when the daily limit is reached' do
+      let(:delivery_settings) { { 'max_daily_messages' => 1 } }
+      let(:delivery_state) { { 'webhook_last_sent_on' => Time.zone.today.to_s, 'webhook_daily_sent_count' => 1 } }
+
+      it 'does not send the message and keeps the campaign completed' do
+        expect(plan).to be_nil
+
+        campaign.reload
+        expect(campaign).to be_completed
+        expect(campaign.delivery_state['errors'].last['system']).to eq('Daily delivery limit reached')
+      end
+    end
+  end
 end
