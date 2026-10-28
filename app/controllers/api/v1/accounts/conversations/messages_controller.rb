@@ -14,7 +14,8 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   end
 
   def update
-    Messages::StatusUpdateService.new(message, permitted_params[:status], permitted_params[:external_error]).perform
+    updated = Messages::StatusUpdateService.new(message, permitted_params[:status], permitted_params[:external_error]).perform
+    record_campaign_delivery_failure if updated && message.failed?
     @message = message
   end
 
@@ -55,6 +56,12 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   end
 
   private
+
+  # Evolution marca así los mensajes que WhatsApp rechaza después del envío
+  # (p. ej. el 463): el destinatario de la campaña deja de contar como enviado.
+  def record_campaign_delivery_failure
+    Campaigns::RecordDeliveryFailureService.new(message: message, error: message.external_error.presence || 'Delivery failed').perform
+  end
 
   def message
     @message ||= @conversation.messages.find(permitted_params[:id])

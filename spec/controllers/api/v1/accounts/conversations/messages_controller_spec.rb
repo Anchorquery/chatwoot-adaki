@@ -357,5 +357,41 @@ RSpec.describe 'Conversation Messages API', type: :request do
         end
       end
     end
+
+    context 'when an agent marks a campaign message as failed' do
+      let(:campaign) do
+        create(:campaign, account: account, inbox: api_inbox,
+                          delivery_state: { 'sent_count' => 1, 'failed_count' => 0,
+                                            'recipients' => { conversation.contact_id.to_s => { 'status' => 'sent' } } })
+      end
+
+      before do
+        create(:inbox_member, inbox: api_inbox, user: agent)
+        conversation.update!(campaign: campaign)
+      end
+
+      def mark_failed
+        patch api_v1_account_conversation_message_url(
+          account_id: account.id,
+          conversation_id: conversation.display_id,
+          id: message.id
+        ), params: { status: 'failed', external_error: 'err463' }, headers: agent.create_new_auth_token, as: :json
+      end
+
+      it 'records the recipient as failed in the campaign results' do
+        mark_failed
+
+        state = campaign.reload.delivery_state
+        expect(state['recipients'][conversation.contact_id.to_s]).to include('status' => 'failed', 'error' => 'err463')
+        expect(state['sent_count']).to eq(0)
+        expect(state['failed_count']).to eq(1)
+      end
+
+      it 'counts the failure only once' do
+        2.times { mark_failed }
+
+        expect(campaign.reload.delivery_state['failed_count']).to eq(1)
+      end
+    end
   end
 end
