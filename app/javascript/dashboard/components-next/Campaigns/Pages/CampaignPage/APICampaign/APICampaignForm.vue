@@ -27,6 +27,12 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  // 'tabs' para el modal; 'page' apila las secciones y añade la vista previa.
+  layout: {
+    type: String,
+    default: 'tabs',
+    validator: value => ['tabs', 'page'].includes(value),
+  },
 });
 
 const emit = defineEmits(['submit', 'cancel']);
@@ -329,6 +335,43 @@ const renderWAMarkdown = text =>
 
 const waPreviewHtml = computed(() => renderWAMarkdown(state.message));
 
+const isPage = computed(() => props.layout === 'page');
+const isSectionVisible = tab => isPage.value || activeTab.value === tab;
+const sectionClass = computed(() =>
+  isPage.value
+    ? 'flex flex-col gap-4 rounded-xl border border-n-weak bg-n-solid-1 p-5'
+    : 'flex flex-col gap-4'
+);
+
+const optionLabel = (options, value) =>
+  options.find(option => option.value === value)?.label || '';
+
+const summary = computed(() => {
+  const delivery = state.delivery;
+  return {
+    inbox: optionLabel(inboxOptions.value, state.inboxId),
+    audience: state.selectedAudience
+      .map(id => optionLabel(audienceList.value, id))
+      .filter(Boolean)
+      .join(', '),
+    scheduledAt: state.scheduledAt
+      ? new Date(state.scheduledAt).toLocaleString()
+      : '',
+    variants: state.variants.filter(variant => variant.text.trim()).length,
+    attachments: state.existingAttachments.length + state.attachments.length,
+    pace: t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.PACE_VALUE', {
+      delay: delivery.delay_between_messages_seconds || 0,
+      perMinute: delivery.max_messages_per_minute || '∞',
+    }),
+    daily: delivery.max_daily_messages || '∞',
+    newContacts: delivery.allow_new_contacts
+      ? t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.NEW_CONTACTS_ON', {
+          count: delivery.max_new_contacts_per_day || 0,
+        })
+      : t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.NEW_CONTACTS_OFF'),
+  };
+});
+
 const formatToUTCString = value =>
   value ? new Date(value).toISOString() : null;
 
@@ -411,487 +454,597 @@ defineExpose({
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
-    <div class="flex gap-1 rounded-lg bg-n-alpha-2 p-1">
-      <button
-        v-for="tab in TABS"
-        :key="tab"
-        type="button"
-        class="flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors"
-        :class="
-          activeTab === tab
-            ? 'bg-n-solid-blue text-white'
-            : 'text-n-slate-11 hover:text-n-slate-12'
-        "
-        @click="activeTab = tab"
-      >
-        {{ t(`CAMPAIGN.API.TABS.${tab}`) }}
-      </button>
-    </div>
-
-    <section v-if="activeTab === 'CONTENT'" class="flex flex-col gap-4">
-      <div class="flex items-center justify-between gap-3">
-        <div class="text-xs text-n-slate-10">
-          {{ t('CAMPAIGN.API.CREATE.FORM.AI.HELP') }}
-        </div>
-      </div>
-
-      <div
-        class="flex flex-col gap-2 rounded-xl border border-n-weak bg-n-alpha-2 p-3"
-      >
-        <label class="text-sm font-medium text-n-slate-12">
-          {{ t('CAMPAIGN.API.CREATE.FORM.AI.PROMPT_LABEL') }}
-        </label>
-        <textarea
-          v-model="state.aiPrompt"
-          rows="3"
-          class="w-full resize-none rounded-lg border border-n-weak bg-n-alpha-black2 px-3 py-2 text-sm text-n-slate-12 outline-none"
-          :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.PROMPT_PLACEHOLDER')"
-        />
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-n-slate-12">
-              {{ t('CAMPAIGN.API.CREATE.FORM.AI.TONE_LABEL') }}
-            </label>
-            <ComboBox
-              v-model="state.aiTone"
-              :options="
-                AI_TONES.map(tone => ({
-                  value: tone,
-                  label: t(`CAMPAIGN.API.CREATE.FORM.AI.TONES.${tone}`),
-                }))
-              "
-              :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.TONE_PLACEHOLDER')"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-n-slate-12">
-              {{ t('CAMPAIGN.API.CREATE.FORM.AI.GOAL_LABEL') }}
-            </label>
-            <ComboBox
-              v-model="state.aiGoal"
-              :options="
-                AI_GOALS.map(goal => ({
-                  value: goal,
-                  label: t(`CAMPAIGN.API.CREATE.FORM.AI.GOALS.${goal}`),
-                }))
-              "
-              :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.GOAL_PLACEHOLDER')"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-n-slate-12">
-              {{ t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_LABEL') }}
-            </label>
-            <ComboBox
-              v-model="state.aiAssistantId"
-              :options="assistantOptions"
-              :placeholder="
-                t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_PLACEHOLDER')
-              "
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-xs font-medium text-n-slate-12">
-              {{ t('CAMPAIGN.API.CREATE.FORM.AI.STYLE_LABEL') }}
-            </label>
-            <ComboBox
-              v-model="state.aiStyle"
-              :options="
-                AI_STYLES.map(s => ({
-                  value: s,
-                  label: t(`CAMPAIGN.API.CREATE.FORM.AI.STYLES.${s}`),
-                }))
-              "
-              :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.STYLE_PLACEHOLDER')"
-            />
-          </div>
-          <div
-            v-if="state.aiAssistantId"
-            class="flex flex-col gap-1 sm:col-span-2"
-          >
-            <label class="text-xs font-medium text-n-slate-12">
-              {{ t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_LABEL') }}
-            </label>
-            <ComboBox
-              v-model="state.aiContextSource"
-              :options="
-                AI_CONTEXT_SOURCES.map(s => ({
-                  value: s,
-                  label: t(`CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCES.${s}`),
-                }))
-              "
-              :placeholder="
-                t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_PLACEHOLDER')
-              "
-            />
-          </div>
-        </div>
-        <label class="flex items-center gap-2 text-sm text-n-slate-11">
-          <input v-model="state.aiUseEmojis" type="checkbox" />
-          <span>{{ t('CAMPAIGN.API.CREATE.FORM.AI.USE_EMOJIS_LABEL') }}</span>
-        </label>
-        <div class="flex gap-2">
-          <Button
-            type="button"
-            variant="faded"
-            color="slate"
-            class="flex-1"
-            :label="t('CAMPAIGN.API.CREATE.FORM.AI.CLEAR')"
-            @click="state.aiPrompt = ''"
-          />
-          <Button
-            type="button"
-            class="flex-1"
-            :label="t('CAMPAIGN.API.CREATE.FORM.AI.GENERATE_ALL')"
-            :is-loading="aiLoading"
-            :disabled="aiLoading || !state.aiPrompt.trim()"
-            @click="generateWithAI"
-          />
-        </div>
-      </div>
-
-      <Input
-        v-model="state.title"
-        :label="t('CAMPAIGN.API.CREATE.FORM.TITLE.LABEL')"
-        :placeholder="t('CAMPAIGN.API.CREATE.FORM.TITLE.PLACEHOLDER')"
-        :message="formErrors.title"
-        :message-type="formErrors.title ? 'error' : 'info'"
-      />
-
-      <TextArea
-        v-model="state.message"
-        :label="t('CAMPAIGN.API.CREATE.FORM.MESSAGE.LABEL')"
-        :placeholder="t('CAMPAIGN.API.CREATE.FORM.MESSAGE.PLACEHOLDER')"
-        show-character-count
-        :max-length="1000"
-        auto-height
-        min-height="6rem"
-        max-height="20rem"
-        :message="formErrors.message"
-        :message-type="formErrors.message ? 'error' : 'info'"
-      />
-      <div
-        v-if="state.message"
-        class="rounded-lg border border-n-weak bg-n-alpha-2 px-3 py-2"
-      >
-        <p class="mb-1 text-xs font-medium text-n-slate-10">
-          {{ t('CAMPAIGN.API.CREATE.FORM.MESSAGE.WA_PREVIEW') }}
-        </p>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div
-          class="text-sm text-n-slate-12 whitespace-pre-wrap leading-relaxed"
-          v-html="waPreviewHtml"
-        />
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="mb-0.5 text-sm font-medium text-n-slate-12">
-          {{ t('CAMPAIGN.API.CREATE.FORM.INBOX.LABEL') }}
-        </label>
-        <ComboBox
-          v-model="state.inboxId"
-          :options="inboxOptions"
-          :has-error="!!formErrors.inbox"
-          :placeholder="t('CAMPAIGN.API.CREATE.FORM.INBOX.PLACEHOLDER')"
-          :message="formErrors.inbox"
-          class="[&>div>button]:bg-n-alpha-black2 [&>div>button:not(.focused)]:dark:outline-n-weak [&>div>button:not(.focused)]:hover:!outline-n-slate-6"
-        />
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="mb-0.5 text-sm font-medium text-n-slate-12">
-          {{ t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.LABEL') }}
-        </label>
-        <TagMultiSelectComboBox
-          v-model="state.selectedAudience"
-          :options="audienceList"
-          :label="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.LABEL')"
-          :placeholder="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PLACEHOLDER')"
-          :has-error="!!formErrors.audience"
-          :message="formErrors.audience"
-          class="[&>div>button]:bg-n-alpha-black2"
-        />
-      </div>
-
-      <Input
-        v-model="state.scheduledAt"
-        :label="t('CAMPAIGN.API.CREATE.FORM.SCHEDULED_AT.LABEL')"
-        type="datetime-local"
-        :min="currentDateTime"
-        :placeholder="t('CAMPAIGN.API.CREATE.FORM.SCHEDULED_AT.PLACEHOLDER')"
-        :message="formErrors.scheduledAt"
-        :message-type="formErrors.scheduledAt ? 'error' : 'info'"
-      />
-    </section>
-
-    <section v-else-if="activeTab === 'VARIANTS'" class="flex flex-col gap-4">
-      <p class="text-xs text-n-slate-10">
-        {{ t('CAMPAIGN.API.CREATE.FORM.VARIANTS.HELP') }}
-      </p>
-
-      <div class="flex flex-col gap-3">
-        <div
-          v-for="(variant, index) in state.variants"
-          :key="index"
-          class="flex items-start gap-2"
-        >
-          <TextArea
-            v-model="variant.text"
-            class="flex-1"
-            auto-height
-            min-height="4rem"
-            max-height="16rem"
-            :placeholder="
-              t('CAMPAIGN.API.CREATE.FORM.VARIANTS.PLACEHOLDER').replace(
-                '{num}',
-                index + 1
-              )
-            "
-          />
-          <Button
-            type="button"
-            variant="faded"
-            color="ruby"
-            icon="i-lucide-x"
-            @click="removeVariant(index)"
-          />
-        </div>
-      </div>
-
-      <Button
-        type="button"
-        variant="faded"
-        color="slate"
-        :label="t('CAMPAIGN.API.CREATE.FORM.VARIANTS.ADD_BUTTON')"
-        class="self-start"
-        @click="addVariant"
-      />
-    </section>
-
-    <section v-else-if="activeTab === 'FILES'" class="flex flex-col gap-4">
-      <div
-        class="rounded-xl border border-dashed border-n-weak p-5 text-center transition-colors"
-        :class="
-          isDragging ? 'border-n-blue-9 bg-n-blue-3' : 'hover:border-n-blue-7'
-        "
-        @dragover.prevent="isDragging = true"
-        @dragleave="isDragging = false"
-        @drop.prevent="onDrop"
-        @click="fileInputRef?.click()"
-      >
-        <p class="text-sm text-n-slate-10">
-          {{ t('CAMPAIGN.API.CREATE.FORM.FILES.DROP_LABEL') }}
-        </p>
-        <p class="mt-1 text-xs text-n-slate-10">
-          {{ t('CAMPAIGN.API.CREATE.FORM.FILES.HINT') }}
-        </p>
-        <input
-          ref="fileInputRef"
-          type="file"
-          multiple
-          :accept="ACCEPTED_ATTACHMENT_TYPES"
-          class="hidden"
-          @change="onFileChange"
-        />
-      </div>
-
-      <div v-if="state.existingAttachments.length" class="flex flex-col gap-2">
-        <p class="text-xs font-medium text-n-slate-11">
-          {{ t('CAMPAIGN.API.CREATE.FORM.FILES.EXISTING') }}
-        </p>
-        <div
-          v-for="attachment in state.existingAttachments"
-          :key="attachment.id"
-          class="flex items-center justify-between rounded-lg bg-n-alpha-2 px-3 py-2 text-xs text-n-slate-11"
-        >
-          <span class="truncate">{{ attachment.filename }}</span>
-          <button
-            type="button"
-            class="text-n-red-10 hover:text-n-red-11"
-            @click="removeExistingAttachment(attachment.id)"
-          >
-            {{ t('CAMPAIGN.API.CREATE.FORM.FILES.REMOVE') }}
-          </button>
-        </div>
-      </div>
-
-      <div v-if="state.attachments.length" class="flex flex-col gap-2">
-        <p class="text-xs font-medium text-n-slate-11">
-          {{ t('CAMPAIGN.API.CREATE.FORM.FILES.NEW') }}
-        </p>
-        <div
-          v-for="(attachment, index) in state.attachments"
-          :key="attachment.url"
-          class="flex items-center justify-between rounded-lg bg-n-alpha-2 px-3 py-2 text-xs text-n-slate-11"
-        >
-          <span class="truncate">{{ attachment.name }}</span>
-          <button
-            type="button"
-            class="text-n-red-10 hover:text-n-red-11"
-            @click="removeAttachment(index)"
-          >
-            {{ t('CAMPAIGN.API.CREATE.FORM.FILES.REMOVE') }}
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <section v-else class="flex flex-col gap-4">
-      <div class="flex gap-2">
+  <div
+    :class="
+      isPage
+        ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start'
+        : 'flex flex-col gap-4'
+    "
+  >
+    <div class="flex flex-col min-w-0" :class="isPage ? 'gap-6' : 'gap-4'">
+      <div v-if="!isPage" class="flex gap-1 rounded-lg bg-n-alpha-2 p-1">
         <button
+          v-for="tab in TABS"
+          :key="tab"
           type="button"
-          class="flex-1 rounded-lg border border-n-weak px-3 py-2 text-xs font-medium text-n-slate-11 hover:bg-n-alpha-3"
-          @click="applyPreset('safe')"
+          class="flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors"
+          :class="
+            activeTab === tab
+              ? 'bg-n-solid-blue text-white'
+              : 'text-n-slate-11 hover:text-n-slate-12'
+          "
+          @click="activeTab = tab"
         >
-          {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.PRESET_SAFE') }}
-        </button>
-        <button
-          type="button"
-          class="flex-1 rounded-lg border border-n-weak px-3 py-2 text-xs font-medium text-n-slate-11 hover:bg-n-alpha-3"
-          @click="applyPreset('balanced')"
-        >
-          {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.PRESET_BALANCED') }}
+          {{ t(`CAMPAIGN.API.TABS.${tab}`) }}
         </button>
       </div>
 
-      <div class="grid gap-3 sm:grid-cols-2">
-        <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-n-slate-12">
-            {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.BATCH_SIZE') }}
-          </span>
-          <Input v-model="state.delivery.batch_size" type="number" min="1" />
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-n-slate-12">
-            {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.DELAY_MESSAGES') }}
-          </span>
-          <Input
-            v-model="state.delivery.delay_between_messages_seconds"
-            type="number"
-            min="0"
-          />
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-n-slate-12">
-            {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.DELAY_BATCHES') }}
-          </span>
-          <Input
-            v-model="state.delivery.delay_between_batches_seconds"
-            type="number"
-            min="0"
-          />
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-n-slate-12">
-            {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_PER_MINUTE') }}
-          </span>
-          <Input
-            v-model="state.delivery.max_messages_per_minute"
-            type="number"
-            min="1"
-          />
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-n-slate-12">
-            {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_DAILY') }}
-          </span>
-          <Input
-            v-model="state.delivery.max_daily_messages"
-            type="number"
-            min="1"
-          />
-        </label>
-        <label class="flex flex-col gap-1">
-          <span class="text-xs font-medium text-n-slate-12">
-            {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_FAILURES') }}
-          </span>
-          <Input
-            v-model="state.delivery.max_failures_before_pause"
-            type="number"
-            min="1"
-          />
-        </label>
-      </div>
-
-      <label class="flex items-center gap-2 text-sm text-n-slate-11">
-        <input v-model="state.delivery.pause_on_429" type="checkbox" />
-        <span>{{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.PAUSE_ON_429') }}</span>
-      </label>
-
-      <label class="flex items-center gap-2 text-sm text-n-slate-11">
-        <input v-model="state.delivery.business_hours_only" type="checkbox" />
-        <span>{{
-          t('CAMPAIGN.API.CREATE.FORM.DELIVERY.BUSINESS_HOURS_ONLY')
-        }}</span>
-      </label>
-
-      <div
-        class="rounded-xl border p-3 flex flex-col gap-3"
-        :class="
-          state.delivery.allow_new_contacts
-            ? 'border-n-amber-7 bg-n-amber-2'
-            : 'border-n-weak bg-n-alpha-2'
-        "
-      >
-        <label class="flex items-start gap-3 cursor-pointer">
-          <input
-            v-model="state.delivery.allow_new_contacts"
-            type="checkbox"
-            class="mt-0.5"
-          />
-          <div class="flex flex-col gap-0.5">
-            <span class="text-sm font-medium text-n-slate-12">
-              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS') }}
-            </span>
-            <span class="text-xs text-n-slate-10">
-              {{
-                t('CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS_HELP')
-              }}
-            </span>
+      <section v-if="isSectionVisible('CONTENT')" :class="sectionClass">
+        <h3 v-if="isPage" class="text-base font-medium text-n-slate-12">
+          {{ t('CAMPAIGN.API.TABS.CONTENT') }}
+        </h3>
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-xs text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.FORM.AI.HELP') }}
           </div>
-        </label>
-        <template v-if="state.delivery.allow_new_contacts">
-          <p class="text-xs text-n-amber-11">
-            {{
-              t('CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS_WARNING')
-            }}
+        </div>
+
+        <div
+          class="flex flex-col gap-2 rounded-xl border border-n-weak bg-n-alpha-2 p-3"
+        >
+          <label class="text-sm font-medium text-n-slate-12">
+            {{ t('CAMPAIGN.API.CREATE.FORM.AI.PROMPT_LABEL') }}
+          </label>
+          <textarea
+            v-model="state.aiPrompt"
+            rows="3"
+            class="w-full resize-none rounded-lg border border-n-weak bg-n-alpha-black2 px-3 py-2 text-sm text-n-slate-12 outline-none"
+            :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.PROMPT_PLACEHOLDER')"
+          />
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-n-slate-12">
+                {{ t('CAMPAIGN.API.CREATE.FORM.AI.TONE_LABEL') }}
+              </label>
+              <ComboBox
+                v-model="state.aiTone"
+                :options="
+                  AI_TONES.map(tone => ({
+                    value: tone,
+                    label: t(`CAMPAIGN.API.CREATE.FORM.AI.TONES.${tone}`),
+                  }))
+                "
+                :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.TONE_PLACEHOLDER')"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-n-slate-12">
+                {{ t('CAMPAIGN.API.CREATE.FORM.AI.GOAL_LABEL') }}
+              </label>
+              <ComboBox
+                v-model="state.aiGoal"
+                :options="
+                  AI_GOALS.map(goal => ({
+                    value: goal,
+                    label: t(`CAMPAIGN.API.CREATE.FORM.AI.GOALS.${goal}`),
+                  }))
+                "
+                :placeholder="t('CAMPAIGN.API.CREATE.FORM.AI.GOAL_PLACEHOLDER')"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-n-slate-12">
+                {{ t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_LABEL') }}
+              </label>
+              <ComboBox
+                v-model="state.aiAssistantId"
+                :options="assistantOptions"
+                :placeholder="
+                  t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_PLACEHOLDER')
+                "
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-n-slate-12">
+                {{ t('CAMPAIGN.API.CREATE.FORM.AI.STYLE_LABEL') }}
+              </label>
+              <ComboBox
+                v-model="state.aiStyle"
+                :options="
+                  AI_STYLES.map(s => ({
+                    value: s,
+                    label: t(`CAMPAIGN.API.CREATE.FORM.AI.STYLES.${s}`),
+                  }))
+                "
+                :placeholder="
+                  t('CAMPAIGN.API.CREATE.FORM.AI.STYLE_PLACEHOLDER')
+                "
+              />
+            </div>
+            <div
+              v-if="state.aiAssistantId"
+              class="flex flex-col gap-1 sm:col-span-2"
+            >
+              <label class="text-xs font-medium text-n-slate-12">
+                {{ t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_LABEL') }}
+              </label>
+              <ComboBox
+                v-model="state.aiContextSource"
+                :options="
+                  AI_CONTEXT_SOURCES.map(s => ({
+                    value: s,
+                    label: t(
+                      `CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCES.${s}`
+                    ),
+                  }))
+                "
+                :placeholder="
+                  t('CAMPAIGN.API.CREATE.FORM.AI.CONTEXT_SOURCE_PLACEHOLDER')
+                "
+              />
+            </div>
+          </div>
+          <label class="flex items-center gap-2 text-sm text-n-slate-11">
+            <input v-model="state.aiUseEmojis" type="checkbox" />
+            <span>{{ t('CAMPAIGN.API.CREATE.FORM.AI.USE_EMOJIS_LABEL') }}</span>
+          </label>
+          <div class="flex gap-2">
+            <Button
+              type="button"
+              variant="faded"
+              color="slate"
+              class="flex-1"
+              :label="t('CAMPAIGN.API.CREATE.FORM.AI.CLEAR')"
+              @click="state.aiPrompt = ''"
+            />
+            <Button
+              type="button"
+              class="flex-1"
+              :label="t('CAMPAIGN.API.CREATE.FORM.AI.GENERATE_ALL')"
+              :is-loading="aiLoading"
+              :disabled="aiLoading || !state.aiPrompt.trim()"
+              @click="generateWithAI"
+            />
+          </div>
+        </div>
+
+        <Input
+          v-model="state.title"
+          :label="t('CAMPAIGN.API.CREATE.FORM.TITLE.LABEL')"
+          :placeholder="t('CAMPAIGN.API.CREATE.FORM.TITLE.PLACEHOLDER')"
+          :message="formErrors.title"
+          :message-type="formErrors.title ? 'error' : 'info'"
+        />
+
+        <TextArea
+          v-model="state.message"
+          :label="t('CAMPAIGN.API.CREATE.FORM.MESSAGE.LABEL')"
+          :placeholder="t('CAMPAIGN.API.CREATE.FORM.MESSAGE.PLACEHOLDER')"
+          show-character-count
+          :max-length="1000"
+          auto-height
+          min-height="6rem"
+          max-height="20rem"
+          :message="formErrors.message"
+          :message-type="formErrors.message ? 'error' : 'info'"
+        />
+        <div
+          v-if="state.message && !isPage"
+          class="rounded-lg border border-n-weak bg-n-alpha-2 px-3 py-2"
+        >
+          <p class="mb-1 text-xs font-medium text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.FORM.MESSAGE.WA_PREVIEW') }}
           </p>
-          <label class="flex flex-col gap-1 sm:max-w-xs">
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div
+            class="text-sm text-n-slate-12 whitespace-pre-wrap leading-relaxed"
+            v-html="waPreviewHtml"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="mb-0.5 text-sm font-medium text-n-slate-12">
+            {{ t('CAMPAIGN.API.CREATE.FORM.INBOX.LABEL') }}
+          </label>
+          <ComboBox
+            v-model="state.inboxId"
+            :options="inboxOptions"
+            :has-error="!!formErrors.inbox"
+            :placeholder="t('CAMPAIGN.API.CREATE.FORM.INBOX.PLACEHOLDER')"
+            :message="formErrors.inbox"
+            class="[&>div>button]:bg-n-alpha-black2 [&>div>button:not(.focused)]:dark:outline-n-weak [&>div>button:not(.focused)]:hover:!outline-n-slate-6"
+          />
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label class="mb-0.5 text-sm font-medium text-n-slate-12">
+            {{ t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.LABEL') }}
+          </label>
+          <TagMultiSelectComboBox
+            v-model="state.selectedAudience"
+            :options="audienceList"
+            :label="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.LABEL')"
+            :placeholder="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PLACEHOLDER')"
+            :has-error="!!formErrors.audience"
+            :message="formErrors.audience"
+            class="[&>div>button]:bg-n-alpha-black2"
+          />
+        </div>
+
+        <Input
+          v-model="state.scheduledAt"
+          :label="t('CAMPAIGN.API.CREATE.FORM.SCHEDULED_AT.LABEL')"
+          type="datetime-local"
+          :min="currentDateTime"
+          :placeholder="t('CAMPAIGN.API.CREATE.FORM.SCHEDULED_AT.PLACEHOLDER')"
+          :message="formErrors.scheduledAt"
+          :message-type="formErrors.scheduledAt ? 'error' : 'info'"
+        />
+      </section>
+
+      <section v-if="isSectionVisible('VARIANTS')" :class="sectionClass">
+        <h3 v-if="isPage" class="text-base font-medium text-n-slate-12">
+          {{ t('CAMPAIGN.API.TABS.VARIANTS') }}
+        </h3>
+        <p class="text-xs text-n-slate-10">
+          {{ t('CAMPAIGN.API.CREATE.FORM.VARIANTS.HELP') }}
+        </p>
+
+        <div class="flex flex-col gap-3">
+          <div
+            v-for="(variant, index) in state.variants"
+            :key="index"
+            class="flex items-start gap-2"
+          >
+            <TextArea
+              v-model="variant.text"
+              class="flex-1"
+              auto-height
+              min-height="4rem"
+              max-height="16rem"
+              :placeholder="
+                t('CAMPAIGN.API.CREATE.FORM.VARIANTS.PLACEHOLDER').replace(
+                  '{num}',
+                  index + 1
+                )
+              "
+            />
+            <Button
+              type="button"
+              variant="faded"
+              color="ruby"
+              icon="i-lucide-x"
+              @click="removeVariant(index)"
+            />
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          variant="faded"
+          color="slate"
+          :label="t('CAMPAIGN.API.CREATE.FORM.VARIANTS.ADD_BUTTON')"
+          class="self-start"
+          @click="addVariant"
+        />
+      </section>
+
+      <section v-if="isSectionVisible('FILES')" :class="sectionClass">
+        <h3 v-if="isPage" class="text-base font-medium text-n-slate-12">
+          {{ t('CAMPAIGN.API.TABS.FILES') }}
+        </h3>
+        <div
+          class="rounded-xl border border-dashed border-n-weak p-5 text-center transition-colors"
+          :class="
+            isDragging ? 'border-n-blue-9 bg-n-blue-3' : 'hover:border-n-blue-7'
+          "
+          @dragover.prevent="isDragging = true"
+          @dragleave="isDragging = false"
+          @drop.prevent="onDrop"
+          @click="fileInputRef?.click()"
+        >
+          <p class="text-sm text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.FORM.FILES.DROP_LABEL') }}
+          </p>
+          <p class="mt-1 text-xs text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.FORM.FILES.HINT') }}
+          </p>
+          <input
+            ref="fileInputRef"
+            type="file"
+            multiple
+            :accept="ACCEPTED_ATTACHMENT_TYPES"
+            class="hidden"
+            @change="onFileChange"
+          />
+        </div>
+
+        <div
+          v-if="state.existingAttachments.length"
+          class="flex flex-col gap-2"
+        >
+          <p class="text-xs font-medium text-n-slate-11">
+            {{ t('CAMPAIGN.API.CREATE.FORM.FILES.EXISTING') }}
+          </p>
+          <div
+            v-for="attachment in state.existingAttachments"
+            :key="attachment.id"
+            class="flex items-center justify-between rounded-lg bg-n-alpha-2 px-3 py-2 text-xs text-n-slate-11"
+          >
+            <span class="truncate">{{ attachment.filename }}</span>
+            <button
+              type="button"
+              class="text-n-red-10 hover:text-n-red-11"
+              @click="removeExistingAttachment(attachment.id)"
+            >
+              {{ t('CAMPAIGN.API.CREATE.FORM.FILES.REMOVE') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="state.attachments.length" class="flex flex-col gap-2">
+          <p class="text-xs font-medium text-n-slate-11">
+            {{ t('CAMPAIGN.API.CREATE.FORM.FILES.NEW') }}
+          </p>
+          <div
+            v-for="(attachment, index) in state.attachments"
+            :key="attachment.url"
+            class="flex items-center justify-between rounded-lg bg-n-alpha-2 px-3 py-2 text-xs text-n-slate-11"
+          >
+            <span class="truncate">{{ attachment.name }}</span>
+            <button
+              type="button"
+              class="text-n-red-10 hover:text-n-red-11"
+              @click="removeAttachment(index)"
+            >
+              {{ t('CAMPAIGN.API.CREATE.FORM.FILES.REMOVE') }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section v-if="isSectionVisible('DELIVERY')" :class="sectionClass">
+        <h3 v-if="isPage" class="text-base font-medium text-n-slate-12">
+          {{ t('CAMPAIGN.API.TABS.DELIVERY') }}
+        </h3>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="flex-1 rounded-lg border border-n-weak px-3 py-2 text-xs font-medium text-n-slate-11 hover:bg-n-alpha-3"
+            @click="applyPreset('safe')"
+          >
+            {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.PRESET_SAFE') }}
+          </button>
+          <button
+            type="button"
+            class="flex-1 rounded-lg border border-n-weak px-3 py-2 text-xs font-medium text-n-slate-11 hover:bg-n-alpha-3"
+            @click="applyPreset('balanced')"
+          >
+            {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.PRESET_BALANCED') }}
+          </button>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="flex flex-col gap-1">
             <span class="text-xs font-medium text-n-slate-12">
-              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_NEW_CONTACTS') }}
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.BATCH_SIZE') }}
+            </span>
+            <Input v-model="state.delivery.batch_size" type="number" min="1" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.DELAY_MESSAGES') }}
             </span>
             <Input
-              v-model="state.delivery.max_new_contacts_per_day"
+              v-model="state.delivery.delay_between_messages_seconds"
+              type="number"
+              min="0"
+            />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.DELAY_BATCHES') }}
+            </span>
+            <Input
+              v-model="state.delivery.delay_between_batches_seconds"
+              type="number"
+              min="0"
+            />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_PER_MINUTE') }}
+            </span>
+            <Input
+              v-model="state.delivery.max_messages_per_minute"
               type="number"
               min="1"
             />
           </label>
-        </template>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_DAILY') }}
+            </span>
+            <Input
+              v-model="state.delivery.max_daily_messages"
+              type="number"
+              min="1"
+            />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_FAILURES') }}
+            </span>
+            <Input
+              v-model="state.delivery.max_failures_before_pause"
+              type="number"
+              min="1"
+            />
+          </label>
+        </div>
+
+        <label class="flex items-center gap-2 text-sm text-n-slate-11">
+          <input v-model="state.delivery.pause_on_429" type="checkbox" />
+          <span>{{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.PAUSE_ON_429') }}</span>
+        </label>
+
+        <label class="flex items-center gap-2 text-sm text-n-slate-11">
+          <input v-model="state.delivery.business_hours_only" type="checkbox" />
+          <span>{{
+            t('CAMPAIGN.API.CREATE.FORM.DELIVERY.BUSINESS_HOURS_ONLY')
+          }}</span>
+        </label>
+
+        <div
+          class="rounded-xl border p-3 flex flex-col gap-3"
+          :class="
+            state.delivery.allow_new_contacts
+              ? 'border-n-amber-7 bg-n-amber-2'
+              : 'border-n-weak bg-n-alpha-2'
+          "
+        >
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input
+              v-model="state.delivery.allow_new_contacts"
+              type="checkbox"
+              class="mt-0.5"
+            />
+            <div class="flex flex-col gap-0.5">
+              <span class="text-sm font-medium text-n-slate-12">
+                {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS') }}
+              </span>
+              <span class="text-xs text-n-slate-10">
+                {{
+                  t('CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS_HELP')
+                }}
+              </span>
+            </div>
+          </label>
+          <template v-if="state.delivery.allow_new_contacts">
+            <p class="text-xs text-n-amber-11">
+              {{
+                t(
+                  'CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS_WARNING'
+                )
+              }}
+            </p>
+            <label class="flex flex-col gap-1 sm:max-w-xs">
+              <span class="text-xs font-medium text-n-slate-12">
+                {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_NEW_CONTACTS') }}
+              </span>
+              <Input
+                v-model="state.delivery.max_new_contacts_per_day"
+                type="number"
+                min="1"
+              />
+            </label>
+          </template>
+        </div>
+
+        <div
+          class="rounded-xl border border-n-weak bg-n-alpha-2 p-3 flex flex-col gap-2"
+        >
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input
+              v-model="state.delivery.immediate_dispatch"
+              type="checkbox"
+              class="mt-0.5"
+            />
+            <div class="flex flex-col gap-0.5">
+              <span class="text-sm font-medium text-n-slate-12">
+                {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH') }}
+              </span>
+              <span class="text-xs text-n-slate-10">
+                {{
+                  t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH_HELP')
+                }}
+              </span>
+            </div>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <aside v-if="isPage" class="flex flex-col gap-4 lg:sticky lg:top-4">
+      <div
+        class="flex flex-col gap-3 rounded-xl border border-n-weak bg-n-solid-1 p-4"
+      >
+        <p class="text-sm font-medium text-n-slate-12">
+          {{ t('CAMPAIGN.API.CREATE.PAGE.PREVIEW_TITLE') }}
+        </p>
+        <div class="rounded-xl bg-n-alpha-2 p-3">
+          <div
+            v-if="state.message"
+            class="ml-auto max-w-[90%] rounded-lg rounded-tr-none bg-n-teal-3 px-3 py-2 shadow-sm"
+          >
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div
+              class="text-sm text-n-slate-12 whitespace-pre-wrap break-words leading-relaxed"
+              v-html="waPreviewHtml"
+            />
+            <p v-if="summary.attachments" class="mt-1 text-xs text-n-slate-10">
+              {{
+                t('CAMPAIGN.API.CREATE.PAGE.ATTACHMENTS_COUNT', {
+                  count: summary.attachments,
+                })
+              }}
+            </p>
+          </div>
+          <p v-else class="text-xs text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.PAGE.PREVIEW_EMPTY') }}
+          </p>
+        </div>
+        <p v-if="summary.variants" class="text-xs text-n-slate-10">
+          {{
+            t('CAMPAIGN.API.CREATE.PAGE.VARIANTS_COUNT', {
+              count: summary.variants,
+            })
+          }}
+        </p>
       </div>
 
       <div
-        class="rounded-xl border border-n-weak bg-n-alpha-2 p-3 flex flex-col gap-2"
+        class="flex flex-col gap-2 rounded-xl border border-n-weak bg-n-solid-1 p-4 text-sm"
       >
-        <label class="flex items-start gap-3 cursor-pointer">
-          <input
-            v-model="state.delivery.immediate_dispatch"
-            type="checkbox"
-            class="mt-0.5"
-          />
-          <div class="flex flex-col gap-0.5">
-            <span class="text-sm font-medium text-n-slate-12">
-              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH') }}
-            </span>
-            <span class="text-xs text-n-slate-10">
-              {{
-                t('CAMPAIGN.API.CREATE.FORM.DELIVERY.IMMEDIATE_DISPATCH_HELP')
-              }}
-            </span>
-          </div>
-        </label>
+        <p class="font-medium text-n-slate-12">
+          {{ t('CAMPAIGN.API.CREATE.PAGE.SUMMARY_TITLE') }}
+        </p>
+        <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5">
+          <dt class="text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.INBOX') }}
+          </dt>
+          <dd class="truncate text-n-slate-12">{{ summary.inbox || '—' }}</dd>
+          <dt class="text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.AUDIENCE') }}
+          </dt>
+          <dd class="text-n-slate-12">{{ summary.audience || '—' }}</dd>
+          <dt class="text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.SCHEDULED_AT') }}
+          </dt>
+          <dd class="text-n-slate-12">{{ summary.scheduledAt || '—' }}</dd>
+          <dt class="text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.PACE') }}
+          </dt>
+          <dd class="text-n-slate-12">{{ summary.pace }}</dd>
+          <dt class="text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.DAILY') }}
+          </dt>
+          <dd class="text-n-slate-12">{{ summary.daily }}</dd>
+          <dt class="text-n-slate-10">
+            {{ t('CAMPAIGN.API.CREATE.PAGE.SUMMARY.NEW_CONTACTS') }}
+          </dt>
+          <dd
+            :class="
+              state.delivery.allow_new_contacts
+                ? 'text-n-amber-11'
+                : 'text-n-slate-12'
+            "
+          >
+            {{ summary.newContacts }}
+          </dd>
+        </dl>
       </div>
-    </section>
+    </aside>
 
     <div
       v-if="showActionButtons"

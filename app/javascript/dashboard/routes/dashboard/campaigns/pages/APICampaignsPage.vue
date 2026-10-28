@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onActivated, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 import { useToggle } from '@vueuse/core';
 import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
@@ -11,7 +12,6 @@ import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import CampaignLayout from 'dashboard/components-next/Campaigns/CampaignLayout.vue';
 import CampaignFilterBar from 'dashboard/components-next/Campaigns/CampaignFilterBar.vue';
 import CampaignList from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignList.vue';
-import APICampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/APICampaign/APICampaignDialog.vue';
 import ConfirmDeleteCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/ConfirmDeleteCampaignDialog.vue';
 import CampaignResultsDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignResultsDialog.vue';
 import SMSCampaignEmptyState from 'dashboard/components-next/Campaigns/EmptyState/SMSCampaignEmptyState.vue';
@@ -19,6 +19,8 @@ import PaginationFooter from 'dashboard/components-next/pagination/PaginationFoo
 
 const { t } = useI18n();
 const store = useStore();
+const route = useRoute();
+const router = useRouter();
 
 const {
   campaigns,
@@ -32,8 +34,6 @@ const {
 } = useCampaignList([INBOX_TYPES.API]);
 
 const selectedCampaign = ref(null);
-const dialogMode = ref('create');
-const [showAPICampaignDialog, toggleAPICampaignDialog] = useToggle();
 const [showResultsDialog, toggleResultsDialog] = useToggle();
 const resultsCampaign = ref(null);
 const confirmDeleteCampaignDialogRef = ref(null);
@@ -43,16 +43,17 @@ const hasNoCampaigns = computed(
 );
 
 const handleCreate = () => {
-  dialogMode.value = 'create';
-  selectedCampaign.value = null;
-  toggleAPICampaignDialog(true);
+  router.push({ name: 'campaigns_api_new', params: route.params });
 };
 
-const handleEdit = campaign => {
-  dialogMode.value = 'edit';
-  selectedCampaign.value = campaign;
-  toggleAPICampaignDialog(true);
+const openEditor = campaign => {
+  router.push({
+    name: 'campaigns_api_edit',
+    params: { ...route.params, campaignId: campaign.id },
+  });
 };
+
+const handleEdit = campaign => openEditor(campaign);
 
 const handleDelete = campaign => {
   selectedCampaign.value = campaign;
@@ -62,9 +63,7 @@ const handleDelete = campaign => {
 const handleClone = async campaign => {
   try {
     const cloned = await store.dispatch('campaigns/clone', campaign.id);
-    dialogMode.value = 'edit';
-    selectedCampaign.value = cloned;
-    toggleAPICampaignDialog(true);
+    openEditor(cloned);
   } catch {
     useAlert(t('CAMPAIGN.CLONE.ERROR'));
   }
@@ -75,10 +74,15 @@ const handleResults = campaign => {
   toggleResultsDialog(true);
 };
 
-const handleDialogClose = () => {
-  toggleAPICampaignDialog(false);
+// La lista vive en keep-alive: al volver del editor se recarga.
+let isFirstActivation = true;
+onActivated(() => {
+  if (isFirstActivation) {
+    isFirstActivation = false;
+    return;
+  }
   refresh();
-};
+});
 </script>
 
 <template>
@@ -87,15 +91,6 @@ const handleDialogClose = () => {
     :button-label="t('CAMPAIGN.API.NEW_CAMPAIGN')"
     @click="handleCreate"
   >
-    <template #action>
-      <APICampaignDialog
-        v-if="showAPICampaignDialog"
-        :mode="dialogMode"
-        :selected-campaign="selectedCampaign"
-        @close="handleDialogClose"
-      />
-    </template>
-
     <template #filters>
       <CampaignFilterBar
         :model-value="filters"
