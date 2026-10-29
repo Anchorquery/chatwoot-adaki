@@ -270,5 +270,31 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(campaign.reload).to be_paused
       end
     end
+
+    context 'when a recipient failed because the account is restricted (463)' do
+      let(:recipients) do
+        { '1' => { 'status' => 'sent' }, '2' => { 'status' => 'failed', 'error' => 'timeout' },
+          '3' => { 'status' => 'failed', 'error' => '463', 'retryable' => false } }
+      end
+
+      it 'retries the other failures and leaves that one failed' do
+        retry_failed
+
+        expect(response.parsed_body['retry_count']).to eq(1)
+        state = campaign.reload.delivery_state
+        expect(state['contact_ids']).to eq([1, 3, 2])
+        expect(state['recipients']['3']['status']).to eq('failed')
+        expect(state['failed_count']).to eq(1)
+      end
+    end
+
+    context 'when the campaign is already running' do
+      before { campaign.update_columns(campaign_status: Campaign.campaign_statuses[:running]) } # rubocop:disable Rails/SkipsModelValidations
+
+      it 'does not enqueue another batch' do
+        expect { retry_failed }.not_to have_enqueued_job(Campaigns::ProcessBatchJob)
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
   end
 end

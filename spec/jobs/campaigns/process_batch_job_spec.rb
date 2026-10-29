@@ -17,7 +17,10 @@ RSpec.describe Campaigns::ProcessBatchJob do
   let(:recipients) { campaign.reload.delivery_state['recipients'] }
 
   before do
-    create(:contact_inbox, contact: known_contact, inbox: inbox)
+    known_contact_inbox = create(:contact_inbox, contact: known_contact, inbox: inbox)
+    known_conversation = create(:conversation, account: account, inbox: inbox, contact: known_contact,
+                                               contact_inbox: known_contact_inbox)
+    create(:message, account: account, inbox: inbox, conversation: known_conversation, message_type: :incoming)
     Redis::Alfred.scan_each(match: 'campaigns:new_contacts:*') { |key| Redis::Alfred.delete(key) }
   end
 
@@ -34,6 +37,15 @@ RSpec.describe Campaigns::ProcessBatchJob do
       expect { described_class.perform_now(campaign) }.not_to(change { inbox.contact_inboxes.where(contact: cold_contact).count })
       expect(campaign.conversations.where(contact: cold_contact)).to be_empty
     end
+
+    it 'skips contacts linked to the inbox that never wrote to it' do
+      create(:contact_inbox, contact: cold_contact, inbox: inbox)
+
+      described_class.perform_now(campaign)
+
+      expect(recipients[cold_contact.id.to_s]['status']).to eq('skipped')
+      expect(recipients[cold_contact.id.to_s]['error']).to eq(Campaigns::NewContactInboxService::NO_CONVERSATION_REASON)
+    end
   end
 
   context 'when new contacts are allowed' do
@@ -45,9 +57,8 @@ RSpec.describe Campaigns::ProcessBatchJob do
     it 'writes to new contacts up to the daily limit of the inbox and waits until tomorrow for the rest' do
       expect { described_class.perform_now(campaign) }.to have_enqueued_job(described_class)
 
-      expect(recipients[known_contact.id.to_s]['status']).to eq('sent')
+      expect(recipients.values_at(known_contact.id.to_s, cold_contact.id.to_s).pluck('status')).to eq(%w[sent sent])
       expect(recipients[no_phone_contact.id.to_s]['error']).to eq(Campaigns::NewContactInboxService::NO_PHONE_REASON)
-      expect(recipients[cold_contact.id.to_s]['status']).to eq('sent')
       expect(recipients).not_to have_key(second_cold_contact.id.to_s)
 
       campaign.reload

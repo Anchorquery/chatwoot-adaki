@@ -42,19 +42,17 @@ class Campaigns::ProcessBatchJob < ApplicationJob
 
       contact_id = contact_ids[idx]
       contact = campaign.account.contacts.find(contact_id)
-      contact_inbox = campaign.inbox.contact_inboxes.find_by(contact: contact)
+      result = Campaigns::NewContactInboxService.new(
+        campaign: campaign, contact: contact, contact_inbox: campaign.inbox.contact_inboxes.find_by(contact: contact)
+      ).perform
 
-      if contact_inbox.nil?
-        result = Campaigns::NewContactInboxService.new(campaign: campaign, contact: contact).perform
-        if result.limit_reached
-          # El contacto no se consume: se le escribe cuando la campaña siga.
-          resume_at = wait_for_new_contacts_limit(campaign)
-          break
-        end
-
-        contact_inbox = result.contact_inbox
+      if result.limit_reached
+        # El contacto no se consume: se le escribe cuando la campaña siga.
+        resume_at = wait_for_new_contacts_limit(campaign)
+        break
       end
 
+      contact_inbox = result.contact_inbox
       if contact_inbox.nil?
         persist_state(campaign, processed_index: idx + 1,
                                 recipient: { contact_id: contact_id, status: 'skipped', skipped_at: Time.current.iso8601,
