@@ -195,7 +195,10 @@ gem 'reverse_markdown'
 
 gem 'iso-639'
 gem 'ruby-openai'
-gem 'ai-agents', '>= 0.12.0'
+# require: el archivo de la gem es agents.rb. Sin esto Bundler no la carga y
+# `Agents` lo crea Zeitwerk por app/jobs/agents/: al recargar clases se borra
+# con los métodos de la gem (Agents.configure deja de existir).
+gem 'ai-agents', '>= 0.12.0', require: 'agents'
 
 # TODO: Move this gem as a dependency of ai-agents
 gem 'ruby_llm', '>= 1.16.0'
