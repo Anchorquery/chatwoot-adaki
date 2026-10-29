@@ -66,6 +66,12 @@ class Campaign < ApplicationRecord
     end
   end
 
+  # Mensaje enviado por la campaña (MessageBuilder guarda campaign_id), no una
+  # respuesta posterior dentro de la conversación de la campaña.
+  def message_of_campaign?(message)
+    message.additional_attributes.to_h['campaign_id'].to_i == id
+  end
+
   private
 
   def execute_campaign

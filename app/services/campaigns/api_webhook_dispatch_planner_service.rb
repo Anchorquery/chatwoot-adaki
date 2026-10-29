@@ -5,8 +5,13 @@ class Campaigns::ApiWebhookDispatchPlannerService
     campaign = message.conversation.campaign
     return Time.current unless campaign&.one_off?
     return Time.current unless campaign.inbox_id == inbox.id
-    return Time.current if campaign.completed?
+    # Solo el mensaje que creó la campaña lleva ritmo y límites. Las respuestas
+    # del cliente, del agente o de Captain en esa conversación salen al momento.
+    return Time.current unless campaign.message_of_campaign?(message)
 
+    # ProcessBatchJob marca la campaña completed en cuanto crea el último mensaje,
+    # y los eventos de los últimos mensajes llegan aquí después. Antes salían al
+    # momento, sin retardos ni límites: se siguen planificando igual.
     # `next` (not `return`) so the lock transaction commits: with the 7.0
     # defaults a `return` rolls it back, which silently undid the pause
     # persist_schedule! writes when the daily limit is reached.
@@ -74,10 +79,10 @@ class Campaigns::ApiWebhookDispatchPlannerService
     daily_sent_count = sent_on == today ? state[:webhook_daily_sent_count].to_i : 0
 
     if max_daily_messages.positive? && daily_sent_count >= max_daily_messages
-      campaign.paused!
+      campaign.paused! unless campaign.completed?
       state[:errors] = Array(state[:errors])
       state[:errors] << { system: 'Daily delivery limit reached', time: Time.current }
-      campaign.update!(delivery_state: state)
+      save_state!(campaign, state)
       return nil
     end
 
@@ -94,8 +99,14 @@ class Campaigns::ApiWebhookDispatchPlannerService
     state[:webhook_last_sent_on] = today
     state[:webhook_window_sent_count] = state[:webhook_window_sent_count].to_i + 1
     state[:webhook_next_dispatch_at] = (dispatch_at + next_gap).to_i
-    campaign.update!(delivery_state: state)
+    save_state!(campaign, state)
     dispatch_at
+  end
+
+  # update! falla en una campaña completed (prevent_completed_campaign_from_update)
+  # y aquí solo cambia el estado de entrega, nunca la configuración.
+  def save_state!(campaign, state)
+    campaign.update_columns(delivery_state: state, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
   end
 
   def next_open_time_for(inbox, from_time)

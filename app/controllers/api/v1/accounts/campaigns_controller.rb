@@ -149,6 +149,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
         total_contacts: total_contacts,
         sent_count: sent_count,
         failed_count: failed_count,
+        retryable_failed_count: recipients_map.count { |_, v| retryable_failure?(v) },
         skipped_count: skipped_count,
         processed_index: state[:processed_index].to_i,
         started_at: started_at,
@@ -164,19 +165,26 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     state = @campaign.delivery_state.to_h.with_indifferent_access
     recipients_map = state[:recipients].to_h
 
-    # Fallidos y omitidos ("Sin inbox") se vuelven a intentar: el envío ya vincula
-    # a la bandeja los contactos con teléfono que antes se omitían.
-    failed_ids = recipients_map.select { |_, v| %w[failed skipped].include?(v['status']) }.keys.map(&:to_i)
-    return render json: { error: 'No failed or skipped contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
+    # Una campaña en marcha (o esperando al día siguiente) ya tiene un
+    # ProcessBatchJob programado: otro más procesaría los mismos contactos dos veces.
+    return render json: { error: 'Campaign is already running' }, status: :unprocessable_entity if @campaign.running?
 
-    # Remove failed/skipped entries so they get re-attempted
+    # Solo se reintentan los fallidos reintentables. Los omitidos no tienen conversación
+    # previa con la bandeja, y los 463 vienen de una cuenta restringida: escribirles
+    # en frío es lo que hace que WhatsApp bloquee el número.
+    failed_ids = recipients_map.select { |_, v| retryable_failure?(v) }.keys.map(&:to_i)
+    return render json: { error: 'No failed contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
+
+    # Remove failed entries so they get re-attempted
     failed_ids.each { |id| recipients_map.delete(id.to_s) }
 
-    done_statuses = %w[sent]
+    # Los fallidos no reintentables siguen como fallidos y se saltan como terminados.
+    done_statuses = %w[sent skipped failed]
     already_done_ids = recipients_map.select { |_, v| done_statuses.include?(v['status']) }.keys.map(&:to_i)
     all_original_ids = (state[:contact_ids] || []).map(&:to_i)
-    processed_ids = recipients_map.keys.map(&:to_i)
-    unprocessed_ids = all_original_ids - processed_ids - already_done_ids
+    # Los fallidos ya no están en recipients_map: sin restarlos aquí entraban dos
+    # veces en contact_ids y se les escribía dos veces.
+    unprocessed_ids = all_original_ids - already_done_ids - failed_ids
 
     # Order: already done (skip by index) → failed (retry) → never processed
     new_contact_ids = already_done_ids + failed_ids + unprocessed_ids
@@ -187,7 +195,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
         contact_ids: new_contact_ids,
         total_contacts: new_contact_ids.size,
         processed_index: already_done_ids.size,
-        failed_count: 0,
+        failed_count: recipients_map.count { |_, v| v['status'] == 'failed' },
         consecutive_failures: 0,
         recipients: recipients_map
       )
@@ -238,6 +246,10 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def campaign
     @campaign ||= Current.account.campaigns.find_by(display_id: params[:id])
+  end
+
+  def retryable_failure?(recipient)
+    recipient['status'] == 'failed' && recipient['retryable'] != false
   end
 
   def trigger_immediate_dispatch

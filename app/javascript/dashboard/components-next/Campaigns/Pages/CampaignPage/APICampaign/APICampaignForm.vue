@@ -55,6 +55,8 @@ const defaultDeliverySettings = () => ({
   pause_on_429: true,
   business_hours_only: false,
   immediate_dispatch: false,
+  allow_new_contacts: false,
+  max_new_contacts_per_day: 20,
 });
 
 const defaultState = () => ({
@@ -823,6 +825,50 @@ defineExpose({
           t('CAMPAIGN.API.CREATE.FORM.DELIVERY.BUSINESS_HOURS_ONLY')
         }}</span>
       </label>
+
+      <div
+        class="rounded-xl border p-3 flex flex-col gap-3"
+        :class="
+          state.delivery.allow_new_contacts
+            ? 'border-n-amber-7 bg-n-amber-2'
+            : 'border-n-weak bg-n-alpha-2'
+        "
+      >
+        <label class="flex items-start gap-3 cursor-pointer">
+          <input
+            v-model="state.delivery.allow_new_contacts"
+            type="checkbox"
+            class="mt-0.5"
+          />
+          <div class="flex flex-col gap-0.5">
+            <span class="text-sm font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS') }}
+            </span>
+            <span class="text-xs text-n-slate-10">
+              {{
+                t('CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS_HELP')
+              }}
+            </span>
+          </div>
+        </label>
+        <template v-if="state.delivery.allow_new_contacts">
+          <p class="text-xs text-n-amber-11">
+            {{
+              t('CAMPAIGN.API.CREATE.FORM.DELIVERY.ALLOW_NEW_CONTACTS_WARNING')
+            }}
+          </p>
+          <label class="flex flex-col gap-1 sm:max-w-xs">
+            <span class="text-xs font-medium text-n-slate-12">
+              {{ t('CAMPAIGN.API.CREATE.FORM.DELIVERY.MAX_NEW_CONTACTS') }}
+            </span>
+            <Input
+              v-model="state.delivery.max_new_contacts_per_day"
+              type="number"
+              min="1"
+            />
+          </label>
+        </template>
+      </div>
 
       <div
         class="rounded-xl border border-n-weak bg-n-alpha-2 p-3 flex flex-col gap-2"

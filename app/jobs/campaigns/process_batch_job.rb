@@ -1,6 +1,10 @@
 class Campaigns::ProcessBatchJob < ApplicationJob
   queue_as :low
 
+  # Al llegar al tope diario de contactos nuevos la campaña sigue sola al día
+  # siguiente a esta hora de la bandeja (no hay forma de reanudar una pausada).
+  NEW_CONTACTS_RESUME_HOUR = 9
+
   def perform(campaign)
     Rails.logger.info("[CampaignBatch] perform START campaign=#{campaign.id} status=#{campaign.campaign_status} " \
                       "delivery_state=#{campaign.delivery_state.inspect}")
@@ -32,17 +36,27 @@ class Campaigns::ProcessBatchJob < ApplicationJob
     end_index = [start_index + batch_size, contact_ids.size].min
 
     auto_paused = false
+    resume_at = nil
     (start_index...end_index).each do |idx|
       break unless campaign.reload.running?
 
       contact_id = contact_ids[idx]
       contact = campaign.account.contacts.find(contact_id)
-      contact_inbox = find_or_link_contact_inbox(campaign, contact)
+      result = Campaigns::NewContactInboxService.new(
+        campaign: campaign, contact: contact, contact_inbox: campaign.inbox.contact_inboxes.find_by(contact: contact)
+      ).perform
 
+      if result.limit_reached
+        # El contacto no se consume: se le escribe cuando la campaña siga.
+        resume_at = wait_for_new_contacts_limit(campaign)
+        break
+      end
+
+      contact_inbox = result.contact_inbox
       if contact_inbox.nil?
         persist_state(campaign, processed_index: idx + 1,
                                 recipient: { contact_id: contact_id, status: 'skipped', skipped_at: Time.current.iso8601,
-                                             error: 'Contacto sin teléfono' })
+                                             error: result.skip_reason })
         next
       end
 
@@ -79,14 +93,15 @@ class Campaigns::ProcessBatchJob < ApplicationJob
 
         if state[:consecutive_failures].to_i >= 5
           campaign.paused!
-          persist_state(campaign,
-                        errors: Array(state[:errors]) + [{ system: 'Campaign auto-paused because of repeated failures', time: Time.current }])
+          # persist_state ya suma los errores nuevos a los guardados.
+          persist_state(campaign, errors: [{ system: 'Campaign auto-paused because of repeated failures', time: Time.current }])
           auto_paused = true
           break
         end
       end
     end
     return if auto_paused
+    return Campaigns::ProcessBatchJob.set(wait_until: resume_at).perform_later(campaign) if resume_at
 
     if state[:processed_index].to_i >= contact_ids.size
       campaign.with_lock do
@@ -102,19 +117,11 @@ class Campaigns::ProcessBatchJob < ApplicationJob
 
   private
 
-  # Los contactos importados por CSV (o creados a mano) no quedan vinculados a la
-  # bandeja hasta que escriben por primera vez, y antes se omitían en silencio
-  # ("Sin inbox"). Si tienen teléfono se vinculan aquí: Evolution solo necesita
-  # el número del contacto para entregar el mensaje.
-  def find_or_link_contact_inbox(campaign, contact)
-    existing = campaign.inbox.contact_inboxes.find_by(contact: contact)
-    return existing if existing.present?
-    return if contact.phone_number.blank?
-
-    ContactInboxBuilder.new(contact: contact, inbox: campaign.inbox).perform
-  rescue StandardError => e
-    Rails.logger.warn("[CampaignBatch] cannot link contact=#{contact.id} inbox=#{campaign.inbox_id}: #{e.message}")
-    nil
+  def wait_for_new_contacts_limit(campaign)
+    time_zone = ActiveSupport::TimeZone[campaign.inbox.timezone] || Time.zone
+    resume_at = time_zone.now.tomorrow.beginning_of_day + NEW_CONTACTS_RESUME_HOUR.hours
+    persist_state(campaign, errors: [{ system: 'Daily new contacts limit reached', resume_at: resume_at.iso8601, time: Time.current }])
+    resume_at
   end
 
   def select_message_content(campaign, contact)

@@ -29,9 +29,10 @@ let pollTimer = null;
 
 // ── computed ─────────────────────────────────────────────────────────────────
 const isRunning = computed(() => props.campaign?.campaign_status === 'running');
-// Fallidos + omitidos: los dos se pueden reintentar.
+// Solo los fallidos: a los omitidos (sin conversación previa) no se les escribe.
+// Los fallos 463 (cuenta restringida) no se reintentan.
 const retryableCount = computed(
-  () => (stats.value.failed_count || 0) + (stats.value.skipped_count || 0)
+  () => stats.value.retryable_failed_count ?? stats.value.failed_count ?? 0
 );
 const sentPct = computed(() => {
   const total = stats.value.total_contacts || 0;
