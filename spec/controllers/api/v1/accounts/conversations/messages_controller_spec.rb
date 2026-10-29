@@ -365,24 +365,27 @@ RSpec.describe 'Conversation Messages API', type: :request do
                                             'recipients' => { conversation.contact_id.to_s => { 'status' => 'sent' } } })
       end
 
+      let(:error) { 'WhatsApp rejected the message (463): the account cannot start new chats with this contact.' }
+
       before do
         create(:inbox_member, inbox: api_inbox, user: agent)
         conversation.update!(campaign: campaign)
+        message.update!(additional_attributes: { campaign_id: campaign.id })
       end
 
-      def mark_failed
+      def mark_failed(target = message)
         patch api_v1_account_conversation_message_url(
           account_id: account.id,
           conversation_id: conversation.display_id,
-          id: message.id
-        ), params: { status: 'failed', external_error: 'err463' }, headers: agent.create_new_auth_token, as: :json
+          id: target.id
+        ), params: { status: 'failed', external_error: error }, headers: agent.create_new_auth_token, as: :json
       end
 
-      it 'records the recipient as failed in the campaign results' do
+      it 'records the recipient as a failure that is not retried' do
         mark_failed
 
         state = campaign.reload.delivery_state
-        expect(state['recipients'][conversation.contact_id.to_s]).to include('status' => 'failed', 'error' => 'err463')
+        expect(state['recipients'][conversation.contact_id.to_s]).to include('status' => 'failed', 'error' => error, 'retryable' => false)
         expect(state['sent_count']).to eq(0)
         expect(state['failed_count']).to eq(1)
       end
@@ -391,6 +394,14 @@ RSpec.describe 'Conversation Messages API', type: :request do
         2.times { mark_failed }
 
         expect(campaign.reload.delivery_state['failed_count']).to eq(1)
+      end
+
+      it 'ignores later replies in the campaign conversation' do
+        reply = create(:message, conversation: conversation, account: account, status: :sent)
+
+        mark_failed(reply)
+
+        expect(campaign.reload.delivery_state['recipients'][conversation.contact_id.to_s]['status']).to eq('sent')
       end
     end
   end

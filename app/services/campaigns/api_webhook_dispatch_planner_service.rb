@@ -5,6 +5,9 @@ class Campaigns::ApiWebhookDispatchPlannerService
     campaign = message.conversation.campaign
     return Time.current unless campaign&.one_off?
     return Time.current unless campaign.inbox_id == inbox.id
+    # Solo el mensaje que creó la campaña lleva ritmo y límites. Las respuestas
+    # del cliente, del agente o de Captain en esa conversación salen al momento.
+    return Time.current unless campaign.message_of_campaign?(message)
 
     # ProcessBatchJob marca la campaña completed en cuanto crea el último mensaje,
     # y los eventos de los últimos mensajes llegan aquí después. Antes salían al
