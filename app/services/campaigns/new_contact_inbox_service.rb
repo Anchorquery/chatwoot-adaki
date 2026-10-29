@@ -9,8 +9,13 @@
 # Tener contact_inbox no basta: aecfd7da vinculó contactos de listas importadas
 # sin que escribieran nunca. Cuenta como conocido quien tiene algún mensaje
 # entrante en la bandeja.
+#
+# Los grupos y canales de WhatsApp ya vinculados a la bandeja no son contactos
+# en frío: publicar en ellos no es escribir a un desconocido, y un canal nunca
+# manda mensajes entrantes, así que con la regla anterior se saltaba siempre.
 class Campaigns::NewContactInboxService
   DEFAULT_DAILY_LIMIT = 20
+  WHATSAPP_CHAT_MARKERS = %w[@g.us @newsletter].freeze
   NO_CONVERSATION_REASON = 'Contacto sin conversación previa con esta bandeja'.freeze
   NO_PHONE_REASON = 'Contacto sin teléfono'.freeze
   LINK_ERROR_REASON = 'No se pudo vincular el contacto a la bandeja'.freeze
@@ -31,7 +36,7 @@ class Campaigns::NewContactInboxService
   end
 
   def perform
-    return Result.new(contact_inbox: contact_inbox) if self.class.contact_wrote?(contact_inbox)
+    return Result.new(contact_inbox: contact_inbox) if known_chat?
     return skipped(NO_CONVERSATION_REASON) unless allowed?
     return skipped(NO_PHONE_REASON) if contact.phone_number.blank?
     return Result.new(limit_reached: true) unless reserve_slot!
@@ -40,6 +45,20 @@ class Campaigns::NewContactInboxService
   end
 
   private
+
+  def known_chat?
+    return false if contact_inbox.nil?
+
+    whatsapp_group_or_channel? || self.class.contact_wrote?(contact_inbox)
+  end
+
+  # Evolution guarda el JID del chat en el identifier del contacto; el source_id
+  # del contact_inbox suele ser un UUID, pero otros puentes ponen ahí el JID.
+  def whatsapp_group_or_channel?
+    [contact_inbox.source_id, contact.identifier, contact.phone_number].any? do |value|
+      value.to_s.end_with?(*WHATSAPP_CHAT_MARKERS)
+    end
+  end
 
   def link!
     Result.new(contact_inbox: contact_inbox || ContactInboxBuilder.new(contact: contact, inbox: campaign.inbox).perform)

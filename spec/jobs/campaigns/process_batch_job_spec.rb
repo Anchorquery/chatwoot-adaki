@@ -46,6 +46,23 @@ RSpec.describe Campaigns::ProcessBatchJob do
       expect(recipients[cold_contact.id.to_s]['status']).to eq('skipped')
       expect(recipients[cold_contact.id.to_s]['error']).to eq(Campaigns::NewContactInboxService::NO_CONVERSATION_REASON)
     end
+
+    context 'with WhatsApp channels and groups linked to the inbox' do
+      let(:channel) { create(:contact, account: account, phone_number: nil, identifier: '120363000000000000@newsletter') }
+      let(:group) { create(:contact, account: account, phone_number: nil, identifier: nil) }
+      let(:contact_ids) { [channel.id, group.id] }
+
+      before do
+        create(:contact_inbox, contact: channel, inbox: inbox)
+        create(:contact_inbox, contact: group, inbox: inbox, source_id: '120363111111111111@g.us')
+      end
+
+      it 'writes to them although they never sent an incoming message' do
+        described_class.perform_now(campaign)
+
+        expect(recipients.values_at(channel.id.to_s, group.id.to_s).pluck('status')).to eq(%w[sent sent])
+      end
+    end
   end
 
   context 'when new contacts are allowed' do
