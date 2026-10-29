@@ -301,6 +301,26 @@
               "detailed": "Detailed"
             }
           }
+        },
+        "PAGE": {
+          "BACK": "Back to campaigns",
+          "LOAD_ERROR": "Could not load the campaign",
+          "PREVIEW_TITLE": "WhatsApp preview",
+          "PREVIEW_EMPTY": "Write the message to see how it will look.",
+          "ATTACHMENTS_COUNT": "{count} attachment(s)",
+          "VARIANTS_COUNT": "{count} variant(s): each contact gets one at random.",
+          "SUMMARY_TITLE": "Summary",
+          "SUMMARY": {
+            "INBOX": "Inbox",
+            "AUDIENCE": "Audience",
+            "SCHEDULED_AT": "Scheduled",
+            "PACE": "Pace",
+            "PACE_VALUE": "{delay} s between messages, up to {perMinute}/min",
+            "DAILY": "Per day",
+            "NEW_CONTACTS": "New contacts",
+            "NEW_CONTACTS_ON": "Yes, up to {count}/day per inbox",
+            "NEW_CONTACTS_OFF": "No, only previous conversations"
+          }
         }
       },
       "EDIT": {

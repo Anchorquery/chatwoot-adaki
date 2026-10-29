@@ -369,6 +369,26 @@
               "detailed": "Detallado"
             }
           }
+        },
+        "PAGE": {
+          "BACK": "Volver a campañas",
+          "LOAD_ERROR": "No se pudo cargar la campaña",
+          "PREVIEW_TITLE": "Vista previa en WhatsApp",
+          "PREVIEW_EMPTY": "Escribe el mensaje para ver cómo se verá.",
+          "ATTACHMENTS_COUNT": "{count} adjunto(s)",
+          "VARIANTS_COUNT": "{count} variante(s): cada contacto recibe una al azar.",
+          "SUMMARY_TITLE": "Resumen",
+          "SUMMARY": {
+            "INBOX": "Bandeja",
+            "AUDIENCE": "Audiencia",
+            "SCHEDULED_AT": "Programada",
+            "PACE": "Ritmo",
+            "PACE_VALUE": "{delay} s entre mensajes, hasta {perMinute}/min",
+            "DAILY": "Por día",
+            "NEW_CONTACTS": "Contactos nuevos",
+            "NEW_CONTACTS_ON": "Sí, hasta {count}/día por bandeja",
+            "NEW_CONTACTS_OFF": "No, solo conversaciones previas"
+          }
         }
       },
       "EDIT": {
