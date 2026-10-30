@@ -253,7 +253,7 @@
             "ALLOW_NEW_CONTACTS_HELP": "Off by default: only contacts with a previous conversation receive the campaign. Turn it on for imported lists or invitations.",
             "ALLOW_NEW_CONTACTS_WARNING": "Messaging people who never wrote to the number is what gets WhatsApp numbers restricted. Keep the daily limit low, avoid links in the first message when possible and prefer the official WhatsApp API for large cold lists. When the limit is reached the campaign continues the next day at 9:00.",
             "MAX_NEW_CONTACTS": "New contacts per day for this inbox (shared by all its campaigns)",
-            "IMMEDIATE_DISPATCH_HELP": "Enqueue the campaign as soon as it is saved (if scheduled time has passed). Without this, the system checks every 5 minutes."
+            "IMMEDIATE_DISPATCH_HELP": "The campaign starts when saved, even if the scheduled date is in the future. With business hours on, messages wait until the inbox opens. Without this, it goes out at the scheduled date."
           },
           "AI": {
             "BUTTON": "AI assistant",

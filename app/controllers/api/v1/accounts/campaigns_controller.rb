@@ -48,6 +48,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   def create
     @campaign = Current.account.campaigns.new(campaign_params.except(:attachments))
     attach_files_to(@campaign)
+    start_now_if_immediate(@campaign)
     @campaign.save!
   end
 
@@ -55,9 +56,12 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     @campaign.update!(campaign_params.except(:attachments))
     remove_files_from(@campaign)
     attach_files_to(@campaign)
-    # Se activa con los adjuntos ya guardados: activa antes, el job de cada
-    # minuto podía lanzarla y Evolution recibía una imagen que aún no existía.
-    @campaign.update!(campaign_status: :active) if @campaign.draft?
+    # Se activa (y se adelanta a ahora) con los adjuntos ya guardados: antes, el
+    # job de cada minuto podía lanzarla y Evolution recibía una imagen que aún
+    # no existía.
+    @campaign.campaign_status = :active if @campaign.draft?
+    start_now_if_immediate(@campaign)
+    @campaign.save! if @campaign.changed?
   end
 
   def destroy
@@ -250,6 +254,16 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def retryable_failure?(recipient)
     recipient['status'] == 'failed' && recipient['retryable'] != false
+  end
+
+  # «Iniciar inmediatamente» manda sobre la fecha programada. Con una fecha
+  # futura (la que pone el duplicado, un día después) la opción no hacía nada y
+  # la campaña esperaba a esa fecha sin avisar.
+  def start_now_if_immediate(campaign)
+    return unless ActiveModel::Type::Boolean.new.cast(campaign.delivery_settings.to_h['immediate_dispatch'])
+    return if campaign.scheduled_at.present? && campaign.scheduled_at <= Time.current
+
+    campaign.scheduled_at = Time.current
   end
 
   def trigger_immediate_dispatch
