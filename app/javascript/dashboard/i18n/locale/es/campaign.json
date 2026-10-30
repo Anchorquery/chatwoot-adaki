@@ -321,7 +321,7 @@
             "ALLOW_NEW_CONTACTS_HELP": "Desactivado por defecto: solo reciben la campaña los contactos con una conversación previa. Actívalo para listas importadas o invitaciones.",
             "ALLOW_NEW_CONTACTS_WARNING": "Escribir a quien nunca ha escrito al número es lo que hace que WhatsApp restrinja el número. Mantén bajo el límite diario, evita enlaces en el primer mensaje cuando puedas y usa la API oficial de WhatsApp para listas frías grandes. Al llegar al límite, la campaña sigue al día siguiente a las 9:00.",
             "MAX_NEW_CONTACTS": "Contactos nuevos por día en esta bandeja (compartido entre sus campañas)",
-            "IMMEDIATE_DISPATCH_HELP": "Encola la campaña en cuanto se guarda (si la hora programada ya pasó). Sin esta opción, el sistema revisa cada 5 minutos."
+            "IMMEDIATE_DISPATCH_HELP": "La campaña empieza al guardar, aunque la fecha programada sea futura. Si está activado el horario laboral, los mensajes esperan a que abra la bandeja. Sin esta opción, sale en la fecha programada."
           },
           "AI": {
             "BUTTON": "🪄 Asistente de IA",

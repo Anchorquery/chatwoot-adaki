@@ -189,6 +189,35 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(response).to have_http_status(:success)
         expect(JSON.parse(response.body, symbolize_names: true)[:title]).to eq('test')
       end
+
+      context 'with a one-off campaign scheduled in the future' do
+        let(:api_inbox) { create(:inbox, account: account, channel: create(:channel_api, account: account)) }
+        let(:scheduled_at) { 1.day.from_now.change(usec: 0) }
+        let!(:api_campaign) { create(:campaign, account: account, inbox: api_inbox, scheduled_at: scheduled_at) }
+
+        def update_campaign(params)
+          patch "/api/v1/accounts/#{account.id}/campaigns/#{api_campaign.display_id}",
+                params: { campaign: params },
+                headers: administrator.create_new_auth_token,
+                as: :json
+        end
+
+        it 'starts it right away when immediate dispatch is on' do
+          freeze_time do
+            expect { update_campaign(delivery_settings: { immediate_dispatch: true }) }
+              .to have_enqueued_job(Campaigns::TriggerOneoffCampaignJob).with(api_campaign)
+
+            expect(response).to have_http_status(:success)
+            expect(api_campaign.reload.scheduled_at).to eq(Time.current)
+          end
+        end
+
+        it 'keeps the scheduled date when immediate dispatch is off' do
+          expect { update_campaign(title: 'later') }.not_to have_enqueued_job(Campaigns::TriggerOneoffCampaignJob)
+
+          expect(api_campaign.reload.scheduled_at).to eq(scheduled_at)
+        end
+      end
     end
   end
 
