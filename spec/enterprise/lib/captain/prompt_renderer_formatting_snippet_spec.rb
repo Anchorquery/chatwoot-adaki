@@ -61,5 +61,19 @@ RSpec.describe Captain::PromptRenderer do
       expect(prompt).to include('reuse it instead of searching again')
       expect(prompt).not_to include('ALWAYS search the FAQs')
     end
+
+    # See docs/adaki/captain-remediacion.md Q7 / the "pollo frito" report: the
+    # assistant prompt had a scope instruction buried inside a paragraph and no
+    # explicit branch for it, so a small non-reasoning model (gpt-4.1-mini)
+    # would answer an off-topic question from its own training data instead of
+    # declining. This asserts the dedicated "# Scope" section exists and still
+    # carves out courtesy/handoff.
+    it 'tells the assistant to decline off-topic questions instead of answering from its own knowledge' do
+      prompt = described_class.render('assistant', base_context)
+
+      expect(prompt).to include('# Scope')
+      expect(prompt).to include('do not answer from your own training data')
+      expect(prompt).to include('Greetings, thanks, farewells, and requests to talk to a human are always in scope')
+    end
   end
 end
