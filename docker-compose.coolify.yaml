@@ -57,8 +57,18 @@ services:
       - coolify.managed=true
     # /health skips middleware, auth and Rack::Attack, so it only proves Puma
     # answers. start_period covers db:chatwoot_prepare on boot.
+    # The production image has no curl (docker/Dockerfile installs it only
+    # outside production), so the probe uses Ruby's stdlib. Any status below
+    # 400 passes, including a FORCE_SSL redirect.
     healthcheck:
-      test: ['CMD-SHELL', 'curl -fsS -o /dev/null http://127.0.0.1:3000/health || exit 1']
+      test:
+        [
+          'CMD',
+          'ruby',
+          '-rnet/http',
+          '-e',
+          'exit(Net::HTTP.get_response(URI("http://127.0.0.1:3000/health")).code.to_i < 400 ? 0 : 1)',
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
