@@ -65,6 +65,62 @@ RSpec.describe Campaigns::ProcessBatchJob do
     end
   end
 
+  context 'when the inbox is linked to an Evolution instance' do
+    let(:state_url) { 'https://evo.example.com/instance/connectionState/campanas' }
+
+    def stub_session_state(state)
+      stub_request(:get, state_url).to_return(
+        status: 200, body: { instance: { state: state } }.to_json, headers: { 'Content-Type' => 'application/json' }
+      )
+    end
+
+    before do
+      inbox.channel.update!(webhook_url: 'https://evo.example.com/chatwoot/webhook/campanas',
+                            additional_attributes: { 'evolution_api_key' => 'instance-token' })
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with('EVOLUTION_ALLOW_PRIVATE_NETWORK', 'false').and_return('true')
+    end
+
+    it 'waits without consuming contacts while the WhatsApp session is down' do
+      stub_session_state('close')
+
+      expect { described_class.perform_now(campaign) }.to have_enqueued_job(described_class)
+
+      campaign.reload
+      expect(campaign).to be_running
+      expect(campaign.delivery_state['processed_index']).to eq(0)
+      expect(recipients).to be_empty
+      expect(campaign.delivery_state['errors'].last)
+        .to include('system' => described_class::SESSION_UNAVAILABLE_ERROR, 'reason' => 'state=close')
+    end
+
+    it 'notes the outage only once while it lasts' do
+      stub_session_state('close')
+
+      2.times { described_class.perform_now(campaign) }
+
+      expect(campaign.reload.delivery_state['errors'].size).to eq(1)
+    end
+
+    it 'waits when Evolution does not answer' do
+      stub_request(:get, state_url).to_timeout
+
+      described_class.perform_now(campaign)
+
+      expect(recipients).to be_empty
+      expect(campaign.reload.delivery_state['errors'].last['reason']).to eq('unreachable')
+    end
+
+    it 'sends when the session is open, without asking for the profile' do
+      stub_session_state('open')
+
+      described_class.perform_now(campaign)
+
+      expect(recipients[known_contact.id.to_s]['status']).to eq('sent')
+      expect(a_request(:get, /fetchInstances/)).not_to have_been_made
+    end
+  end
+
   context 'when new contacts are allowed' do
     let(:delivery_settings) { { 'batch_size' => 10, 'allow_new_contacts' => true, 'max_new_contacts_per_day' => 1 } }
     let(:second_cold_contact) { create(:contact, account: account, phone_number: '+34600000003') }

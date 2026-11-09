@@ -5,6 +5,13 @@ class Campaigns::ProcessBatchJob < ApplicationJob
   # siguiente a esta hora de la bandeja (no hay forma de reanudar una pausada).
   NEW_CONTACTS_RESUME_HOUR = 9
 
+  # Con la sesión de WhatsApp de la bandeja caída, Evolution responde 500 a cada
+  # envío y la campaña gastaba sus contactos (y el cupo diario de nuevos) en
+  # fallos. Se espera sin consumir contactos y se vuelve a mirar; en cuanto la
+  # bandeja reconecta, la campaña sigue sola.
+  SESSION_RECHECK_INTERVAL = 5.minutes
+  SESSION_UNAVAILABLE_ERROR = 'WhatsApp session not connected'.freeze
+
   def perform(campaign)
     Rails.logger.info("[CampaignBatch] perform START campaign=#{campaign.id} status=#{campaign.campaign_status} " \
                       "delivery_state=#{campaign.delivery_state.inspect}")
@@ -12,6 +19,9 @@ class Campaigns::ProcessBatchJob < ApplicationJob
       Rails.logger.warn("[CampaignBatch] perform SKIPPED campaign=#{campaign.id} not running (status=#{campaign.campaign_status})")
       return
     end
+
+    unavailable_reason = whatsapp_session_unavailable_reason(campaign)
+    return wait_for_whatsapp_session(campaign, unavailable_reason) if unavailable_reason
 
     state = campaign.delivery_state.to_h.with_indifferent_access
     state[:sent_count] = state[:sent_count].to_i
@@ -116,6 +126,25 @@ class Campaigns::ProcessBatchJob < ApplicationJob
   end
 
   private
+
+  # nil si se puede enviar: bandeja sin Evolution, o sesión abierta.
+  def whatsapp_session_unavailable_reason(campaign)
+    result = Evolution::ConnectionService.new(campaign.inbox).connection_state(with_profile: false)
+    return if result[:status] == 'not_configured'
+    return if result[:status] == 'ok' && result[:state] == 'open'
+
+    result[:status] == 'ok' ? "state=#{result[:state]}" : result[:status]
+  end
+
+  def wait_for_whatsapp_session(campaign, reason)
+    Rails.logger.warn("[CampaignBatch] campaign=#{campaign.id} waiting for WhatsApp session (#{reason})")
+    # Una sola anotación por corte: el job vuelve cada pocos minutos.
+    last_error = Array(campaign.delivery_state.to_h['errors']).last.to_h.stringify_keys
+    unless last_error['system'] == SESSION_UNAVAILABLE_ERROR && last_error['reason'] == reason
+      persist_state(campaign, errors: [{ system: SESSION_UNAVAILABLE_ERROR, reason: reason, time: Time.current }])
+    end
+    Campaigns::ProcessBatchJob.set(wait: SESSION_RECHECK_INTERVAL).perform_later(campaign)
+  end
 
   def wait_for_new_contacts_limit(campaign)
     time_zone = ActiveSupport::TimeZone[campaign.inbox.timezone] || Time.zone
