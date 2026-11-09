@@ -1,0 +1,120 @@
+name: Compose Smoke Test
+
+# Boots docker-compose.coolify.yaml with the production image built from this
+# PR and fails unless every container reaches "healthy" and /health answers.
+#
+# Why: Coolify deploys Compose apps with a plain `docker compose up -d`, marks
+# the deployment "finished" without waiting for health, and Traefik does not
+# route to a container whose health check has not passed. A probe that cannot
+# run in the production image (it once used curl, which the image lacks) takes
+# the site down while Coolify reports success. This job catches that before
+# merge.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docker-compose.coolify.yaml'
+      - 'docker/**'
+      - 'Gemfile'
+      - 'Gemfile.lock'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'config/**'
+      - 'db/**'
+      - '.github/workflows/compose-smoke-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      IMAGE: chatwoot-adaki:smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          load: true
+          push: false
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          build-args: |
+            BUNDLE_WITHOUT=development:test
+            RAILS_ENV=production
+            RAILS_SERVE_STATIC_FILES=true
+            EXECJS_RUNTIME=Disabled
+
+      - name: Write throwaway .env
+        run: |
+          rand() { openssl rand -hex "$1"; }
+          cat > .env <<EOF
+          GHCR_IMAGE=${IMAGE}
+          SECRET_KEY_BASE=$(rand 64)
+          ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=$(rand 16)
+          ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=$(rand 16)
+          ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=$(rand 16)
+          POSTGRES_PASSWORD=$(rand 16)
+          REDIS_PASSWORD=$(rand 16)
+          FRONTEND_URL=http://localhost:3000
+          FORCE_SSL=true
+          ENABLE_ACCOUNT_SIGNUP=false
+          ACTIVE_STORAGE_SERVICE=local
+          RAILS_LOG_TO_STDOUT=true
+          LOG_LEVEL=info
+          EOF
+
+      - name: Start the stack and wait for every health check
+        # --pull never: use the image built above (the compose file says
+        # pull_policy: always for Coolify). --wait fails if any service ends
+        # unhealthy or the timeout passes; it covers db:chatwoot_prepare.
+        run: |
+          docker compose --env-file .env -f docker-compose.coolify.yaml pull postgres redis
+          docker compose --env-file .env -f docker-compose.coolify.yaml \
+            up -d --pull never --wait --wait-timeout 900
+
+      - name: Every container reports healthy
+        run: |
+          set -e
+          ids=$(docker compose --env-file .env -f docker-compose.coolify.yaml ps -q)
+          bad=0
+          for id in $ids; do
+            name=$(docker inspect -f '{{.Name}}' "$id")
+            health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$id")
+            echo "$name: $health"
+            [ "$health" = "healthy" ] || bad=1
+          done
+          exit $bad
+
+      - name: Rails answers /health from inside the container
+        run: |
+          docker compose --env-file .env -f docker-compose.coolify.yaml \
+            exec -T rails ruby -rnet/http \
+            -e 'r = Net::HTTP.get_response(URI("http://127.0.0.1:3000/health")); puts r.code; exit(r.code.to_i < 400 ? 0 : 1)'
+
+      - name: Diagnostics
+        if: failure()
+        run: |
+          docker compose --env-file .env -f docker-compose.coolify.yaml ps -a || true
+          for id in $(docker compose --env-file .env -f docker-compose.coolify.yaml ps -aq); do
+            echo "::group::health log $(docker inspect -f '{{.Name}}' "$id")"
+            docker inspect -f '{{json .State.Health}}' "$id" || true
+            echo "::endgroup::"
+          done
+          docker compose --env-file .env -f docker-compose.coolify.yaml logs --no-color --tail 200 || true
+
+      - name: Tear down
+        if: always()
+        run: docker compose --env-file .env -f docker-compose.coolify.yaml down -v || true
