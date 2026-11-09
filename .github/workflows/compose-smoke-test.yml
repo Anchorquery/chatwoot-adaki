@@ -81,6 +81,7 @@ jobs:
         # pull_policy: always for Coolify). --wait fails if any service ends
         # unhealthy or the timeout passes; it covers db:chatwoot_prepare.
         run: |
+          docker compose --env-file .env -f docker-compose.coolify.yaml pull postgres redis
           docker compose --env-file .env -f docker-compose.coolify.yaml \
             up -d --pull never --wait --wait-timeout 900
 
