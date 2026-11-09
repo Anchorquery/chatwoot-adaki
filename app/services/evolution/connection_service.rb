@@ -4,8 +4,9 @@ class Evolution::ConnectionService < Evolution::InboxClient
   # Estado de la sesión de WhatsApp: 'open' (conectada), 'connecting'
   # (esperando que escaneen el QR) o 'close'. Si está abierta, se suma el
   # número y el nombre del perfil para que el admin vea QUÉ cuenta está
-  # vinculada, no solo que hay una.
-  def connection_state
+  # vinculada, no solo que hay una. Sin with_profile se ahorra esa segunda
+  # llamada (las campañas solo necesitan saber si la sesión está abierta).
+  def connection_state(with_profile: true)
     return { status: 'not_configured' } unless configured?
 
     response = request("#{base_url}/instance/connectionState/#{encoded_instance_name}")
@@ -16,7 +17,7 @@ class Evolution::ConnectionService < Evolution::InboxClient
     return { status: 'invalid_response' } if state.blank?
 
     result = { status: 'ok', state: state }
-    state == 'open' ? result.merge(connected_profile) : result
+    state == 'open' && with_profile ? result.merge(connected_profile) : result
   end
 
   # Pide a Evolution que arranque la sesión y devuelve el QR vigente. Con la

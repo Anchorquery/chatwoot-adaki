@@ -19,6 +19,10 @@ describe Webhooks::Trigger do
   let(:webhook_timeout) { default_timeout }
   let(:base_headers) { { 'Content-Type' => 'application/json', 'Accept' => 'application/json' } }
 
+  def api_inbox_timeout
+    described_class::API_INBOX_TIMEOUT
+  end
+
   before do
     ActiveJob::Base.queue_adapter = :test
     allow(GlobalConfig).to receive(:get_value).and_call_original
@@ -38,12 +42,46 @@ describe Webhooks::Trigger do
         method: :post,
         body: payload.to_json,
         headers: base_headers,
-        open_timeout: webhook_timeout,
-        read_timeout: webhook_timeout,
+        open_timeout: api_inbox_timeout,
+        read_timeout: api_inbox_timeout,
         validate_content_type: false
       ).and_yield(fetch_result)
 
       trigger.execute(url, payload, webhook_type)
+    end
+
+    it 'waits the API inbox timeout for text messages, not only for attachments' do
+      payload = { event: 'message_created', id: message.id, content: 'hola' }
+
+      expect(SafeFetch).to receive(:fetch)
+        .with(url, hash_including(open_timeout: api_inbox_timeout, read_timeout: api_inbox_timeout))
+        .and_yield(fetch_result)
+
+      trigger.execute(url, payload, webhook_type)
+    end
+
+    context 'when the configured timeout is longer than the API inbox timeout' do
+      let(:webhook_timeout) { api_inbox_timeout + 15 }
+
+      it 'keeps the configured timeout' do
+        expect(SafeFetch).to receive(:fetch)
+          .with(url, hash_including(open_timeout: webhook_timeout, read_timeout: webhook_timeout))
+          .and_yield(fetch_result)
+
+        trigger.execute(url, payload, webhook_type)
+      end
+    end
+
+    context 'when webhook type is account webhook' do
+      let(:webhook_type) { :account_webhook }
+
+      it 'uses the configured timeout' do
+        expect(SafeFetch).to receive(:fetch)
+          .with(url, hash_including(open_timeout: webhook_timeout, read_timeout: webhook_timeout))
+          .and_yield(fetch_result)
+
+        trigger.execute(url, payload, webhook_type)
+      end
     end
 
     it 'updates message status if webhook fails for message-created event' do
@@ -186,8 +224,8 @@ describe Webhooks::Trigger do
           method: :post,
           body: body,
           headers: base_headers,
-          open_timeout: webhook_timeout,
-          read_timeout: webhook_timeout,
+          open_timeout: api_inbox_timeout,
+          read_timeout: api_inbox_timeout,
           validate_content_type: false
         ).and_yield(fetch_result)
 
@@ -266,6 +304,7 @@ describe Webhooks::Trigger do
   end
 
   context 'when webhook timeout configuration is blank' do
+    let(:webhook_type) { :account_webhook }
     let(:webhook_timeout) { nil }
 
     it 'falls back to default timeout' do
@@ -284,6 +323,7 @@ describe Webhooks::Trigger do
   end
 
   context 'when webhook timeout configuration is invalid' do
+    let(:webhook_type) { :account_webhook }
     let(:webhook_timeout) { -1 }
 
     it 'falls back to default timeout' do

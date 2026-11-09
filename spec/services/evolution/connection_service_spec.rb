@@ -40,6 +40,13 @@ describe Evolution::ConnectionService do
       expect(service.connection_state).to eq({ status: 'ok', state: 'open' })
     end
 
+    it 'skips the profile lookup when asked to' do
+      stub_request(:get, state_url).to_return(json_response({ instance: { state: 'open' } }))
+
+      expect(service.connection_state(with_profile: false)).to eq({ status: 'ok', state: 'open' })
+      expect(a_request(:get, /fetchInstances/)).not_to have_been_made
+    end
+
     it 'reports a waiting session without asking for the profile' do
       stub_request(:get, state_url).to_return(json_response({ instance: { state: 'connecting' } }))
 
