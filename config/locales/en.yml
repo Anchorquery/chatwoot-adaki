@@ -49,7 +49,7 @@ en:
 
   errors:
     campaigns:
-      unsupported_attachment: '%{name}: campaigns only accept JPG or PNG images up to 5 MB, and MP4 videos, audio (MP3, OGG, M4A, AAC) or PDF files up to 16 MB.'
+      unsupported_attachment: '%{name}: campaigns only accept JPG or PNG images up to 5 MB, audio (MP3, OGG, M4A, AAC) up to 16 MB, MP4 videos up to 64 MB and PDF files up to 100 MB.'
     account:
       reporting_timezone:
         invalid: is not a valid timezone

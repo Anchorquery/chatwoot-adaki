@@ -233,8 +233,8 @@
             "KEEP": "Kept on update",
             "NEW": "New attachments",
             "REMOVE": "Remove",
-            "HINT": "JPG or PNG up to 5 MB; MP4 video, audio or PDF up to 16 MB. One file works best: every attachment goes out as its own message with the text repeated.",
-            "UNSUPPORTED": "{name} cannot be sent: use a JPG or PNG up to 5 MB, or an MP4 video, audio or PDF up to 16 MB."
+            "HINT": "JPG or PNG up to 5 MB; audio up to 16 MB; MP4 video up to 64 MB; PDF up to 100 MB. One file works best: every attachment goes out as its own message with the text repeated.",
+            "UNSUPPORTED": "{name} cannot be sent: use a JPG or PNG up to 5 MB, audio up to 16 MB, an MP4 video up to 64 MB or a PDF up to 100 MB."
           },
           "DELIVERY": {
             "TITLE": "Safe Delivery Settings",
