@@ -156,9 +156,33 @@ const expireQr = () => {
 // Declarada antes que requestQr porque se llaman mutuamente vía timers.
 let requestQr = null;
 
+// El refresco automático nunca abre una sesión nueva: si Evolution cerró entre
+// dos sondeos (límite de QR alcanzado), llamar a connect empezaría otra tanda
+// de QR sin que nadie lo pidiera. Solo el botón genera una tanda nueva.
+const refreshQr = async () => {
+  if (unmounted || status.value !== 'connecting') return;
+  try {
+    const { data } = await InboxesAPI.getEvolutionConnectionState(
+      props.inboxId
+    );
+    if (unmounted || status.value !== 'connecting') return;
+    if (data.state === 'open') {
+      markConnected(data);
+      return;
+    }
+    if (data.state === 'close') {
+      expireQr();
+      return;
+    }
+  } catch {
+    // Sin estado se sigue con connect: requestQr ya gestiona su propio fallo.
+  }
+  await requestQr({ silent: true });
+};
+
 const scheduleQrRefresh = delay => {
   clearTimeout(qrRefreshTimer);
-  qrRefreshTimer = setTimeout(() => requestQr({ silent: true }), delay);
+  qrRefreshTimer = setTimeout(refreshQr, delay);
 };
 
 const pollState = async () => {

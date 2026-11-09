@@ -121,6 +121,32 @@ describe('EvolutionConnection', () => {
     expect(InboxesAPI.connectEvolution.mock.calls.length).toBe(callsAtExpiry);
   });
 
+  it('does not start a new QR round when Evolution closed between polls', async () => {
+    InboxesAPI.getEvolutionConnectionState.mockResolvedValue({
+      data: { state: 'connecting' },
+    });
+    InboxesAPI.connectEvolution.mockResolvedValue({
+      data: { state: 'connecting', qr_code: QR },
+    });
+
+    const wrapper = mountComponent();
+    await flushPromises();
+    expect(InboxesAPI.connectEvolution).toHaveBeenCalledTimes(1);
+
+    // Último sondeo a los 18 s; Evolution cierra antes del refresco de los 20 s.
+    await vi.advanceTimersByTimeAsync(19000);
+    InboxesAPI.getEvolutionConnectionState.mockResolvedValue({
+      data: { state: 'close' },
+    });
+    await vi.advanceTimersByTimeAsync(1000);
+    await flushPromises();
+
+    expect(InboxesAPI.connectEvolution).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).toContain(
+      'INBOX_MGMT.EVOLUTION_CONNECTION.STATUS.EXPIRED'
+    );
+  });
+
   it('shows the error when Evolution cannot be reached', async () => {
     InboxesAPI.getEvolutionConnectionState.mockRejectedValue({
       response: { data: { error: 'unreachable' } },
