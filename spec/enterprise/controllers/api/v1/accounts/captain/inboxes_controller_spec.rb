@@ -128,5 +128,20 @@ RSpec.describe 'Api::V1::Accounts::Captain::Inboxes', type: :request do
       expect(response).to have_http_status(:ok)
       expect(captain_inbox.reload.settings).to eq('human_takeover_window_minutes' => '30')
     end
+
+    it 'accepts a human_takeover_active_thread_days override and exposes it as effective' do
+      patch "/api/v1/accounts/#{account.id}/captain/assistants/#{assistant.id}/inboxes/#{inbox.id}",
+            params: { captain_inbox: { settings: { human_takeover_active_thread_days: 7 } } },
+            headers: admin.create_new_auth_token
+
+      expect(response).to have_http_status(:ok)
+      expect(captain_inbox.reload.settings).to eq('human_takeover_active_thread_days' => '7')
+
+      get "/api/v1/accounts/#{account.id}/captain/assistants/#{assistant.id}/inboxes",
+          headers: admin.create_new_auth_token
+
+      effective = json_response[:payload].first[:captain_inbox][:effective]
+      expect(effective[:human_takeover_active_thread_days]).to eq(7)
+    end
   end
 end

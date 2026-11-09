@@ -28,6 +28,53 @@ Keys involucradas:
 
 - `human_takeover_mode` — enum `always` / `after_window` / `never`
 - `human_takeover_window_minutes` — entero positivo (solo aplica si modo = `after_window`)
+- `human_takeover_active_thread_days` — entero ≥ 0, default **0** (desactivado);
+  solo aplica si modo = `after_window`. Ver "Hilo humano activo".
+
+## Hilo humano activo (`human_takeover_active_thread_days`)
+
+**Problema:** la ventana de minutos no distingue "un agente intervino una vez"
+de "un agente lleva una semana atendiendo". Con `after_window` y una ventana de
+1440 min, si el cliente tarda 42 h en contestar a un agente que lleva días con
+él, el bot retoma el hilo aunque el cliente se dirija al agente por su nombre.
+Es comportamiento configurado, no un bug de la ventana.
+
+**Regla:** con modo `after_window`, el hilo sigue siendo humano (el bot calla)
+aunque haya pasado `human_takeover_window_minutes` mientras se cumpla TODO:
+
+1. conversación `open`;
+2. con `assignee_id`;
+3. existe una respuesta humana **pública** (outgoing, `sender_type=User`,
+   `private=false`);
+4. no hubo `conversation_resolved` posterior a esa respuesta (una reapertura
+   tras resolver empieza de cero);
+5. esa última respuesta humana es más reciente que N días.
+
+Si falla cualquier punto, decide la ventana de minutos de siempre. En
+particular: una asignación sin respuesta pública (solo notas privadas) sigue
+cayendo en la ventana de minutos, y `pending` no cuenta como hilo activo.
+
+**Qué no cambia:** `captain_handoff_pending?` se evalúa antes y sigue mandando;
+`always` y `never` no pasan por la regla; la resolución libera el hilo; el bot
+sigue respondiendo en conversaciones `open` sin assignee (modo Adaki).
+
+**Cascada:** `CaptainInbox.settings` > `Captain::Assistant.config` > 0. Un
+override explícito a `0` en la bandeja apaga la regla aunque el asistente la
+tenga activa; `Heredar` (clave ausente) toma el valor del asistente.
+
+**Recomendación:** dejar 0 por defecto y activar 7 solo en el asistente cuyas
+bandejas gestionan hilos largos con agentes.
+
+Implementación: `Captain::HumanTakeoverEvaluator#active_human_thread?`, que la
+rama `after_window` de `bot_can_takeover?` consulta como
+`!active_human_thread? && last_human_response_older_than_window?`.
+
+### Nota sobre `Inbox#continue_bot_after_assignment?`
+
+[app/models/inbox.rb](app/models/inbox.rb) define `continue_bot_after_assignment?`,
+que lee el flag legacy de `Channel::WebWidget`. No tiene ningún llamador Ruby en
+el repo (solo su definición, el flag del canal y `Settings.vue`): no es un
+segundo criterio de takeover en la práctica. El único criterio es el evaluador.
 
 ## Compatibilidad con toggle legacy
 

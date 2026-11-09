@@ -45,6 +45,11 @@ class Captain::Assistant < ApplicationRecord
   HUMAN_TAKEOVER_MODES = %w[always after_window never].freeze
   DEFAULT_HUMAN_TAKEOVER_MODE = 'after_window'.freeze
   DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES = 15
+  # `after_window` only: while an assigned agent has replied publicly within
+  # the last N days (and nobody resolved the conversation since), the thread
+  # stays human-owned even after `human_takeover_window_minutes` has passed.
+  # 0 disables the rule: the minute window alone decides, as before.
+  DEFAULT_HUMAN_TAKEOVER_ACTIVE_THREAD_DAYS = 0
 
   # Cap on how many recent conversation messages are sent to the LLM as context.
   # Unbounded history was the actual cause behind some "Captain se pega"
@@ -62,8 +67,8 @@ class Captain::Assistant < ApplicationRecord
   store_accessor :config, :temperature, :feature_faq, :feature_memory, :feature_contact_attributes,
                  :product_name, :autopilot_enabled, :group_trigger, :whatsapp_number,
                  :auto_handoff_enabled, :auto_resolve_hours, :continue_after_human_takeover,
-                 :human_takeover_mode, :human_takeover_window_minutes, :history_window_messages,
-                 :handoff_team_id, :reasoning_level, :max_response_tokens
+                 :human_takeover_mode, :human_takeover_window_minutes, :human_takeover_active_thread_days,
+                 :history_window_messages, :handoff_team_id, :reasoning_level, :max_response_tokens
 
   validates :name, presence: true
   validates :description, presence: true
@@ -137,6 +142,13 @@ class Captain::Assistant < ApplicationRecord
   def human_takeover_window_minutes_value
     value = config['human_takeover_window_minutes'].to_i
     value.positive? ? value : DEFAULT_HUMAN_TAKEOVER_WINDOW_MINUTES
+  end
+
+  # Days an assigned agent's public reply keeps the thread human-owned in
+  # `after_window` mode. See DEFAULT_HUMAN_TAKEOVER_ACTIVE_THREAD_DAYS.
+  def human_takeover_active_thread_days_value
+    value = config['human_takeover_active_thread_days'].to_i
+    value.positive? ? value : DEFAULT_HUMAN_TAKEOVER_ACTIVE_THREAD_DAYS
   end
 
   # How many recent messages to include as LLM context. See

@@ -8,6 +8,7 @@ json.captain_inbox do
     json.auto_resolve_hours @captain_inbox.auto_resolve_hours_value
     json.human_takeover_mode @captain_inbox.human_takeover_mode_value
     json.human_takeover_window_minutes @captain_inbox.human_takeover_window_minutes_value
+    json.human_takeover_active_thread_days @captain_inbox.human_takeover_active_thread_days_value
     json.handoff_team_id @captain_inbox.handoff_team_id_value
   end
 end
