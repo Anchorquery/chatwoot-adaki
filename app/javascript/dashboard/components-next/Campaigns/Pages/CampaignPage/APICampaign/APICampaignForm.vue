@@ -194,13 +194,13 @@ const removeVariant = index => state.variants.splice(index, 1);
 const ATTACHMENT_LIMITS_MB = {
   'image/jpeg': 5,
   'image/png': 5,
-  'video/mp4': 16,
+  'video/mp4': 64,
   'audio/mpeg': 16,
   'audio/ogg': 16,
   'audio/mp4': 16,
   'audio/x-m4a': 16,
   'audio/aac': 16,
-  'application/pdf': 16,
+  'application/pdf': 100,
 };
 const ACCEPTED_ATTACHMENT_TYPES = Object.keys(ATTACHMENT_LIMITS_MB).join(',');
 

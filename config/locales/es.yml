@@ -35,7 +35,7 @@ es:
     inbox_deletetion_response: Su solicitud de eliminación de la bandeja de entrada será procesada en algún tiempo.
   errors:
     campaigns:
-      unsupported_attachment: '%{name}: las campañas solo admiten imágenes JPG o PNG de hasta 5 MB, y vídeos MP4, audios (MP3, OGG, M4A, AAC) o PDF de hasta 16 MB.'
+      unsupported_attachment: '%{name}: las campañas solo admiten imágenes JPG o PNG de hasta 5 MB, audios (MP3, OGG, M4A, AAC) de hasta 16 MB, vídeos MP4 de hasta 64 MB y PDF de hasta 100 MB.'
     account:
       reporting_timezone:
         invalid: no es una zona horaria válida

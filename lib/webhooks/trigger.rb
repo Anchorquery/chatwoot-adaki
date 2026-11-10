@@ -7,6 +7,11 @@ class Webhooks::Trigger
   # como textos caían en Net::ReadTimeout y el mensaje quedaba como fallido,
   # llegara o no.
   API_INBOX_TIMEOUT = 30
+  # Un vídeo de campaña puede pesar 64 MB y un PDF 100 MB: Evolution lo descarga
+  # de Chatwoot, genera la miniatura, lo cifra y lo sube a WhatsApp antes de
+  # responder. Si cortamos antes, el mensaje queda "fallido" aunque llegue, y
+  # reintentar la campaña lo manda dos veces.
+  API_INBOX_ATTACHMENT_TIMEOUT = 120
 
   class RetryableError < StandardError
     attr_reader :status
@@ -128,7 +133,13 @@ class Webhooks::Trigger
     timeout = raw_timeout.presence&.to_i
 
     timeout = 5 unless timeout&.positive?
-    @webhook_type == :api_inbox_webhook ? [timeout, API_INBOX_TIMEOUT].max : timeout
+    return timeout unless @webhook_type == :api_inbox_webhook
+
+    [timeout, payload_has_attachments? ? API_INBOX_ATTACHMENT_TIMEOUT : API_INBOX_TIMEOUT].max
+  end
+
+  def payload_has_attachments?
+    @payload.is_a?(Hash) && (@payload[:attachments].present? || @payload['attachments'].present?)
   end
 
   def retryable_agent_bot_error?(error)

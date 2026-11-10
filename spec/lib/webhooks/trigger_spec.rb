@@ -60,6 +60,31 @@ describe Webhooks::Trigger do
       trigger.execute(url, payload, webhook_type)
     end
 
+    it 'waits longer when the message carries attachments' do
+      payload = { event: 'message_created', id: message.id, attachments: [{ data_url: 'https://test.com/video.mp4' }] }
+      timeout = described_class::API_INBOX_ATTACHMENT_TIMEOUT
+
+      expect(SafeFetch).to receive(:fetch)
+        .with(url, hash_including(open_timeout: timeout, read_timeout: timeout))
+        .and_yield(fetch_result)
+
+      trigger.execute(url, payload, webhook_type)
+    end
+
+    context 'when an account webhook carries attachments' do
+      let(:webhook_type) { :account_webhook }
+
+      it 'keeps the configured timeout' do
+        payload = { event: 'message_created', id: message.id, attachments: [{ data_url: 'https://test.com/video.mp4' }] }
+
+        expect(SafeFetch).to receive(:fetch)
+          .with(url, hash_including(open_timeout: webhook_timeout, read_timeout: webhook_timeout))
+          .and_yield(fetch_result)
+
+        trigger.execute(url, payload, webhook_type)
+      end
+    end
+
     context 'when the configured timeout is longer than the API inbox timeout' do
       let(:webhook_timeout) { api_inbox_timeout + 15 }
 

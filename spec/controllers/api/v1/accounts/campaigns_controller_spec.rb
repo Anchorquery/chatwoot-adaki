@@ -150,6 +150,50 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(response_data[:scheduled_at]).to eq(scheduled_at.to_i)
         expect(response_data[:audience].pluck(:id)).to include(label1.id, label2.id)
       end
+
+      context 'with attachments' do
+        # sample.mp4 padded with zeros: still detected as video/mp4.
+        def padded_upload(asset, size, content_type)
+          file = Tempfile.new(['upload', File.extname(asset)])
+          file.binmode
+          file.write(File.binread(Rails.root.join('spec/assets', asset)))
+          file.write("\0" * (size - file.size))
+          file.rewind
+          Rack::Test::UploadedFile.new(file.path, content_type)
+        end
+
+        def create_with(upload)
+          post "/api/v1/accounts/#{account.id}/campaigns",
+               params: { campaign: { inbox_id: inbox.id, title: 'test', message: 'test message', attachments: [upload] } },
+               headers: administrator.create_new_auth_token
+        end
+
+        it 'accepts an MP4 video above the old 16 MB limit' do
+          create_with(padded_upload('sample.mp4', 20.megabytes, 'video/mp4'))
+
+          expect(response).to have_http_status(:success)
+          expect(Campaign.last.attachments.count).to eq(1)
+        end
+
+        it 'rejects an MP4 video above 64 MB' do
+          create_with(padded_upload('sample.mp4', 64.megabytes + 1, 'video/mp4'))
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(Campaign.count).to eq(0)
+        end
+
+        it 'accepts a PDF above the old 16 MB limit' do
+          create_with(Rack::Test::UploadedFile.new(Rails.root.join('spec/assets/large_file.pdf'), 'application/pdf'))
+
+          expect(response).to have_http_status(:success)
+        end
+
+        it 'keeps images at 5 MB' do
+          create_with(padded_upload('sample.png', 5.megabytes + 1, 'image/png'))
+
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+      end
     end
   end
 

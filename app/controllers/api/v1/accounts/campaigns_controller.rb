@@ -1,16 +1,22 @@
 class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   # Adjuntos que WhatsApp acepta y que Evolution envía sin problemas. Evolution
   # decide el tipo de mensaje por la extensión: HEIC o WebP salían como imagen y
-  # WhatsApp los rechazaba, y un archivo grande agotaba el tiempo del envío.
+  # WhatsApp los rechazaba.
+  #
+  # Los 16 MB de vídeo y documento son los de la Cloud API de Meta; Evolution
+  # usa el protocolo de WhatsApp Web, que admite vídeo de hasta 64 MB (el tope
+  # de WhatsApp Web con conexión lenta) y documentos mucho más grandes. Baileys
+  # sube el archivo en streaming y sin timeout; el que limita es el webhook de
+  # Chatwoot (Webhooks::Trigger::API_INBOX_ATTACHMENT_TIMEOUT).
   ATTACHMENT_LIMITS = {
     'image/jpeg' => 5.megabytes,
     'image/png' => 5.megabytes,
-    'video/mp4' => 16.megabytes,
+    'video/mp4' => 64.megabytes,
     'audio/mpeg' => 16.megabytes,
     'audio/ogg' => 16.megabytes,
     'audio/mp4' => 16.megabytes,
     'audio/aac' => 16.megabytes,
-    'application/pdf' => 16.megabytes
+    'application/pdf' => 100.megabytes
   }.freeze
 
   before_action :campaign, except: [:index, :create, :ai_generate, :clone, :results, :retry_failed]
