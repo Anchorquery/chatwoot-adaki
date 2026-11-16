@@ -1221,6 +1221,14 @@
       "TIKTOK": "TikTok",
       "VOICE": "Voice"
     },
+    "EVOLUTION_GROUP_CONTACTS": {
+      "LABEL": "WhatsApp groups",
+      "HELP": "Adds every WhatsApp group of this number as a contact, so you can start a conversation with a group from \"New conversation\" even if nobody has written in it yet.",
+      "BUTTON": "Import groups",
+      "SUCCESS": "{total} groups found: {created} new contacts, {existing} already existed.",
+      "PARTIAL": "{failed} groups could not be imported.",
+      "ERROR": "Could not read the groups from WhatsApp. Check that the number is connected and try again."
+    },
     "EVOLUTION_CONNECTION": {
       "LABEL": "WhatsApp connection",
       "HELP": "Status of the WhatsApp session linked to this inbox. Scan the QR code here to connect it or reconnect it.",

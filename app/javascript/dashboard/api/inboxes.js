@@ -31,6 +31,10 @@ class Inboxes extends CacheEnabledApiClient {
     return axios.post(`${this.url}/${inboxId}/evolution_test_connection`);
   }
 
+  syncEvolutionGroupContacts(inboxId) {
+    return axios.post(`${this.url}/${inboxId}/evolution_sync_group_contacts`);
+  }
+
   getEvolutionPrivacyFilter(inboxId) {
     return axios.get(`${this.url}/${inboxId}/evolution_privacy_filter`);
   }
