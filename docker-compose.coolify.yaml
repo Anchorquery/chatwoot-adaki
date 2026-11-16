@@ -116,8 +116,10 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
+    # Solo en el loopback del servidor: publicado en 0.0.0.0 recibía intentos de
+    # fuerza bruta desde internet. Para entrar desde fuera, túnel SSH al 5432.
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     environment:
       - POSTGRES_DB=chatwoot
       - POSTGRES_USER=postgres
