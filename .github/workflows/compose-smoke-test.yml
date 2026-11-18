@@ -74,7 +74,13 @@ jobs:
           ACTIVE_STORAGE_SERVICE=local
           RAILS_LOG_TO_STDOUT=true
           LOG_LEVEL=info
+          CHATWOOT_DB_BRIDGE_TARGET=postgres
           EOF
+
+      # In Coolify this network belongs to the Evolution API service; the
+      # compose declares it external, so it must exist before `up`.
+      - name: Create the Evolution network
+        run: docker network create y4kswgkwwgw440w408kkk0sc
 
       - name: Start the stack and wait for every health check
         # --pull never: use the image built above (the compose file says
@@ -117,4 +123,6 @@ jobs:
 
       - name: Tear down
         if: always()
-        run: docker compose --env-file .env -f docker-compose.coolify.yaml down -v || true
+        run: |
+          docker compose --env-file .env -f docker-compose.coolify.yaml down -v || true
+          docker network rm y4kswgkwwgw440w408kkk0sc || true

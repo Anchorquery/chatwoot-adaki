@@ -158,13 +158,24 @@ services:
   # nombre completo en Coolify (<servicio>-<uuid de la app>), que tampoco choca.
   #
   # En Evolution: ...@chatwoot-db-bridge:5432/chatwoot (sin sslmode).
+  # El smoke test de CI apunta CHATWOOT_DB_BRIDGE_TARGET a "postgres", porque
+  # fuera de Coolify el contenedor no lleva el sufijo del uuid.
   chatwoot-db-bridge:
     image: alpine/socat:1.8.1.1
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    command: ['TCP-LISTEN:5432,fork,reuseaddr', 'TCP:postgres-nxv2lrw8jfrgkuvcxojiso0k:5432']
+    environment:
+      - BRIDGE_TARGET=${CHATWOOT_DB_BRIDGE_TARGET:-postgres-nxv2lrw8jfrgkuvcxojiso0k}
+    command: ['TCP-LISTEN:5432,fork,reuseaddr', 'TCP:${CHATWOOT_DB_BRIDGE_TARGET:-postgres-nxv2lrw8jfrgkuvcxojiso0k}:5432']
+    # Sano solo si llega al Postgres de destino, no basta con escuchar.
+    healthcheck:
+      test: ['CMD-SHELL', 'socat -u OPEN:/dev/null "TCP:$$BRIDGE_TARGET:5432,connect-timeout=3"']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     networks:
       - default
       - evolution
