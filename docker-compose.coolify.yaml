@@ -132,6 +132,12 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    # Alias estable para chatwoot-db-bridge. Solo existe en la red propia de
+    # Chatwoot, así que no choca con el "postgres" de Evolution.
+    networks:
+      default:
+        aliases:
+          - chatwoot-postgres
 
   redis:
     image: redis:alpine
@@ -154,24 +160,21 @@ services:
   #
   # No se une `postgres` a la red de Evolution porque Compose le añade siempre el
   # alias "postgres", que choca con el Postgres propio de Evolution en esa red.
-  # Este servicio tiene un nombre único y apunta al contenedor de Chatwoot por su
-  # nombre completo en Coolify (<servicio>-<uuid de la app>), que tampoco choca.
+  # Este servicio tiene un nombre único y apunta al alias "chatwoot-postgres",
+  # que solo existe en la red de Chatwoot. (Coolify añade un timestamp de
+  # despliegue a los nombres de contenedor, así que no sirven de destino.)
   #
   # En Evolution: ...@chatwoot-db-bridge:5432/chatwoot (sin sslmode).
-  # El smoke test de CI apunta CHATWOOT_DB_BRIDGE_TARGET a "postgres", porque
-  # fuera de Coolify el contenedor no lleva el sufijo del uuid.
   chatwoot-db-bridge:
     image: alpine/socat:1.8.1.1
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      - BRIDGE_TARGET=${CHATWOOT_DB_BRIDGE_TARGET:-postgres-nxv2lrw8jfrgkuvcxojiso0k}
-    command: ['TCP-LISTEN:5432,fork,reuseaddr', 'TCP:${CHATWOOT_DB_BRIDGE_TARGET:-postgres-nxv2lrw8jfrgkuvcxojiso0k}:5432']
+    command: ['TCP-LISTEN:5432,fork,reuseaddr', 'TCP:chatwoot-postgres:5432']
     # Sano solo si llega al Postgres de destino, no basta con escuchar.
     healthcheck:
-      test: ['CMD-SHELL', 'socat -u OPEN:/dev/null "TCP:$$BRIDGE_TARGET:5432,connect-timeout=3"']
+      test: ['CMD', 'socat', '-u', 'OPEN:/dev/null', 'TCP:chatwoot-postgres:5432,connect-timeout=3']
       interval: 30s
       timeout: 5s
       retries: 3

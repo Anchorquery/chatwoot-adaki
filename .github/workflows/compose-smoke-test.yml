@@ -73,9 +73,7 @@ jobs:
           ENABLE_ACCOUNT_SIGNUP=false
           ACTIVE_STORAGE_SERVICE=local
           RAILS_LOG_TO_STDOUT=true
-          LOG_LEVEL=info
-          CHATWOOT_DB_BRIDGE_TARGET=postgres
-          EOF
+          LOG_LEVEL=info          EOF
 
       # In Coolify this network belongs to the Evolution API service; the
       # compose declares it external, so it must exist before `up`.
