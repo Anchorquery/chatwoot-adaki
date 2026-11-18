@@ -148,6 +148,27 @@ services:
       retries: 5
       start_period: 10s
 
+  # Puente TCP hacia el Postgres de Chatwoot para Evolution API, que lo consulta
+  # directamente (CHATWOOT_IMPORT_DATABASE_CONNECTION_URI): source_id de los
+  # mensajes enviados y recuperación de mensajes perdidos.
+  #
+  # No se une `postgres` a la red de Evolution porque Compose le añade siempre el
+  # alias "postgres", que choca con el Postgres propio de Evolution en esa red.
+  # Este servicio tiene un nombre único y apunta al contenedor de Chatwoot por su
+  # nombre completo en Coolify (<servicio>-<uuid de la app>), que tampoco choca.
+  #
+  # En Evolution: ...@chatwoot-db-bridge:5432/chatwoot (sin sslmode).
+  chatwoot-db-bridge:
+    image: alpine/socat:1.8.1.1
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ['TCP-LISTEN:5432,fork,reuseaddr', 'TCP:postgres-nxv2lrw8jfrgkuvcxojiso0k:5432']
+    networks:
+      - default
+      - evolution
+
   backup:
     <<: *base
     profiles: ['backup']
@@ -171,3 +192,9 @@ volumes:
   postgres_data:
   redis_data:
   backup_data:
+
+networks:
+  # Red del servicio Evolution API en Coolify (lleva el uuid del servicio).
+  evolution:
+    name: y4kswgkwwgw440w408kkk0sc
+    external: true
