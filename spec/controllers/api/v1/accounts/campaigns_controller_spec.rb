@@ -301,6 +301,54 @@ RSpec.describe 'Campaigns API', type: :request do
     end
   end
 
+  describe 'GET /api/v1/accounts/{account.id}/campaigns/:id/results' do
+    let(:administrator) { create(:user, account: account, role: :administrator) }
+    let(:api_inbox) { create(:inbox, account: account, channel: create(:channel_api, account: account)) }
+    let(:contacts) { create_list(:contact, 4, account: account) }
+    let!(:campaign) do
+      sent, no_whatsapp, timeout = contacts.first(3).map { |c| c.id.to_s }
+      create(:campaign, account: account, inbox: api_inbox, campaign_status: :running,
+                        delivery_state: {
+                          'contact_ids' => contacts.map(&:id), 'total_contacts' => 4, 'processed_index' => 3,
+                          'sent_count' => 1, 'failed_count' => 2,
+                          'recipients' => {
+                            sent => { 'status' => 'sent' },
+                            no_whatsapp => { 'status' => 'failed', 'error' => '500: Number not on WhatsApp', 'retryable' => false },
+                            timeout => { 'status' => 'failed', 'error' => '500 Internal Server Error' }
+                          }
+                        })
+    end
+
+    def results(params = {})
+      get "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}/results",
+          params: params, headers: administrator.create_new_auth_token, as: :json
+    end
+
+    it 'groups failures by reason and counts the recipients not processed yet' do
+      results
+
+      stats = response.parsed_body['stats']
+      expect(stats['pending_count']).to eq(1)
+      expect(stats['failure_reasons']).to contain_exactly(
+        { 'error' => '500: Number not on WhatsApp', 'count' => 1, 'retryable' => false },
+        { 'error' => '500 Internal Server Error', 'count' => 1, 'retryable' => true }
+      )
+    end
+
+    it 'lists only the recipients not processed yet with the pending filter' do
+      results(status: 'pending')
+
+      expect(response.parsed_body['contacts'].pluck('id')).to eq([contacts.last.id])
+    end
+
+    it 'tells which failed recipients can be retried' do
+      results(status: 'failed')
+
+      retryable = response.parsed_body['contacts'].to_h { |c| [c['id'], c['retryable']] }
+      expect(retryable).to eq(contacts[1].id => false, contacts[2].id => true)
+    end
+  end
+
   describe 'POST /api/v1/accounts/{account.id}/campaigns/:id/retry_failed' do
     let(:administrator) { create(:user, account: account, role: :administrator) }
     let(:api_inbox) { create(:inbox, account: account, channel: create(:channel_api, account: account)) }

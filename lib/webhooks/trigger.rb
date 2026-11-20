@@ -109,9 +109,27 @@ class Webhooks::Trigger
   end
 
   def update_message_status(error)
-    Messages::StatusUpdateService.new(message, 'failed', error.message).perform
+    reason = delivery_error_message(error)
+    Messages::StatusUpdateService.new(message, 'failed', reason).perform
     # Solo el envío del mensaje cuenta como entrega fallida de la campaña.
-    Campaigns::RecordDeliveryFailureService.new(message: message, error: error.message).perform if @payload[:event] == 'message_created'
+    Campaigns::RecordDeliveryFailureService.new(message: message, error: reason).perform if @payload[:event] == 'message_created'
+  end
+
+  # Evolution responde 500 a cualquier envío fallido y explica el motivo en el
+  # cuerpo (p. ej. "Number not on WhatsApp"). Sin él la campaña solo guardaba
+  # "500 Internal Server Error" y reintentaba números que nunca van a recibir nada.
+  def delivery_error_message(error)
+    reason = error_body_reason(error)
+    reason.present? ? "#{error.message}: #{reason}" : error.message
+  end
+
+  def error_body_reason(error)
+    return unless error.is_a?(SafeFetch::HttpError) && error.body.present?
+
+    parsed = JSON.parse(error.body)
+    parsed['error'].to_s.strip.first(300).presence if parsed.is_a?(Hash)
+  rescue JSON::ParserError
+    nil
   end
 
   def message

@@ -236,6 +236,25 @@ describe Webhooks::Trigger do
       expect { trigger.execute(url, payload, webhook_type) }.not_to raise_error
       expect(message.reload.status).to eq('failed')
     end
+
+    it 'stores the reason the API inbox sends in the error body' do
+      payload = { event: 'message_created', conversation: { id: conversation.id }, id: message.id }
+      error = SafeFetch::HttpError.new('500 Internal Server Error', body: { failed: true, error: 'Number not on WhatsApp' }.to_json)
+      expect(SafeFetch).to receive(:fetch).and_raise(error)
+
+      trigger.execute(url, payload, webhook_type)
+
+      expect(message.reload.external_error).to eq('500 Internal Server Error: Number not on WhatsApp')
+    end
+
+    it 'keeps the status line when the error body is not JSON' do
+      payload = { event: 'message_created', conversation: { id: conversation.id }, id: message.id }
+      expect(SafeFetch).to receive(:fetch).and_raise(SafeFetch::HttpError.new('500 Internal Server Error', body: '<html>oops</html>'))
+
+      trigger.execute(url, payload, webhook_type)
+
+      expect(message.reload.external_error).to eq('500 Internal Server Error')
+    end
   end
 
   describe 'request headers' do

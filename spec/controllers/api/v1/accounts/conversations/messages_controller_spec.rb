@@ -390,6 +390,27 @@ RSpec.describe 'Conversation Messages API', type: :request do
         expect(state['failed_count']).to eq(1)
       end
 
+      context 'when the number has no WhatsApp' do
+        let(:error) { '500 Internal Server Error: Number not on WhatsApp' }
+
+        it 'records the recipient as a failure that is not retried' do
+          mark_failed
+
+          recipient = campaign.reload.delivery_state['recipients'][conversation.contact_id.to_s]
+          expect(recipient).to include('status' => 'failed', 'retryable' => false)
+        end
+      end
+
+      context 'when the failure has no known cause' do
+        let(:error) { '500 Internal Server Error' }
+
+        it 'keeps the recipient retryable' do
+          mark_failed
+
+          expect(campaign.reload.delivery_state['recipients'][conversation.contact_id.to_s]).not_to have_key('retryable')
+        end
+      end
+
       it 'counts the failure only once' do
         2.times { mark_failed }
 

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute, useRouter } from 'vue-router';
 import { useToggle } from '@vueuse/core';
 import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
@@ -14,11 +15,12 @@ import CampaignList from 'dashboard/components-next/Campaigns/Pages/CampaignPage
 import SMSCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/SMSCampaign/SMSCampaignDialog.vue';
 import APICampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/APICampaign/APICampaignDialog.vue';
 import ConfirmDeleteCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/ConfirmDeleteCampaignDialog.vue';
-import CampaignResultsDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignResultsDialog.vue';
 import SMSCampaignEmptyState from 'dashboard/components-next/Campaigns/EmptyState/SMSCampaignEmptyState.vue';
 import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const store = useStore();
 
 const {
@@ -35,8 +37,6 @@ const {
 const selectedCampaign = ref(null);
 const [showSMSCampaignDialog, toggleSMSCampaignDialog] = useToggle();
 const [showEditCampaignDialog, toggleEditCampaignDialog] = useToggle();
-const [showResultsDialog, toggleResultsDialog] = useToggle();
-const resultsCampaign = ref(null);
 const confirmDeleteCampaignDialogRef = ref(null);
 
 const hasNoCampaigns = computed(
@@ -64,8 +64,10 @@ const handleClone = async campaign => {
 };
 
 const handleResults = campaign => {
-  resultsCampaign.value = campaign;
-  toggleResultsDialog(true);
+  router.push({
+    name: 'campaigns_results',
+    params: { ...route.params, campaignId: campaign.id },
+  });
 };
 
 const handleDialogClose = () => {
@@ -130,11 +132,6 @@ const handleEditDialogClose = () => {
       ref="confirmDeleteCampaignDialogRef"
       :selected-campaign="selectedCampaign"
       @deleted="refresh"
-    />
-    <CampaignResultsDialog
-      v-if="showResultsDialog"
-      :campaign="resultsCampaign"
-      @close="toggleResultsDialog(false)"
     />
 
     <template #pagination>
