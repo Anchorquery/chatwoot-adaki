@@ -121,76 +121,83 @@ const hasDeliveryResults = computed(
 </script>
 
 <template>
-  <CardLayout layout="row">
-    <div class="flex flex-col items-start justify-between flex-1 min-w-0 gap-2">
-      <div class="flex justify-between gap-3 w-fit">
-        <span
-          class="text-base font-medium capitalize text-n-slate-12 line-clamp-1"
-        >
-          {{ title }}
-        </span>
-        <span
-          class="text-xs font-medium inline-flex items-center h-6 px-2 py-0.5 rounded-md bg-n-alpha-2"
-          :class="statusTextColor"
-        >
-          {{ campaignStatus }}
-        </span>
-        <AdakiApprovalBadge
-          :requires-approval="requiresApproval"
-          :approval-status="approvalStatus"
+  <CardLayout>
+    <!-- En móvil los botones bajan a su propia fila; desde sm van a la derecha. -->
+    <div
+      class="flex flex-col w-full min-w-0 gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div class="flex flex-col items-start flex-1 w-full min-w-0 gap-2">
+        <div class="flex items-center max-w-full min-w-0 gap-3">
+          <span
+            class="min-w-0 text-base font-medium capitalize truncate text-n-slate-12"
+          >
+            {{ title }}
+          </span>
+          <span
+            class="flex-shrink-0 text-xs font-medium inline-flex items-center h-6 px-2 py-0.5 rounded-md bg-n-alpha-2"
+            :class="statusTextColor"
+          >
+            {{ campaignStatus }}
+          </span>
+          <AdakiApprovalBadge
+            :requires-approval="requiresApproval"
+            :approval-status="approvalStatus"
+          />
+        </div>
+        <div
+          v-dompurify-html="formatMessage(message, false, false, false)"
+          class="w-full h-6 min-w-0 overflow-hidden text-sm text-n-slate-11 [&>p]:mb-0 [&>p]:truncate"
+        />
+        <div class="flex items-center w-full h-6 gap-2 overflow-hidden">
+          <LiveChatCampaignDetails
+            v-if="isLiveChatType"
+            :sender="sender"
+            :inbox-name="inboxName"
+            :inbox-icon="inboxIcon"
+          />
+          <SMSCampaignDetails
+            v-else
+            :inbox-name="inboxName"
+            :inbox-icon="inboxIcon"
+            :scheduled-at="scheduledAt"
+          />
+        </div>
+      </div>
+      <div class="flex items-center justify-end flex-shrink-0 gap-2">
+        <Button
+          v-if="hasDeliveryResults"
+          variant="faded"
+          size="sm"
+          color="slate"
+          icon="i-lucide-bar-chart-2"
+          @click="emit('results')"
+        />
+        <Button
+          v-if="!isLiveChatType"
+          variant="faded"
+          size="sm"
+          color="slate"
+          icon="i-lucide-copy"
+          @click="emit('clone')"
+        />
+        <Button
+          v-if="showEditButton"
+          variant="faded"
+          size="sm"
+          color="slate"
+          :icon="
+            isLiveChatType ? 'i-lucide-sliders-vertical' : 'i-lucide-pencil'
+          "
+          @click="emit('edit')"
+        />
+        <Button
+          variant="faded"
+          color="ruby"
+          size="sm"
+          icon="i-lucide-trash"
+          @click="emit('delete')"
         />
       </div>
-      <div
-        v-dompurify-html="formatMessage(message, false, false, false)"
-        class="text-sm text-n-slate-11 line-clamp-1 [&>p]:mb-0 h-6"
-      />
-      <div class="flex items-center w-full h-6 gap-2 overflow-hidden">
-        <LiveChatCampaignDetails
-          v-if="isLiveChatType"
-          :sender="sender"
-          :inbox-name="inboxName"
-          :inbox-icon="inboxIcon"
-        />
-        <SMSCampaignDetails
-          v-else
-          :inbox-name="inboxName"
-          :inbox-icon="inboxIcon"
-          :scheduled-at="scheduledAt"
-        />
-      </div>
-    </div>
-    <div class="flex items-center justify-end gap-2 flex-shrink-0">
-      <Button
-        v-if="hasDeliveryResults"
-        variant="faded"
-        size="sm"
-        color="slate"
-        icon="i-lucide-bar-chart-2"
-        @click="emit('results')"
-      />
-      <Button
-        v-if="!isLiveChatType"
-        variant="faded"
-        size="sm"
-        color="slate"
-        icon="i-lucide-copy"
-        @click="emit('clone')"
-      />
-      <Button
-        v-if="showEditButton"
-        variant="faded"
-        size="sm"
-        color="slate"
-        :icon="isLiveChatType ? 'i-lucide-sliders-vertical' : 'i-lucide-pencil'"
-        @click="emit('edit')"
-      />
-      <Button
-        variant="faded"
-        color="ruby"
-        size="sm"
-        icon="i-lucide-trash"
-        @click="emit('delete')"
-      />
     </div>
   </CardLayout>
 </template>
