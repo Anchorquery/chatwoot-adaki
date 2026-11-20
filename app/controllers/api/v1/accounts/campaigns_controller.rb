@@ -104,6 +104,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
                      recipients_map.select { |_, v| v['status'] == 'failed' }.keys.map(&:to_i)
                    when 'skipped'
                      recipients_map.select { |_, v| v['status'] == 'skipped' }.keys.map(&:to_i)
+                   when 'pending'
+                     contact_ids - recipients_map.keys.map(&:to_i)
                    else
                      contact_ids
                    end
@@ -146,6 +148,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
           failed_at: info['failed_at'],
           skipped_at: info['skipped_at'],
           error: info['error'],
+          retryable: info['status'] == 'failed' ? retryable_failure?(info) : nil,
           conversation_id: info['conversation_id']
         }
       end,
@@ -161,6 +164,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
         failed_count: failed_count,
         retryable_failed_count: recipients_map.count { |_, v| retryable_failure?(v) },
         skipped_count: skipped_count,
+        pending_count: (contact_ids - recipients_map.keys.map(&:to_i)).size,
+        failure_reasons: failure_reasons(recipients_map),
         processed_index: state[:processed_index].to_i,
         started_at: started_at,
         completed_at: completed_at,
@@ -256,6 +261,16 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def campaign
     @campaign ||= Current.account.campaigns.find_by(display_id: params[:id])
+  end
+
+  # Los fallos agrupados por motivo, para ver de un vistazo si hay algo que
+  # reintentar o si son números que no van a recibir nunca el mensaje.
+  def failure_reasons(recipients_map)
+    recipients_map.values.select { |v| v['status'] == 'failed' }
+                  .group_by { |v| v['error'].to_s }
+                  .map { |error, entries| { error: error.presence, count: entries.size, retryable: retryable_failure?(entries.first) } }
+                  .sort_by { |reason| -reason[:count] }
+                  .first(10)
   end
 
   def retryable_failure?(recipient)

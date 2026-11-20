@@ -8,8 +8,9 @@ defineProps({
 
 const store = useStore();
 
-// El editor no se cachea: volver a "Nueva campaña" mostraría el formulario anterior.
-const NOT_CACHED = ['APICampaignEditorPage'];
+// El editor no se cachea: volver a "Nueva campaña" mostraría el formulario
+// anterior. Los resultados tampoco: cada campaña carga los suyos.
+const NOT_CACHED = ['APICampaignEditorPage', 'CampaignResultsPage'];
 
 onMounted(() => {
   store.dispatch('labels/get');

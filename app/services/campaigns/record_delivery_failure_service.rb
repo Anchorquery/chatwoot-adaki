@@ -4,9 +4,10 @@
 # 'failed' (y entra en "Reintentar fallidos") y los contadores se ajustan.
 #
 # Un fallo 463 (cuenta restringida para iniciar chats) queda como no
-# reintentable: volver a escribir cuenta como otro contacto en frío.
+# reintentable: volver a escribir cuenta como otro contacto en frío. Tampoco se
+# reintenta un número sin WhatsApp: fallaría igual cada vez.
 class Campaigns::RecordDeliveryFailureService
-  NON_RETRYABLE_ERROR = /\b463\b/
+  NON_RETRYABLE_ERROR = /\b463\b|not on WhatsApp/i
 
   pattr_initialize [:message!, :error!]
 

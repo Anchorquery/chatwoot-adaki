@@ -18,7 +18,18 @@ module SafeFetch
   class InvalidUrlError < Error; end
   class UnsafeUrlError < Error; end
   class FetchError < Error; end
-  class HttpError < Error; end
+
+  # body: el principio de la respuesta de error, para que quien llama pueda leer
+  # la razón (Evolution la manda en JSON junto al 500).
+  class HttpError < Error
+    attr_reader :body
+
+    def initialize(message = nil, body: nil)
+      super(message)
+      @body = body
+    end
+  end
+
   class FileTooLargeError < Error; end
   class UnsupportedContentTypeError < Error; end
   class UnsupportedMethodError < Error; end

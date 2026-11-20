@@ -2,7 +2,6 @@
 import { computed, onActivated, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
-import { useToggle } from '@vueuse/core';
 import { useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
@@ -13,7 +12,6 @@ import CampaignLayout from 'dashboard/components-next/Campaigns/CampaignLayout.v
 import CampaignFilterBar from 'dashboard/components-next/Campaigns/CampaignFilterBar.vue';
 import CampaignList from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignList.vue';
 import ConfirmDeleteCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/ConfirmDeleteCampaignDialog.vue';
-import CampaignResultsDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignResultsDialog.vue';
 import SMSCampaignEmptyState from 'dashboard/components-next/Campaigns/EmptyState/SMSCampaignEmptyState.vue';
 import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
 
@@ -34,8 +32,6 @@ const {
 } = useCampaignList([INBOX_TYPES.API]);
 
 const selectedCampaign = ref(null);
-const [showResultsDialog, toggleResultsDialog] = useToggle();
-const resultsCampaign = ref(null);
 const confirmDeleteCampaignDialogRef = ref(null);
 
 const hasNoCampaigns = computed(
@@ -70,8 +66,10 @@ const handleClone = async campaign => {
 };
 
 const handleResults = campaign => {
-  resultsCampaign.value = campaign;
-  toggleResultsDialog(true);
+  router.push({
+    name: 'campaigns_results',
+    params: { ...route.params, campaignId: campaign.id },
+  });
 };
 
 // La lista vive en keep-alive: al volver del editor se recarga.
@@ -123,11 +121,6 @@ onActivated(() => {
       ref="confirmDeleteCampaignDialogRef"
       :selected-campaign="selectedCampaign"
       @deleted="refresh"
-    />
-    <CampaignResultsDialog
-      v-if="showResultsDialog"
-      :campaign="resultsCampaign"
-      @close="toggleResultsDialog(false)"
     />
 
     <template #pagination>

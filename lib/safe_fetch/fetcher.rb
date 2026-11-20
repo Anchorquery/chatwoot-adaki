@@ -1,4 +1,6 @@
 class SafeFetch::Fetcher
+  ERROR_BODY_MAX_BYTES = 2048
+
   def initialize(options)
     @options = options
   end
@@ -6,7 +8,7 @@ class SafeFetch::Fetcher
   def fetch
     with_tempfile do |tempfile|
       response = stream_response(tempfile)
-      raise SafeFetch::HttpError, "#{response.code} #{response.message}" unless response.is_a?(Net::HTTPSuccess)
+      raise SafeFetch::HttpError.new("#{response.code} #{response.message}", body: @error_body) unless response.is_a?(Net::HTTPSuccess)
 
       tempfile.rewind
       yield SafeFetch::Result.new(
@@ -34,13 +36,24 @@ class SafeFetch::Fetcher
 
     SsrfFilter.public_send(options.method, options.url, **options.request_options) do |res|
       response = res
-      next unless res.is_a?(Net::HTTPSuccess)
+      unless res.is_a?(Net::HTTPSuccess)
+        @error_body = read_error_body(res)
+        next
+      end
 
       validate_content_type!(res['content-type'])
       bytes_written = write_response_body(res, tempfile, bytes_written)
     end
 
     response
+  end
+
+  def read_error_body(response)
+    body = +''
+    response.read_body { |chunk| body << chunk if body.bytesize < ERROR_BODY_MAX_BYTES }
+    body.byteslice(0, ERROR_BODY_MAX_BYTES)
+  rescue StandardError
+    nil
   end
 
   def validate_content_type!(content_type)
