@@ -42,6 +42,7 @@ import SelectInput from 'dashboard/components-next/select/Select.vue';
 import Widget from 'dashboard/modules/widget-preview/components/Widget.vue';
 import AccessToken from 'dashboard/routes/dashboard/settings/profile/AccessToken.vue';
 import EvolutionConnection from './components/EvolutionConnection.vue';
+import EvolutionGroupContacts from './components/EvolutionGroupContacts.vue';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 
 export default {
@@ -77,6 +78,7 @@ export default {
     Widget,
     AccessToken,
     EvolutionConnection,
+    EvolutionGroupContacts,
   },
   mixins: [inboxMixin],
   setup() {
@@ -876,6 +878,17 @@ export default {
                 :key="currentInboxId"
                 :inbox-id="currentInboxId"
                 @connected="evolutionVerified = true"
+              />
+            </SettingsFieldSection>
+
+            <SettingsFieldSection
+              v-if="isAPIInbox && inbox.evolution_linked"
+              :label="$t('INBOX_MGMT.EVOLUTION_GROUP_CONTACTS.LABEL')"
+              :help-text="$t('INBOX_MGMT.EVOLUTION_GROUP_CONTACTS.HELP')"
+            >
+              <EvolutionGroupContacts
+                :key="currentInboxId"
+                :inbox-id="currentInboxId"
               />
             </SettingsFieldSection>
 

@@ -84,6 +84,10 @@ class InboxPolicy < ApplicationPolicy
     inbox_manager?
   end
 
+  def evolution_sync_group_contacts?
+    inbox_manager?
+  end
+
   def evolution_create?
     inbox_manager?
   end

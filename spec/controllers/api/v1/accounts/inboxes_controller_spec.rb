@@ -1295,6 +1295,37 @@ RSpec.describe 'Inboxes API', type: :request do
     end
   end
 
+  describe 'POST /api/v1/accounts/{account.id}/inboxes/{inbox.id}/evolution_sync_group_contacts' do
+    let(:inbox) { create(:inbox, account: account) }
+    let(:service_double) { instance_double(Evolution::GroupContactsSyncService) }
+    let(:url) { "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/evolution_sync_group_contacts" }
+
+    before { allow(Evolution::GroupContactsSyncService).to receive(:new).and_return(service_double) }
+
+    it 'returns the import counts for an administrator' do
+      allow(service_double).to receive(:perform).and_return(success: true, total: 3, created: 2, existing: 1, failed: 0)
+
+      post url, headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to include('total' => 3, 'created' => 2, 'existing' => 1)
+    end
+
+    it 'returns bad_gateway when evolution cannot list the groups' do
+      allow(service_double).to receive(:perform).and_return(success: false, message: 'http_500')
+
+      post url, headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:bad_gateway)
+    end
+
+    it 'returns unauthorized for a non-administrator' do
+      post url, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
   # Regresión: estas dos acciones usan políticas por instancia
   # (assigned_inboxes.include?(record)), así que no pueden pasar por el
   # check_authorization genérico del controller (autoriza la CLASE Inbox y

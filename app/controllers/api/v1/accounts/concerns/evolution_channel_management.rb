@@ -42,6 +42,16 @@ module Api::V1::Accounts::Concerns::EvolutionChannelManagement
     render json: result
   end
 
+  # Crea un contacto por cada grupo de WhatsApp del número, para poder escribir
+  # a un grupo desde "Nueva conversación" sin esperar a que alguien escriba en
+  # él. Ver Evolution::GroupContactsSyncService.
+  def evolution_sync_group_contacts
+    result = Evolution::GroupContactsSyncService.new(@inbox).perform
+    return render json: result if result[:success]
+
+    render json: result, status: privacy_filter_error_status(result[:message])
+  end
+
   # Estas acciones hablan con Evolution, no con la base de Chatwoot: un fallo
   # ahí NO puede salir como 200. Devolver 200 con {success: false} hacía que el
   # front cantara "guardado" mientras Evolution seguía con la config vieja.

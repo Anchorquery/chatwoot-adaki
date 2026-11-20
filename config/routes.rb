@@ -319,6 +319,7 @@ Rails.application.routes.draw do
             get :health, on: :member
             get :evolution_audience_options, on: :member
             post :evolution_test_connection, on: :member
+            post :evolution_sync_group_contacts, on: :member
             get :evolution_privacy_filter, on: :member
             post :evolution_update_privacy_filter, on: :member
             get :evolution_privacy_search, on: :member
