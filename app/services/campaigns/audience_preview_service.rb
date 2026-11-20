@@ -80,9 +80,11 @@ class Campaigns::AudiencePreviewService
   def known_contact_ids
     return [] if contact_ids.empty?
 
-    wrote = Message.incoming.where(inbox_id: inbox.id)
-                   .joins(:conversation).where(conversations: { contact_id: contact_ids })
-                   .distinct.pluck('conversations.contact_id')
+    # reorder(nil): Message y Conversation traen un orden por defecto que
+    # Postgres no admite junto a DISTINCT.
+    incoming = Message.incoming.reorder(nil).where(inbox_id: inbox.id).select(:conversation_id)
+    wrote = Conversation.reorder(nil).where(inbox_id: inbox.id, contact_id: contact_ids, id: incoming)
+                        .distinct.pluck(:contact_id)
     chats = account.contacts.where(id: contact_ids)
                    .where('identifier LIKE ? OR identifier LIKE ?', '%@g.us', '%@newsletter').pluck(:id)
     (wrote + chats).uniq
