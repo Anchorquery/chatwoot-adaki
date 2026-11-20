@@ -188,18 +188,19 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     # previa con la bandeja, y los 463 vienen de una cuenta restringida: escribirles
     # en frío es lo que hace que WhatsApp bloquee el número.
     failed_ids = recipients_map.select { |_, v| retryable_failure?(v) }.keys.map(&:to_i)
-    return render json: { error: 'No failed contacts to retry' }, status: :unprocessable_entity if failed_ids.empty?
-
-    # Remove failed entries so they get re-attempted
-    failed_ids.each { |id| recipients_map.delete(id.to_s) }
 
     # Los fallidos no reintentables siguen como fallidos y se saltan como terminados.
     done_statuses = %w[sent skipped failed]
-    already_done_ids = recipients_map.select { |_, v| done_statuses.include?(v['status']) }.keys.map(&:to_i)
+    already_done_ids = recipients_map.select { |_, v| done_statuses.include?(v['status']) }.keys.map(&:to_i) - failed_ids
     all_original_ids = (state[:contact_ids] || []).map(&:to_i)
-    # Los fallidos ya no están en recipients_map: sin restarlos aquí entraban dos
-    # veces en contact_ids y se les escribía dos veces.
+    # Los pendientes de una campaña pausada o cortada a medias se envían también:
+    # es el botón "Enviar a pendientes".
     unprocessed_ids = all_original_ids - already_done_ids - failed_ids
+    nothing_to_send = failed_ids.empty? && unprocessed_ids.empty?
+    return render json: { error: 'No pending contacts to send to' }, status: :unprocessable_entity if nothing_to_send
+
+    # Remove failed entries so they get re-attempted
+    failed_ids.each { |id| recipients_map.delete(id.to_s) }
 
     # Order: already done (skip by index) → failed (retry) → never processed
     new_contact_ids = already_done_ids + failed_ids + unprocessed_ids
@@ -217,7 +218,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     )
 
     Campaigns::ProcessBatchJob.perform_later(@campaign)
-    render json: { message: 'Retry enqueued', retry_count: failed_ids.size + unprocessed_ids.size }
+    render json: { message: 'Retry enqueued', retry_count: failed_ids.size + unprocessed_ids.size,
+                   failed_count: failed_ids.size, pending_count: unprocessed_ids.size }
   end
 
   def ai_generate
@@ -351,7 +353,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     params.require(:campaign).permit(
       :title, :description, :message, :enabled, :trigger_only_during_business_hours,
       :inbox_id, :sender_id, :scheduled_at, :requires_approval,
-      audience: [:type, :id],
+      audience: [:type, :id, :name],
       trigger_rules: {},
       template_params: {},
       delivery_settings: {},

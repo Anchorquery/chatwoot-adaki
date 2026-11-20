@@ -271,7 +271,19 @@
           "AUDIENCE": {
             "LABEL": "Audiencia",
             "PLACEHOLDER": "Seleccione las etiquetas de clientes",
-            "ERROR": "El público es requerido"
+            "ERROR": "Elige al menos una etiqueta, chat o número",
+            "LABELS_HINT": "Contactos con estas etiquetas",
+            "CHATS_LABEL": "Grupos, comunidades y canales de WhatsApp",
+            "CHATS_PLACEHOLDER": "Elige de la cuenta de WhatsApp de esta bandeja",
+            "CHATS_HINT": "Se leen en directo de WhatsApp, así que también salen grupos y comunidades que aún no tienen conversación en Chatwoot. De una comunidad, elige su grupo de avisos: ahí solo pueden publicar los admins.",
+            "CHATS_LOADING": "Cargando chats de WhatsApp…",
+            "CHATS_UNAVAILABLE": "No se pudieron cargar los chats de WhatsApp de esta bandeja. Revisa su conexión con Evolution.",
+            "COMMUNITY_SUFFIX": "avisos de la comunidad",
+            "CHANNEL_SUFFIX": "canal",
+            "PHONES_LABEL": "Números sueltos",
+            "PHONES_PLACEHOLDER": "Uno por línea o separados por comas. Sin prefijo se asume +34.",
+            "PHONES_HINT": "No hace falta tenerlos como contactos. A los que nunca escribieron a esta bandeja solo les llega con \"Permitir contactos nuevos\" activado, dentro de su tope diario.",
+            "PHONES_COUNT": "{count} números"
           },
           "SCHEDULED_AT": {
             "LABEL": "Programar envío",
@@ -470,7 +482,11 @@
       "NOT_RETRYABLE": "No se reintenta",
       "NOT_RETRYABLE_HINT": "{count} fallos no se reintentan: el número no tiene WhatsApp o WhatsApp restringió la cuenta.",
       "REASON_NOT_ON_WHATSAPP": "El número no tiene WhatsApp",
-      "REASON_UNKNOWN": "Sin detalle del error"
+      "REASON_UNKNOWN": "Sin detalle del error",
+      "SEND_PENDING": "Enviar a pendientes",
+      "SEND_PENDING_TITLE": "¿Enviar a los pendientes?",
+      "SEND_PENDING_CONFIRM": "La campaña se reanuda y escribe a {failed} fallidos y {pending} que aún no recibieron el mensaje. A los ya enviados no se les repite.",
+      "SEND_PENDING_SUCCESS": "Enviando a {count} destinatarios"
     },
     "CLONE": {
       "SUCCESS": "Campaña clonada correctamente. La encontrarás como borrador en la lista.",

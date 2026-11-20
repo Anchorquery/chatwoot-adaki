@@ -7,6 +7,7 @@ import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 
 import CampaignsAPI from 'dashboard/api/campaigns';
+import InboxesAPI from 'dashboard/api/inboxes';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -71,6 +72,9 @@ const defaultState = () => ({
   inboxId: null,
   scheduledAt: null,
   selectedAudience: [],
+  selectedChats: [],
+  chatNames: {},
+  phoneNumbers: '',
   variants: [],
   existingAttachments: [],
   removedExistingAttachmentIds: [],
@@ -91,12 +95,30 @@ const fileInputRef = ref(null);
 const isDragging = ref(false);
 const aiLoading = ref(false);
 
+// Destinatarios sueltos, además de las etiquetas: el backend los resuelve en
+// Campaigns::DirectAudienceService.
+const parsedPhones = computed(() => [
+  ...new Set(
+    state.phoneNumbers
+      .split(/[\n,;]+/)
+      .map(value => value.trim())
+      .filter(value => value.replace(/\D/g, '').length >= 8)
+  ),
+]);
+
+const hasRecipients = computed(
+  () =>
+    state.selectedAudience.length > 0 ||
+    state.selectedChats.length > 0 ||
+    parsedPhones.value.length > 0
+);
+
 const rules = {
   title: { required, minLength: minLength(1) },
   message: { required, minLength: minLength(1) },
   inboxId: { required },
   scheduledAt: { required },
-  selectedAudience: { required },
+  selectedAudience: { hasRecipients: () => hasRecipients.value },
 };
 
 const v$ = useVuelidate(rules, state);
@@ -109,6 +131,64 @@ const mapToOptions = (items, valueKey, labelKey) =>
   items?.map(item => ({ value: item[valueKey], label: item[labelKey] })) ?? [];
 
 const audienceList = computed(() => mapToOptions(labels.value, 'id', 'title'));
+
+// Grupos, comunidades y canales leídos en directo de la cuenta de WhatsApp de
+// la bandeja: así se puede escribir a uno que todavía no tiene conversación en
+// Chatwoot. De una comunidad solo sirve su grupo de avisos; el grupo padre no
+// admite mensajes y se oculta.
+const chatOptionsLoaded = ref([]);
+const loadingChats = ref(false);
+const chatsUnavailable = ref(false);
+let chatsRequestId = 0;
+
+const chatLabel = group => {
+  const name = group.subject || group.id;
+  return group.isCommunityAnnounce
+    ? `${name} · ${t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.COMMUNITY_SUFFIX')}`
+    : name;
+};
+
+const loadChatOptions = async inboxId => {
+  chatsRequestId += 1;
+  const requestId = chatsRequestId;
+  chatOptionsLoaded.value = [];
+  chatsUnavailable.value = false;
+  if (!inboxId) return;
+
+  loadingChats.value = true;
+  try {
+    const { data } = await InboxesAPI.getEvolutionAudienceOptions(inboxId);
+    if (requestId !== chatsRequestId) return;
+    const groups = (data.groups || [])
+      .filter(group => group?.id && !group.isCommunity)
+      .map(group => ({ value: group.id, label: chatLabel(group) }));
+    const channelSuffix = t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.CHANNEL_SUFFIX');
+    const channels = (data.newsletters || [])
+      .filter(channel => channel?.id)
+      .map(channel => ({
+        value: channel.id,
+        label: `${channel.name || channel.id} · ${channelSuffix}`,
+      }));
+    chatOptionsLoaded.value = [...groups, ...channels].sort((a, b) =>
+      a.label.localeCompare(b.label)
+    );
+    chatsUnavailable.value = chatOptionsLoaded.value.length === 0;
+  } catch {
+    if (requestId === chatsRequestId) chatsUnavailable.value = true;
+  } finally {
+    if (requestId === chatsRequestId) loadingChats.value = false;
+  }
+};
+
+// Los elegidos en una campaña guardada siguen visibles con su nombre aunque
+// Evolution no responda.
+const chatOptions = computed(() => {
+  const known = new Set(chatOptionsLoaded.value.map(option => option.value));
+  const saved = state.selectedChats
+    .filter(jid => !known.has(jid))
+    .map(jid => ({ value: jid, label: state.chatNames[jid] || jid }));
+  return [...chatOptionsLoaded.value, ...saved];
+});
 const inboxOptions = computed(() => mapToOptions(inboxes.value, 'id', 'name'));
 const assistantOptions = computed(() => [
   { value: null, label: t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_NONE') },
@@ -162,6 +242,18 @@ const populateFromCampaign = campaign => {
     selectedAudience: (campaign.audience || [])
       .filter(item => item.type === 'Label')
       .map(item => item.id),
+    selectedChats: (campaign.audience || [])
+      .filter(item => item.type === 'WhatsappChat')
+      .map(item => item.id),
+    chatNames: Object.fromEntries(
+      (campaign.audience || [])
+        .filter(item => item.type === 'WhatsappChat')
+        .map(item => [item.id, item.name || item.id])
+    ),
+    phoneNumbers: (campaign.audience || [])
+      .filter(item => item.type === 'Phone')
+      .map(item => item.id)
+      .join('\n'),
     variants: Array.isArray(deliverySettings.content_variants)
       ? deliverySettings.content_variants
           .map(variant => ({ text: variant?.text || variant || '' }))
@@ -350,8 +442,15 @@ const summary = computed(() => {
   const delivery = state.delivery;
   return {
     inbox: optionLabel(inboxOptions.value, state.inboxId),
-    audience: state.selectedAudience
-      .map(id => optionLabel(audienceList.value, id))
+    audience: [
+      ...state.selectedAudience.map(id => optionLabel(audienceList.value, id)),
+      ...state.selectedChats.map(jid => optionLabel(chatOptions.value, jid)),
+      parsedPhones.value.length
+        ? t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PHONES_COUNT', {
+            count: parsedPhones.value.length,
+          })
+        : '',
+    ]
       .filter(Boolean)
       .join(', '),
     scheduledAt: state.scheduledAt
@@ -389,6 +488,18 @@ const buildFormData = () => {
   state.selectedAudience.forEach(id => {
     formData.append('campaign[audience][][id]', id);
     formData.append('campaign[audience][][type]', 'Label');
+  });
+  state.selectedChats.forEach(jid => {
+    formData.append('campaign[audience][][id]', jid);
+    formData.append('campaign[audience][][type]', 'WhatsappChat');
+    formData.append(
+      'campaign[audience][][name]',
+      optionLabel(chatOptions.value, jid) || jid
+    );
+  });
+  parsedPhones.value.forEach(phone => {
+    formData.append('campaign[audience][][id]', phone);
+    formData.append('campaign[audience][][type]', 'Phone');
   });
 
   const deliverySettings = {
@@ -434,6 +545,20 @@ watch(
     if (props.mode === 'edit' && campaign) {
       populateFromCampaign(campaign);
     }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => state.inboxId,
+  (inboxId, previousId) => {
+    // Los chats son de la cuenta de WhatsApp de la bandeja: al cambiarla, los
+    // elegidos dejan de valer.
+    if (previousId && inboxId !== previousId) {
+      state.selectedChats = [];
+      state.chatNames = {};
+    }
+    loadChatOptions(inboxId);
   },
   { immediate: true }
 );
@@ -665,10 +790,62 @@ defineExpose({
             :options="audienceList"
             :label="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.LABEL')"
             :placeholder="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PLACEHOLDER')"
-            :has-error="!!formErrors.audience"
-            :message="formErrors.audience"
             class="[&>div>button]:bg-n-alpha-black2"
           />
+          <p class="mb-0 text-xs text-n-slate-11">
+            {{ t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.LABELS_HINT') }}
+          </p>
+        </div>
+
+        <div v-if="state.inboxId" class="flex flex-col gap-1">
+          <label class="mb-0.5 text-sm font-medium text-n-slate-12">
+            {{ t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.CHATS_LABEL') }}
+          </label>
+          <TagMultiSelectComboBox
+            v-model="state.selectedChats"
+            :options="chatOptions"
+            :disabled="loadingChats"
+            :label="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.CHATS_LABEL')"
+            :placeholder="
+              loadingChats
+                ? t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.CHATS_LOADING')
+                : t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.CHATS_PLACEHOLDER')
+            "
+            class="[&>div>button]:bg-n-alpha-black2"
+          />
+          <p
+            v-if="chatsUnavailable && !loadingChats"
+            class="mb-0 text-xs text-n-amber-11"
+          >
+            {{ t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.CHATS_UNAVAILABLE') }}
+          </p>
+          <p v-else class="mb-0 text-xs text-n-slate-11">
+            {{ t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.CHATS_HINT') }}
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <TextArea
+            v-model="state.phoneNumbers"
+            :label="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PHONES_LABEL')"
+            :placeholder="
+              t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PHONES_PLACEHOLDER')
+            "
+            :message="
+              formErrors.audience ||
+              t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PHONES_HINT')
+            "
+            :message-type="formErrors.audience ? 'error' : 'info'"
+            :max-length="20000"
+            resize
+          />
+          <p v-if="parsedPhones.length" class="mb-0 text-xs text-n-slate-11">
+            {{
+              t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PHONES_COUNT', {
+                count: parsedPhones.length,
+              })
+            }}
+          </p>
         </div>
 
         <Input

@@ -44,7 +44,7 @@ class Webhooks::Trigger
 
   def handle_failure(error)
     handle_error(error)
-    Rails.logger.warn "Exception: Invalid webhook URL #{@url} : #{error.message}"
+    Rails.logger.warn "#{failure_log_prefix(error)} #{@url} : #{delivery_error_message(error)}"
   end
 
   private
@@ -118,6 +118,17 @@ class Webhooks::Trigger
   # Evolution responde 500 a cualquier envío fallido y explica el motivo en el
   # cuerpo (p. ej. "Number not on WhatsApp"). Sin él la campaña solo guardaba
   # "500 Internal Server Error" y reintentaba números que nunca van a recibir nada.
+  # Antes todo salía como "Invalid webhook URL", también cuando el destino
+  # respondía bien pero rechazaba el envío (un 500 de Evolution por un número
+  # sin WhatsApp), y se perdía tiempo revisando una URL que estaba bien.
+  def failure_log_prefix(error)
+    case error
+    when SafeFetch::InvalidUrlError, SafeFetch::UnsafeUrlError then 'Webhook URL rejected:'
+    when SafeFetch::HttpError then 'Webhook endpoint returned an error:'
+    else 'Webhook delivery failed:'
+    end
+  end
+
   def delivery_error_message(error)
     reason = error_body_reason(error)
     reason.present? ? "#{error.message}: #{reason}" : error.message

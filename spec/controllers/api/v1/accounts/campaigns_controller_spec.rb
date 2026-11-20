@@ -385,6 +385,7 @@ RSpec.describe 'Campaigns API', type: :request do
       let(:recipients) { { '1' => { 'status' => 'sent' }, '3' => { 'status' => 'skipped' } } }
 
       it 'does not write to them' do
+        campaign.update!(delivery_state: campaign.delivery_state.merge('contact_ids' => [1, 3], 'total_contacts' => 2))
         retry_failed
 
         expect(response).to have_http_status(:unprocessable_entity)
@@ -406,6 +407,21 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(state['contact_ids']).to eq([1, 3, 2])
         expect(state['recipients']['3']['status']).to eq('failed')
         expect(state['failed_count']).to eq(1)
+      end
+    end
+
+    context 'when the campaign stopped before reaching every recipient' do
+      let(:recipients) { { '1' => { 'status' => 'sent' } } }
+
+      it 'sends to the pending ones even without failures' do
+        campaign.update!(delivery_state: campaign.delivery_state.merge('processed_index' => 1, 'failed_count' => 0))
+
+        expect { retry_failed }.to have_enqueued_job(Campaigns::ProcessBatchJob)
+        expect(response.parsed_body).to include('retry_count' => 2, 'failed_count' => 0, 'pending_count' => 2)
+        state = campaign.reload.delivery_state
+        expect(state['contact_ids']).to eq([1, 2, 3])
+        expect(state['processed_index']).to eq(1)
+        expect(campaign).to be_running
       end
     end
 

@@ -54,12 +54,21 @@ class Campaigns::DeliveryPlannerService
   end
 
   def fetch_audience_contacts
+    ids = label_contact_ids + Campaigns::DirectAudienceService.new(campaign: campaign).contact_ids
+    return campaign.account.contacts.none if ids.empty?
+
+    # Mismo orden en el que se eligieron: primero etiquetas, luego chats y números.
+    contacts_by_id = campaign.account.contacts.where(id: ids.uniq).index_by(&:id)
+    ids.uniq.filter_map { |id| contacts_by_id[id] }
+  end
+
+  def label_contact_ids
     audience_label_ids = campaign.audience.select { |aud| aud['type'] == 'Label' }.pluck('id')
     labels = campaign.account.labels.where(id: audience_label_ids).pluck(:title)
-    return campaign.account.contacts.none if labels.empty?
+    return [] if labels.empty?
 
     directly_tagged_ids = campaign.account.contacts.tagged_with(labels, any: true).pluck(:id)
     via_conversation_ids = campaign.account.conversations.tagged_with(labels, any: true).pluck(:contact_id).compact.uniq
-    campaign.account.contacts.where(id: (directly_tagged_ids + via_conversation_ids).uniq)
+    (directly_tagged_ids + via_conversation_ids).uniq
   end
 end

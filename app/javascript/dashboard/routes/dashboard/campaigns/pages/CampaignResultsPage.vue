@@ -52,6 +52,11 @@ const retryableCount = computed(
 const notRetryableCount = computed(
   () => (stats.value.failed_count ?? 0) - retryableCount.value
 );
+// Los que no llegaron a procesarse: una campaña pausada o cortada a medias.
+const pendingCount = computed(() => stats.value.pending_count ?? 0);
+const sendPendingCount = computed(
+  () => retryableCount.value + pendingCount.value
+);
 
 const sentPct = computed(() => {
   const total = stats.value.total_contacts || 0;
@@ -223,7 +228,9 @@ async function confirmRetryFailed() {
   retrying.value = true;
   try {
     const { data } = await CampaignsAPI.retryFailed(campaignId.value);
-    useAlert(t('CAMPAIGN.RESULTS.RETRY_SUCCESS', { count: data.retry_count }));
+    useAlert(
+      t('CAMPAIGN.RESULTS.SEND_PENDING_SUCCESS', { count: data.retry_count })
+    );
     currentPage.value = 1;
     await refreshAll();
     startPolling();
@@ -426,12 +433,12 @@ onUnmounted(() => {
             @click="exportCSV"
           />
           <Button
-            v-if="retryableCount > 0 && !isRunning"
+            v-if="sendPendingCount > 0 && !isRunning"
             variant="faded"
             color="ruby"
             size="sm"
-            icon="i-lucide-rotate-ccw"
-            :label="t('CAMPAIGN.RESULTS.RETRY_FAILED')"
+            icon="i-lucide-send"
+            :label="`${t('CAMPAIGN.RESULTS.SEND_PENDING')} (${sendPendingCount})`"
             :disabled="retrying"
             @click="retryConfirmDialogRef?.open()"
           />
@@ -442,11 +449,14 @@ onUnmounted(() => {
     <Dialog
       ref="retryConfirmDialogRef"
       type="alert"
-      :title="t('CAMPAIGN.RESULTS.RETRY_CONFIRM_TITLE')"
+      :title="t('CAMPAIGN.RESULTS.SEND_PENDING_TITLE')"
       :description="
-        t('CAMPAIGN.RESULTS.RETRY_CONFIRM', { count: retryableCount })
+        t('CAMPAIGN.RESULTS.SEND_PENDING_CONFIRM', {
+          failed: retryableCount,
+          pending: pendingCount,
+        })
       "
-      :confirm-button-label="t('CAMPAIGN.RESULTS.RETRY_FAILED')"
+      :confirm-button-label="t('CAMPAIGN.RESULTS.SEND_PENDING')"
       :is-loading="retrying"
       @confirm="confirmRetryFailed"
     />

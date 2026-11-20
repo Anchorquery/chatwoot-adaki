@@ -203,7 +203,19 @@
           "AUDIENCE": {
             "LABEL": "Audience",
             "PLACEHOLDER": "Select the customer labels",
-            "ERROR": "Audience is required"
+            "ERROR": "Pick at least one label, chat or number",
+            "LABELS_HINT": "Contacts with these labels",
+            "CHATS_LABEL": "WhatsApp groups, communities and channels",
+            "CHATS_PLACEHOLDER": "Pick from the WhatsApp account of this inbox",
+            "CHATS_HINT": "Read live from WhatsApp, so groups and communities with no conversation in Chatwoot yet also appear. For a community, pick its announcements group: only admins can post there.",
+            "CHATS_LOADING": "Loading WhatsApp chats…",
+            "CHATS_UNAVAILABLE": "Could not load the WhatsApp chats of this inbox. Check its Evolution connection.",
+            "COMMUNITY_SUFFIX": "community announcements",
+            "CHANNEL_SUFFIX": "channel",
+            "PHONES_LABEL": "Loose phone numbers",
+            "PHONES_PLACEHOLDER": "One per line or separated by commas. Without a prefix, +34 is assumed.",
+            "PHONES_HINT": "They do not need to be contacts yet. Numbers that never wrote to this inbox only get the message with \"Allow new contacts\" on, within its daily limit.",
+            "PHONES_COUNT": "{count} numbers"
           },
           "SCHEDULED_AT": {
             "LABEL": "Scheduled time",
@@ -470,7 +482,11 @@
       "NOT_RETRYABLE": "Not retried",
       "NOT_RETRYABLE_HINT": "{count} failures will not be retried: the number has no WhatsApp or WhatsApp restricted the account.",
       "REASON_NOT_ON_WHATSAPP": "The number has no WhatsApp",
-      "REASON_UNKNOWN": "No error details"
+      "REASON_UNKNOWN": "No error details",
+      "SEND_PENDING": "Send to pending",
+      "SEND_PENDING_TITLE": "Send to pending recipients?",
+      "SEND_PENDING_CONFIRM": "The campaign will resume and write to {failed} failed and {pending} not yet sent recipients. Those already sent are not repeated.",
+      "SEND_PENDING_SUCCESS": "Sending to {count} recipients"
     },
     "CLONE": {
       "SUCCESS": "Campaign cloned successfully. You can find it as a draft in the list.",
