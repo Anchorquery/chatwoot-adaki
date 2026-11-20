@@ -4,7 +4,9 @@
 #
 # Modos:
 #   always       - bot siempre puede responder aunque haya humano.
-#   after_window - bot retoma si última respuesta humana fue hace > N minutos.
+#   after_window - bot retoma si última respuesta humana fue hace > N minutos,
+#                  salvo que un assignee lleve un hilo activo (ver
+#                  active_human_thread?, human_takeover_active_thread_days).
 #   never        - bot cede a humano siempre tras intervención.
 class Captain::HumanTakeoverEvaluator
   def initialize(conversation:)
@@ -90,10 +92,40 @@ class Captain::HumanTakeoverEvaluator
     when 'always'
       true
     when 'after_window'
-      last_human_response_older_than_window?
+      !active_human_thread? && last_human_response_older_than_window?
     else # 'never' o desconocido
       false
     end
+  end
+
+  # Un agente que lleva días atendiendo una conversación abierta no debería
+  # perderla porque el cliente tardó más que la ventana de minutos en
+  # contestar: con 1440 min y una respuesta humana de hace 42 h el bot
+  # retomaba un hilo en el que el cliente se dirigía al agente por su nombre.
+  # Mientras el assignee haya respondido en público dentro de los últimos
+  # N días (y nadie haya resuelto la conversación después), el hilo sigue
+  # siendo humano. Exige respuesta real: una asignación sin respuesta sigue
+  # cayendo en la ventana de minutos de siempre. N = 0 desactiva la regla.
+  def active_human_thread?
+    days = active_thread_days
+    return false unless days.positive?
+    return false unless conversation.open? && assignee_present?
+
+    last_reply_at = last_human_response_at
+    return false if last_reply_at.blank?
+    return false if resolved_since?(last_reply_at)
+
+    last_reply_at > days.days.ago
+  end
+
+  def active_thread_days
+    settings = captain_inbox&.settings
+    if settings.is_a?(Hash) && settings.key?('human_takeover_active_thread_days') &&
+       !settings['human_takeover_active_thread_days'].nil?
+      return [settings['human_takeover_active_thread_days'].to_i, 0].max
+    end
+
+    resolved_assistant&.human_takeover_active_thread_days_value || Captain::Assistant::DEFAULT_HUMAN_TAKEOVER_ACTIVE_THREAD_DAYS
   end
 
   def mode

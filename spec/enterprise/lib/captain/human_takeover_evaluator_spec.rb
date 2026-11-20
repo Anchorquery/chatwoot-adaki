@@ -147,5 +147,130 @@ RSpec.describe Captain::HumanTakeoverEvaluator do
 
       expect(evaluator.human_takeover?).to be(false)
     end
+
+    # An agent who has been handling an open conversation for days must not
+    # lose it because the customer took longer than the minute window to
+    # answer. Off by default (0 days): nothing changes until configured.
+    context 'with an active human thread (human_takeover_active_thread_days)' do
+      let(:captain_inbox) { CaptainInbox.find_by!(inbox: inbox) }
+
+      def set_assistant_days(days, mode: 'after_window')
+        assistant.update!(config: assistant.config.merge('human_takeover_mode' => mode,
+                                                         'human_takeover_window_minutes' => 15,
+                                                         'human_takeover_active_thread_days' => days))
+      end
+
+      # Assigning stamps captain_takeover_at = now, so the assignment itself
+      # has to happen in the past for the minute window to be over.
+      def assign_and_reply(ago:, assign: true, private_note: false)
+        travel_to(ago.ago) do
+          conversation.update!(assignee: agent) if assign
+          create(:message, conversation: conversation, message_type: :outgoing, sender: agent, account: account,
+                           content: 'Hola, soy Ana', private: private_note)
+        end
+      end
+
+      def fresh_evaluator
+        described_class.new(conversation: conversation.reload)
+      end
+
+      it 'is disabled by default: the minute window alone decides' do
+        assign_and_reply(ago: 2.days)
+
+        expect(fresh_evaluator.human_takeover?).to be(false)
+      end
+
+      it 'keeps the thread human while the assignee replied within the configured days' do
+        set_assistant_days(7)
+        assign_and_reply(ago: 2.days)
+
+        expect(fresh_evaluator.human_takeover?).to be(true)
+      end
+
+      it 'lets the bot resume once the last human reply is older than the configured days' do
+        set_assistant_days(7)
+        assign_and_reply(ago: 8.days)
+
+        expect(fresh_evaluator.human_takeover?).to be(false)
+      end
+
+      it 'falls back to the minute window when nobody is assigned' do
+        set_assistant_days(7)
+        assign_and_reply(ago: 2.days, assign: false)
+
+        expect(fresh_evaluator.human_takeover?).to be(false)
+      end
+
+      it 'falls back to the minute window when the assignee only wrote private notes' do
+        set_assistant_days(7)
+        assign_and_reply(ago: 2.days, private_note: true)
+
+        expect(fresh_evaluator.human_takeover?).to be(false)
+      end
+
+      it 'falls back to the minute window when the conversation is not open' do
+        set_assistant_days(7)
+        assign_and_reply(ago: 2.days)
+        conversation.update!(status: :pending)
+
+        expect(fresh_evaluator.human_takeover?).to be(false)
+      end
+
+      it 'stops holding the thread once the conversation was resolved after the reply' do
+        set_assistant_days(7)
+        assign_and_reply(ago: 2.days)
+        create(:reporting_event, name: 'conversation_resolved', account: account, inbox: inbox, conversation: conversation,
+                                 user: agent, created_at: 1.day.ago)
+
+        expect(fresh_evaluator.human_takeover?).to be(false)
+      end
+
+      it 'ignores a resolution that happened before the reply' do
+        set_assistant_days(7)
+        create(:reporting_event, name: 'conversation_resolved', account: account, inbox: inbox, conversation: conversation,
+                                 user: agent, created_at: 3.days.ago)
+        assign_and_reply(ago: 2.days)
+
+        expect(fresh_evaluator.human_takeover?).to be(true)
+      end
+
+      it 'does not apply in always mode' do
+        set_assistant_days(7, mode: 'always')
+        assign_and_reply(ago: 2.days)
+
+        expect(fresh_evaluator.human_takeover?).to be(false)
+      end
+
+      it 'changes nothing in never mode (human already owns the thread)' do
+        set_assistant_days(7, mode: 'never')
+        assign_and_reply(ago: 20.days)
+
+        expect(fresh_evaluator.human_takeover?).to be(true)
+      end
+
+      it 'still honours the pending Captain handoff marker first' do
+        set_assistant_days(7)
+        allow(Rails.configuration.dispatcher).to receive(:dispatch)
+        conversation.bot_handoff!
+
+        expect(fresh_evaluator.human_takeover?).to be(true)
+      end
+
+      it 'lets an inbox override of 0 switch the rule off for that inbox' do
+        set_assistant_days(7)
+        captain_inbox.update!(settings: { 'human_takeover_active_thread_days' => 0 })
+        assign_and_reply(ago: 2.days)
+
+        expect(fresh_evaluator.human_takeover?).to be(false)
+      end
+
+      it 'lets an inbox override switch the rule on when the assistant has it off' do
+        set_assistant_days(0)
+        captain_inbox.update!(settings: { 'human_takeover_active_thread_days' => '7' })
+        assign_and_reply(ago: 2.days)
+
+        expect(fresh_evaluator.human_takeover?).to be(true)
+      end
+    end
   end
 end

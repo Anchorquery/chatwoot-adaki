@@ -27,6 +27,45 @@ RSpec.describe CaptainInbox do
     end
   end
 
+  describe '#human_takeover_active_thread_days_value' do
+    it 'defaults to 0 (rule off) when neither the inbox nor the assistant configured it' do
+      captain_inbox = create(:captain_inbox, inbox: inbox, captain_assistant: assistant)
+
+      expect(captain_inbox.human_takeover_active_thread_days_value).to eq(0)
+    end
+
+    it 'inherits the assistant value' do
+      assistant.update!(config: assistant.config.merge('human_takeover_active_thread_days' => 7))
+      captain_inbox = create(:captain_inbox, inbox: inbox, captain_assistant: assistant)
+
+      expect(captain_inbox.human_takeover_active_thread_days_value).to eq(7)
+    end
+
+    it 'lets the inbox override the assistant value (string from the API included)' do
+      assistant.update!(config: assistant.config.merge('human_takeover_active_thread_days' => 7))
+      captain_inbox = create(:captain_inbox, inbox: inbox, captain_assistant: assistant,
+                                             settings: { 'human_takeover_active_thread_days' => '3' })
+
+      expect(captain_inbox.human_takeover_active_thread_days_value).to eq(3)
+    end
+
+    it 'treats an explicit 0 override as "off" even when the assistant has it on' do
+      assistant.update!(config: assistant.config.merge('human_takeover_active_thread_days' => 7))
+      captain_inbox = create(:captain_inbox, inbox: inbox, captain_assistant: assistant,
+                                             settings: { 'human_takeover_active_thread_days' => 0 })
+
+      expect(captain_inbox.human_takeover_active_thread_days_value).to eq(0)
+    end
+
+    it 'treats a nil override as inherit' do
+      assistant.update!(config: assistant.config.merge('human_takeover_active_thread_days' => 7))
+      captain_inbox = create(:captain_inbox, inbox: inbox, captain_assistant: assistant,
+                                             settings: { 'human_takeover_active_thread_days' => nil })
+
+      expect(captain_inbox.human_takeover_active_thread_days_value).to eq(7)
+    end
+  end
+
   describe '#handoff_team' do
     let(:team) { create(:team, account: account) }
     let(:other_team) { create(:team, account: account) }
