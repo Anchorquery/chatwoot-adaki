@@ -7,8 +7,11 @@ class Evolution::AudienceOptionsService < Evolution::InboxClient
     fetch('newsletter/find')
   end
 
-  def groups
-    fetch('group/fetchAllGroups', query: { getParticipants: 'false' })
+  # Evolution pide la foto de cada grupo, uno detrás de otro, antes de
+  # responder: con muchos grupos tarda más que el timeout normal. Quien pueda
+  # esperar (la lista cacheada de Evolution::PrivacySupport) pasa uno mayor.
+  def groups(read_timeout: REQUEST_TIMEOUT)
+    fetch('group/fetchAllGroups', query: { getParticipants: 'false' }, read_timeout: read_timeout)
   end
 
   # Chats individuales (sin grupos ni canales), para el picker de privacidad.
@@ -168,11 +171,11 @@ class Evolution::AudienceOptionsService < Evolution::InboxClient
     :contact
   end
 
-  def fetch(path, query: {}, method: :get, body: nil)
+  def fetch(path, query: {}, method: :get, body: nil, read_timeout: REQUEST_TIMEOUT)
     return [] unless configured?
 
     url = "#{base_url}/#{path}/#{encoded_instance_name}"
-    response = request(url, method: method, query: query, body: body)
+    response = request(url, method: method, query: query, body: body, read_timeout: read_timeout)
     return [] unless response.is_a?(Net::HTTPSuccess)
 
     Array.wrap(JSON.parse(response.body))

@@ -39,6 +39,10 @@ class CampaignPolicy < ApplicationPolicy
     administrator_or_custom_role_permission?('campaign_manage')
   end
 
+  def whatsapp_chat_permissions?
+    administrator_or_custom_role_permission?('campaign_manage')
+  end
+
   def check_numbers?
     administrator_or_custom_role_permission?('campaign_manage')
   end

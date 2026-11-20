@@ -1,10 +1,14 @@
 # Ayudas del formulario de campañas antes de lanzar: chats de WhatsApp de la
 # bandeja, comprobación de números y resumen de a quién llegaría.
 module Api::V1::Accounts::Concerns::CampaignAudienceActions
-  AUDIENCE_ACTIONS = %i[whatsapp_chats check_numbers audience_preview].freeze
+  AUDIENCE_ACTIONS = %i[whatsapp_chats whatsapp_chat_permissions check_numbers audience_preview].freeze
 
   def whatsapp_chats
-    render json: { chats: Campaigns::WhatsappAudienceService.new(audience_inbox).chats }
+    render json: Campaigns::WhatsappAudienceService.new(audience_inbox).chats(query: params[:q], kind: params[:kind], page: params[:page])
+  end
+
+  def whatsapp_chat_permissions
+    render json: { permissions: Campaigns::WhatsappAudienceService.new(audience_inbox).chat_permissions(params[:jids]) }
   end
 
   def check_numbers

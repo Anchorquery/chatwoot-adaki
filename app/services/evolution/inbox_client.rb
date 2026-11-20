@@ -32,8 +32,8 @@ class Evolution::InboxClient
 
   # El host sale del webhook_url, que es un campo editable por el admin: por
   # eso la petición pasa por SsrfFilter (ver Evolution::HttpClient).
-  def request(url, method: :get, query: {}, body: nil)
-    evolution_request(url, api_key: api_key, method: method, query: query, body: body)
+  def request(url, method: :get, query: {}, body: nil, read_timeout: REQUEST_TIMEOUT)
+    evolution_request(url, api_key: api_key, method: method, query: query, body: body, read_timeout: read_timeout)
   end
 
   def build_result(response)

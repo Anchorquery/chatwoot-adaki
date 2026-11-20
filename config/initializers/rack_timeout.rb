@@ -16,9 +16,17 @@ SLOW_UPLOAD_ROUTES = [
 ].freeze
 UPLOAD_METHODS = %w[POST PATCH PUT].freeze
 
+# Routes that may wait for the WhatsApp group list of an Evolution inbox. Evolution
+# fetches every group's picture before answering, so a number with many groups
+# takes longer than 15s the first time (see Evolution::PrivacySupport).
+SLOW_EVOLUTION_ROUTES = [
+  %r{/api/v1/accounts/\d+/campaigns/whatsapp_chats\z},
+  %r{/api/v1/accounts/\d+/inboxes/\d+/evolution_privacy_(search|resolve)\z}
+].freeze
+
 # rack-timeout 0.6.3 doesn't support per-request override. Prepend Rack::Timeout
-# to bypass the timer entirely for slow LLM and upload routes. The request still
-# finishes under Puma's worker timeout (usually 60-120s).
+# to bypass the timer entirely for slow LLM, upload and Evolution group routes.
+# The request still finishes under Puma's worker timeout (usually 60-120s).
 module RackTimeoutSkipSlowRoutes
   def call(env)
     return @app.call(env) if skip_rack_timeout?(env)
@@ -31,6 +39,7 @@ module RackTimeoutSkipSlowRoutes
   def skip_rack_timeout?(env)
     path = env['PATH_INFO'].to_s
     return true if SLOW_AI_ROUTES.any? { |pattern| pattern.match?(path) }
+    return true if SLOW_EVOLUTION_ROUTES.any? { |pattern| pattern.match?(path) }
 
     UPLOAD_METHODS.include?(env['REQUEST_METHOD']) && SLOW_UPLOAD_ROUTES.any? { |pattern| pattern.match?(path) }
   end

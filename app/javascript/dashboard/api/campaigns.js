@@ -40,9 +40,15 @@ class CampaignsAPI extends ApiClient {
     return axios.post(`${this.url}/${id}/retry_failed`, { scope });
   }
 
-  whatsappChats(inboxId) {
+  whatsappChats(inboxId, { q = '', kind = '', page = 1 } = {}) {
     return axios.get(`${this.url}/whatsapp_chats`, {
-      params: { inbox_id: inboxId },
+      params: { inbox_id: inboxId, q, kind, page },
+    });
+  }
+
+  whatsappChatPermissions(inboxId, jids) {
+    return axios.get(`${this.url}/whatsapp_chat_permissions`, {
+      params: { inbox_id: inboxId, jids },
     });
   }
 

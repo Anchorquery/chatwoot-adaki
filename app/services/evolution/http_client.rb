@@ -19,16 +19,16 @@ module Evolution::HttpClient
 
   # Devuelve la Net::HTTPResponse, o nil si la URL es insegura/inválida o la
   # petición falló (timeout, conexión rechazada...).
-  def evolution_request(url, api_key:, method: :get, query: {}, body: nil)
+  def evolution_request(url, api_key:, method: :get, query: {}, body: nil, read_timeout: REQUEST_TIMEOUT) # rubocop:disable Metrics/ParameterLists
     full_url = query.present? ? "#{url}?#{query.to_query}" : url
     headers = { 'apikey' => api_key.to_s }
     headers['Content-Type'] = 'application/json' if body
     json_body = body&.to_json
 
     if allow_private_network?
-      request_via_net_http(full_url, method, headers, json_body)
+      request_via_net_http(full_url, method, headers, json_body, read_timeout)
     else
-      request_via_ssrf_filter(full_url, method, headers, json_body)
+      request_via_ssrf_filter(full_url, method, headers, json_body, read_timeout)
     end
   rescue SsrfFilter::Error, Resolv::ResolvError, URI::InvalidURIError => e
     Rails.logger.warn("Evolution API: unsafe or invalid URL (#{e.class})")
@@ -38,8 +38,8 @@ module Evolution::HttpClient
     nil
   end
 
-  def request_via_ssrf_filter(url, method, headers, json_body)
-    http_options = { open_timeout: OPEN_TIMEOUT, read_timeout: REQUEST_TIMEOUT }
+  def request_via_ssrf_filter(url, method, headers, json_body, read_timeout)
+    http_options = { open_timeout: OPEN_TIMEOUT, read_timeout: read_timeout }
 
     case method
     when :post then SsrfFilter.post(url, headers: headers, body: json_body, http_options: http_options)
@@ -50,14 +50,14 @@ module Evolution::HttpClient
 
   # Solo para desarrollo contra una instancia local de Evolution, que
   # SsrfFilter rechazaría por ser loopback. Nunca activar en producción.
-  def request_via_net_http(url, method, headers, json_body)
+  def request_via_net_http(url, method, headers, json_body, read_timeout)
     uri = URI.parse(url)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = uri.scheme == 'https'
     # Sin esto quedaban los defaults de Net::HTTP (60s de read_timeout): una
     # Evolution local colgada bloqueaba la request hasta el Rack::Timeout.
     http.open_timeout = OPEN_TIMEOUT
-    http.read_timeout = REQUEST_TIMEOUT
+    http.read_timeout = read_timeout
     request_class = { post: Net::HTTP::Post, delete: Net::HTTP::Delete }.fetch(method, Net::HTTP::Get)
     req = request_class.new(uri)
     headers.each { |key, value| req[key] = value }

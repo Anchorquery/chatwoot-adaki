@@ -154,6 +154,7 @@ Rails.application.routes.draw do
           resources :campaigns, only: [:index, :create, :show, :update, :destroy] do
             post :ai_generate, on: :collection
             get :whatsapp_chats, on: :collection
+            get :whatsapp_chat_permissions, on: :collection
             post :check_numbers, on: :collection
             post :audience_preview, on: :collection
             post :clone, on: :member
