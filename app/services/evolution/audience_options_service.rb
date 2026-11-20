@@ -7,9 +7,11 @@ class Evolution::AudienceOptionsService < Evolution::InboxClient
     fetch('newsletter/find')
   end
 
-  # Evolution pide la foto de cada grupo, uno detrás de otro, antes de
-  # responder: con muchos grupos tarda más que el timeout normal. Quien pueda
-  # esperar (la lista cacheada de Evolution::PrivacySupport) pasa uno mayor.
+  # Evolution pide la foto de cada grupo antes de responder (en paralelo y con
+  # un presupuesto de ~15 s en nuestro fork; antes en serie y sin tope): con
+  # muchos grupos tarda más que el timeout normal. Quien pueda esperar (la
+  # lista cacheada de Evolution::PrivacySupport) pasa uno mayor. Las fotos se
+  # quedan: el filtro de privacidad las enseña.
   def groups(read_timeout: REQUEST_TIMEOUT)
     fetch('group/fetchAllGroups', query: { getParticipants: 'false' }, read_timeout: read_timeout)
   end
