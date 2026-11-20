@@ -7,10 +7,17 @@
 # fallarían igual: escribirles en frío es lo que hace que WhatsApp bloquee el
 # número. A los ya enviados no se les repite.
 #
-# Con scope 'failed' los pendientes se apartan en deferred_contact_ids: siguen
-# contando como pendientes en los resultados y entran en el siguiente envío.
+# Con scope 'failed' o 'skipped' los pendientes se apartan en
+# deferred_contact_ids: siguen contando como pendientes en los resultados y
+# entran en el siguiente envío.
+#
+# 'skipped' vuelve a intentar los omitidos por no tener conversación previa.
+# Solo sirve después de activar allow_new_contacts: si no, se vuelven a
+# omitir sin escribirles.
 class Campaigns::ResumeService
-  SCOPES = %w[all failed pending].freeze
+  SCOPES = %w[all failed pending skipped].freeze
+  RETRY_SCOPES = %w[all failed].freeze
+  PENDING_SCOPES = %w[all pending].freeze
   DONE_STATUSES = %w[sent skipped failed].freeze
 
   Result = Struct.new(:error, :failed_count, :pending_count, keyword_init: true) do
@@ -35,9 +42,9 @@ class Campaigns::ResumeService
     # ProcessBatchJob programado: otro más procesaría los mismos contactos dos veces.
     return Result.new(error: 'Campaign is already running') if campaign.running?
 
-    failed_ids = scope_value == 'pending' ? [] : all_failed_ids
+    failed_ids = retry_ids
     pending_ids = self.class.pending_ids(state).uniq - failed_ids
-    sending_pending = scope_value == 'failed' ? [] : pending_ids
+    sending_pending = PENDING_SCOPES.include?(scope_value) ? pending_ids : []
     return Result.new(error: 'No pending contacts to send to') if failed_ids.empty? && sending_pending.empty?
 
     restart!(failed_ids, sending_pending, pending_ids - sending_pending)
@@ -58,8 +65,20 @@ class Campaigns::ResumeService
     @recipients ||= state[:recipients].to_h
   end
 
+  # Los que se vuelven a procesar desde cero: fallidos reintentables u omitidos.
+  def retry_ids
+    return skipped_ids if scope_value == 'skipped'
+    return all_failed_ids if RETRY_SCOPES.include?(scope_value)
+
+    []
+  end
+
   def all_failed_ids
     recipients.select { |_, recipient| self.class.retryable?(recipient) }.keys.map(&:to_i)
+  end
+
+  def skipped_ids
+    recipients.select { |_, recipient| recipient['status'] == 'skipped' }.keys.map(&:to_i)
   end
 
   def restart!(failed_ids, pending_ids, deferred_ids)

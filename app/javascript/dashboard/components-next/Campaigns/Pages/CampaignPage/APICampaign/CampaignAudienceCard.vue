@@ -300,7 +300,7 @@ const tabCounts = computed(() => ({
         v-for="tab in TABS"
         :key="tab"
         type="button"
-        class="flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors"
+        class="flex items-center justify-center flex-1 min-w-0 gap-1 rounded-md px-2 py-1.5 text-xs font-medium leading-tight transition-colors"
         :class="
           activeTab === tab
             ? 'bg-n-solid-1 text-n-slate-12 shadow-sm'
@@ -308,8 +308,8 @@ const tabCounts = computed(() => ({
         "
         @click="activeTab = tab"
       >
-        {{ tr(`TAB_${tab}`) }}
-        <span v-if="tabCounts[tab]" class="ml-1 text-n-slate-10">
+        <span class="min-w-0">{{ tr(`TAB_${tab}`) }}</span>
+        <span v-if="tabCounts[tab]" class="flex-shrink-0 text-n-slate-10">
           {{ tabCounts[tab] }}
         </span>
       </button>
@@ -380,10 +380,11 @@ const tabCounts = computed(() => ({
         v-model="phoneText"
         :label="tr('PHONES_LABEL')"
         :placeholder="tr('PHONES_PLACEHOLDER')"
-        :message="tr('PHONES_HINT')"
         :max-length="50000"
         resize
       />
+      <!-- Fuera del TextArea: su mensaje se corta a una línea y en móvil no se leía. -->
+      <p class="-mt-1 text-xs text-n-slate-11">{{ tr('PHONES_HINT') }}</p>
       <div class="flex flex-wrap items-center gap-2">
         <Button
           type="button"

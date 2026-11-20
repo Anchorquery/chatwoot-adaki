@@ -52,6 +52,19 @@ RSpec.describe Campaigns::ResumeService do
     expect(campaign.reload.delivery_state).to include('contact_ids' => [1, 2, 3, 4], 'deferred_contact_ids' => [])
   end
 
+  it 'sends again to skipped recipients and keeps the pending ones for later' do
+    recipients = campaign.delivery_state['recipients'].merge('3' => { 'status' => 'skipped', 'error' => 'no_conversation' })
+    campaign.update!(delivery_state: campaign.delivery_state.merge('recipients' => recipients, 'processed_index' => 3))
+
+    result = resume('skipped')
+
+    expect([result.failed_count, result.pending_count]).to eq([1, 0])
+    state = campaign.reload.delivery_state
+    expect(state).to include('contact_ids' => [1, 2, 3], 'deferred_contact_ids' => [4], 'processed_index' => 2)
+    expect(state['recipients']).not_to have_key('3')
+    expect(state['recipients']['2']['status']).to eq('failed')
+  end
+
   it 'refuses a running campaign' do
     campaign.update!(campaign_status: :running)
 

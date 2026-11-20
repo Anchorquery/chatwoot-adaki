@@ -108,7 +108,7 @@ onMounted(loadCampaign);
 <template>
   <section class="flex flex-col w-full h-full overflow-hidden bg-n-surface-1">
     <header
-      class="sticky top-0 z-10 px-6 border-b border-n-weak bg-n-surface-1"
+      class="sticky top-0 z-10 px-4 sm:px-6 border-b border-n-weak bg-n-surface-1"
     >
       <div
         class="flex items-center justify-between w-full h-16 gap-3 mx-auto max-w-6xl"
@@ -145,7 +145,7 @@ onMounted(loadCampaign);
       </div>
     </header>
 
-    <main class="flex-1 min-h-0 px-6 overflow-y-auto">
+    <main class="flex-1 min-h-0 px-4 sm:px-6 overflow-y-auto">
       <div class="w-full py-6 mx-auto max-w-6xl">
         <div
           v-if="isLoading"
