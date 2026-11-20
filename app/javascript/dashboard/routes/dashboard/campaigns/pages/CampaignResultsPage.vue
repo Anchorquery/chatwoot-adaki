@@ -59,15 +59,25 @@ const sendPendingCount = computed(
   () => retryableCount.value + pendingCount.value
 );
 
-// "Enviar a pendientes": a fallidos y pendientes, o solo a unos u otros.
+// Los omitidos no tenían conversación previa: solo se les escribe si la
+// campaña ya permite contactos nuevos; si no, se vuelven a omitir.
+const skippedCount = computed(() => stats.value.skipped_count ?? 0);
+const allowsNewContacts = computed(() =>
+  Boolean(campaign.value?.delivery_settings?.allow_new_contacts)
+);
+
+// "Enviar a pendientes": a fallidos y pendientes, solo a unos u otros, o a
+// los omitidos. Se ofrece aunque la campaña haya terminado.
 const sendScope = ref('all');
 const sendScopes = computed(() =>
   [
     { key: 'all', count: sendPendingCount.value, label: 'SCOPE_ALL' },
     { key: 'failed', count: retryableCount.value, label: 'SCOPE_FAILED' },
     { key: 'pending', count: pendingCount.value, label: 'SCOPE_PENDING' },
+    { key: 'skipped', count: skippedCount.value, label: 'SCOPE_SKIPPED' },
   ].filter(scope => scope.count > 0)
 );
+const canSendAgain = computed(() => sendScopes.value.length > 0);
 const scopeCount = computed(
   () =>
     sendScopes.value.find(scope => scope.key === sendScope.value)?.count ?? 0
@@ -525,12 +535,16 @@ onUnmounted(() => {
             @click="exportCSV"
           />
           <Button
-            v-if="sendPendingCount > 0 && !isRunning"
+            v-if="!isRunning"
             variant="faded"
-            color="ruby"
+            :color="canSendAgain ? 'ruby' : 'slate'"
             size="sm"
             icon="i-lucide-send"
-            :label="`${t('CAMPAIGN.RESULTS.SEND_PENDING')} (${sendPendingCount})`"
+            :label="
+              canSendAgain
+                ? `${t('CAMPAIGN.RESULTS.SEND_PENDING')} (${sendPendingCount + skippedCount})`
+                : t('CAMPAIGN.RESULTS.SEND_PENDING')
+            "
             :disabled="retrying"
             @click="openSendPending"
           />
@@ -543,12 +557,24 @@ onUnmounted(() => {
       type="alert"
       :title="t('CAMPAIGN.RESULTS.SEND_PENDING_TITLE')"
       :description="t('CAMPAIGN.RESULTS.SEND_PENDING_CONFIRM')"
-      :confirm-button-label="`${t('CAMPAIGN.RESULTS.SEND_PENDING')} (${scopeCount})`"
+      :confirm-button-label="
+        t('CAMPAIGN.RESULTS.SEND_NOW', { count: scopeCount })
+      "
       :disable-confirm-button="scopeCount === 0"
       :is-loading="retrying"
       @confirm="confirmRetryFailed"
     >
       <div class="flex flex-col gap-2">
+        <p v-if="!canSendAgain" class="mb-0 text-sm text-n-slate-11">
+          {{ t('CAMPAIGN.RESULTS.NOTHING_TO_SEND') }}
+          <template v-if="notRetryableCount > 0">
+            {{
+              t('CAMPAIGN.RESULTS.NOTHING_TO_SEND_NOT_RETRYABLE', {
+                count: notRetryableCount,
+              })
+            }}
+          </template>
+        </p>
         <label
           v-for="scope in sendScopes"
           :key="scope.key"
@@ -562,7 +588,18 @@ onUnmounted(() => {
           />
           {{ t(`CAMPAIGN.RESULTS.${scope.label}`, { count: scope.count }) }}
         </label>
-        <p class="mb-0 text-xs text-n-slate-11">
+        <p
+          v-if="sendScope === 'skipped'"
+          class="mb-0 text-xs"
+          :class="allowsNewContacts ? 'text-n-slate-11' : 'text-n-amber-11'"
+        >
+          {{
+            allowsNewContacts
+              ? t('CAMPAIGN.RESULTS.SKIPPED_ALLOWED_HINT')
+              : t('CAMPAIGN.RESULTS.SKIPPED_BLOCKED_HINT')
+          }}
+        </p>
+        <p v-if="canSendAgain" class="mb-0 text-xs text-n-slate-11">
           {{ t('CAMPAIGN.RESULTS.ETA', { time: etaLabel }) }}
           <template v-if="etaDays > 1">
             {{ t('CAMPAIGN.RESULTS.ETA_DAYS', { days: etaDays }) }}
@@ -653,11 +690,11 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="grid gap-5 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <!-- Destinatarios -->
           <div class="flex flex-col min-w-0 gap-3 lg:col-span-2">
-            <div class="flex flex-col gap-2 sm:flex-row">
-              <div class="relative flex-1">
+            <div class="flex flex-col gap-2 lg:flex-row lg:flex-wrap">
+              <div class="relative flex-1 min-w-0 lg:min-w-[14rem]">
                 <span
                   class="absolute w-3.5 h-3.5 -translate-y-1/2 left-3 top-1/2 i-lucide-search text-n-slate-9"
                 />
@@ -758,23 +795,31 @@ onUnmounted(() => {
                   >
                     {{ errorLabel(c.error) }}
                   </span>
+                  <!-- En móvil la fecha va aquí para dejar sitio al nombre. -->
+                  <span class="text-xs text-n-slate-9 sm:hidden">
+                    {{ formatTs(c.sent_at || c.failed_at || c.skipped_at) }}
+                  </span>
                 </div>
                 <div class="flex flex-col items-end flex-shrink-0 gap-1">
-                  <div class="flex items-center gap-1">
+                  <div
+                    class="flex flex-col-reverse items-end gap-1 sm:flex-row sm:items-center"
+                  >
                     <span
                       v-if="c.retryable === false"
-                      class="px-2 py-0.5 text-xs rounded-full bg-n-alpha-3 text-n-slate-10"
+                      class="px-2 py-0.5 text-xs rounded-full bg-n-alpha-3 text-n-slate-10 whitespace-nowrap"
                     >
                       {{ t('CAMPAIGN.RESULTS.NOT_RETRYABLE') }}
                     </span>
                     <span
-                      class="px-2 py-0.5 text-xs font-medium rounded-full"
+                      class="px-2 py-0.5 text-xs font-medium rounded-full whitespace-nowrap"
                       :class="statusClass(c.status)"
                     >
                       {{ statusLabel(c.status) }}
                     </span>
                   </div>
-                  <span class="text-xs text-n-slate-9 whitespace-nowrap">
+                  <span
+                    class="hidden text-xs text-n-slate-9 whitespace-nowrap sm:inline"
+                  >
                     {{ formatTs(c.sent_at || c.failed_at || c.skipped_at) }}
                   </span>
                 </div>

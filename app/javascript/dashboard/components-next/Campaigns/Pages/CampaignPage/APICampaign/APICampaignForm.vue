@@ -375,7 +375,7 @@ const isPage = computed(() => props.layout === 'page');
 const isSectionVisible = tab => isPage.value || activeTab.value === tab;
 const sectionClass = computed(() =>
   isPage.value
-    ? 'flex flex-col gap-4 rounded-xl border border-n-weak bg-n-solid-1 p-5'
+    ? 'flex flex-col min-w-0 gap-4 rounded-xl border border-n-weak bg-n-solid-1 p-4 sm:p-5'
     : 'flex flex-col gap-4'
 );
 
@@ -507,7 +507,7 @@ defineExpose({
   <div
     :class="
       isPage
-        ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start'
+        ? 'grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start'
         : 'flex flex-col gap-4'
     "
   >
@@ -638,7 +638,7 @@ defineExpose({
             <input v-model="state.aiUseEmojis" type="checkbox" />
             <span>{{ t('CAMPAIGN.API.CREATE.FORM.AI.USE_EMOJIS_LABEL') }}</span>
           </label>
-          <div class="flex gap-2">
+          <div class="flex flex-col-reverse gap-2 sm:flex-row">
             <Button
               type="button"
               variant="faded"
