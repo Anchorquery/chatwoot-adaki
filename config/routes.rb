@@ -153,6 +153,9 @@ Rails.application.routes.draw do
           end
           resources :campaigns, only: [:index, :create, :show, :update, :destroy] do
             post :ai_generate, on: :collection
+            get :whatsapp_chats, on: :collection
+            post :check_numbers, on: :collection
+            post :audience_preview, on: :collection
             post :clone, on: :member
             get :results, on: :member
             post :retry_failed, on: :member

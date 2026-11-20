@@ -32,6 +32,7 @@ const contacts = ref([]);
 const meta = ref({ total: 0, page: 1, per_page: 25, total_pages: 1 });
 const stats = ref({});
 const activeFilter = ref('');
+const typeFilter = ref('');
 const searchQuery = ref('');
 const currentPage = ref(1);
 const retryConfirmDialogRef = ref(null);
@@ -52,6 +53,63 @@ const retryableCount = computed(
 const notRetryableCount = computed(
   () => (stats.value.failed_count ?? 0) - retryableCount.value
 );
+// Los que no llegaron a procesarse: una campaña pausada o cortada a medias.
+const pendingCount = computed(() => stats.value.pending_count ?? 0);
+const sendPendingCount = computed(
+  () => retryableCount.value + pendingCount.value
+);
+
+// "Enviar a pendientes": a fallidos y pendientes, o solo a unos u otros.
+const sendScope = ref('all');
+const sendScopes = computed(() =>
+  [
+    { key: 'all', count: sendPendingCount.value, label: 'SCOPE_ALL' },
+    { key: 'failed', count: retryableCount.value, label: 'SCOPE_FAILED' },
+    { key: 'pending', count: pendingCount.value, label: 'SCOPE_PENDING' },
+  ].filter(scope => scope.count > 0)
+);
+const scopeCount = computed(
+  () =>
+    sendScopes.value.find(scope => scope.key === sendScope.value)?.count ?? 0
+);
+
+// Misma cuenta que Campaigns::ApiWebhookDispatchPlannerService: pausa entre
+// mensajes, pausa larga entre tandas y tope por minuto. Es aproximado: no
+// cuenta el horario comercial ni las esperas por sesión caída.
+const etaSeconds = computed(() => {
+  const n = scopeCount.value;
+  if (n <= 1) return 0;
+  const settings = campaign.value?.delivery_settings || {};
+  const batchSize = Number(settings.batch_size) || 0;
+  const perMessage = Number(settings.delay_between_messages_seconds) || 0;
+  const perBatch = Number(settings.delay_between_batches_seconds) || 0;
+  const perMinute = Number(settings.max_messages_per_minute) || 0;
+  const gaps = n - 1;
+  const batchGaps = batchSize > 0 ? Math.floor(gaps / batchSize) : 0;
+  const paced = (gaps - batchGaps) * perMessage + batchGaps * perBatch;
+  const capped = perMinute > 0 ? (gaps / perMinute) * 60 : 0;
+  return Math.max(paced, capped);
+});
+
+const etaLabel = computed(() => {
+  const minutes = Math.max(1, Math.round(etaSeconds.value / 60));
+  if (minutes < 60)
+    return t('CAMPAIGN.RESULTS.ETA_MINUTES', { count: minutes });
+  return t('CAMPAIGN.RESULTS.ETA_HOURS', {
+    hours: Math.floor(minutes / 60),
+    minutes: minutes % 60,
+  });
+});
+
+const etaDays = computed(() => {
+  const daily = Number(campaign.value?.delivery_settings?.max_daily_messages);
+  return daily > 0 ? Math.ceil(scopeCount.value / daily) : 0;
+});
+
+function openSendPending() {
+  sendScope.value = sendScopes.value[0]?.key || 'all';
+  retryConfirmDialogRef.value?.open();
+}
 
 const sentPct = computed(() => {
   const total = stats.value.total_contacts || 0;
@@ -143,6 +201,7 @@ async function fetchResults() {
       page: currentPage.value,
       status: activeFilter.value,
       q: searchQuery.value,
+      type: typeFilter.value,
     });
     contacts.value = data.contacts;
     meta.value = data.meta;
@@ -180,6 +239,41 @@ function onSearchInput(e) {
     fetchResults();
   }, 300);
 }
+
+// Solo se ofrece filtrar por tipo si la campaña mezcla contactos con grupos o
+// canales.
+const typeFilters = computed(() => {
+  const counts = stats.value.type_counts || {};
+  const types = [
+    { key: 'contact', label: 'TYPE_CONTACT' },
+    { key: 'group', label: 'TYPE_GROUP' },
+    { key: 'channel', label: 'TYPE_CHANNEL' },
+  ].filter(type => counts[type.key] > 0);
+  if (types.length < 2) return [];
+  return [{ key: '', label: 'FILTER_TYPE_ALL' }, ...types].map(type => ({
+    ...type,
+    count: type.key ? counts[type.key] : null,
+  }));
+});
+
+function setTypeFilter(key) {
+  typeFilter.value = key;
+  currentPage.value = 1;
+  fetchResults();
+}
+
+const recipientBadge = c => {
+  if (c.recipient_type === 'group') return t('CAMPAIGN.RESULTS.BADGE_GROUP');
+  if (c.recipient_type === 'channel')
+    return t('CAMPAIGN.RESULTS.BADGE_CHANNEL');
+  return '';
+};
+
+// Evolution guarda los grupos como "Nombre (GROUP)": en la lista sobra.
+const recipientName = c =>
+  c.recipient_type === 'group'
+    ? (c.name || '').replace(/\s*\(GROUP\)$/, '')
+    : c.name;
 
 function setFilter(key) {
   activeFilter.value = key;
@@ -222,8 +316,13 @@ async function duplicateCampaign() {
 async function confirmRetryFailed() {
   retrying.value = true;
   try {
-    const { data } = await CampaignsAPI.retryFailed(campaignId.value);
-    useAlert(t('CAMPAIGN.RESULTS.RETRY_SUCCESS', { count: data.retry_count }));
+    const { data } = await CampaignsAPI.retryFailed(
+      campaignId.value,
+      sendScope.value
+    );
+    useAlert(
+      t('CAMPAIGN.RESULTS.SEND_PENDING_SUCCESS', { count: data.retry_count })
+    );
     currentPage.value = 1;
     await refreshAll();
     startPolling();
@@ -426,14 +525,14 @@ onUnmounted(() => {
             @click="exportCSV"
           />
           <Button
-            v-if="retryableCount > 0 && !isRunning"
+            v-if="sendPendingCount > 0 && !isRunning"
             variant="faded"
             color="ruby"
             size="sm"
-            icon="i-lucide-rotate-ccw"
-            :label="t('CAMPAIGN.RESULTS.RETRY_FAILED')"
+            icon="i-lucide-send"
+            :label="`${t('CAMPAIGN.RESULTS.SEND_PENDING')} (${sendPendingCount})`"
             :disabled="retrying"
-            @click="retryConfirmDialogRef?.open()"
+            @click="openSendPending"
           />
         </div>
       </div>
@@ -442,14 +541,35 @@ onUnmounted(() => {
     <Dialog
       ref="retryConfirmDialogRef"
       type="alert"
-      :title="t('CAMPAIGN.RESULTS.RETRY_CONFIRM_TITLE')"
-      :description="
-        t('CAMPAIGN.RESULTS.RETRY_CONFIRM', { count: retryableCount })
-      "
-      :confirm-button-label="t('CAMPAIGN.RESULTS.RETRY_FAILED')"
+      :title="t('CAMPAIGN.RESULTS.SEND_PENDING_TITLE')"
+      :description="t('CAMPAIGN.RESULTS.SEND_PENDING_CONFIRM')"
+      :confirm-button-label="`${t('CAMPAIGN.RESULTS.SEND_PENDING')} (${scopeCount})`"
+      :disable-confirm-button="scopeCount === 0"
       :is-loading="retrying"
       @confirm="confirmRetryFailed"
-    />
+    >
+      <div class="flex flex-col gap-2">
+        <label
+          v-for="scope in sendScopes"
+          :key="scope.key"
+          class="flex items-center gap-2 text-sm text-n-slate-12 cursor-pointer"
+        >
+          <input
+            v-model="sendScope"
+            type="radio"
+            name="send-pending-scope"
+            :value="scope.key"
+          />
+          {{ t(`CAMPAIGN.RESULTS.${scope.label}`, { count: scope.count }) }}
+        </label>
+        <p class="mb-0 text-xs text-n-slate-11">
+          {{ t('CAMPAIGN.RESULTS.ETA', { time: etaLabel }) }}
+          <template v-if="etaDays > 1">
+            {{ t('CAMPAIGN.RESULTS.ETA_DAYS', { days: etaDays }) }}
+          </template>
+        </p>
+      </div>
+    </Dialog>
 
     <main class="flex-1 min-h-0 px-4 sm:px-6 overflow-y-auto">
       <div
@@ -562,6 +682,24 @@ onUnmounted(() => {
                   {{ f.label }}
                 </button>
               </div>
+              <div v-if="typeFilters.length" class="flex flex-wrap gap-1">
+                <button
+                  v-for="type in typeFilters"
+                  :key="type.key || 'all'"
+                  class="px-3 py-1.5 text-xs border rounded-lg transition-colors"
+                  :class="
+                    typeFilter === type.key
+                      ? 'bg-n-slate-12 text-n-solid-1 border-n-slate-12'
+                      : 'bg-n-alpha-2 text-n-slate-10 border-n-weak hover:text-n-slate-12'
+                  "
+                  @click="setTypeFilter(type.key)"
+                >
+                  {{ t(`CAMPAIGN.RESULTS.${type.label}`) }}
+                  <span v-if="type.count !== null" class="ml-0.5 opacity-70">
+                    {{ type.count }}
+                  </span>
+                </button>
+              </div>
             </div>
 
             <div
@@ -595,10 +733,23 @@ onUnmounted(() => {
                   <span v-else>{{ (c.name || '?')[0].toUpperCase() }}</span>
                 </div>
                 <div class="flex flex-col flex-1 min-w-0">
-                  <span class="text-sm font-medium truncate text-n-slate-12">
-                    {{ c.name || `#${c.id}` }}
+                  <span
+                    class="flex items-center gap-1.5 text-sm font-medium truncate text-n-slate-12"
+                  >
+                    <span class="truncate">
+                      {{ recipientName(c) || `#${c.id}` }}
+                    </span>
+                    <span
+                      v-if="recipientBadge(c)"
+                      class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-n-alpha-3 text-n-slate-11"
+                    >
+                      {{ recipientBadge(c) }}
+                    </span>
                   </span>
-                  <span class="text-xs truncate text-n-slate-10">
+                  <span
+                    v-if="!recipientBadge(c)"
+                    class="text-xs truncate text-n-slate-10"
+                  >
                     {{ c.phone_number || c.email || `ID: ${c.id}` }}
                   </span>
                   <span

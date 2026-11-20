@@ -324,6 +324,16 @@ RSpec.describe 'Campaigns API', type: :request do
           params: params, headers: administrator.create_new_auth_token, as: :json
     end
 
+    it 'tells groups apart from contacts and filters by type' do
+      contacts.last.update!(identifier: '120363000000000001@g.us', name: 'Vecinos (GROUP)')
+
+      results
+      expect(response.parsed_body['stats']['type_counts']).to eq('group' => 1, 'channel' => 0, 'contact' => 3)
+
+      results(type: 'group')
+      expect(response.parsed_body['contacts'].pluck('id', 'recipient_type')).to eq([[contacts.last.id, 'group']])
+    end
+
     it 'groups failures by reason and counts the recipients not processed yet' do
       results
 
@@ -385,6 +395,7 @@ RSpec.describe 'Campaigns API', type: :request do
       let(:recipients) { { '1' => { 'status' => 'sent' }, '3' => { 'status' => 'skipped' } } }
 
       it 'does not write to them' do
+        campaign.update!(delivery_state: campaign.delivery_state.merge('contact_ids' => [1, 3], 'total_contacts' => 2))
         retry_failed
 
         expect(response).to have_http_status(:unprocessable_entity)
@@ -407,6 +418,31 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(state['recipients']['3']['status']).to eq('failed')
         expect(state['failed_count']).to eq(1)
       end
+    end
+
+    context 'when the campaign stopped before reaching every recipient' do
+      let(:recipients) { { '1' => { 'status' => 'sent' } } }
+
+      it 'sends to the pending ones even without failures' do
+        campaign.update!(delivery_state: campaign.delivery_state.merge('processed_index' => 1, 'failed_count' => 0))
+
+        expect { retry_failed }.to have_enqueued_job(Campaigns::ProcessBatchJob)
+        expect(response.parsed_body).to include('retry_count' => 2, 'failed_count' => 0, 'pending_count' => 2)
+        state = campaign.reload.delivery_state
+        expect(state['contact_ids']).to eq([1, 2, 3])
+        expect(state['processed_index']).to eq(1)
+        expect(campaign).to be_running
+      end
+    end
+
+    it 'only retries failures when asked to' do
+      campaign.update!(delivery_state: campaign.delivery_state.merge('contact_ids' => [1, 2, 3, 4]))
+
+      post "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}/retry_failed",
+           params: { scope: 'failed' }, headers: administrator.create_new_auth_token, as: :json
+
+      expect(response.parsed_body).to include('failed_count' => 1, 'pending_count' => 0)
+      expect(campaign.reload.delivery_state['deferred_contact_ids']).to eq([4])
     end
 
     context 'when the campaign is already running' do

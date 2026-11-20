@@ -11,7 +11,12 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
-import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
+import CampaignAudienceCard from './CampaignAudienceCard.vue';
+import {
+  buildAudience,
+  parsePhoneEntries,
+  phoneTextFromAudience,
+} from './campaignAudience';
 
 const props = defineProps({
   mode: {
@@ -71,6 +76,10 @@ const defaultState = () => ({
   inboxId: null,
   scheduledAt: null,
   selectedAudience: [],
+  excludedLabels: [],
+  selectedChats: [],
+  chatNames: {},
+  phoneNumbers: '',
   variants: [],
   existingAttachments: [],
   removedExistingAttachmentIds: [],
@@ -91,12 +100,26 @@ const fileInputRef = ref(null);
 const isDragging = ref(false);
 const aiLoading = ref(false);
 
+// Destinatarios sueltos, además de las etiquetas: el backend los resuelve en
+// Campaigns::DirectAudienceService.
+const validPhoneCount = computed(
+  () =>
+    parsePhoneEntries(state.phoneNumbers).filter(entry => entry.phone).length
+);
+
+const hasRecipients = computed(
+  () =>
+    state.selectedAudience.length > 0 ||
+    state.selectedChats.length > 0 ||
+    validPhoneCount.value > 0
+);
+
 const rules = {
   title: { required, minLength: minLength(1) },
   message: { required, minLength: minLength(1) },
   inboxId: { required },
   scheduledAt: { required },
-  selectedAudience: { required },
+  selectedAudience: { hasRecipients: () => hasRecipients.value },
 };
 
 const v$ = useVuelidate(rules, state);
@@ -109,6 +132,7 @@ const mapToOptions = (items, valueKey, labelKey) =>
   items?.map(item => ({ value: item[valueKey], label: item[labelKey] })) ?? [];
 
 const audienceList = computed(() => mapToOptions(labels.value, 'id', 'title'));
+
 const inboxOptions = computed(() => mapToOptions(inboxes.value, 'id', 'name'));
 const assistantOptions = computed(() => [
   { value: null, label: t('CAMPAIGN.API.CREATE.FORM.AI.ASSISTANT_NONE') },
@@ -162,6 +186,18 @@ const populateFromCampaign = campaign => {
     selectedAudience: (campaign.audience || [])
       .filter(item => item.type === 'Label')
       .map(item => item.id),
+    excludedLabels: (campaign.audience || [])
+      .filter(item => item.type === 'ExcludeLabel')
+      .map(item => item.id),
+    selectedChats: (campaign.audience || [])
+      .filter(item => item.type === 'WhatsappChat')
+      .map(item => item.id),
+    chatNames: Object.fromEntries(
+      (campaign.audience || [])
+        .filter(item => item.type === 'WhatsappChat')
+        .map(item => [item.id, item.name || item.id])
+    ),
+    phoneNumbers: phoneTextFromAudience(campaign.audience),
     variants: Array.isArray(deliverySettings.content_variants)
       ? deliverySettings.content_variants
           .map(variant => ({ text: variant?.text || variant || '' }))
@@ -350,8 +386,15 @@ const summary = computed(() => {
   const delivery = state.delivery;
   return {
     inbox: optionLabel(inboxOptions.value, state.inboxId),
-    audience: state.selectedAudience
-      .map(id => optionLabel(audienceList.value, id))
+    audience: [
+      ...state.selectedAudience.map(id => optionLabel(audienceList.value, id)),
+      ...state.selectedChats.map(jid => state.chatNames[jid] || jid),
+      validPhoneCount.value
+        ? t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PHONES_COUNT', {
+            count: validPhoneCount.value,
+          })
+        : '',
+    ]
       .filter(Boolean)
       .join(', '),
     scheduledAt: state.scheduledAt
@@ -386,9 +429,16 @@ const buildFormData = () => {
     formatToUTCString(state.scheduledAt)
   );
 
-  state.selectedAudience.forEach(id => {
-    formData.append('campaign[audience][][id]', id);
-    formData.append('campaign[audience][][type]', 'Label');
+  buildAudience({
+    labelIds: state.selectedAudience,
+    excludedLabelIds: state.excludedLabels,
+    chats: state.selectedChats,
+    chatNames: state.chatNames,
+    phoneText: state.phoneNumbers,
+  }).forEach(entry => {
+    formData.append('campaign[audience][][id]', entry.id);
+    formData.append('campaign[audience][][type]', entry.type);
+    if (entry.name) formData.append('campaign[audience][][name]', entry.name);
   });
 
   const deliverySettings = {
@@ -656,20 +706,17 @@ defineExpose({
           />
         </div>
 
-        <div class="flex flex-col gap-1">
-          <label class="mb-0.5 text-sm font-medium text-n-slate-12">
-            {{ t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.LABEL') }}
-          </label>
-          <TagMultiSelectComboBox
-            v-model="state.selectedAudience"
-            :options="audienceList"
-            :label="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.LABEL')"
-            :placeholder="t('CAMPAIGN.API.CREATE.FORM.AUDIENCE.PLACEHOLDER')"
-            :has-error="!!formErrors.audience"
-            :message="formErrors.audience"
-            class="[&>div>button]:bg-n-alpha-black2"
-          />
-        </div>
+        <CampaignAudienceCard
+          v-model:label-ids="state.selectedAudience"
+          v-model:excluded-label-ids="state.excludedLabels"
+          v-model:chats="state.selectedChats"
+          v-model:chat-names="state.chatNames"
+          v-model:phone-text="state.phoneNumbers"
+          :inbox-id="state.inboxId"
+          :label-options="audienceList"
+          :delivery-settings="state.delivery"
+          :error="formErrors.audience"
+        />
 
         <Input
           v-model="state.scheduledAt"
