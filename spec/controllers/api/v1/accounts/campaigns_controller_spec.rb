@@ -168,6 +168,15 @@ RSpec.describe 'Campaigns API', type: :request do
                headers: administrator.create_new_auth_token
         end
 
+        it 'stores the file of an attachment sent on create' do
+          create_with(fixture_file_upload(Rails.root.join('spec/assets/avatar.png'), 'image/png'))
+
+          campaign = Campaign.last
+          blob = campaign.attachments.first.blob
+          expect(campaign.display_id).to be_present
+          expect(blob.service.exist?(blob.key)).to be(true)
+        end
+
         it 'accepts an MP4 video above the old 16 MB limit' do
           create_with(padded_upload('sample.mp4', 20.megabytes, 'video/mp4'))
 

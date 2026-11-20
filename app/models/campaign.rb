@@ -85,8 +85,14 @@ class Campaign < ApplicationRecord
     end
   end
 
+  # display_id lo pone un trigger de la base al insertar: solo se lee esa
+  # columna. Un reload completo vaciaba los adjuntos pendientes de ActiveStorage
+  # antes de su after_commit (con load_defaults 7.0 los after_commit corren en
+  # orden inverso y este va primero), así que una campaña creada con imagen se
+  # guardaba sin el archivo en disco y Evolution recibía un 404 al enviarla.
   def set_display_id
-    reload
+    self.display_id = self.class.where(id: id).pick(:display_id)
+    clear_attribute_changes(['display_id'])
   end
 
   def validate_campaign_inbox
