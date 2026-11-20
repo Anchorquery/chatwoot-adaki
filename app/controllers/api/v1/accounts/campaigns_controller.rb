@@ -1,4 +1,6 @@
 class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
+  include Api::V1::Accounts::Concerns::CampaignAudienceActions
+
   # Adjuntos que WhatsApp acepta y que Evolution envía sin problemas. Evolution
   # decide el tipo de mensaje por la extensión: HEIC o WebP salían como imagen y
   # WhatsApp los rechazaba.
@@ -19,7 +21,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     'application/pdf' => 100.megabytes
   }.freeze
 
-  before_action :campaign, except: [:index, :create, :ai_generate, :clone, :results, :retry_failed]
+  before_action :campaign, except: [:index, :create, :ai_generate, :clone, :results, :retry_failed, *AUDIENCE_ACTIONS]
   before_action :campaign_for_results, only: [:results, :retry_failed]
   before_action :find_campaign_for_clone, only: [:clone]
   before_action :check_authorization
@@ -93,6 +95,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
     state = @campaign.delivery_state.to_h.with_indifferent_access
     recipients_map = state[:recipients].to_h
     contact_ids = (state[:contact_ids] || []).map(&:to_i)
+    deferred_ids = (state[:deferred_contact_ids] || []).map(&:to_i)
+    pending_ids = Campaigns::ResumeService.pending_ids(state)
 
     status_filter = params[:status].to_s.presence
     query = params[:q].to_s.strip.downcase
@@ -105,12 +109,12 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
                    when 'skipped'
                      recipients_map.select { |_, v| v['status'] == 'skipped' }.keys.map(&:to_i)
                    when 'pending'
-                     contact_ids - recipients_map.keys.map(&:to_i)
+                     pending_ids
                    else
-                     contact_ids
+                     contact_ids + deferred_ids
                    end
 
-    contacts_scope = Current.account.contacts.where(id: filtered_ids)
+    contacts_scope = filter_by_recipient_type(Current.account.contacts.where(id: filtered_ids), params[:type])
     if query.present?
       contacts_scope = contacts_scope.where(
         'LOWER(name) LIKE :q OR phone_number LIKE :q OR email LIKE :q',
@@ -143,6 +147,7 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
           phone_number: c.phone_number,
           email: c.email,
           avatar_url: c.avatar_url,
+          recipient_type: recipient_type(c),
           status: info['status'] || 'pending',
           sent_at: info['sent_at'],
           failed_at: info['failed_at'],
@@ -164,7 +169,8 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
         failed_count: failed_count,
         retryable_failed_count: recipients_map.count { |_, v| retryable_failure?(v) },
         skipped_count: skipped_count,
-        pending_count: (contact_ids - recipients_map.keys.map(&:to_i)).size,
+        pending_count: pending_ids.size,
+        type_counts: recipient_type_counts(contact_ids + deferred_ids),
         failure_reasons: failure_reasons(recipients_map),
         processed_index: state[:processed_index].to_i,
         started_at: started_at,
@@ -177,49 +183,11 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
   end
 
   def retry_failed
-    state = @campaign.delivery_state.to_h.with_indifferent_access
-    recipients_map = state[:recipients].to_h
+    result = Campaigns::ResumeService.new(campaign: @campaign, scope: params[:scope]).perform
+    return render json: { error: result.error }, status: :unprocessable_entity if result.error
 
-    # Una campaña en marcha (o esperando al día siguiente) ya tiene un
-    # ProcessBatchJob programado: otro más procesaría los mismos contactos dos veces.
-    return render json: { error: 'Campaign is already running' }, status: :unprocessable_entity if @campaign.running?
-
-    # Solo se reintentan los fallidos reintentables. Los omitidos no tienen conversación
-    # previa con la bandeja, y los 463 vienen de una cuenta restringida: escribirles
-    # en frío es lo que hace que WhatsApp bloquee el número.
-    failed_ids = recipients_map.select { |_, v| retryable_failure?(v) }.keys.map(&:to_i)
-
-    # Los fallidos no reintentables siguen como fallidos y se saltan como terminados.
-    done_statuses = %w[sent skipped failed]
-    already_done_ids = recipients_map.select { |_, v| done_statuses.include?(v['status']) }.keys.map(&:to_i) - failed_ids
-    all_original_ids = (state[:contact_ids] || []).map(&:to_i)
-    # Los pendientes de una campaña pausada o cortada a medias se envían también:
-    # es el botón "Enviar a pendientes".
-    unprocessed_ids = all_original_ids - already_done_ids - failed_ids
-    nothing_to_send = failed_ids.empty? && unprocessed_ids.empty?
-    return render json: { error: 'No pending contacts to send to' }, status: :unprocessable_entity if nothing_to_send
-
-    # Remove failed entries so they get re-attempted
-    failed_ids.each { |id| recipients_map.delete(id.to_s) }
-
-    # Order: already done (skip by index) → failed (retry) → never processed
-    new_contact_ids = already_done_ids + failed_ids + unprocessed_ids
-
-    @campaign.update!(
-      campaign_status: :running,
-      delivery_state: state.merge(
-        contact_ids: new_contact_ids,
-        total_contacts: new_contact_ids.size,
-        processed_index: already_done_ids.size,
-        failed_count: recipients_map.count { |_, v| v['status'] == 'failed' },
-        consecutive_failures: 0,
-        recipients: recipients_map
-      )
-    )
-
-    Campaigns::ProcessBatchJob.perform_later(@campaign)
-    render json: { message: 'Retry enqueued', retry_count: failed_ids.size + unprocessed_ids.size,
-                   failed_count: failed_ids.size, pending_count: unprocessed_ids.size }
+    render json: { message: 'Retry enqueued', retry_count: result.total,
+                   failed_count: result.failed_count, pending_count: result.pending_count }
   end
 
   def ai_generate
@@ -275,8 +243,31 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
                   .first(10)
   end
 
+  CHAT_TYPE_PATTERNS = { 'group' => '%@g.us', 'channel' => '%@newsletter' }.freeze
+
+  def recipient_type(contact)
+    identifier = contact.identifier.to_s
+    return 'group' if identifier.end_with?('@g.us')
+    return 'channel' if identifier.end_with?('@newsletter')
+
+    'contact'
+  end
+
+  def filter_by_recipient_type(scope, type)
+    return scope.where('identifier LIKE ?', CHAT_TYPE_PATTERNS[type]) if CHAT_TYPE_PATTERNS.key?(type)
+    return scope.where('identifier IS NULL OR (identifier NOT LIKE ? AND identifier NOT LIKE ?)', *CHAT_TYPE_PATTERNS.values) if type == 'contact'
+
+    scope
+  end
+
+  def recipient_type_counts(ids)
+    scope = Current.account.contacts.where(id: ids.uniq)
+    CHAT_TYPE_PATTERNS.keys.index_with { |type| filter_by_recipient_type(scope, type).count }
+                      .merge('contact' => filter_by_recipient_type(scope, 'contact').count)
+  end
+
   def retryable_failure?(recipient)
-    recipient['status'] == 'failed' && recipient['retryable'] != false
+    Campaigns::ResumeService.retryable?(recipient)
   end
 
   # «Iniciar inmediatamente» manda sobre la fecha programada. Con una fecha

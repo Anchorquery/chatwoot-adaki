@@ -324,6 +324,16 @@ RSpec.describe 'Campaigns API', type: :request do
           params: params, headers: administrator.create_new_auth_token, as: :json
     end
 
+    it 'tells groups apart from contacts and filters by type' do
+      contacts.last.update!(identifier: '120363000000000001@g.us', name: 'Vecinos (GROUP)')
+
+      results
+      expect(response.parsed_body['stats']['type_counts']).to eq('group' => 1, 'channel' => 0, 'contact' => 3)
+
+      results(type: 'group')
+      expect(response.parsed_body['contacts'].pluck('id', 'recipient_type')).to eq([[contacts.last.id, 'group']])
+    end
+
     it 'groups failures by reason and counts the recipients not processed yet' do
       results
 
@@ -423,6 +433,16 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(state['processed_index']).to eq(1)
         expect(campaign).to be_running
       end
+    end
+
+    it 'only retries failures when asked to' do
+      campaign.update!(delivery_state: campaign.delivery_state.merge('contact_ids' => [1, 2, 3, 4]))
+
+      post "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}/retry_failed",
+           params: { scope: 'failed' }, headers: administrator.create_new_auth_token, as: :json
+
+      expect(response.parsed_body).to include('failed_count' => 1, 'pending_count' => 0)
+      expect(campaign.reload.delivery_state['deferred_contact_ids']).to eq([4])
     end
 
     context 'when the campaign is already running' do

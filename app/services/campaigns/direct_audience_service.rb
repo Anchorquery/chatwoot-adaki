@@ -21,6 +21,20 @@ class Campaigns::DirectAudienceService
     [CHAT_TYPE, PHONE_TYPE].include?(entry.to_h.stringify_keys['type'])
   end
 
+  def self.chat_jid?(value)
+    value.to_s.end_with?(*CHAT_SUFFIXES)
+  end
+
+  # Sin prefijo se asume España, como los números que se escriben a mano en la
+  # bandeja. Evolution comprueba después si el número tiene WhatsApp.
+  def self.normalize_phone(value)
+    digits = value.to_s.gsub(/[^\d+]/, '')
+    digits = digits.sub(/\A00/, '+')
+    digits = "+34#{digits}" if digits.match?(/\A[6789]\d{8}\z/)
+    digits = "+#{digits}" unless digits.start_with?('+')
+    digits.match?(/\A\+[1-9]\d{7,14}\z/) ? digits : nil
+  end
+
   def contact_ids
     entries.filter_map { |entry| resolve(entry) }.uniq
   end
@@ -42,7 +56,7 @@ class Campaigns::DirectAudienceService
 
   def resolve_chat(entry)
     jid = entry['id'].to_s.strip
-    return unless jid.end_with?(*CHAT_SUFFIXES)
+    return unless self.class.chat_jid?(jid)
 
     contact = account.contacts.find_by(identifier: jid) ||
               account.contacts.create!(identifier: jid, name: chat_name(entry, jid))
@@ -58,20 +72,13 @@ class Campaigns::DirectAudienceService
   end
 
   def resolve_phone(entry)
-    phone = normalize_phone(entry['id'])
+    phone = self.class.normalize_phone(entry['id'])
     return if phone.nil?
 
-    contact = account.contacts.find_by(phone_number: phone) || account.contacts.create!(phone_number: phone, name: phone)
-    contact.id
-  end
+    contact = account.contacts.find_by(phone_number: phone)
+    return contact.id if contact
 
-  # Sin prefijo se asume España, como los números que se escriben a mano en la
-  # bandeja. Evolution comprueba después si el número tiene WhatsApp.
-  def normalize_phone(value)
-    digits = value.to_s.gsub(/[^\d+]/, '')
-    digits = digits.sub(/\A00/, '+')
-    digits = "+34#{digits}" if digits.match?(/\A[6789]\d{8}\z/)
-    digits = "+#{digits}" unless digits.start_with?('+')
-    digits.match?(/\A\+[1-9]\d{7,14}\z/) ? digits : nil
+    # Con nombre, {{contact.name}} no sale vacío en el mensaje.
+    account.contacts.create!(phone_number: phone, name: entry['name'].to_s.strip.presence || phone).id
   end
 end

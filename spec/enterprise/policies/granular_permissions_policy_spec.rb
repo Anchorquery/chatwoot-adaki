@@ -19,7 +19,8 @@ RSpec.describe 'Granular custom role permissions', type: :policy do # rubocop:di
     LabelPolicy => ['label_manage', %i[create? update? show? destroy?], Label],
     AssignmentPolicyPolicy => ['assignment_manage', %i[index? show? create? update? destroy?], AssignmentPolicy],
     AgentCapacityPolicyPolicy => ['assignment_manage', %i[index? show? create? update? destroy?], AgentCapacityPolicy],
-    CampaignPolicy => ['campaign_manage', %i[index? show? create? update? destroy? clone? results? retry_failed? ai_generate?], Campaign],
+    CampaignPolicy => ['campaign_manage', %i[index? show? create? update? destroy? clone? results? retry_failed? ai_generate?
+                                             whatsapp_chats? check_numbers? audience_preview?], Campaign],
     UserPolicy => ['agent_manage', %i[create?], User],
     Adaki::AbsencePolicy => ['absence_manage', %i[create? update? destroy?], Adaki::Absence],
     Adaki::CampaignApprovalPolicy => ['campaign_approve', %i[approve? reject?], Adaki::CampaignApproval],

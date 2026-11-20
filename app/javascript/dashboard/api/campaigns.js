@@ -25,14 +25,40 @@ class CampaignsAPI extends ApiClient {
     return axios.post(`${this.url}/${id}/clone`);
   }
 
-  results(id, { page = 1, status = '', q = '' } = {}) {
+  results(id, { page = 1, status = '', q = '', type = '' } = {}) {
     return axios.get(`${this.url}/${id}/results`, {
-      params: { page, status: status || undefined, q: q || undefined },
+      params: {
+        page,
+        status: status || undefined,
+        q: q || undefined,
+        type: type || undefined,
+      },
     });
   }
 
-  retryFailed(id) {
-    return axios.post(`${this.url}/${id}/retry_failed`);
+  retryFailed(id, scope = 'all') {
+    return axios.post(`${this.url}/${id}/retry_failed`, { scope });
+  }
+
+  whatsappChats(inboxId) {
+    return axios.get(`${this.url}/whatsapp_chats`, {
+      params: { inbox_id: inboxId },
+    });
+  }
+
+  checkNumbers(inboxId, numbers) {
+    return axios.post(`${this.url}/check_numbers`, {
+      inbox_id: inboxId,
+      numbers,
+    });
+  }
+
+  audiencePreview(inboxId, audience, deliverySettings) {
+    return axios.post(`${this.url}/audience_preview`, {
+      inbox_id: inboxId,
+      audience,
+      delivery_settings: deliverySettings,
+    });
   }
 }
 

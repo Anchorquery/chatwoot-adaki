@@ -54,4 +54,14 @@ RSpec.describe Campaigns::DirectAudienceService do
       expect(inbox.contact_inboxes.where(contact_id: ids)).to be_empty
     end
   end
+
+  context 'with a name next to the number' do
+    let(:audience) { [{ 'type' => 'Phone', 'id' => '600111444', 'name' => 'Ane' }] }
+
+    it 'creates the contact with that name' do
+      contact_ids
+
+      expect(account.contacts.find_by(phone_number: '+34600111444').name).to eq('Ane')
+    end
+  end
 end

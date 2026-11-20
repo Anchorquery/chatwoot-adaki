@@ -34,4 +34,16 @@ class CampaignPolicy < ApplicationPolicy
   def retry_failed?
     administrator_or_custom_role_permission?('campaign_manage')
   end
+
+  def whatsapp_chats?
+    administrator_or_custom_role_permission?('campaign_manage')
+  end
+
+  def check_numbers?
+    administrator_or_custom_role_permission?('campaign_manage')
+  end
+
+  def audience_preview?
+    administrator_or_custom_role_permission?('campaign_manage')
+  end
 end
