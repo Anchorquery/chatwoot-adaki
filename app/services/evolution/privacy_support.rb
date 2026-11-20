@@ -5,7 +5,14 @@ module Evolution::PrivacySupport
   # Los nombres recordados viven en additional_attributes del canal: con un
   # tope, para que una lista enorme no infle esa columna sin límite.
   MAX_LABELS = 3000
-  LIST_CACHE_TTL = 5.minutes
+  LIST_CACHE_TTL = 10.minutes
+  # fetchAllGroups puede tardar decenas de segundos (ver
+  # AudienceOptionsService#groups). Las rutas que leen esta lista se saltan
+  # Rack::Timeout (config/initializers/rack_timeout.rb) para poder esperarla.
+  GROUPS_READ_TIMEOUT = 45
+  # Mientras una petición pide la lista, las demás la esperan en vez de lanzar
+  # otra igual contra Evolution.
+  LIST_LOADING_TTL = 50.seconds
 
   private
 
@@ -16,18 +23,46 @@ module Evolution::PrivacySupport
   # Grupos y canales del número, cacheados unos minutos: fetchAllGroups es de
   # las llamadas más caras de Evolution. Un fallo devuelve [] y no se cachea:
   # si no, la lista se quedaría vacía aunque Evolution vuelva enseguida.
-  def cached_list(kind)
-    key = "evolution:privacy:#{@inbox.id}:#{kind}"
+  def list_cache_key(kind)
+    "evolution:privacy:#{@inbox.id}:#{kind}"
+  end
+
+  def cached_list(kind, &)
+    key = list_cache_key(kind)
     cached = Rails.cache.read(key)
     return cached if cached
 
+    loading_key = "#{key}:loading"
+    return wait_for_list(key, loading_key) unless Rails.cache.write(loading_key, true, unless_exist: true, expires_in: LIST_LOADING_TTL)
+
+    begin
+      load_list(key, &)
+    ensure
+      Rails.cache.delete(loading_key)
+    end
+  end
+
+  def load_list(key)
     fresh = Array.wrap(yield).select { |item| item.is_a?(Hash) }
     Rails.cache.write(key, fresh, expires_in: LIST_CACHE_TTL) if fresh.any?
     fresh
   end
 
+  # Si la otra petición falla no deja nada en caché: se devuelve [] en cuanto
+  # suelta el aviso de carga, sin volver a pedirla.
+  def wait_for_list(key, loading_key)
+    deadline = LIST_LOADING_TTL.from_now
+    while Time.current < deadline
+      sleep 1
+      cached = Rails.cache.read(key)
+      return cached if cached
+      return [] unless Rails.cache.exist?(loading_key)
+    end
+    []
+  end
+
   def cached_groups
-    cached_list(:groups) { audience_service.groups }
+    cached_list(:groups) { audience_service.groups(read_timeout: GROUPS_READ_TIMEOUT) }
   end
 
   def cached_channels

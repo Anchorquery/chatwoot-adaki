@@ -7,6 +7,7 @@ import CampaignsAPI from 'dashboard/api/campaigns';
 import Button from 'dashboard/components-next/button/Button.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
+import CampaignChatPicker from './CampaignChatPicker.vue';
 import {
   buildAudience,
   parsePhoneEntries,
@@ -42,74 +43,6 @@ const tr = (key, params) =>
 
 const TABS = ['LABELS', 'CHATS', 'PHONES'];
 const activeTab = ref('LABELS');
-
-// --- Grupos, comunidades y canales -----------------------------------------
-const chatRows = ref([]);
-const loadingChats = ref(false);
-const chatsUnavailable = ref(false);
-let chatsRequestId = 0;
-
-const KIND_ICONS = { group: '👥', community: '📢', channel: '📣' };
-
-const chatLabel = row => {
-  const parts = [`${KIND_ICONS[row.kind] || ''} ${row.name}`.trim()];
-  if (row.kind === 'community') parts.push(tr('COMMUNITY_SUFFIX'));
-  if (row.kind === 'channel') parts.push(tr('CHANNEL_SUFFIX'));
-  if (row.size) parts.push(tr('MEMBERS', { count: row.size }));
-  if (row.can_send === false) parts.push(`⚠️ ${tr('CANNOT_POST')}`);
-  return parts.join(' · ');
-};
-
-const loadChats = async inboxId => {
-  chatsRequestId += 1;
-  const requestId = chatsRequestId;
-  chatRows.value = [];
-  chatsUnavailable.value = false;
-  if (!inboxId) return;
-
-  loadingChats.value = true;
-  try {
-    const { data } = await CampaignsAPI.whatsappChats(inboxId);
-    if (requestId !== chatsRequestId) return;
-    chatRows.value = data.chats || [];
-    chatsUnavailable.value = chatRows.value.length === 0;
-  } catch {
-    if (requestId === chatsRequestId) chatsUnavailable.value = true;
-  } finally {
-    if (requestId === chatsRequestId) loadingChats.value = false;
-  }
-};
-
-const chatRowsById = computed(() =>
-  Object.fromEntries(chatRows.value.map(row => [row.id, row]))
-);
-
-// Los elegidos en una campaña guardada siguen visibles con su nombre aunque
-// Evolution no responda.
-const chatOptions = computed(() => {
-  const live = chatRows.value.map(row => ({
-    value: row.id,
-    label: chatLabel(row),
-  }));
-  const saved = chats.value
-    .filter(jid => !chatRowsById.value[jid])
-    .map(jid => ({ value: jid, label: chatNames.value[jid] || jid }));
-  return [...live, ...saved];
-});
-
-const blockedChats = computed(() =>
-  chats.value
-    .map(jid => chatRowsById.value[jid])
-    .filter(row => row?.can_send === false)
-);
-
-watch(chats, selected => {
-  const names = {};
-  selected.forEach(jid => {
-    names[jid] = chatRowsById.value[jid]?.name || chatNames.value[jid] || jid;
-  });
-  chatNames.value = names;
-});
 
 // --- Números sueltos --------------------------------------------------------
 const phoneEntries = computed(() => parsePhoneEntries(phoneText.value));
@@ -206,9 +139,7 @@ watch(
       chats.value = [];
       numberStatus.value = {};
     }
-    loadChats(inboxId);
-  },
-  { immediate: true }
+  }
 );
 
 // --- Resumen previo ---------------------------------------------------------
@@ -345,34 +276,12 @@ const tabCounts = computed(() => ({
       <p v-if="!inboxId" class="mb-0 text-xs text-n-slate-11">
         {{ tr('CHATS_NEED_INBOX') }}
       </p>
-      <template v-else>
-        <TagMultiSelectComboBox
-          v-model="chats"
-          :options="chatOptions"
-          :disabled="loadingChats"
-          :label="tr('CHATS_LABEL')"
-          :placeholder="
-            loadingChats ? tr('CHATS_LOADING') : tr('CHATS_PLACEHOLDER')
-          "
-          class="[&>div>button]:bg-n-alpha-black2"
-        />
-        <p
-          v-if="chatsUnavailable && !loadingChats"
-          class="mb-0 text-xs text-n-amber-11"
-        >
-          {{ tr('CHATS_UNAVAILABLE') }}
-        </p>
-        <p v-else class="mb-0 text-xs text-n-slate-11">
-          {{ tr('CHATS_HINT') }}
-        </p>
-        <p
-          v-for="row in blockedChats"
-          :key="row.id"
-          class="mb-0 rounded-md bg-n-amber-2 px-2 py-1 text-xs text-n-amber-11"
-        >
-          {{ tr('CANNOT_POST_WARNING', { name: row.name }) }}
-        </p>
-      </template>
+      <CampaignChatPicker
+        v-else
+        v-model:chats="chats"
+        v-model:chat-names="chatNames"
+        :inbox-id="inboxId"
+      />
     </div>
 
     <div v-show="activeTab === 'PHONES'" class="flex flex-col gap-2">
